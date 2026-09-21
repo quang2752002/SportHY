@@ -1,0 +1,376 @@
+@{
+    ViewData["Title"] = "Theo Dõi Toàn Bộ Nội Dung Thi Đấu";
+    var sports = ViewBag.Sports as IEnumerable<Dms.Application.DTOs.MonTheThaoDto> ?? new List<Dms.Application.DTOs.MonTheThaoDto>();
+}
+
+<div class="d-flex flex-column gap-3">
+    <!-- Breadcrumb & Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-list-check text-primary me-2"></i> Theo Dõi Toàn Bộ Nội Dung Thi Đấu
+            </h4>
+            <p class="text-muted small mb-0">Giám sát quy mô, số lượng đăng ký và tiến độ hoàn thành các nội dung trong giải</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="loadNoiDung()">
+                <i class="fa-solid fa-rotate me-1"></i> Làm mới dữ liệu
+            </button>
+        </div>
+    </div>
+
+    <!-- 4 Stats Cards -->
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <div class="card card-custom p-3 text-center border-bottom border-4 border-primary">
+                <small class="text-muted text-uppercase fw-semibold" style="font-size:0.75rem;">Tổng Nội Dung</small>
+                <h3 class="fw-bold text-primary mb-0 mt-1" id="statAllCount">0</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-custom p-3 text-center border-bottom border-4 border-success">
+                <small class="text-muted text-uppercase fw-semibold" style="font-size:0.75rem;">Đã Hoàn Thành</small>
+                <h3 class="fw-bold text-success mb-0 mt-1" id="statCompletedCount">0</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-custom p-3 text-center border-bottom border-4 border-warning">
+                <small class="text-muted text-uppercase fw-semibold" style="font-size:0.75rem;">Đang Thi Đấu</small>
+                <h3 class="fw-bold text-warning mb-0 mt-1" id="statLiveCount">0</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-custom p-3 text-center border-bottom border-4 border-secondary">
+                <small class="text-muted text-uppercase fw-semibold" style="font-size:0.75rem;">Chưa Thi Đấu</small>
+                <h3 class="fw-bold text-secondary mb-0 mt-1" id="statUpcomingCount">0</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bộ Lọc -->
+    <div class="card card-custom p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">Môn thể thao</label>
+                <select id="filterMon" class="form-select form-select-sm select2" onchange="loadNoiDung()">
+                    <option value="">-- Tất cả môn thể thao --</option>
+                    @foreach (var m in sports)
+                    {
+                        <option value="@m.Id">@m.Ten</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted mb-1">Giới tính</label>
+                <select id="filterGioiTinh" class="form-select form-select-sm" onchange="loadNoiDung()">
+                    <option value="">-- Tất cả --</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Nu">Nữ</option>
+                    <option value="HonHop">Hỗn hợp</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted mb-1">Loại hình thi đấu</label>
+                <select id="filterLoai" class="form-select form-select-sm" onchange="loadNoiDung()">
+                    <option value="">-- Tất cả --</option>
+                    <option value="CaNhan">Cá nhân</option>
+                    <option value="DongDoi">Đồng đội</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">Tìm kiếm nội dung</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="filterKeyword" class="form-control" placeholder="Nhập tên môn, nội dung..." onkeyup="if(event.key==='Enter') loadNoiDung()">
+                </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-sm btn-primary w-100 rounded-pill" onclick="loadNoiDung()">
+                    <i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách nội dung -->
+    <div class="card card-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-muted">
+                        <tr>
+                            <th class="ps-3" style="width: 60px;">STT</th>
+                            <th>Nội Dung Thi Đấu</th>
+                            <th>Môn Thể Thao</th>
+                            <th>Giới Tính</th>
+                            <th>Thể Thức</th>
+                            <th class="text-center">Số Đăng Ký</th>
+                            <th>Tiến Độ Trận Đấu</th>
+                            <th class="text-center">Trạng Thái</th>
+                            <th class="text-end pe-3">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="noiDungTableBody">
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                                <span class="ms-2 text-muted">Đang tải danh sách nội dung thi đấu...</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Chi Tiết Nội Dung -->
+<div class="modal fade" id="modalChiTietNoiDung" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold" id="modalDetailTitle">
+                    <i class="fa-solid fa-circle-info me-2"></i> Chi Tiết Nội Dung Thi Đấu
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Nav Tabs -->
+                <ul class="nav nav-pills mb-3" id="detailTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabDangKy" type="button">
+                            <i class="fa-solid fa-users me-1"></i> Danh Sách Đăng Ký (<span id="modalDkCount">0</span>)
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabTranDau" type="button">
+                            <i class="fa-solid fa-futbol me-1"></i> Lịch Thi Đấu & Trận (<span id="modalMatchCount">0</span>)
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="detailTabContent">
+                    <!-- Tab 1: Đăng ký -->
+                    <div class="tab-pane fade show active" id="tabDangKy">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Mã / Số ĐK</th>
+                                        <th>Tên Đăng Ký / Đội</th>
+                                        <th>Đoàn / Đơn Vị</th>
+                                        <th>Vận Động Viên</th>
+                                        <th>Trạng Thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modalDangKyBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Trận đấu -->
+                    <div class="tab-pane fade" id="tabTranDau">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th>Trận</th>
+                                        <th>Thời Gian</th>
+                                        <th>Sân Đấu</th>
+                                        <th>Cặp Đấu</th>
+                                        <th>Tỉ Số</th>
+                                        <th>Trạng Thái</th>
+                                        <th class="text-end">Biên Bản</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modalTranDauBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-sm btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            loadNoiDung();
+        });
+
+        function loadNoiDung() {
+            var gId = $('#headerSelectGiaiDau').val();
+            var mId = $('#filterMon').val();
+            var gt = $('#filterGioiTinh').val();
+            var loai = $('#filterLoai').val();
+            var kw = $('#filterKeyword').val();
+
+            $('#noiDungTableBody').html(`
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <div class="spinner-border text-primary spinner-border-sm"></div>
+                        <span class="ms-2 text-muted">Đang lọc dữ liệu...</span>
+                    </td>
+                </tr>
+            `);
+
+            $.ajax({
+                url: '/ThuKy/NoiDung/GetDanhSach',
+                type: 'GET',
+                data: { giaiDauId: gId, monTheThaoId: mId, gioiTinh: gt, loaiThiDau: loai, keyword: kw },
+                success: function (res) {
+                    if (!res.success || !res.data) {
+                        $('#noiDungTableBody').html('<tr><td colspan="9" class="text-center py-4 text-danger">Không thể tải dữ liệu.</td></tr>');
+                        return;
+                    }
+                    renderTable(res.data);
+                },
+                error: function () {
+                    $('#noiDungTableBody').html('<tr><td colspan="9" class="text-center py-4 text-danger">Lỗi kết nối máy chủ.</td></tr>');
+                }
+            });
+        }
+
+        function renderTable(list) {
+            $('#statAllCount').text(list.length);
+            var completed = list.filter(x => x.trangThai === 'HoanThanh').length;
+            var live = list.filter(x => x.trangThai === 'DangDau').length;
+            var upcoming = list.filter(x => x.trangThai === 'ChuaDau').length;
+
+            $('#statCompletedCount').text(completed);
+            $('#statLiveCount').text(live);
+            $('#statUpcomingCount').text(upcoming);
+
+            if (list.length === 0) {
+                $('#noiDungTableBody').html('<tr><td colspan="9" class="text-center py-5 text-muted">Không tìm thấy nội dung thi đấu phù hợp.</td></tr>');
+                return;
+            }
+
+            var html = '';
+            list.forEach(function (item, idx) {
+                var statusBadge = item.trangThai === 'HoanThanh' 
+                    ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1.5"><i class="fa-solid fa-check me-1"></i> Hoàn thành</span>'
+                    : (item.trangThai === 'DangDau'
+                        ? '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2.5 py-1.5"><i class="fa-solid fa-fire me-1"></i> Đang đấu</span>'
+                        : '<span class="badge bg-secondary bg-opacity-10 text-secondary border px-2.5 py-1.5"><i class="fa-regular fa-clock me-1"></i> Chưa đấu</span>');
+
+                var progressColor = item.phanTramTienDo >= 100 ? 'bg-success' : 'bg-primary';
+
+                html += `
+                    <tr>
+                        <td class="ps-3 fw-bold text-muted">${idx + 1}</td>
+                        <td>
+                            <div class="fw-bold text-dark">${item.tenNoiDung}</div>
+                            <small class="text-muted">Mã: ${item.maMonTheThao || '--'}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">${item.tenMonTheThao}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info bg-opacity-10 text-info border">${item.gioiTinh}</span>
+                        </td>
+                        <td>
+                            <span class="small text-muted">${item.loaiThiDau === 'DongDoi' ? 'Đồng đội' : 'Cá nhân'}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-primary bg-opacity-10 text-primary fs-6 px-2.5">${item.soDangKy}</span>
+                        </td>
+                        <td style="min-width: 170px;">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="fw-bold text-primary">${item.phanTramTienDo}%</span>
+                                <span class="text-muted">${item.soTranDaHoanThanh}/${item.soTranDaXep} trận</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar ${progressColor}" style="width: ${item.phanTramTienDo}%;"></div>
+                            </div>
+                        </td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td class="text-end pe-3">
+                            <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-3 py-1" onclick="viewDetail(${item.id})">
+                                <i class="fa-solid fa-eye me-1"></i> Chi tiết
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#noiDungTableBody').html(html);
+        }
+
+        function viewDetail(gdmId) {
+            $.ajax({
+                url: '/ThuKy/NoiDung/GetChiTiet',
+                type: 'GET',
+                data: { id: gdmId },
+                success: function (res) {
+                    if (!res.success || !res.data) {
+                        Swal.fire('Lỗi', res.message || 'Không thể lấy thông tin chi tiết.', 'error');
+                        return;
+                    }
+
+                    var d = res.data;
+                    $('#modalDetailTitle').html(`<i class="fa-solid fa-circle-info me-2"></i> ${d.thongTinChung.tenNoiDung}`);
+                    $('#modalDkCount').text(d.danhSachDangKy.length);
+                    $('#modalMatchCount').text(d.danhSachTranDau.length);
+
+                    // Render Đăng ký
+                    var dkHtml = '';
+                    if (d.danhSachDangKy.length === 0) {
+                        dkHtml = '<tr><td colspan="6" class="text-center py-4 text-muted">Chưa có đoàn/VĐV nào đăng ký.</td></tr>';
+                    } else {
+                        d.danhSachDangKy.forEach(function (dk, i) {
+                            dkHtml += `
+                                <tr>
+                                    <td>${i + 1}</td>
+                                    <td><code>${dk.soDangKy}</code></td>
+                                    <td class="fw-semibold text-dark">${dk.tenDangKy}</td>
+                                    <td><span class="badge bg-light text-dark border">${dk.tenDonVi || 'Tự do'}</span></td>
+                                    <td>${dk.danhSachVdv && dk.danhSachVdv.length > 0 ? dk.danhSachVdv.join(', ') : '--'}</td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success">${dk.trangThai || 'Đã duyệt'}</span></td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    $('#modalDangKyBody').html(dkHtml);
+
+                    // Render Trận đấu
+                    var matchHtml = '';
+                    if (d.danhSachTranDau.length === 0) {
+                        matchHtml = '<tr><td colspan="7" class="text-center py-4 text-muted">Chưa xếp lịch trận đấu nào.</td></tr>';
+                    } else {
+                        d.danhSachTranDau.forEach(function (m) {
+                            var statusBadge = m.trangThai === 'HoanThanh'
+                                ? '<span class="badge bg-success">Hoàn thành</span>'
+                                : '<span class="badge bg-secondary">Chưa đấu</span>';
+
+                            matchHtml += `
+                                <tr>
+                                    <td class="fw-bold text-primary">#${m.soTran}</td>
+                                    <td><small class="text-muted">${m.thoiGianDuKien ? new Date(m.thoiGianDuKien).toLocaleString('vi-VN') : '--'}</small></td>
+                                    <td>${m.tenSanDau || '--'}</td>
+                                    <td class="fw-semibold">${m.tenDoi1 || 'Đội 1'} VS ${m.tenDoi2 || 'Đội 2'}</td>
+                                    <td><span class="badge bg-light text-dark border">${m.ghiChu && m.ghiChu.startsWith('{') ? 'Đã có điểm' : '--'}</span></td>
+                                    <td>${statusBadge}</td>
+                                    <td class="text-end">
+                                        <a href="/ThuKy/BienBan?tranDauId=${m.id}" class="btn btn-xs btn-outline-primary rounded-pill px-2">
+                                            <i class="fa-solid fa-file-signature"></i> Biên bản
+                                        </a>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    $('#modalTranDauBody').html(matchHtml);
+
+                    var myModal = new bootstrap.Modal(document.getElementById('modalChiTietNoiDung'));
+                    myModal.show();
+                }
+            });
+        }
+    </script>
+}

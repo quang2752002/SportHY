@@ -1,0 +1,260 @@
+@{
+    ViewData["Title"] = "Quản lý Giải Đấu";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-trophy text-warning me-2"></i>Quản Lý Giải Đấu Thể Thao
+        </h4>
+        <p class="text-muted small mb-0">Quản lý các giải đấu, nội dung thi đấu và tiến trình tổ chức.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/Manager/GiaiDau/Create" class="btn btn-primary shadow-sm">
+            <i class="fa-solid fa-plus me-1"></i> Tạo Giải Đấu Mới
+        </a>
+    </div>
+</div>
+
+<!-- Bộ lọc tìm kiếm -->
+<div class="card card-custom mb-4">
+    <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <input type="text" id="keyword" class="form-control" placeholder="Tìm theo tên giải, mã giải...">
+            </div>
+            <div class="col-md-3">
+                <select id="statusFilter" class="form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="SapDienRa">Sắp diễn ra</option>
+                    <option value="DangDienRa">Đang diễn ra</option>
+                    <option value="KetThuc">Đã kết thúc</option>
+                    <option value="Huy">Đã hủy</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="number" id="yearFilter" class="form-control" placeholder="Năm (VD: 2026)">
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="button" class="btn btn-primary flex-grow-1" onclick="loadData(1)">
+                    <i class="fa-solid fa-filter me-1"></i> Lọc
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="resetFilter()" title="Làm mới">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng dữ liệu Giải đấu -->
+<div class="card card-custom">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tblGiaiDau">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width: 50px;">STT</th>
+                        <th>Thông Tin Giải Đấu</th>
+                        <th>Thời Gian Tổ Chức</th>
+                        <th>Hạn Đăng Ký</th>
+                        <th>Trạng Thái</th>
+                        <th class="text-end pe-3" style="width: 250px;">Điều Hành</th>
+                    </tr>
+                </thead>
+                <tbody id="tblBody">
+                    <tr><td colspan="6" class="text-center py-5 text-muted">Đang tải danh sách giải đấu...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-3">
+        <div class="text-muted small" id="paginationInfo">Hiển thị 0 trên 0 giải đấu</div>
+        <ul class="pagination pagination-sm mb-0" id="paginationList"></ul>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+
+        $(document).ready(function () {
+            loadData(1);
+
+            $('#keyword').on('keypress', function (e) {
+                if (e.which === 13) loadData(1);
+            });
+
+            $('#statusFilter, #yearFilter').on('change', function () {
+                loadData(1);
+            });
+        });
+
+        function loadData(page) {
+            currentPage = page;
+            const keyword = $('#keyword').val().trim();
+            const status = $('#statusFilter').val();
+
+            $.ajax({
+                url: '/Manager/GiaiDau/GetPagedData',
+                type: 'GET',
+                data: {
+                    pageIndex: page,
+                    pageSize: pageSize,
+                    keyword: keyword || undefined,
+                    trangThai: status || undefined
+                },
+                success: function (res) {
+                    if (res.success && res.data) {
+                        renderTable(res.data);
+                    }
+                }
+            });
+        }
+
+        function renderTable(data) {
+            const items = data.items || [];
+            if (items.length === 0) {
+                $('#tblBody').html('<tr><td colspan="6" class="text-center py-5 text-muted">Chưa có giải đấu nào.</td></tr>');
+                $('#paginationInfo').text('Hiển thị 0 trên 0 giải đấu');
+                $('#paginationList').empty();
+                return;
+            }
+
+            let html = '';
+            const start = (data.pageIndex - 1) * data.pageSize;
+
+            $.each(items, function (i, item) {
+                const stt = start + i + 1;
+                const statusBadge = getStatusBadge(item.trangThai);
+                const startDate = formatDate(item.ngayBatDau);
+                const endDate = formatDate(item.ngayKetThuc);
+                const deadline = item.hanDangKy ? formatDate(item.hanDangKy, true) : 'Không giới hạn';
+
+                html += `
+                    <tr>
+                        <td class="ps-3 fw-bold text-muted">${stt}</td>
+                        <td>
+                            <div class="fw-bold text-dark">${escapeHtml(item.ten)}</div>
+                            <small class="text-muted">
+                                <span class="badge bg-light text-secondary border">Mã: ${escapeHtml(item.ma)}</span> 
+                                ${item.diaDiem ? `<span class="ms-1"><i class="fa-solid fa-location-dot me-1"></i>${escapeHtml(item.diaDiem)}</span>` : ''}
+                            </small>
+                        </td>
+                        <td><small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>${startDate} - ${endDate}</small></td>
+                        <td><small class="text-danger fw-semibold">${deadline}</small></td>
+                        <td>${statusBadge}</td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <a href="/Manager/DangKyThiDau?giaiDauId=${item.id}" class="btn btn-outline-success" title="Duyệt Đăng Ký">
+                                    <i class="fa-solid fa-users me-1"></i>Đăng Ký
+                                </a>
+                                <a href="/Manager/LichThiDau?giaiDauId=${item.id}" class="btn btn-outline-primary" title="Xếp Lịch">
+                                    <i class="fa-solid fa-calendar-check me-1"></i>Lịch
+                                </a>
+                                <a href="/Manager/GiaiDau/Edit/${item.id}" class="btn btn-light border" title="Chỉnh sửa giải đấu & môn thi">
+                                    <i class="fa-solid fa-pen-to-square text-secondary"></i>
+                                </a>
+                                <button type="button" class="btn btn-light border" title="Xóa giải đấu" onclick="deleteItem(${item.id}, '${escapeHtml(item.ten)}')">
+                                    <i class="fa-solid fa-trash text-danger"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#tblBody').html(html);
+
+            const total = data.totalCount || 0;
+            const from = total === 0 ? 0 : start + 1;
+            const to = Math.min(start + data.pageSize, total);
+            $('#paginationInfo').text(`Hiển thị ${from} - ${to} trên tổng số ${total} giải đấu`);
+
+            renderPagination(data.pageIndex, data.totalPages);
+        }
+
+        function getStatusBadge(status) {
+            switch (status) {
+                case 'SapDienRa':
+                case 0:
+                    return '<span class="badge bg-primary-subtle text-primary border badge-status">Sắp diễn ra</span>';
+                case 'DangDienRa':
+                case 1:
+                    return '<span class="badge bg-success-subtle text-success border badge-status">Đang diễn ra</span>';
+                case 'KetThuc':
+                case 2:
+                    return '<span class="badge bg-secondary-subtle text-secondary border badge-status">Đã kết thúc</span>';
+                default:
+                    return `<span class="badge bg-light text-dark border badge-status">${status}</span>`;
+            }
+        }
+
+        function renderPagination(current, totalPages) {
+            if (totalPages <= 1) {
+                $('#paginationList').empty();
+                return;
+            }
+
+            let pagHtml = '';
+            pagHtml += `<li class="page-item ${current === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadData(${current - 1})">&laquo;</a>
+            </li>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= current - 2 && i <= current + 2)) {
+                    pagHtml += `<li class="page-item ${i === current ? 'active' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadData(${i})">${i}</a>
+                    </li>`;
+                }
+            }
+
+            pagHtml += `<li class="page-item ${current === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadData(${current + 1})">&raquo;</a>
+            </li>`;
+
+            $('#paginationList').html(pagHtml);
+        }
+
+        function deleteItem(id, name) {
+            SportApp.confirm('Xóa Giải Đấu?', `Bạn có chắc muốn xóa giải đấu "${name}" không?`, function () {
+                $.post('/Manager/GiaiDau/Delete', { id: id }, function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã xóa giải đấu thành công!');
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể xóa giải đấu.', 'error');
+                    }
+                });
+            });
+        }
+
+        function resetFilter() {
+            $('#keyword').val('');
+            $('#statusFilter').val('');
+            $('#yearFilter').val('');
+            loadData(1);
+        }
+
+        function formatDate(str, withTime = false) {
+            if (!str) return '-';
+            const d = new Date(str);
+            if (isNaN(d.getTime())) return str;
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            if (withTime) {
+                const h = String(d.getHours()).padStart(2, '0');
+                const m = String(d.getMinutes()).padStart(2, '0');
+                return `${day}/${month}/${year} ${h}:${m}`;
+            }
+            return `${day}/${month}/${year}`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div>').text(text).html();
+        }
+    </script>
+}

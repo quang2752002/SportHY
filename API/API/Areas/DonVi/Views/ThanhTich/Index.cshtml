@@ -1,0 +1,232 @@
+@{
+    ViewData["Title"] = "Bảng Xếp Hạng & Huy Chương";
+    var currentUnit = ViewBag.CurrentDonVi as DonViDto;
+    var tournaments = ViewBag.Tournaments as List<GiaiDauDto> ?? new();
+    int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
+    var ranking = ViewBag.Ranking as List<API.Areas.DonVi.Controllers.MedalRankingItem> ?? new();
+    var myMedals = ViewBag.MyMedals as List<API.Areas.DonVi.Controllers.UnitMedalDetail> ?? new();
+    var myStat = ViewBag.MyStat as API.Areas.DonVi.Controllers.MedalRankingItem;
+    int myRank = ViewBag.MyRank is int r ? r : 0;
+}
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-trophy text-warning me-2"></i> Bảng Xếp Hạng & Huy Chương
+            </h4>
+            <p class="text-muted small mb-0">
+                Đơn vị: <span class="fw-semibold text-emerald">@(currentUnit?.Ten ?? "Đoàn VĐV")</span> • Theo dõi thành tích thi đấu và thứ hạng của đoàn
+            </p>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card-custom p-3">
+        <form method="get" action="/DonVi/ThanhTich">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold mb-1">Chọn giải đấu xem thành tích</label>
+                    <select name="giaiDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @foreach (var t in tournaments)
+                        {
+                            if (selectedGiaiDauId == t.Id)
+                            {
+                                <option value="@t.Id" selected="selected">@t.Ten</option>
+                            }
+                            else
+                            {
+                                <option value="@t.Id">@t.Ten</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Thành Tích Nổi Bật Của Đoàn -->
+    <div class="card-custom p-4" style="background: linear-gradient(135deg, #064e3b 0%, #0f766e 100%); color: white;">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4 text-center text-md-start border-end border-white border-opacity-10 pe-md-4">
+                <div class="small text-white-50 text-uppercase fw-semibold mb-1" style="letter-spacing: 0.05em;">Thứ hạng hiện tại</div>
+                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2">
+                    <i class="fa-solid fa-medal fs-1 text-warning"></i>
+                    <div>
+                        <div class="fs-2 fw-bold text-white">@(myRank > 0 ? $"Hạng #{myRank}" : "Chưa có huy chương")</div>
+                        <small class="text-white-50">@(currentUnit?.Ten ?? "Đoàn VĐV")</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8 ps-md-4">
+                <div class="row g-2 text-center">
+                    <div class="col-3">
+                        <div class="p-2.5 rounded-3 bg-white bg-opacity-10">
+                            <i class="fa-solid fa-award fs-4" style="color: #fbbf24;"></i>
+                            <div class="fw-bold fs-4 text-white mt-1">@(myStat?.Gold ?? 0)</div>
+                            <small class="text-white-50" style="font-size: 11px;">Huy chương Vàng</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-2.5 rounded-3 bg-white bg-opacity-10">
+                            <i class="fa-solid fa-award fs-4" style="color: #cbd5e1;"></i>
+                            <div class="fw-bold fs-4 text-white mt-1">@(myStat?.Silver ?? 0)</div>
+                            <small class="text-white-50" style="font-size: 11px;">Huy chương Bạc</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-2.5 rounded-3 bg-white bg-opacity-10">
+                            <i class="fa-solid fa-award fs-4" style="color: #d97706;"></i>
+                            <div class="fw-bold fs-4 text-white mt-1">@(myStat?.Bronze ?? 0)</div>
+                            <small class="text-white-50" style="font-size: 11px;">Huy chương Đồng</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-2.5 rounded-3 bg-white bg-opacity-15 border border-white border-opacity-25">
+                            <i class="fa-solid fa-trophy fs-4 text-warning"></i>
+                            <div class="fw-bold fs-4 text-warning mt-1">@(myStat?.Total ?? 0)</div>
+                            <small class="text-white-50" style="font-size: 11px;">Tổng cộng</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2 Column Layout -->
+    <div class="row g-4">
+        <!-- Cột 1: Bảng tổng sắp toàn giải -->
+        <div class="col-lg-7">
+            <div class="card-custom p-4">
+                <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">
+                    <i class="fa-solid fa-list-ol text-primary me-2"></i> Bảng Tổng Sắp Huy Chương Toàn Giải
+                </h5>
+
+                @if (ranking.Count == 0)
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-medal fs-1 opacity-25 mb-2"></i>
+                        <p class="mb-0">Giải đấu này chưa có huy chương nào được trao.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr style="font-size: 12px; text-transform: uppercase;">
+                                    <th class="ps-3 py-3" style="width: 50px;">Hạng</th>
+                                    <th>Đơn Vị / Đoàn</th>
+                                    <th class="text-center" style="width: 70px;">
+                                        <i class="fa-solid fa-award text-warning" title="Vàng"></i>
+                                    </th>
+                                    <th class="text-center" style="width: 70px;">
+                                        <i class="fa-solid fa-award text-secondary" title="Bạc"></i>
+                                    </th>
+                                    <th class="text-center" style="width: 70px;">
+                                        <i class="fa-solid fa-award text-danger" title="Đồng"></i>
+                                    </th>
+                                    <th class="text-center pe-3" style="width: 70px;">Tổng</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 13px;">
+                                @for (int i = 0; i < ranking.Count; i++)
+                                {
+                                    var item = ranking[i];
+                                    string rowClass = item.IsCurrentUnit ? "table-success fw-semibold" : "";
+                                    int rankNum = i + 1;
+
+                                    <tr class="@rowClass">
+                                        <td class="ps-3">
+                                            @if (rankNum == 1)
+                                            {
+                                                <span class="badge rounded-circle p-2" style="background-color: #fbbf24; color: #78350f; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;">1</span>
+                                            }
+                                            else if (rankNum == 2)
+                                            {
+                                                <span class="badge rounded-circle p-2" style="background-color: #e2e8f0; color: #334155; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;">2</span>
+                                            }
+                                            else if (rankNum == 3)
+                                            {
+                                                <span class="badge rounded-circle p-2" style="background-color: #fed7aa; color: #7c2d12; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;">3</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted font-monospace ps-1">@rankNum</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span>@item.TenDonVi</span>
+                                                @if (item.IsCurrentUnit)
+                                                {
+                                                    <span class="badge bg-success" style="font-size: 10px;">Đoàn mình</span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td class="text-center fw-bold text-dark">@item.Gold</td>
+                                        <td class="text-center fw-bold text-dark">@item.Silver</td>
+                                        <td class="text-center fw-bold text-dark">@item.Bronze</td>
+                                        <td class="text-center pe-3 fw-bold text-primary">@item.Total</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Cột 2: Danh sách chi tiết huy chương của đoàn -->
+        <div class="col-lg-5">
+            <div class="card-custom p-4">
+                <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">
+                    <i class="fa-solid fa-award text-success me-2"></i> Huy Chương Đoàn Đã Đạt Được
+                </h5>
+
+                @if (myMedals.Count == 0)
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-trophy fs-1 opacity-25 mb-2"></i>
+                        <p class="mb-1">Đoàn chưa đạt được huy chương nào trong giải đấu này.</p>
+                        <small>Cố gắng thi đấu hết mình ở các trận tiếp theo!</small>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-2.5">
+                        @foreach (var medal in myMedals)
+                        {
+                            bool isGold = medal.XepHang == 1 || medal.LoaiHuyChuong.Contains("Vàng");
+                            bool isSilver = medal.XepHang == 2 || medal.LoaiHuyChuong.Contains("Bạc");
+
+                            string medalIconColor = isGold ? "#fbbf24" : (isSilver ? "#94a3b8" : "#d97706");
+                            string badgeClass = isGold ? "bg-warning text-dark" : (isSilver ? "bg-secondary text-white" : "bg-dark text-white");
+
+                            <div class="p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3 overflow-hidden pe-2">
+                                    <i class="fa-solid fa-award fs-2 flex-shrink-0" style="color: @medalIconColor;"></i>
+                                    <div class="overflow-hidden">
+                                        <h6 class="fw-bold text-dark mb-0 text-truncate" title="@medal.TenDangKy">@medal.TenDangKy</h6>
+                                        <small class="text-muted d-block">Môn: <strong class="text-secondary">@medal.TenMonTheThao</strong></small>
+                                        @if (medal.NgayTrao.HasValue)
+                                        {
+                                            <small class="text-muted" style="font-size: 11px;">
+                                                <i class="fa-solid fa-calendar-check me-1"></i> @medal.NgayTrao.Value.ToString("dd/MM/yyyy")
+                                            </small>
+                                        }
+                                    </div>
+                                </div>
+                                <span class="badge @badgeClass rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0" style="font-size: 11px;">
+                                    @medal.LoaiHuyChuong
+                                </span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

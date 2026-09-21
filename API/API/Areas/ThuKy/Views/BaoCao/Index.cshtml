@@ -1,0 +1,326 @@
+@{
+    ViewData["Title"] = "Tổng Hợp Báo Cáo & Xuất Dữ Liệu Excel";
+}
+
+<div class="d-flex flex-column gap-3">
+    <!-- Header & Actions -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 d-print-none">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-file-excel text-success me-2"></i> Tổng Hợp Báo Cáo & Xuất Dữ Liệu Excel
+            </h4>
+            <p class="text-muted small mb-0">Hệ thống báo cáo toàn diện của Ban Thư ký: Bảng tổng sắp huy chương, tiến độ và kết quả giải đấu</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="refreshCurrentReport()">
+                <i class="fa-solid fa-rotate me-1"></i> Làm mới báo cáo
+            </button>
+            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="window.print()">
+                <i class="fa-solid fa-print me-1"></i> In Báo Cáo
+            </button>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="card card-custom p-2 d-print-none">
+        <ul class="nav nav-pills nav-fill" id="reportTabs">
+            <li class="nav-item">
+                <button class="nav-link active py-2 fw-semibold" onclick="switchReportTab('huychuong')">
+                    <i class="fa-solid fa-medal text-warning me-1.5"></i> Bảng Tổng Sắp Huy Chương
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link py-2 fw-semibold" onclick="switchReportTab('tiendo')">
+                    <i class="fa-solid fa-bars-progress text-primary me-1.5"></i> Báo Cáo Tiến Độ Các Môn
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link py-2 fw-semibold" onclick="switchReportTab('ketqua')">
+                    <i class="fa-solid fa-square-check text-success me-1.5"></i> Báo Cáo Kết Quả Toàn Giải
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- TAB 1: BẢNG TỔNG SẮP HUY CHƯƠNG -->
+    <div id="tabHuyChuongContent" class="report-section">
+        <div class="card card-custom">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-award text-warning me-2"></i> BẢNG TỔNG SẮP HUY CHƯƠNG TOÀN ĐOÀN
+                    </h5>
+                    <small class="text-muted" id="subTitleHuyChuong">Giải đấu thể thao</small>
+                </div>
+                <div class="d-flex gap-2 d-print-none">
+                    <a href="/ThuKy/BaoCao/ExportExcel?loaiBaoCao=HuyChuong" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm">
+                        <i class="fa-solid fa-file-csv me-1"></i> Tải Excel (.csv)
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-center" id="tableHuyChuong">
+                        <thead class="table-light small">
+                            <tr>
+                                <th style="width: 70px;">Hạng</th>
+                                <th class="text-start">Đoàn / Đơn Vị Tham Dự</th>
+                                <th style="width: 110px;" class="text-warning fw-bold"><i class="fa-solid fa-medal me-1"></i> Vàng</th>
+                                <th style="width: 110px;" class="text-secondary fw-bold"><i class="fa-solid fa-medal me-1"></i> Bạc</th>
+                                <th style="width: 110px;" class="text-danger fw-bold"><i class="fa-solid fa-medal me-1"></i> Đồng</th>
+                                <th style="width: 130px;" class="fw-bold">Tổng Huy Chương</th>
+                                <th style="width: 110px;" class="fw-bold text-primary">Tổng Điểm</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyHuyChuong">
+                            <tr>
+                                <td colspan="7" class="py-5 text-center text-muted">
+                                    <div class="spinner-border spinner-border-sm text-primary"></div> Đang tải bảng tổng sắp...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: BÁO CÁO TIẾN ĐỘ CÁC MÔN -->
+    <div id="tabTienDoContent" class="report-section d-none">
+        <div class="card card-custom">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-bars-progress text-primary me-2"></i> BÁO CÁO TIẾN ĐỘ THI ĐẤU CÁC MÔN
+                    </h5>
+                    <small class="text-muted" id="subTitleTienDo">Tỷ lệ hoàn thành theo thời gian thực</small>
+                </div>
+                <div class="d-flex gap-2 d-print-none">
+                    <a href="/ThuKy/BaoCao/ExportExcel?loaiBaoCao=TienDo" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm">
+                        <i class="fa-solid fa-file-csv me-1"></i> Tải Excel (.csv)
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-center">
+                        <thead class="table-light small">
+                            <tr>
+                                <th style="width: 50px;">STT</th>
+                                <th class="text-start">Môn Thể Thao</th>
+                                <th>Số Nội Dung</th>
+                                <th>Tổng Trận</th>
+                                <th class="text-success">Đã Đấu</th>
+                                <th class="text-warning">Đang Đấu</th>
+                                <th class="text-secondary">Chưa Đấu</th>
+                                <th>Tiến Độ Hoàn Thành</th>
+                                <th>Huy Chương</th>
+                                <th>Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyTienDo"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: BÁO CÁO KẾT QUẢ TOÀN GIẢI -->
+    <div id="tabKetQuaContent" class="report-section d-none">
+        <div class="card card-custom">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-square-check text-success me-2"></i> BÁO CÁO KẾT QUẢ TOÀN BỘ TRẬN ĐẤU
+                    </h5>
+                    <small class="text-muted">Danh sách đối đầu và tỉ số chính thức</small>
+                </div>
+                <div class="d-flex gap-2 d-print-none">
+                    <a href="/ThuKy/BaoCao/ExportExcel?loaiBaoCao=KetQua" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm">
+                        <i class="fa-solid fa-file-csv me-1"></i> Tải Excel (.csv)
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 60px;">Trận</th>
+                                <th>Môn / Vòng</th>
+                                <th>Đội 1 (Nhà)</th>
+                                <th class="text-center">Tỉ Số</th>
+                                <th>Đội 2 (Khách)</th>
+                                <th>Đội Thắng</th>
+                                <th>Xác Nhận Thư Ký</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyKetQua"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var activeTab = 'huychuong';
+
+        $(document).ready(function () {
+            // Check query param
+            var urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('tab')) {
+                var t = urlParams.get('tab');
+                if (t === 'tiendo' || t === 'ketqua') {
+                    switchReportTab(t);
+                    return;
+                }
+            }
+            loadBaoCaoHuyChuong();
+        });
+
+        function switchReportTab(tab) {
+            activeTab = tab;
+            $('#reportTabs .nav-link').removeClass('active');
+            $(event.target).closest('.nav-link').addClass('active');
+
+            $('.report-section').addClass('d-none');
+            if (tab === 'huychuong') {
+                $('#tabHuyChuongContent').removeClass('d-none');
+                loadBaoCaoHuyChuong();
+            } else if (tab === 'tiendo') {
+                $('#tabTienDoContent').removeClass('d-none');
+                loadBaoCaoTienDo();
+            } else if (tab === 'ketqua') {
+                $('#tabKetQuaContent').removeClass('d-none');
+                loadBaoCaoKetQua();
+            }
+        }
+
+        function refreshCurrentReport() {
+            if (activeTab === 'huychuong') loadBaoCaoHuyChuong();
+            else if (activeTab === 'tiendo') loadBaoCaoTienDo();
+            else if (activeTab === 'ketqua') loadBaoCaoKetQua();
+        }
+
+        function loadBaoCaoHuyChuong() {
+            var gId = $('#headerSelectGiaiDau').val();
+            $.ajax({
+                url: '/ThuKy/BaoCao/GetBaoCaoHuyChuong',
+                type: 'GET',
+                data: { giaiDauId: gId },
+                success: function (res) {
+                    if (!res.success || !res.data) return;
+                    var d = res.data;
+                    $('#subTitleHuyChuong').text(d.tenGiaiDau);
+
+                    var html = '';
+                    if (d.bangXepHang.length === 0) {
+                        html = '<tr><td colspan="7" class="py-5 text-center text-muted">Chưa có dữ liệu huy chương.</td></tr>';
+                    } else {
+                        d.bangXepHang.forEach(function (r) {
+                            var rankBadge = r.xepHang === 1 ? '<span class="badge bg-warning text-dark fs-6 px-2.5">1</span>' :
+                                            r.xepHang === 2 ? '<span class="badge bg-secondary text-white fs-6 px-2.5">2</span>' :
+                                            r.xepHang === 3 ? '<span class="badge bg-danger fs-6 px-2.5">3</span>' : `<span class="badge bg-light text-muted border px-2">${r.xepHang}</span>`;
+                            html += `
+                                <tr>
+                                    <td>${rankBadge}</td>
+                                    <td class="text-start fw-bold text-dark">${r.tenDonVi}</td>
+                                    <td class="fw-bold text-warning fs-6">${r.soHuyChuongVang}</td>
+                                    <td class="fw-bold text-secondary fs-6">${r.soHuyChuongBac}</td>
+                                    <td class="fw-bold text-danger fs-6">${r.soHuyChuongDong}</td>
+                                    <td class="fw-bold text-dark fs-6">${r.tongSoHuyChuong}</td>
+                                    <td class="fw-bold text-primary fs-6">${r.tongDiem}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    $('#tbodyHuyChuong').html(html);
+                }
+            });
+        }
+
+        function loadBaoCaoTienDo() {
+            var gId = $('#headerSelectGiaiDau').val();
+            $.ajax({
+                url: '/ThuKy/BaoCao/GetBaoCaoTongHop',
+                type: 'GET',
+                data: { giaiDauId: gId },
+                success: function (res) {
+                    if (!res.success || !res.data) return;
+                    var d = res.data;
+                    $('#subTitleTienDo').text(d.tenGiaiDau);
+
+                    var html = '';
+                    if (d.tienDoMonList.length === 0) {
+                        html = '<tr><td colspan="10" class="py-5 text-center text-muted">Chưa có dữ liệu tiến độ môn.</td></tr>';
+                    } else {
+                        d.tienDoMonList.forEach(function (m, idx) {
+                            html += `
+                                <tr>
+                                    <td>${idx + 1}</td>
+                                    <td class="text-start fw-bold text-dark">${m.tenMon}</td>
+                                    <td>${m.tongSoNoiDung}</td>
+                                    <td class="fw-bold">${m.tongSoTran}</td>
+                                    <td class="text-success fw-bold">${m.soTranDaHoanThanh}</td>
+                                    <td class="text-warning">${m.soTranDangDienRa}</td>
+                                    <td class="text-secondary">${m.soTranChuaDau}</td>
+                                    <td>
+                                        <div class="fw-bold text-primary">${m.tiLeHoanThanh}%</div>
+                                        <div class="progress" style="height: 5px;">
+                                            <div class="progress-bar ${m.tiLeHoanThanh >= 100 ? 'bg-success' : 'bg-primary'}" style="width: ${m.tiLeHoanThanh}%;"></div>
+                                        </div>
+                                    </td>
+                                    <td class="fw-bold text-warning">${m.soHuyChuongDaTrao}</td>
+                                    <td><span class="badge ${m.tiLeHoanThanh >= 100 ? 'bg-success' : 'bg-primary'}">${m.trangThai}</span></td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    $('#tbodyTienDo').html(html);
+                }
+            });
+        }
+
+        function loadBaoCaoKetQua() {
+            var gId = $('#headerSelectGiaiDau').val();
+            $.ajax({
+                url: '/ThuKy/KetQua/GetDanhSach',
+                type: 'GET',
+                data: { giaiDauId: gId },
+                success: function (res) {
+                    if (!res.success || !res.data) return;
+                    var html = '';
+                    if (res.data.length === 0) {
+                        html = '<tr><td colspan="7" class="py-5 text-center text-muted">Chưa có kết quả trận đấu nào.</td></tr>';
+                    } else {
+                        res.data.forEach(function (k) {
+                            var statusBadge = k.trangThaiXacNhan === 'DaXacNhan'
+                                ? '<span class="badge bg-success bg-opacity-10 text-success">Đã phê duyệt</span>'
+                                : (k.trangThaiXacNhan === 'CanKiemTraLai' 
+                                    ? '<span class="badge bg-danger bg-opacity-10 text-danger">Cần kiểm tra</span>'
+                                    : '<span class="badge bg-warning text-dark">Chờ duyệt</span>');
+
+                            html += `
+                                <tr>
+                                    <td class="fw-bold text-primary">#${k.soTran}</td>
+                                    <td>
+                                        <div class="fw-semibold">${k.tenMonTheThao}</div>
+                                        <small class="text-muted">${k.tenVongDau || ''}</small>
+                                    </td>
+                                    <td class="fw-semibold">${k.tenDoi1}</td>
+                                    <td class="text-center fw-bold text-primary fs-6">${k.tySoDoi1} - ${k.tySoDoi2}</td>
+                                    <td class="fw-semibold">${k.tenDoi2}</td>
+                                    <td class="fw-bold text-success">${k.doiThang === '1' ? k.tenDoi1 : (k.doiThang === '2' ? k.tenDoi2 : '--')}</td>
+                                    <td>${statusBadge}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    $('#tbodyKetQua').html(html);
+                }
+            });
+        }
+    </script>
+}

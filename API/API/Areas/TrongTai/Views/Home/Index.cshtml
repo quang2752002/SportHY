@@ -1,0 +1,424 @@
+@model List<TranDauDto>
+@{
+    ViewData["Title"] = "Nhiệm Vụ Phân Công Trọng Tài";
+    var currentRef = ViewBag.CurrentReferee as TrongTaiDto;
+    var tournaments = ViewBag.Tournaments as List<GiaiDauDto> ?? new();
+    int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
+    string filterScope = ViewBag.FilterScope as string ?? "my_matches";
+}
+
+<div class="d-flex flex-column gap-4">
+    <!-- Banner Chào Mừng -->
+    <div class="rounded-4 p-4 p-md-5 text-white position-relative overflow-hidden shadow-sm"
+         style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #451a03 100%);">
+        <div class="position-absolute end-0 top-0 bottom-0 d-none d-md-flex align-items-center justify-content-end pe-5 opacity-10"
+             style="pointer-events: none;">
+            <i class="fa-solid fa-flag" style="font-size: 180px; color: #fbbf24;"></i>
+        </div>
+
+        <div class="position-relative" style="z-index: 2;">
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3 border"
+                 style="background-color: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); font-size: 12px;">
+                <i class="fa-solid fa-shield-halved text-warning"></i>
+                <span class="fw-semibold text-white">Phân hệ Điều Hành & Trọng Tài Thi Đấu</span>
+            </div>
+
+            <h2 class="fw-bold mb-2 fs-3 fs-md-2">
+                Xin chào, Trọng tài @(currentRef?.HoTen ?? User.Identity?.Name)!
+            </h2>
+            <p class="text-white-50 mb-0 small" style="max-width: 680px; line-height: 1.6;">
+                Cấp bậc: <strong class="text-warning">@(currentRef?.CapBac ?? "Trọng tài Quốc gia")</strong> • Theo dõi các trận đấu được ban tổ chức phân công, cập nhật tỷ số trực tiếp và lập biên bản thi đấu chính thức.
+            </p>
+        </div>
+    </div>
+
+    <!-- 4 Thẻ Thống Kê Nhanh -->
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <div class="card-custom p-3.5 p-3 d-flex align-items-center gap-3">
+                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width: 48px; height: 48px; background-color: #fffbeb; color: #d97706;">
+                    <i class="fa-solid fa-calendar-check fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block" style="font-size: 11px; font-weight: 500;">
+                        Trận được phân công
+                    </span>
+                    <span class="fw-bold fs-4 text-dark">@ViewBag.MyAssignedCount</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card-custom p-3.5 p-3 d-flex align-items-center gap-3">
+                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width: 48px; height: 48px; background-color: #fef2f2; color: #dc2626;">
+                    <i class="fa-solid fa-circle-play fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block" style="font-size: 11px; font-weight: 500;">
+                        Đang diễn ra
+                    </span>
+                    <span class="fw-bold fs-4 text-danger">@ViewBag.LiveMatchesCount</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card-custom p-3.5 p-3 d-flex align-items-center gap-3">
+                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width: 48px; height: 48px; background-color: #ecfdf5; color: #059669;">
+                    <i class="fa-solid fa-circle-check fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block" style="font-size: 11px; font-weight: 500;">
+                        Đã hoàn thành
+                    </span>
+                    <span class="fw-bold fs-4 text-success">@ViewBag.FinishedCount</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card-custom p-3.5 p-3 d-flex align-items-center gap-3">
+                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width: 48px; height: 48px; background-color: #eff6ff; color: #2563eb;">
+                    <i class="fa-solid fa-clock fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block" style="font-size: 11px; font-weight: 500;">
+                        Chưa bắt đầu
+                    </span>
+                    <span class="fw-bold fs-4 text-primary">@ViewBag.UpcomingCount</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card-custom p-3">
+        <form method="get" action="/TrongTai/Home" id="filterForm">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold mb-1">Chọn giải đấu</label>
+                    <select name="giaiDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @foreach (var t in tournaments)
+                        {
+                            if (selectedGiaiDauId == t.Id)
+                            {
+                                <option value="@t.Id" selected="selected">@t.Ten</option>
+                            }
+                            else
+                            {
+                                <option value="@t.Id">@t.Ten</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold mb-1">Phạm vi nhiệm vụ</label>
+                    <select name="filterScope" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @if (filterScope == "my_matches")
+                        {
+                            <option value="my_matches" selected="selected">⭐ Trận tôi được phân công (@ViewBag.MyAssignedCount trận)</option>
+                            <option value="all">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
+                        }
+                        else
+                        {
+                            <option value="my_matches">⭐ Trận tôi được phân công (@ViewBag.MyAssignedCount trận)</option>
+                            <option value="all" selected="selected">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold mb-1">Tìm kiếm trận đấu</label>
+                    <input type="text" id="filterKeyword" class="form-control form-control-sm" placeholder="Tìm đội, sân bãi, môn thi..." oninput="filterMatchesClient()" />
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @if (ViewBag.NoMyMatchesNotice == true)
+    {
+        <div class="alert alert-info border-info d-flex align-items-center justify-content-between py-2.5 px-3 mb-0">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-circle-info fs-5"></i>
+                <span>Bạn chưa được gán phân công cụ thể trong giải này. Bấm vào dưới đây để xem toàn bộ danh sách trận đấu.</span>
+            </div>
+            <a href="/TrongTai/Home?giaiDauId=@selectedGiaiDauId&filterScope=all" class="btn btn-sm btn-info text-white rounded-pill px-3">
+                Xem toàn bộ trận đấu
+            </a>
+        </div>
+    }
+
+    <!-- Match Cards Grid -->
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="card-custom p-5 text-center text-muted">
+            <i class="fa-solid fa-whistle fs-1 mb-3 opacity-25"></i>
+            <h5>Chưa có lịch phân công trận đấu</h5>
+            <p class="small mb-0">Hiện tại chưa có trận đấu nào thỏa điều kiện lọc trong giải đấu này.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3" id="matchListContainer">
+            @foreach (var m in Model)
+            {
+                // Phân tích tỷ số từ GhiChu JSON nếu có
+                int s1 = 0, s2 = 0;
+                string customNotes = "";
+                if (!string.IsNullOrEmpty(m.GhiChu) && m.GhiChu.StartsWith("{"))
+                {
+                    try
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(m.GhiChu);
+                        if (doc.RootElement.TryGetProperty("score1", out var p1)) s1 = p1.GetInt32();
+                        if (doc.RootElement.TryGetProperty("score2", out var p2)) s2 = p2.GetInt32();
+                        if (doc.RootElement.TryGetProperty("notes", out var pn)) customNotes = pn.GetString() ?? "";
+                    }
+                    catch { }
+                }
+
+                string statusBadge = m.TrangThai switch
+                {
+                    "DangDau" or "DangDienRa" => "<span class=\"badge bg-danger rounded-pill px-2.5 py-1\"><i class=\"fa-solid fa-circle-play me-1\"></i>Đang diễn ra</span>",
+                    "KetThuc" or "DaKetThuc" => "<span class=\"badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1\"><i class=\"fa-solid fa-flag-checkered me-1\"></i>Đã kết thúc</span>",
+                    _ => "<span class=\"badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2.5 py-1\"><i class=\"fa-solid fa-clock me-1\"></i>Chưa bắt đầu</span>"
+                };
+
+                <div class="col-lg-6 match-card-item"
+                     data-text="@($"{m.TenTran} {m.TenMonTheThao} {m.TenVongDau} {m.TenDoi1} {m.TenDoi2} {m.TenSanDau}".ToLower())">
+                    <div class="card-custom h-100 p-3.5 p-3 d-flex flex-column">
+                        <!-- Card Header -->
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-dark rounded-pill px-2 py-1 font-monospace" style="font-size: 11px;">
+                                    Trận @m.SoTran
+                                </span>
+                                <span class="fw-bold text-dark small">@m.TenMonTheThao</span>
+                                @if (!string.IsNullOrEmpty(m.TenVongDau))
+                                {
+                                    <span class="badge bg-light text-secondary border small">@m.TenVongDau</span>
+                                }
+                            </div>
+                            <div>
+                                @Html.Raw(statusBadge)
+                            </div>
+                        </div>
+
+                        <!-- Team 1 vs Team 2 with Score -->
+                        <div class="row g-2 align-items-center text-center my-auto py-2">
+                            <!-- Đội 1 -->
+                            <div class="col-5">
+                                <div class="p-2.5 rounded-3 bg-light border">
+                                    <h6 class="fw-bold text-dark mb-1 text-truncate" title="@(m.TenDoi1 ?? "Đội 1")">
+                                        @(m.TenDoi1 ?? "Đội 1")
+                                    </h6>
+                                    <small class="text-muted text-truncate d-block" style="font-size: 11px;">
+                                        @(m.DonViDoi1 ?? "Đơn vị")
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Score / VS Box -->
+                            <div class="col-2">
+                                @if (m.TrangThai == "ChuaDau")
+                                {
+                                    <div class="rounded-circle bg-light border text-muted d-inline-flex align-items-center justify-content-center fw-bold"
+                                         style="width: 34px; height: 34px; font-size: 11px;">
+                                        VS
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="badge bg-dark fs-5 font-monospace px-2.5 py-1">
+                                        @s1 - @s2
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Đội 2 -->
+                            <div class="col-5">
+                                <div class="p-2.5 rounded-3 bg-light border">
+                                    <h6 class="fw-bold text-dark mb-1 text-truncate" title="@(m.TenDoi2 ?? "Đội 2")">
+                                        @(m.TenDoi2 ?? "Đội 2")
+                                    </h6>
+                                    <small class="text-muted text-truncate d-block" style="font-size: 11px;">
+                                        @(m.DonViDoi2 ?? "Đơn vị")
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Venue & Time -->
+                        <div class="d-flex flex-wrap align-items-center justify-content-between text-muted small my-2 py-2 border-top border-bottom" style="font-size: 12px;">
+                            <div>
+                                <i class="fa-solid fa-location-dot text-danger me-1"></i>
+                                <span>@(string.IsNullOrEmpty(m.TenSanDau) ? "Chưa xếp sân" : $"{m.TenSanDau} ({m.TenCumSan})")</span>
+                            </div>
+                            <div>
+                                <i class="fa-solid fa-clock text-primary me-1"></i>
+                                <span>@(m.ThoiGianDuKien.HasValue ? m.ThoiGianDuKien.Value.ToString("HH:mm - dd/MM/yyyy") : "Chưa định giờ")</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-wrap gap-2 pt-2 mt-auto">
+                            <a href="/TrongTai/KetQua?tranDauId=@m.Id&giaiDauId=@selectedGiaiDauId"
+                               class="btn btn-sm btn-referee-primary rounded-pill px-3 d-inline-flex align-items-center gap-1.5 flex-grow-1 justify-content-center">
+                                <i class="fa-solid fa-clipboard-list"></i>
+                                <span>Ghi Nhận Kết Quả</span>
+                            </a>
+                            <a href="/TrongTai/BienBan?tranDauId=@m.Id&giaiDauId=@selectedGiaiDauId"
+                               class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center gap-1.5 justify-content-center">
+                                <i class="fa-solid fa-file-signature"></i>
+                                <span>Biên Bản</span>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5"
+                                    title="Cập nhật nhanh"
+                                    onclick="openQuickScoreModal(@m.Id, '@(m.TenDoi1 ?? "Đội 1")', '@(m.TenDoi2 ?? "Đội 2")', @s1, @s2, '@m.TrangThai', '@customNotes')">
+                                <i class="fa-solid fa-bolt text-warning"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Modal Cập nhật nhanh tỷ số -->
+<div class="modal fade" id="quickScoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark py-2.5 px-3">
+                <h6 class="modal-title fw-bold">
+                    <i class="fa-solid fa-bolt me-1"></i> Cập Nhật Nhanh Tỷ Số Trận Đấu
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="quickScoreForm">
+                <input type="hidden" id="qsTranDauId" />
+                <div class="modal-body p-4">
+                    <div class="text-center mb-3">
+                        <span class="text-muted small">Cặp đấu:</span>
+                        <div class="fw-bold text-dark fs-6" id="qsMatchTitle">Đội 1 vs Đội 2</div>
+                    </div>
+
+                    <div class="row g-3 text-center align-items-center mb-3">
+                        <div class="col-5">
+                            <label class="form-label small fw-bold text-truncate d-block" id="qsTeam1Label">Đội 1</label>
+                            <input type="number" id="qsScore1" class="form-control text-center fs-3 fw-bold font-monospace" min="0" value="0" />
+                        </div>
+                        <div class="col-2 text-muted fw-bold fs-4">-</div>
+                        <div class="col-5">
+                            <label class="form-label small fw-bold text-truncate d-block" id="qsTeam2Label">Đội 2</label>
+                            <input type="number" id="qsScore2" class="form-control text-center fs-3 fw-bold font-monospace" min="0" value="0" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Trạng thái trận đấu</label>
+                        <select id="qsStatus" class="form-select">
+                            <option value="ChuaDau">Chưa bắt đầu</option>
+                            <option value="DangDau">Đang diễn ra (Live)</option>
+                            <option value="KetThuc">Đã kết thúc</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Ghi chú diễn biến</label>
+                        <textarea id="qsNotes" class="form-control" rows="2" placeholder="VD: Đội 1 thắng hiệp 1..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-sm btn-referee-primary px-3" id="btnSaveQuickScore">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Kết Quả
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let quickScoreModal = null;
+
+        $(document).ready(function () {
+            quickScoreModal = new bootstrap.Modal(document.getElementById('quickScoreModal'));
+
+            $('#quickScoreForm').on('submit', function (e) {
+                e.preventDefault();
+                saveQuickScore();
+            });
+        });
+
+        function filterMatchesClient() {
+            const kw = $('#filterKeyword').val().toLowerCase().trim();
+            $('.match-card-item').each(function () {
+                const text = $(this).data('text') || '';
+                if (!kw || text.includes(kw)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+
+        function openQuickScoreModal(id, team1, team2, s1, s2, status, notes) {
+            $('#qsTranDauId').val(id);
+            $('#qsMatchTitle').text(`${team1} VS ${team2}`);
+            $('#qsTeam1Label').text(team1);
+            $('#qsTeam2Label').text(team2);
+            $('#qsScore1').val(s1 || 0);
+            $('#qsScore2').val(s2 || 0);
+            $('#qsStatus').val(status || 'ChuaDau');
+            $('#qsNotes').val(notes || '');
+            quickScoreModal.show();
+        }
+
+        function saveQuickScore() {
+            const id = parseInt($('#qsTranDauId').val());
+            const payload = {
+                tranDauId: id,
+                score1: parseInt($('#qsScore1').val()) || 0,
+                score2: parseInt($('#qsScore2').val()) || 0,
+                trangThai: $('#qsStatus').val(),
+                ghiChu: $('#qsNotes').val().trim()
+            };
+
+            $('#btnSaveQuickScore').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Đang lưu...');
+
+            $.ajax({
+                url: '/TrongTai/Home/QuickUpdateScore',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    $('#btnSaveQuickScore').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Kết Quả');
+                    if (res.success) {
+                        quickScoreModal.hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu', 'error');
+                    }
+                },
+                error: function () {
+                    $('#btnSaveQuickScore').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Kết Quả');
+                    Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
+                }
+            });
+        }
+    </script>
+}

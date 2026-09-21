@@ -1,0 +1,208 @@
+@model List<TranDauDto>
+@{
+    ViewData["Title"] = "Lịch Thi Đấu Của Đoàn";
+    var currentUnit = ViewBag.CurrentDonVi as DonViDto;
+    var tournaments = ViewBag.Tournaments as List<GiaiDauDto> ?? new();
+    int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
+    string filterScope = ViewBag.FilterScope as string ?? "my_unit";
+    var unitRegIds = ViewBag.UnitRegIds as HashSet<int> ?? new();
+}
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-calendar-days text-success me-2"></i> Lịch Thi Đấu Của Đoàn
+            </h4>
+            <p class="text-muted small mb-0">
+                Đơn vị: <span class="fw-semibold text-emerald">@(currentUnit?.Ten ?? "Đoàn VĐV")</span> • Theo dõi lịch trình, sân đấu và đối thủ trong các trận đấu
+            </p>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card-custom p-3.5 p-3">
+        <form method="get" action="/DonVi/LichThiDau" id="filterForm">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold mb-1">Chọn giải đấu</label>
+                    <select name="giaiDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @foreach (var t in tournaments)
+                        {
+                            if (selectedGiaiDauId == t.Id)
+                            {
+                                <option value="@t.Id" selected="selected">@t.Ten</option>
+                            }
+                            else
+                            {
+                                <option value="@t.Id">@t.Ten</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold mb-1">Phạm vi xem lịch</label>
+                    <select name="filterScope" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @if (filterScope == "my_unit")
+                        {
+                            <option value="my_unit" selected="selected">⭐ Trận đấu của đoàn mình (@ViewBag.UnitMatchesCount trận)</option>
+                            <option value="all">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
+                        }
+                        else
+                        {
+                            <option value="my_unit">⭐ Trận đấu của đoàn mình (@ViewBag.UnitMatchesCount trận)</option>
+                            <option value="all" selected="selected">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold mb-1">Lọc nhanh trận đấu</label>
+                    <input type="text" id="quickSearchMatch" class="form-control form-control-sm" placeholder="Tìm đội, sân, môn thi..." oninput="filterClientMatches()" />
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Match List Grid -->
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="card-custom p-5 text-center text-muted">
+            <i class="fa-solid fa-calendar-xmark fs-1 mb-3 opacity-25"></i>
+            <h5>Chưa có lịch thi đấu phù hợp</h5>
+            <p class="small mb-0">
+                @if (filterScope == "my_unit")
+                {
+                    <span>Đoàn của bạn hiện chưa có trận đấu nào được xếp lịch trong giải này. Hãy chuyển sang chế độ <strong>Toàn bộ giải đấu</strong> để xem toàn bộ lịch.</span>
+                }
+                else
+                {
+                    <span>Ban tổ chức hiện chưa xếp lịch thi đấu cho giải này.</span>
+                }
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3" id="matchContainer">
+            @foreach (var m in Model)
+            {
+                bool isMyTeam1 = (currentUnit != null && !string.IsNullOrEmpty(m.DonViDoi1) && m.DonViDoi1.Contains(currentUnit.Ten, StringComparison.OrdinalIgnoreCase))
+                                || (m.Doi1DangKyId.HasValue && unitRegIds.Contains(m.Doi1DangKyId.Value));
+
+                bool isMyTeam2 = (currentUnit != null && !string.IsNullOrEmpty(m.DonViDoi2) && m.DonViDoi2.Contains(currentUnit.Ten, StringComparison.OrdinalIgnoreCase))
+                                || (m.Doi2DangKyId.HasValue && unitRegIds.Contains(m.Doi2DangKyId.Value));
+
+                bool isMyMatch = isMyTeam1 || isMyTeam2 || m.ThanhPhanTranDaus.Any(tp => unitRegIds.Contains(tp.DangKyThiDauId));
+
+                string statusBadge = m.TrangThai switch
+                {
+                    "DangDau" or "DangDienRa" => "<span class=\"badge bg-danger rounded-pill px-2.5 py-1\"><i class=\"fa-solid fa-circle-play me-1\"></i>Đang đấu</span>",
+                    "KetThuc" or "DaKetThuc" => "<span class=\"badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2.5 py-1\"><i class=\"fa-solid fa-flag-checkered me-1\"></i>Kết thúc</span>",
+                    _ => "<span class=\"badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1\"><i class=\"fa-solid fa-clock me-1\"></i>Chưa bắt đầu</span>"
+                };
+
+                <div class="col-lg-6 match-item"
+                     data-text="@($"{m.TenTran} {m.TenMonTheThao} {m.TenVongDau} {m.TenDoi1} {m.TenDoi2} {m.TenSanDau}".ToLower())">
+                    <div class="card-custom h-100 p-3.5 p-3 position-relative @(isMyMatch ? "border-success" : "")"
+                         style="@(isMyMatch ? "background: #f0fdf4; border-width: 1.5px !important;" : "")">
+
+                        <!-- Match Card Header -->
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-dark rounded-pill px-2 py-1 font-monospace" style="font-size: 11px;">
+                                    Trận @m.SoTran
+                                </span>
+                                <span class="fw-bold text-dark small">@m.TenMonTheThao</span>
+                                @if (!string.IsNullOrEmpty(m.TenVongDau))
+                                {
+                                    <span class="badge bg-light text-secondary border small">@m.TenVongDau</span>
+                                }
+                            </div>
+                            <div>
+                                @Html.Raw(statusBadge)
+                            </div>
+                        </div>
+
+                        <!-- Match Content: Team 1 vs Team 2 -->
+                        <div class="row g-2 align-items-center text-center my-2">
+                            <!-- Đội 1 -->
+                            <div class="col-5">
+                                <div class="p-2.5 rounded-3 @(isMyTeam1 ? "bg-white border border-success shadow-sm" : "bg-light border")">
+                                    <div class="fw-bold text-dark text-truncate" title="@(m.TenDoi1 ?? "Chưa xác định")">
+                                        @(m.TenDoi1 ?? "Đội 1 (Chờ xác định)")
+                                    </div>
+                                    <small class="text-muted text-truncate d-block" style="font-size: 11px;">
+                                        @(m.DonViDoi1 ?? "Đơn vị")
+                                    </small>
+                                    @if (isMyTeam1)
+                                    {
+                                        <span class="badge badge-soft-emerald mt-1" style="font-size: 10px;">
+                                            <i class="fa-solid fa-star text-warning me-1"></i> Đoàn mình
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- VS Badge -->
+                            <div class="col-2">
+                                <div class="rounded-circle bg-light border text-muted d-inline-flex align-items-center justify-content-center fw-bold"
+                                     style="width: 32px; height: 32px; font-size: 11px;">
+                                    VS
+                                </div>
+                            </div>
+
+                            <!-- Đội 2 -->
+                            <div class="col-5">
+                                <div class="p-2.5 rounded-3 @(isMyTeam2 ? "bg-white border border-success shadow-sm" : "bg-light border")">
+                                    <div class="fw-bold text-dark text-truncate" title="@(m.TenDoi2 ?? "Chưa xác định")">
+                                        @(m.TenDoi2 ?? "Đội 2 (Chờ xác định)")
+                                    </div>
+                                    <small class="text-muted text-truncate d-block" style="font-size: 11px;">
+                                        @(m.DonViDoi2 ?? "Đơn vị")
+                                    </small>
+                                    @if (isMyTeam2)
+                                    {
+                                        <span class="badge badge-soft-emerald mt-1" style="font-size: 10px;">
+                                            <i class="fa-solid fa-star text-warning me-1"></i> Đoàn mình
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Match Card Footer: Sân đấu & Thời gian -->
+                        <div class="d-flex flex-wrap align-items-center justify-content-between text-muted small mt-3 pt-2 border-top" style="font-size: 12px;">
+                            <div>
+                                <i class="fa-solid fa-location-dot text-danger me-1"></i>
+                                <span>@(string.IsNullOrEmpty(m.TenSanDau) ? "Chưa xếp sân" : $"{m.TenSanDau} ({m.TenCumSan})")</span>
+                            </div>
+                            <div>
+                                <i class="fa-solid fa-clock text-primary me-1"></i>
+                                <span>@(m.ThoiGianDuKien.HasValue ? m.ThoiGianDuKien.Value.ToString("HH:mm - dd/MM/yyyy") : "Chưa định giờ")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function filterClientMatches() {
+            const kw = $('#quickSearchMatch').val().toLowerCase().trim();
+            $('.match-item').each(function () {
+                const text = $(this).data('text') || '';
+                if (!kw || text.includes(kw)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+    </script>
+}

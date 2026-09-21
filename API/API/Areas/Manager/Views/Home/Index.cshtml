@@ -1,0 +1,206 @@
+@{
+    ViewData["Title"] = "Tổng Quan Ban Quản Lý Giải";
+    var recentGiaiDaus = ViewBag.RecentGiaiDaus as List<GiaiDauDto> ?? new List<GiaiDauDto>();
+    var recentDangKys = ViewBag.RecentDangKys as List<DangKyThiDauDto> ?? new List<DangKyThiDauDto>();
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-chart-pie text-primary me-2"></i>Bảng Điều Hành & Tổng Quan Giải Đấu
+        </h4>
+        <p class="text-muted small mb-0">Theo dõi tiến độ tổ chức, hồ sơ đăng ký thi đấu và lịch trình thi đấu các bộ môn.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/Manager/DangKyThiDau" class="btn btn-outline-primary">
+            <i class="fa-solid fa-users me-1"></i> Hồ Sơ Đăng Ký Thi Đấu
+        </a>
+        <a href="/Manager/LichThiDau" class="btn btn-primary shadow-sm">
+            <i class="fa-solid fa-calendar-check me-1"></i> Quản Lý Lịch & Trận Đấu
+        </a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom h-100 p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-semibold">Tổng Số Giải Đấu</span>
+                    <h3 class="fw-bold text-dark mt-1 mb-0">@ViewBag.TotalGiaiDau</h3>
+                    <small class="text-success"><i class="fa-solid fa-fire me-1"></i>@ViewBag.ActiveGiaiDau giải đang diễn ra</small>
+                </div>
+                <div class="rounded-3 bg-primary-subtle text-primary p-3">
+                    <i class="fa-solid fa-trophy fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom h-100 p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-semibold">Hồ Sơ Đăng Ký</span>
+                    <h3 class="fw-bold text-dark mt-1 mb-0">@ViewBag.TotalDangKy</h3>
+                    <small class="text-success fw-semibold">
+                        <i class="fa-solid fa-circle-check me-1"></i>Đã tiếp nhận thành công
+                    </small>
+                </div>
+                <div class="rounded-3 bg-warning-subtle text-warning p-3">
+                    <i class="fa-solid fa-file-signature fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom h-100 p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-semibold">Tổng Số Trận Đấu</span>
+                    <h3 class="fw-bold text-dark mt-1 mb-0">@ViewBag.TotalTranDau</h3>
+                    <small class="text-info"><i class="fa-solid fa-check-double me-1"></i>@ViewBag.FinishedTranDau trận đã kết thúc</small>
+                </div>
+                <div class="rounded-3 bg-info-subtle text-info p-3">
+                    <i class="fa-solid fa-volleyball fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card card-custom h-100 p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-semibold">Trận Đấu Hôm Nay</span>
+                    <h3 class="fw-bold text-dark mt-1 mb-0">@ViewBag.TodayTranDau</h3>
+                    <small class="text-secondary"><i class="fa-solid fa-calendar-day me-1"></i>Cần theo dõi & chấm điểm</small>
+                </div>
+                <div class="rounded-3 bg-success-subtle text-success p-3">
+                    <i class="fa-solid fa-whistle fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="row g-4">
+    <!-- Danh sách giải đấu điều hành -->
+    <div class="col-lg-7">
+        <div class="card card-custom">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-medal text-warning me-2"></i>Các Giải Đấu Điều Hành
+                </h6>
+                <a href="/Manager/GiaiDau" class="btn btn-sm btn-light border">Xem tất cả</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Tên Giải Đấu</th>
+                                <th>Thời Gian</th>
+                                <th>Trạng Thái</th>
+                                <th class="text-end pe-3">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (recentGiaiDaus.Count == 0)
+                            {
+                                <tr><td colspan="4" class="text-center py-4 text-muted">Chưa có giải đấu nào.</td></tr>
+                            }
+                            @foreach (var g in recentGiaiDaus)
+                            {
+                                var badgeClass = g.TrangThai switch {
+                                    TrangThaiGiaiDau.SapDienRa => "bg-primary-subtle text-primary border",
+                                    TrangThaiGiaiDau.DangDienRa => "bg-success-subtle text-success border",
+                                    TrangThaiGiaiDau.KetThuc => "bg-secondary-subtle text-secondary border",
+                                    _ => "bg-light text-dark border"
+                                };
+                                var statusText = g.TrangThai switch {
+                                    TrangThaiGiaiDau.SapDienRa => "Sắp diễn ra",
+                                    TrangThaiGiaiDau.DangDienRa => "Đang diễn ra",
+                                    TrangThaiGiaiDau.KetThuc => "Đã kết thúc",
+                                    _ => g.TrangThai.ToString()
+                                };
+                                <tr>
+                                    <td class="ps-3">
+                                        <div class="fw-bold text-dark">@g.Ten</div>
+                                        <small class="text-muted">Mã: @g.Ma</small>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            @g.NgayBatDau.ToString("dd/MM/yyyy") - @g.NgayKetThuc.ToString("dd/MM/yyyy")
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge @badgeClass">@statusText</span>
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/Manager/LichThiDau?giaiDauId=@g.Id" class="btn btn-light border" title="Xếp Lịch">
+                                                <i class="fa-solid fa-calendar-days text-primary"></i>
+                                            </a>
+                                            <a href="/Manager/DangKyThiDau?giaiDauId=@g.Id" class="btn btn-light border" title="Xem Đăng Ký">
+                                                <i class="fa-solid fa-users text-success"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hồ sơ đăng ký mới tiếp nhận -->
+    <div class="col-lg-5">
+        <div class="card card-custom">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-users text-primary me-2"></i>Đăng Ký Mới Tiếp Nhận
+                </h6>
+                <a href="/Manager/DangKyThiDau" class="btn btn-sm btn-light border">Xem tất cả</a>
+            </div>
+            <div class="card-body p-0">
+                @if (recentDangKys.Count == 0)
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-id-card text-secondary fa-3x mb-2 opacity-50"></i>
+                        <p class="mb-0">Chưa có hồ sơ đăng ký nào từ các đoàn thể thao.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var d in recentDangKys)
+                        {
+                            <div class="list-group-item p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <div class="fw-bold text-dark">@d.TenDangKy</div>
+                                    <span class="badge bg-success-subtle text-success border"><i class="fa-solid fa-check me-1"></i>Đã duyệt</span>
+                                </div>
+                                <div class="text-muted small mb-2">
+                                    <i class="fa-solid fa-building me-1"></i>Đơn vị: <strong>@(d.TenDonVi ?? "Vãng lai")</strong> |
+                                    <i class="fa-solid fa-trophy me-1"></i>Giải: @(d.TenGiaiDau ?? "-")
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Ngày gửi: @d.NgayDangKy.ToString("dd/MM/yyyy HH:mm")</small>
+                                    <a href="/Manager/DangKyThiDau" class="btn btn-xs btn-outline-primary py-1 px-2 small">
+                                        <i class="fa-solid fa-eye me-1"></i>Xem Chi Tiết
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

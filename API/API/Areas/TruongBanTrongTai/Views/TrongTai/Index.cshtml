@@ -1,0 +1,270 @@
+@model List<Dms.Domain.Entities.TrongTai>
+@{
+    ViewData["Title"] = "Danh Sách Trọng Tài";
+    var matchCountMap = ViewBag.MatchCountMap as Dictionary<int, int> ?? new();
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-users-gear text-warning me-2"></i> Quản Lý Danh Sách Trọng Tài
+        </h4>
+        <p class="text-muted small mb-0">Huy động, quản lý hồ sơ và theo dõi khối lượng công việc của đội ngũ trọng tài</p>
+    </div>
+    <button class="btn btn-primary fw-semibold px-3 shadow-sm" onclick="openModalCreate()">
+        <i class="fa-solid fa-user-plus me-1"></i> Thêm Trọng Tài Mới
+    </button>
+</div>
+
+<!-- Bộ lọc tìm kiếm -->
+<div class="card card-custom mb-4 p-3">
+    <form method="get" class="row g-2 align-items-center">
+        <input type="hidden" name="giaiDauId" value="@ViewBag.SelectedGiaiDauId" />
+        <div class="col-md-5">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control border-start-0" placeholder="Tìm theo tên, mã, số điện thoại, email..." />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select name="capBac" class="form-select">
+                <option value="">-- Tất cả cấp bậc --</option>
+                <option value="Quốc gia" selected="@(ViewBag.CapBac == "Quốc gia")">Trọng tài Quốc gia</option>
+                <option value="Cấp 1" selected="@(ViewBag.CapBac == "Cấp 1")">Trọng tài Cấp 1</option>
+                <option value="Cấp 2" selected="@(ViewBag.CapBac == "Cấp 2")">Trọng tài Cấp 2</option>
+                <option value="Cấp cơ sở" selected="@(ViewBag.CapBac == "Cấp cơ sở")">Trọng tài Cấp cơ sở</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="trangThai" class="form-select">
+                <option value="">-- Trạng thái --</option>
+                <option value="true" selected="@(ViewBag.TrangThai == true)">Hoạt động</option>
+                <option value="false" selected="@(ViewBag.TrangThai == false)">Tạm ngưng</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-warning flex-fill fw-semibold">
+                <i class="fa-solid fa-filter me-1"></i> Lọc
+            </button>
+            <a href="/TruongBanTrongTai/TrongTai" class="btn btn-light border"><i class="fa-solid fa-rotate-left"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- Bảng dữ liệu -->
+<div class="card card-custom">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                    <th style="width: 80px;">Mã</th>
+                    <th>Họ và Tên</th>
+                    <th>Giới Tính</th>
+                    <th>Cấp Bậc</th>
+                    <th>Liên Hệ</th>
+                    <th class="text-center">Số Trận Tại Giải Này</th>
+                    <th>Trạng Thái</th>
+                    <th class="text-end" style="width: 140px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Count > 0)
+                {
+                    foreach (var item in Model)
+                    {
+                        int matchesAssigned = matchCountMap.ContainsKey(item.Id) ? matchCountMap[item.Id] : 0;
+                        <tr>
+                            <td class="fw-bold text-secondary">@item.Ma</td>
+                            <td>
+                                <a href="/TruongBanTrongTai/TrongTai/Details/@item.Id" class="fw-bold text-primary text-decoration-none">
+                                    @item.HoTen
+                                </a>
+                            </td>
+                            <td>@(item.GioiTinh ?? "Nam")</td>
+                            <td>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary fw-semibold px-2 py-1">
+                                    @(item.CapBac ?? "Chưa xếp")
+                                </span>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <div><i class="fa-solid fa-phone text-muted me-1"></i> @(item.SoDienThoai ?? "--")</div>
+                                    <div class="text-muted"><i class="fa-regular fa-envelope text-muted me-1"></i> @(item.Email ?? "--")</div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill @(matchesAssigned > 0 ? "bg-primary" : "bg-light text-muted border") px-3 py-2 fs-6">
+                                    @matchesAssigned trận
+                                </span>
+                            </td>
+                            <td>
+                                @if (item.TrangThai)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success fw-semibold px-2 py-1">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Hoạt động
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger bg-opacity-10 text-danger fw-semibold px-2 py-1">
+                                        <i class="fa-solid fa-ban me-1"></i> Tạm ngưng
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/TruongBanTrongTai/TrongTai/Details/@item.Id" class="btn btn-light border" title="Xem lịch sử phân công">
+                                        <i class="fa-solid fa-eye text-primary"></i>
+                                    </a>
+                                    <button class="btn btn-light border" onclick="openModalEdit(@item.Id, '@item.Ma', '@item.HoTen', '@item.GioiTinh', '@item.SoDienThoai', '@item.Email', '@item.CapBac', @item.TrangThai.ToString().ToLower())" title="Sửa thông tin">
+                                        <i class="fa-solid fa-pen text-warning"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-user-slash fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            Không tìm thấy trọng tài nào phù hợp với điều kiện tìm kiếm.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Thêm / Cập Nhật Trọng Tài -->
+<div class="modal fade" id="modalTrongTai" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="modalTitle">Thêm Trọng Tài Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="formTrongTai">
+                    <input type="hidden" id="ttId" name="Id" value="0" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Họ và Tên <span class="text-danger">*</span></label>
+                        <input type="text" id="ttHoTen" name="HoTen" class="form-control" placeholder="Nguyễn Văn A" required />
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Mã Trọng Tài</label>
+                            <input type="text" id="ttMa" name="Ma" class="form-control" placeholder="Tự sinh nếu trống" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Giới Tính</label>
+                            <select id="ttGioiTinh" name="GioiTinh" class="form-select">
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Số Điện Thoại</label>
+                            <input type="text" id="ttSoDienThoai" name="SoDienThoai" class="form-control" placeholder="0901234567" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Cấp Bậc</label>
+                            <select id="ttCapBac" name="CapBac" class="form-select">
+                                <option value="Quốc gia">Quốc gia</option>
+                                <option value="Cấp 1" selected>Cấp 1</option>
+                                <option value="Cấp 2">Cấp 2</option>
+                                <option value="Cấp cơ sở">Cấp cơ sở</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email</label>
+                        <input type="email" id="ttEmail" name="Email" class="form-control" placeholder="referee@sport.vn" />
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="ttTrangThai" name="TrangThai" value="true" checked>
+                        <label class="form-check-label fw-semibold" for="ttTrangThai">Đang hoạt động / Sẵn sàng làm nhiệm vụ</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary fw-semibold px-4" onclick="saveTrongTai()">Lưu Thông Tin</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openModalCreate() {
+            $('#modalTitle').text('Thêm Trọng Tài Mới');
+            $('#ttId').val(0);
+            $('#ttHoTen').val('');
+            $('#ttMa').val('');
+            $('#ttSoDienThoai').val('');
+            $('#ttEmail').val('');
+            $('#ttGioiTinh').val('Nam');
+            $('#ttCapBac').val('Cấp 1');
+            $('#ttTrangThai').prop('checked', true);
+            new bootstrap.Modal(document.getElementById('modalTrongTai')).show();
+        }
+
+        function openModalEdit(id, ma, hoTen, gioiTinh, sdt, email, capBac, trangThai) {
+            $('#modalTitle').text('Cập Nhật Thông Tin Trọng Tài');
+            $('#ttId').val(id);
+            $('#ttHoTen').val(hoTen);
+            $('#ttMa').val(ma);
+            $('#ttSoDienThoai').val(sdt);
+            $('#ttEmail').val(email);
+            $('#ttGioiTinh').val(gioiTinh || 'Nam');
+            $('#ttCapBac').val(capBac || 'Cấp 1');
+            $('#ttTrangThai').prop('checked', trangThai);
+            new bootstrap.Modal(document.getElementById('modalTrongTai')).show();
+        }
+
+        function saveTrongTai() {
+            var form = $('#formTrongTai');
+            if (!$('#ttHoTen').val().trim()) {
+                Swal.fire('Lỗi', 'Vui lòng nhập họ và tên trọng tài.', 'warning');
+                return;
+            }
+
+            var formData = {
+                Id: parseInt($('#ttId').val()),
+                Ma: $('#ttMa').val(),
+                HoTen: $('#ttHoTen').val(),
+                GioiTinh: $('#ttGioiTinh').val(),
+                SoDienThoai: $('#ttSoDienThoai').val(),
+                Email: $('#ttEmail').val(),
+                CapBac: $('#ttCapBac').val(),
+                TrangThai: $('#ttTrangThai').is(':checked')
+            };
+
+            $.post('/TruongBanTrongTai/TrongTai/CreateOrUpdate', formData, function (res) {
+                if (res.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công',
+                        text: res.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Thất bại', res.message, 'error');
+                }
+            });
+        }
+    </script>
+}

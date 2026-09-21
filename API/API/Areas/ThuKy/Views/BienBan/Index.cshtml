@@ -1,0 +1,518 @@
+@{
+    ViewData["Title"] = "Kiểm Tra, In & Xuất Biên Bản Trận Đấu";
+    var sports = ViewBag.Sports as IEnumerable<Dms.Application.DTOs.MonTheThaoDto> ?? new List<Dms.Application.DTOs.MonTheThaoDto>();
+    int? preselectedTranDauId = ViewBag.SelectedTranDauId as int?;
+}
+
+<div class="d-flex flex-column gap-3">
+    <!-- Breadcrumb & Actions (Hidden on Print) -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 d-print-none">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-file-signature text-primary me-2"></i> Kiểm Tra & In/Xuất Biên Bản Thi Đấu
+            </h4>
+            <p class="text-muted small mb-0">Hồ sơ biên bản điện tử chính thức có chữ ký xác nhận số và hỗ trợ định dạng in ấn / xuất PDF chuẩn A4</p>
+        </div>
+        <div class="d-flex gap-2" id="printActions" style="display: none !important;">
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="signAsSecretary()">
+                <i class="fa-solid fa-signature me-1"></i> Thư Ký Ký Xác Nhận
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3 shadow-sm" onclick="exportPdf()">
+                <i class="fa-solid fa-file-pdf me-1 text-danger"></i> Xuất Biên Bản PDF
+            </button>
+            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3.5 shadow-sm" onclick="window.print()">
+                <i class="fa-solid fa-print me-1"></i> In Biên Bản (A4)
+            </button>
+        </div>
+    </div>
+
+    <!-- Match Picker & Filters (Hidden on Print) -->
+    <div class="card card-custom p-3 d-print-none">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">Môn thể thao</label>
+                <select id="filterMon" class="form-select form-select-sm select2" onchange="loadMatchesList()">
+                    <option value="">-- Tất cả môn --</option>
+                    @foreach (var m in sports)
+                    {
+                        <option value="@m.Id">@m.Ten</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">Tình trạng chữ ký</label>
+                <select id="filterTrangThaiKy" class="form-select form-select-sm" onchange="loadMatchesList()">
+                    <option value="">-- Tất cả tình trạng --</option>
+                    <option value="DuChuKy">Đủ 4 chữ ký</option>
+                    <option value="ThieuChuKy">Chưa đủ chữ ký</option>
+                    <option value="DaDuyetThuKy">Thư ký đã ký duyệt</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Chọn Trận Đấu Để Rà Soát Biên Bản</label>
+                <select id="selectMatch" class="form-select form-select-sm select2" onchange="onSelectMatchChange()">
+                    <option value="">-- Chọn trận đấu --</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="sheetLoading" class="card card-custom p-5 text-center d-none d-print-none">
+        <div class="spinner-border text-primary mx-auto mb-3" role="status"></div>
+        <p class="text-muted mb-0">Đang tải hồ sơ biên bản điện tử...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div id="sheetEmpty" class="card card-custom p-5 text-center text-muted d-print-none">
+        <i class="fa-solid fa-file-invoice fs-1 mb-3 opacity-25"></i>
+        <h5>Vui lòng chọn một trận đấu để kiểm tra và in biên bản</h5>
+        <small class="text-muted">Biên bản điện tử bao gồm chi tiết tỉ số, danh sách VĐV, diễn biến trận và chữ ký 4 bên.</small>
+    </div>
+
+    <!-- Official Printable Match Sheet (Khung Biên Bản Chuẩn Thể Thao Quốc Gia) -->
+    <div id="sheetContent" class="card card-custom p-4 p-md-5 bg-white shadow-sm d-none print-area" style="border: 1px solid #cbd5e1;">
+        <!-- Header Quốc Hiệu -->
+        <div class="row pb-3 border-bottom mb-4 text-center">
+            <div class="col-5">
+                <div class="text-uppercase fw-bold text-dark small" style="font-size:0.82rem;">BAN TỔ CHỨC ĐẠI HỘI THỂ THAO</div>
+                <div class="text-uppercase fw-bold text-primary small" id="sheetTenGiaiDau">TÊN GIẢI ĐẤU</div>
+                <div class="small text-muted fst-italic">TỔ THƯ KÝ - BAN TRỌNG TÀI</div>
+            </div>
+            <div class="col-2 d-flex align-items-center justify-content-center">
+                <div class="rounded-circle border border-2 border-primary d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                    <i class="fa-solid fa-award text-primary fs-5"></i>
+                </div>
+            </div>
+            <div class="col-5">
+                <div class="text-uppercase fw-bold text-dark small" style="font-size:0.82rem;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                <div class="fw-bold text-dark small" style="font-size:0.82rem;">Độc lập - Tự do - Hạnh phúc</div>
+                <div class="small text-muted">---o0o---</div>
+            </div>
+        </div>
+
+        <!-- Tiêu Đề Biên Bản -->
+        <div class="text-center mb-4">
+            <h3 class="fw-bold text-dark text-uppercase mb-1" style="letter-spacing: 0.5px;">BIÊN BẢN THI ĐẤU CHÍNH THỨC</h3>
+            <div class="badge bg-primary bg-opacity-10 text-primary fs-6 px-3 py-1.5 border border-primary border-opacity-25" id="sheetMatchTitle">
+                Trận số: #--
+            </div>
+            <p class="text-muted small mt-2 mb-0" id="sheetMatchSub">
+                Môn: -- | Sân thi đấu: -- | Thời gian: --
+            </p>
+        </div>
+
+        <!-- Bảng Tỉ Số Chung Cuộc -->
+        <div class="row g-0 border rounded-3 mb-4 text-center overflow-hidden bg-light bg-opacity-50">
+            <div class="col-5 p-3.5 border-end">
+                <small class="text-muted text-uppercase fw-bold d-block mb-1">Đội 1 (Nhà)</small>
+                <h4 class="fw-bold text-dark mb-1" id="sheetTeam1Name">--</h4>
+                <div class="badge bg-light text-muted border mb-2" id="sheetTeam1Unit">--</div>
+                <h1 class="display-4 fw-bold text-primary mb-0" id="sheetScore1">0</h1>
+            </div>
+            <div class="col-2 d-flex flex-column align-items-center justify-content-center p-2 bg-light border-end">
+                <span class="fs-4 text-muted fw-bold">VS</span>
+                <span class="badge bg-dark text-white mt-2 px-2.5 py-1" id="sheetWinnerBadge">--</span>
+            </div>
+            <div class="col-5 p-3.5">
+                <small class="text-muted text-uppercase fw-bold d-block mb-1">Đội 2 (Khách)</small>
+                <h4 class="fw-bold text-dark mb-1" id="sheetTeam2Name">--</h4>
+                <div class="badge bg-light text-muted border mb-2" id="sheetTeam2Unit">--</div>
+                <h1 class="display-4 fw-bold text-primary mb-0" id="sheetScore2">0</h1>
+            </div>
+        </div>
+
+        <!-- Điểm Từng Set & Diễn Biến -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <h6 class="fw-bold text-dark border-bottom pb-2 mb-2">
+                    <i class="fa-solid fa-table-cells text-primary me-1.5"></i> Điểm Số Chi Tiết Từng Hiệp / Set
+                </h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm text-center mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Hiệp / Set</th>
+                                <th id="thSetTeam1">Đội 1</th>
+                                <th id="thSetTeam2">Đội 2</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sheetSetTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6 class="fw-bold text-dark border-bottom pb-2 mb-2">
+                    <i class="fa-solid fa-clock-rotate-left text-primary me-1.5"></i> Diễn Biến & Sự Kiện Trận Đấu
+                </h6>
+                <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                    <table class="table table-sm table-striped small mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">Phút</th>
+                                <th>Sự kiện</th>
+                                <th>VĐV</th>
+                                <th>Ghi chú</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sheetEventsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh Sách VĐV Hai Đội -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <h6 class="fw-bold text-dark border-bottom pb-2 mb-2">
+                    <i class="fa-solid fa-users text-primary me-1.5"></i> Danh Sách VĐV - <span id="rosterTitle1">Đội 1</span>
+                </h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40px;">STT</th>
+                                <th>Họ và Tên VĐV</th>
+                                <th>Số áo/Mã</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sheetVdv1Body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6 class="fw-bold text-dark border-bottom pb-2 mb-2">
+                    <i class="fa-solid fa-users text-primary me-1.5"></i> Danh Sách VĐV - <span id="rosterTitle2">Đội 2</span>
+                </h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40px;">STT</th>
+                                <th>Họ và Tên VĐV</th>
+                                <th>Số áo/Mã</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sheetVdv2Body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tổ Trọng Tài Điều Hành -->
+        <div class="mb-4">
+            <h6 class="fw-bold text-dark border-bottom pb-2 mb-2">
+                <i class="fa-solid fa-user-shield text-primary me-1.5"></i> Tổ Trọng Tài Điều Hành Trận Đấu
+            </h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered small mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Vai Trò Phân Công</th>
+                            <th>Họ và Tên Trọng Tài</th>
+                            <th>Cấp Bậc / Chứng Chỉ</th>
+                            <th>Ghi Chú</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sheetRefereesBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bảng 4 Chữ Ký Xác Nhận Chuẩn A4 -->
+        <div class="border rounded-3 p-3.5 bg-light bg-opacity-25 mt-4">
+            <div class="text-center fw-bold text-dark mb-3 text-uppercase small">
+                XÁC NHẬN KẾT QUẢ THI ĐẤU HỢP LỆ VÀ KÝ TÊN BỐN BÊN
+            </div>
+            <div class="row g-3 text-center">
+                <!-- Chữ ký 1: Đại diện Đội 1 -->
+                <div class="col-3">
+                    <small class="text-muted fw-bold d-block mb-1">ĐẠI DIỆN ĐỘI 1</small>
+                    <small class="text-muted d-block fst-italic mb-3">(Ký và ghi rõ họ tên)</small>
+                    <div id="sigTeam1" class="p-2 border rounded-2 bg-white" style="min-height: 85px;">
+                        <span class="text-muted small fst-italic">Chưa ký</span>
+                    </div>
+                </div>
+
+                <!-- Chữ ký 2: Đại diện Đội 2 -->
+                <div class="col-3">
+                    <small class="text-muted fw-bold d-block mb-1">ĐẠI DIỆN ĐỘI 2</small>
+                    <small class="text-muted d-block fst-italic mb-3">(Ký và ghi rõ họ tên)</small>
+                    <div id="sigTeam2" class="p-2 border rounded-2 bg-white" style="min-height: 85px;">
+                        <span class="text-muted small fst-italic">Chưa ký</span>
+                    </div>
+                </div>
+
+                <!-- Chữ ký 3: Trọng Tài Chính -->
+                <div class="col-3">
+                    <small class="text-muted fw-bold d-block mb-1">TRỌNG TÀI CHÍNH</small>
+                    <small class="text-muted d-block fst-italic mb-3">(Ký và ghi rõ họ tên)</small>
+                    <div id="sigReferee" class="p-2 border rounded-2 bg-white" style="min-height: 85px;">
+                        <span class="text-muted small fst-italic">Chưa ký</span>
+                    </div>
+                </div>
+
+                <!-- Chữ ký 4: Thư Ký Giải -->
+                <div class="col-3">
+                    <small class="text-muted fw-bold d-block mb-1">THƯ KÝ GIẢI ĐẤU</small>
+                    <small class="text-muted d-block fst-italic mb-3">(Ký và ghi rõ họ tên)</small>
+                    <div id="sigSecretary" class="p-2 border rounded-2 bg-white" style="min-height: 85px;">
+                        <span class="text-muted small fst-italic">Chưa ký</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var currentMatchId = @(preselectedTranDauId.HasValue ? preselectedTranDauId.Value : 0);
+        var cachedMatchDetail = null;
+
+        $(document).ready(function () {
+            loadMatchesList(currentMatchId);
+        });
+
+        function loadMatchesList(preselectId) {
+            var gId = $('#headerSelectGiaiDau').val();
+            var mId = $('#filterMon').val();
+            var sigStatus = $('#filterTrangThaiKy').val();
+
+            $.ajax({
+                url: '/ThuKy/BienBan/GetDanhSach',
+                type: 'GET',
+                data: { giaiDauId: gId, monTheThaoId: mId, trangThaiKy: sigStatus },
+                success: function (res) {
+                    if (!res.success || !res.data) return;
+
+                    var select = $('#selectMatch');
+                    select.empty();
+                    select.append('<option value="">-- Chọn trận đấu để xem biên bản --</option>');
+
+                    res.data.forEach(function (m) {
+                        var isSel = (preselectId && m.tranDauId === preselectId) ? 'selected' : '';
+                        var txt = `Trận #${m.soTran}: ${m.tenDoi1} vs ${m.tenDoi2} (${m.tenMonTheThao}) - [${m.score1}:${m.score2}]`;
+                        select.append(`<option value="${m.tranDauId}" ${isSel}>${txt}</option>`);
+                    });
+
+                    if (preselectId) {
+                        select.val(preselectId).trigger('change');
+                    } else if (res.data.length > 0) {
+                        select.val(res.data[0].tranDauId).trigger('change');
+                    }
+                }
+            });
+        }
+
+        function onSelectMatchChange() {
+            var matchId = $('#selectMatch').val();
+            if (!matchId) {
+                $('#sheetEmpty').removeClass('d-none');
+                $('#sheetContent').addClass('d-none');
+                $('#printActions').attr('style', 'display: none !important');
+                return;
+            }
+
+            currentMatchId = parseInt(matchId);
+            $('#sheetLoading').removeClass('d-none');
+            $('#sheetEmpty').addClass('d-none');
+            $('#sheetContent').addClass('d-none');
+
+            $.ajax({
+                url: '/ThuKy/BienBan/GetChiTiet',
+                type: 'GET',
+                data: { tranDauId: currentMatchId },
+                success: function (res) {
+                    $('#sheetLoading').addClass('d-none');
+                    if (!res.success || !res.data) {
+                        Swal.fire('Lỗi', res.message || 'Không thể tải chi tiết biên bản.', 'error');
+                        return;
+                    }
+
+                    cachedMatchDetail = res.data;
+                    renderScoresheet(res.data);
+                },
+                error: function () {
+                    $('#sheetLoading').addClass('d-none');
+                    Swal.fire('Lỗi', 'Không thể kết nối máy chủ.', 'error');
+                }
+            });
+        }
+
+        function renderScoresheet(d) {
+            $('#sheetContent').removeClass('d-none');
+            $('#printActions').attr('style', 'display: flex !important');
+
+            $('#sheetTenGiaiDau').text(d.tenGiaiDau || 'GIẢI ĐẤU THỂ THAO');
+            $('#sheetMatchTitle').text(`Trận #${d.soTran}: ${d.tenTran || ''} - ${d.tenMonTheThao}`);
+            $('#sheetMatchSub').text(`Môn: ${d.tenMonTheThao} | Sân: ${d.tenSanDau || 'Sân thi đấu'} | Vòng: ${d.tenVongDau || ''}`);
+
+            $('#sheetTeam1Name').text(d.tenDoi1);
+            $('#sheetTeam1Unit').text(d.donViDoi1 || 'Tự do');
+            $('#sheetScore1').text(d.score1);
+
+            $('#sheetTeam2Name').text(d.tenDoi2);
+            $('#sheetTeam2Unit').text(d.donViDoi2 || 'Tự do');
+            $('#sheetScore2').text(d.score2);
+
+            var winnerText = d.winner === '1' ? `Thắng: ${d.tenDoi1}` : (d.winner === '2' ? `Thắng: ${d.tenDoi2}` : (d.winner === 'draw' ? 'Hòa' : 'Chưa kết thúc'));
+            $('#sheetWinnerBadge').text(winnerText);
+
+            // Sets
+            $('#thSetTeam1').text(d.tenDoi1);
+            $('#thSetTeam2').text(d.tenDoi2);
+            var setHtml = '';
+            if (d.setScores && d.setScores.length > 0) {
+                d.setScores.forEach(function (s) {
+                    setHtml += `
+                        <tr>
+                            <td class="fw-bold">Hiệp / Set ${s.setNumber}</td>
+                            <td class="fw-bold text-primary">${s.score1}</td>
+                            <td class="fw-bold text-danger">${s.score2}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                setHtml = '<tr><td colspan="3" class="text-muted">Chưa ghi nhận điểm hiệp.</td></tr>';
+            }
+            $('#sheetSetTableBody').html(setHtml);
+
+            // Events
+            var evHtml = '';
+            if (d.events && d.events.length > 0) {
+                d.events.forEach(function (ev) {
+                    evHtml += `
+                        <tr>
+                            <td class="fw-bold">${ev.minute}'</td>
+                            <td><span class="badge bg-light text-dark border">${ev.type}</span></td>
+                            <td>${ev.player || '--'}</td>
+                            <td>${ev.notes || ''}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                evHtml = '<tr><td colspan="4" class="text-muted text-center py-2">Không có sự cố / thẻ phạt.</td></tr>';
+            }
+            $('#sheetEventsBody').html(evHtml);
+
+            // Rosters
+            $('#rosterTitle1').text(d.tenDoi1);
+            $('#rosterTitle2').text(d.tenDoi2);
+
+            var v1Html = '';
+            if (d.vdvDoi1 && d.vdvDoi1.length > 0) {
+                d.vdvDoi1.forEach(function (v, idx) {
+                    v1Html += `<tr><td>${idx + 1}</td><td class="fw-semibold">${v.hoTen}</td><td>${v.ma || '--'}</td></tr>`;
+                });
+            } else {
+                v1Html = '<tr><td colspan="3" class="text-muted">Danh sách VĐV đội 1 chưa cập nhật.</td></tr>';
+            }
+            $('#sheetVdv1Body').html(v1Html);
+
+            var v2Html = '';
+            if (d.vdvDoi2 && d.vdvDoi2.length > 0) {
+                d.vdvDoi2.forEach(function (v, idx) {
+                    v2Html += `<tr><td>${idx + 1}</td><td class="fw-semibold">${v.hoTen}</td><td>${v.ma || '--'}</td></tr>`;
+                });
+            } else {
+                v2Html = '<tr><td colspan="3" class="text-muted">Danh sách VĐV đội 2 chưa cập nhật.</td></tr>';
+            }
+            $('#sheetVdv2Body').html(v2Html);
+
+            // Referees
+            var refHtml = '';
+            if (d.danhSachTrongTai && d.danhSachTrongTai.length > 0) {
+                d.danhSachTrongTai.forEach(function (r) {
+                    refHtml += `
+                        <tr>
+                            <td class="fw-semibold text-primary">${r.vaiTro || 'Trọng tài'}</td>
+                            <td class="fw-bold">${r.tenTrongTai}</td>
+                            <td>${r.capBac || 'Trọng tài quốc gia'}</td>
+                            <td>${r.ghiChu || ''}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                refHtml = '<tr><td colspan="4" class="text-muted text-center py-2">Chưa phân công trọng tài.</td></tr>';
+            }
+            $('#sheetRefereesBody').html(refHtml);
+
+            // Signatures
+            renderSigBox('sigTeam1', d.signatures ? d.signatures['team1'] : null);
+            renderSigBox('sigTeam2', d.signatures ? d.signatures['team2'] : null);
+            renderSigBox('sigReferee', d.signatures ? d.signatures['referee'] : null);
+            renderSigBox('sigSecretary', d.signatures ? d.signatures['secretary'] : null);
+        }
+
+        function renderSigBox(elemId, sig) {
+            if (sig && sig.signerName) {
+                $(`#${elemId}`).html(`
+                    <div class="text-primary fw-bold fst-italic mb-1" style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 1.25rem;">
+                        ${sig.signerName}
+                    </div>
+                    <div class="fw-semibold small text-dark">${sig.signerName}</div>
+                    <small class="text-muted d-block" style="font-size:0.65rem;">
+                        <i class="fa-solid fa-clock me-1"></i> ${sig.signedAt ? new Date(sig.signedAt).toLocaleString('vi-VN') : 'Đã xác nhận'}
+                    </small>
+                `);
+            } else {
+                $(`#${elemId}`).html('<span class="text-muted small fst-italic">Chưa ký xác nhận</span>');
+            }
+        }
+
+        function signAsSecretary() {
+            if (!currentMatchId) return;
+
+            Swal.fire({
+                title: 'Thư Ký Ký Xác Nhận Biên Bản',
+                text: 'Nhập họ và tên Thư ký xác nhận biên bản chính thức của trận đấu này:',
+                input: 'text',
+                inputValue: '@(User.Identity?.Name ?? "Thư Ký Giải")',
+                showCancelButton: true,
+                confirmButtonText: 'Ký xác nhận ngay',
+                cancelButtonText: 'Hủy bỏ',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Vui lòng nhập họ tên người ký!';
+                    }
+                }
+            }).then((res) => {
+                if (res.isConfirmed && res.value) {
+                    $.ajax({
+                        url: '/ThuKy/BienBan/KyXacNhan',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ tranDauId: currentMatchId, signerName: res.value }),
+                        success: function (r) {
+                            if (r.success) {
+                                Toast.fire({ icon: 'success', title: r.message });
+                                onSelectMatchChange();
+                            } else {
+                                Swal.fire('Lỗi', r.message, 'error');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function exportPdf() {
+            if (!cachedMatchDetail) return;
+
+            var element = document.getElementById('sheetContent');
+            var opt = {
+                margin:       [10, 10, 10, 10],
+                filename:     `BienBan_Tran_${cachedMatchDetail.soTran}_${cachedMatchDetail.tenMonTheThao}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            Toast.fire({ icon: 'info', title: 'Đang khởi tạo file PDF...' });
+            html2pdf().set(opt).from(element).save().then(function () {
+                Toast.fire({ icon: 'success', title: 'Đã tải xuống file biên bản PDF thành công!' });
+            });
+        }
+    </script>
+}

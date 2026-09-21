@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Sport Management Admin</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+    <!-- Select2 CSS & Bootstrap theme -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: #1e293b;
+            --sidebar-active: #2563eb;
+            --header-height: 64px;
+            --primary-color: #2563eb;
+            --accent-green: #10b981;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: #334155;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styling */
+        .admin-sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: var(--sidebar-bg);
+            color: #94a3b8;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1040;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .sidebar-brand {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 0.5px;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            text-decoration: none;
+        }
+
+        .sidebar-brand i {
+            color: #38bdf8;
+            margin-right: 0.75rem;
+            font-size: 1.35rem;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0.75rem;
+        }
+
+        .nav-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: #64748b;
+            padding: 0.75rem 0.75rem 0.35rem;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 0.7rem 0.85rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-link i {
+            width: 24px;
+            font-size: 1.1rem;
+            margin-right: 0.75rem;
+            color: #94a3b8;
+            transition: color 0.2s ease;
+        }
+
+        .sidebar-link:hover {
+            color: #fff;
+            background: var(--sidebar-hover);
+        }
+
+        .sidebar-link:hover i {
+            color: #38bdf8;
+        }
+
+        .sidebar-link.active {
+            color: #fff;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+        }
+
+        .sidebar-link.active i {
+            color: #fff;
+        }
+
+        /* Top Header */
+        .admin-header {
+            height: var(--header-height);
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: var(--sidebar-width);
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            z-index: 1030;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            transition: left 0.3s ease;
+        }
+
+        /* Main Content Container */
+        .admin-main {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 1.75rem 1.5rem;
+            min-height: calc(100vh - var(--header-height));
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Cards & Components */
+        .card-custom {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+            background: #fff;
+        }
+
+        .card-custom .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 1rem 1.25rem;
+            font-weight: 600;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
+        /* Badges */
+        .badge-status {
+            padding: 0.35em 0.7em;
+            font-weight: 600;
+            font-size: 0.75rem;
+            border-radius: 6px;
+        }
+
+        /* Responsive */
+        @@media (max-width: 991.98px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+            }
+            .admin-sidebar.show {
+                transform: translateX(0);
+            }
+            .admin-header {
+                left: 0;
+            }
+            .admin-main {
+                margin-left: 0;
+            }
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <a href="/Admin/Home" class="sidebar-brand">
+            <i class="fa-solid fa-trophy"></i>
+            <span>SPORT DMS</span>
+        </a>
+
+        <div class="sidebar-nav">
+            <div class="nav-section-title">Tổng quan</div>
+            <a href="/Admin/Home" class="sidebar-link">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Bảng điều khiển</span>
+            </a>
+
+            <div class="nav-section-title">Quản lý thi đấu</div>
+            <a href="/Admin/GiaiDau" class="sidebar-link">
+                <i class="fa-solid fa-medal"></i>
+                <span>Quản lý Giải đấu</span>
+            </a>
+            <a href="/Admin/CumSan" class="sidebar-link">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span>Cụm sân thi đấu</span>
+            </a>
+            <a href="/Admin/SanDau" class="sidebar-link">
+                <i class="fa-solid fa-futbol"></i>
+                <span>Sân đấu chi tiết</span>
+            </a>
+            <a href="/Admin/DanhMucMonTheThao" class="sidebar-link">
+                <i class="fa-solid fa-tags"></i>
+                <span>Danh mục môn</span>
+            </a>
+            <a href="/Admin/MonTheThao" class="sidebar-link">
+                <i class="fa-solid fa-volleyball"></i>
+                <span>Môn thể thao</span>
+            </a>
+            <a href="/Admin/Khoi" class="sidebar-link">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>Khối tham gia</span>
+            </a>
+
+            <div class="nav-section-title">Nhân sự & Đoàn</div>
+            <a href="/Admin/DonVi" class="sidebar-link">
+                <i class="fa-solid fa-building-columns"></i>
+                <span>Đơn vị / Đoàn</span>
+            </a>
+            <a href="/Admin/VanDongVien" class="sidebar-link">
+                <i class="fa-solid fa-person-running"></i>
+                <span>Vận động viên</span>
+            </a>
+            <a href="/Admin/TrongTai" class="sidebar-link">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Trọng tài</span>
+            </a>
+            <a href="/Admin/ThuKy" class="sidebar-link">
+                <i class="fa-solid fa-file-signature"></i>
+                <span>Thư ký giải đấu</span>
+            </a>
+
+            <div class="nav-section-title">Điều hành giải</div>
+            <a href="/Manager/Home" class="sidebar-link text-info">
+                <i class="fa-solid fa-chess-board"></i>
+                <span>Khu vực Ban Tổ Chức</span>
+            </a>
+            <a href="/Manager/DangKyThiDau" class="sidebar-link">
+                <i class="fa-solid fa-address-card"></i>
+                <span>Hồ sơ đăng ký thi đấu</span>
+            </a>
+            <a href="/Manager/LichThiDau" class="sidebar-link">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Lịch đấu & Bốc thăm</span>
+            </a>
+            <a href="/Manager/BangDau" class="sidebar-link">
+                <i class="fa-solid fa-sitemap"></i>
+                <span>Bảng đấu & Nhánh đấu</span>
+            </a>
+
+            <div class="nav-section-title">Hệ thống</div>
+            <a href="/Admin/Users" class="sidebar-link">
+                <i class="fa-solid fa-users-gear"></i>
+                <span>Tài khoản & Phân quyền</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Top Header -->
+    <header class="admin-header">
+        <div class="d-flex align-items-center">
+            <button class="btn btn-sm btn-light d-lg-none me-2" id="sidebarToggle" type="button">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <h6 class="mb-0 fw-bold text-dark d-none d-sm-block">
+                HỆ THỐNG ĐIỀU HÀNH & QUẢN LÝ THỂ THAO
+            </h6>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 36px; height: 36px; font-weight: 600;">
+                        @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "A")
+                    </div>
+                    <div class="text-start d-none d-md-block">
+                        <div class="fw-semibold text-dark text-truncate" style="max-width: 140px;">
+                            @(User.Identity?.Name ?? "Quản trị viên")
+                        </div>
+                        <small class="text-muted d-block" style="font-size: 0.75rem;">Administrator</small>
+                    </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="userDropdown">
+                    <li><h6 class="dropdown-header">Tài khoản quản trị</h6></li>
+                    <li><a class="dropdown-item" href="/Account/Profile"><i class="fa-regular fa-id-badge me-2 text-muted"></i>Thông tin cá nhân</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form action="/Account/Logout" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="dropdown-item text-danger">
+                                <i class="fa-solid fa-arrow-right-from-bracket me-2"></i>Đăng xuất
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        @RenderBody()
+    </main>
+
+    <!-- Scripts: jQuery, Bootstrap Bundle, SweetAlert2, Select2 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        // Toggle mobile sidebar
+        $('#sidebarToggle').on('click', function () {
+            $('#adminSidebar').toggleClass('show');
+        });
+
+        // Auto active sidebar link based on current path
+        const currentPath = window.location.pathname.toLowerCase();
+        $('.sidebar-link').each(function () {
+            const href = $(this).attr('href').toLowerCase();
+            if (currentPath === href || (href !== '/admin/home' && currentPath.startsWith(href))) {
+                $(this).addClass('active');
+            } else {
+                $(this).removeClass('active');
+            }
+        });
+
+        // Global Helper for SweetAlert2 & Toast
+        window.SportApp = {
+            toast: function (type, message) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                Toast.fire({
+                    icon: type || 'success',
+                    title: message
+                });
+            },
+            confirm: function (title, text, confirmCallback) {
+                Swal.fire({
+                    title: title || 'Bạn có chắc chắn?',
+                    text: text || 'Thao tác này sẽ không thể hoàn tác!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Đồng ý thực hiện',
+                    cancelButtonText: 'Hủy bỏ',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed && typeof confirmCallback === 'function') {
+                        confirmCallback();
+                    }
+                });
+            }
+        };
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

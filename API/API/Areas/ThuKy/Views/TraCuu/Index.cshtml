@@ -1,0 +1,297 @@
+@{
+    ViewData["Title"] = "Tra Cứu Dữ Liệu Giải Đấu";
+}
+
+<div class="d-flex flex-column gap-3">
+    <!-- Breadcrumb & Title -->
+    <div>
+        <h4 class="fw-bold text-dark mb-1">
+            <i class="fa-solid fa-magnifying-glass text-primary me-2"></i> Tra Cứu Dữ Liệu Giải Đấu
+        </h4>
+        <p class="text-muted small mb-0">Công cụ tìm kiếm thông minh đa đối tượng: Vận động viên, Đơn vị / Đoàn tham dự, Trận đấu và Hồ sơ biên bản</p>
+    </div>
+
+    <!-- Big Search Box -->
+    <div class="card card-custom p-4 bg-white border-0 shadow-sm">
+        <div class="row g-2">
+            <div class="col-md-9">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-light border-end-0 text-primary">
+                        <i class="fa-solid fa-magnifying-glass fs-5"></i>
+                    </span>
+                    <input type="text" id="mainSearchInput" class="form-control border-start-0" placeholder="Nhập tên VĐV, CCCD, tên đơn vị/đoàn thể thao, hoặc mã trận đấu..." autofocus onkeyup="if(event.key==='Enter') executeSearch()">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm" onclick="executeSearch()">
+                    <i class="fa-solid fa-search me-1"></i> Tìm Kiếm
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter category tags -->
+        <div class="d-flex flex-wrap gap-2 mt-3 pt-2 border-top align-items-center">
+            <span class="small fw-semibold text-muted me-1">Phạm vi tìm kiếm:</span>
+            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 tag-filter active" onclick="setScope(this, 'All')">
+                <i class="fa-solid fa-earth-asia me-1"></i> Tất cả
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 tag-filter" onclick="setScope(this, 'Vdv')">
+                <i class="fa-solid fa-user-running me-1"></i> Vận động viên
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 tag-filter" onclick="setScope(this, 'DonVi')">
+                <i class="fa-solid fa-building-columns me-1"></i> Đoàn / Đơn vị
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 tag-filter" onclick="setScope(this, 'TranDau')">
+                <i class="fa-solid fa-futbol me-1"></i> Trận đấu & Biên bản
+            </button>
+        </div>
+    </div>
+
+    <!-- Search Results Container -->
+    <div id="searchPlaceholder" class="card card-custom p-5 text-center text-muted">
+        <i class="fa-solid fa-search fs-1 mb-3 opacity-25"></i>
+        <h5>Nhập từ khóa và bấm Tìm Kiếm để tra cứu dữ liệu giải</h5>
+        <small class="text-muted">Hệ thống hỗ trợ tìm kiếm không dấu, có dấu, số CMND/CCCD hoặc tên viết tắt của các đoàn.</small>
+    </div>
+
+    <div id="searchLoading" class="card card-custom p-5 text-center d-none">
+        <div class="spinner-border text-primary mx-auto mb-3" role="status"></div>
+        <p class="text-muted mb-0">Đang tra cứu dữ liệu trong toàn giải đấu...</p>
+    </div>
+
+    <div id="searchResults" class="d-none d-flex flex-column gap-4">
+        <!-- 1. Kết Quả Vận Động Viên -->
+        <div id="sectionVdv" class="card card-custom overflow-hidden d-none">
+            <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-user-running text-primary me-2"></i> Vận Động Viên Tìm Thấy (<span id="countVdv">0</span>)
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-muted">
+                            <tr>
+                                <th class="ps-3">Mã VĐV</th>
+                                <th>Họ và Tên</th>
+                                <th>Giới Tính</th>
+                                <th>Đoàn / Đơn Vị</th>
+                                <th>Số CCCD</th>
+                                <th>Môn Tham Gia</th>
+                                <th class="pe-3">Thành Tích Đạt Được</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyVdv"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Kết Quả Đoàn / Đơn Vị -->
+        <div id="sectionDonVi" class="card card-custom overflow-hidden d-none">
+            <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-building-columns text-success me-2"></i> Đoàn / Đơn Vị Tìm Thấy (<span id="countDonVi">0</span>)
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-muted">
+                            <tr>
+                                <th class="ps-3">Mã Đơn Vị</th>
+                                <th>Tên Đơn Vị / Đoàn</th>
+                                <th>Người Đại Diện</th>
+                                <th>Số Điện Thoại</th>
+                                <th class="text-center">Số VĐV Tham Gia</th>
+                                <th class="text-center">Huy Chương (V-B-Đ)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyDonVi"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Kết Quả Trận Đấu -->
+        <div id="sectionTranDau" class="card card-custom overflow-hidden d-none">
+            <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-futbol text-warning me-2"></i> Trận Đấu & Biên Bản Tìm Thấy (<span id="countTranDau">0</span>)
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-muted">
+                            <tr>
+                                <th class="ps-3">Trận</th>
+                                <th>Môn / Vòng</th>
+                                <th>Cặp Đấu</th>
+                                <th class="text-center">Tỉ Số</th>
+                                <th>Trạng Thái</th>
+                                <th>Xác Nhận</th>
+                                <th class="text-end pe-3">Biên Bản</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyTranDau"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var searchScope = 'All';
+
+        function setScope(btn, scope) {
+            searchScope = scope;
+            $('.tag-filter').removeClass('btn-primary active').addClass('btn-outline-secondary');
+            $(btn).removeClass('btn-outline-secondary').addClass('btn-primary active');
+            if ($('#mainSearchInput').val().trim()) {
+                executeSearch();
+            }
+        }
+
+        function executeSearch() {
+            var kw = $('#mainSearchInput').val().trim();
+            if (!kw) {
+                Swal.fire('Chú ý', 'Vui lòng nhập từ khóa để tra cứu.', 'warning');
+                return;
+            }
+
+            var gId = $('#headerSelectGiaiDau').val();
+            $('#searchPlaceholder').addClass('d-none');
+            $('#searchLoading').removeClass('d-none');
+            $('#searchResults').addClass('d-none');
+
+            $.ajax({
+                url: '/ThuKy/TraCuu/TimKiem',
+                type: 'GET',
+                data: { keyword: kw, giaiDauId: gId, loaiDoiTuong: searchScope },
+                success: function (res) {
+                    $('#searchLoading').addClass('d-none');
+                    if (!res.success || !res.data) {
+                        $('#searchPlaceholder').removeClass('d-none').html('<p class="text-danger py-4">Lỗi tải dữ liệu tra cứu.</p>');
+                        return;
+                    }
+                    renderSearchResults(res.data);
+                },
+                error: function () {
+                    $('#searchLoading').addClass('d-none');
+                    $('#searchPlaceholder').removeClass('d-none').html('<p class="text-danger py-4">Lỗi kết nối máy chủ.</p>');
+                }
+            });
+        }
+
+        function renderSearchResults(d) {
+            $('#searchResults').removeClass('d-none');
+
+            var hasAny = false;
+
+            // 1. VĐV
+            if (d.vanDongViens && d.vanDongViens.length > 0) {
+                hasAny = true;
+                $('#sectionVdv').removeClass('d-none');
+                $('#countVdv').text(d.vanDongViens.length);
+
+                var vHtml = '';
+                d.vanDongViens.forEach(function (v) {
+                    var medals = v.thanhTich && v.thanhTich.length > 0
+                        ? v.thanhTich.map(t => `<span class="badge bg-warning text-dark me-1"><i class="fa-solid fa-medal"></i> ${t}</span>`).join('')
+                        : '<span class="text-muted small">--</span>';
+
+                    var sports = v.cacMonThiDau && v.cacMonThiDau.length > 0
+                        ? v.cacMonThiDau.map(m => `<span class="badge bg-light text-dark border me-1">${m}</span>`).join('')
+                        : '<span class="text-muted small">--</span>';
+
+                    vHtml += `
+                        <tr>
+                            <td class="ps-3"><code>${v.maVdv || '--'}</code></td>
+                            <td class="fw-bold text-dark">${v.hoTen}</td>
+                            <td><span class="badge bg-info bg-opacity-10 text-info border">${v.gioiTinh || '--'}</span></td>
+                            <td><span class="badge bg-light text-dark border">${v.tenDonVi}</span></td>
+                            <td><small class="text-muted">${v.soCCCD || '--'}</small></td>
+                            <td>${sports}</td>
+                            <td class="pe-3">${medals}</td>
+                        </tr>
+                    `;
+                });
+                $('#tbodyVdv').html(vHtml);
+            } else {
+                $('#sectionVdv').addClass('d-none');
+            }
+
+            // 2. Đoàn
+            if (d.donVis && d.donVis.length > 0) {
+                hasAny = true;
+                $('#sectionDonVi').removeClass('d-none');
+                $('#countDonVi').text(d.donVis.length);
+
+                var dHtml = '';
+                d.donVis.forEach(function (dv) {
+                    dHtml += `
+                        <tr>
+                            <td class="ps-3"><code>${dv.maDonVi || '--'}</code></td>
+                            <td class="fw-bold text-dark">${dv.tenDonVi}</td>
+                            <td>${dv.nguoiLienHe || '--'}</td>
+                            <td>${dv.soDienThoai || '--'}</td>
+                            <td class="text-center"><span class="badge bg-primary fs-6">${dv.soVdvThamGia} VĐV</span></td>
+                            <td class="text-center">
+                                <span class="badge bg-warning text-dark fw-bold me-1">${dv.soHuyChuongVang} Vàng</span>
+                                <span class="badge bg-secondary text-white fw-bold me-1">${dv.soHuyChuongBac} Bạc</span>
+                                <span class="badge bg-danger text-white fw-bold">${dv.soHuyChuongDong} Đồng</span>
+                            </td>
+                        </tr>
+                    `;
+                });
+                $('#tbodyDonVi').html(dHtml);
+            } else {
+                $('#sectionDonVi').addClass('d-none');
+            }
+
+            // 3. Trận đấu
+            if (d.tranDaus && d.tranDaus.length > 0) {
+                hasAny = true;
+                $('#sectionTranDau').removeClass('d-none');
+                $('#countTranDau').text(d.tranDaus.length);
+
+                var tHtml = '';
+                d.tranDaus.forEach(function (m) {
+                    tHtml += `
+                        <tr>
+                            <td class="ps-3 fw-bold text-primary">#${m.soTran}</td>
+                            <td>
+                                <div class="fw-semibold">${m.tenMonTheThao}</div>
+                                <small class="text-muted">${m.tenVongDau || ''}</small>
+                            </td>
+                            <td>${m.tenDoi1} vs ${m.tenDoi2}</td>
+                            <td class="text-center fw-bold text-primary fs-6">${m.tySoDoi1} - ${m.tySoDoi2}</td>
+                            <td><span class="badge bg-light text-dark border">${m.trangThaiTranDau}</span></td>
+                            <td><span class="badge ${m.trangThaiXacNhan === 'DaXacNhan' ? 'bg-success' : 'bg-warning text-dark'}">${m.trangThaiXacNhan}</span></td>
+                            <td class="text-end pe-3">
+                                <a href="/ThuKy/BienBan?tranDauId=${m.tranDauId}" class="btn btn-xs btn-outline-primary rounded-pill px-3 py-1">
+                                    <i class="fa-solid fa-file-signature me-1"></i> Xem biên bản
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                });
+                $('#tbodyTranDau').html(tHtml);
+            } else {
+                $('#sectionTranDau').addClass('d-none');
+            }
+
+            if (!hasAny) {
+                $('#searchResults').addClass('d-none');
+                $('#searchPlaceholder').removeClass('d-none').html(`
+                    <i class="fa-solid fa-circle-exclamation text-warning fs-1 mb-3"></i>
+                    <h5>Không tìm thấy kết quả nào khớp với "${d.keyword}"</h5>
+                    <small class="text-muted">Vui lòng thử lại với từ khóa khác hoặc chuyển phạm vi tìm kiếm sang Tất cả.</small>
+                `);
+            }
+        }
+    </script>
+}

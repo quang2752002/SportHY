@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Ban Tổ Chức & Quản Lý Giải</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+    <!-- Select2 CSS & Bootstrap theme -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-bg: #0c1a30;
+            --sidebar-hover: #162a4d;
+            --sidebar-active: #0284c7;
+            --header-height: 64px;
+            --primary-color: #0284c7;
+            --accent-color: #0ea5e9;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styling */
+        .manager-sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: var(--sidebar-bg);
+            color: #94a3b8;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1040;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .sidebar-brand {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 0.5px;
+            background: rgba(0,0,0,0.25);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            text-decoration: none;
+        }
+
+        .sidebar-brand i {
+            color: #38bdf8;
+            margin-right: 0.75rem;
+            font-size: 1.35rem;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0.75rem;
+        }
+
+        .nav-section-title {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            padding: 0.75rem 0.85rem 0.35rem;
+        }
+
+        .nav-item-custom {
+            display: flex;
+            align-items: center;
+            padding: 0.7rem 0.85rem;
+            border-radius: 8px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+            margin-bottom: 3px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item-custom:hover {
+            color: #fff;
+            background: var(--sidebar-hover);
+        }
+
+        .nav-item-custom.active {
+            color: #fff;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+
+        .nav-item-custom i {
+            font-size: 1.05rem;
+            width: 24px;
+            margin-right: 0.65rem;
+            text-align: center;
+            opacity: 0.85;
+        }
+
+        .nav-item-custom.active i {
+            opacity: 1;
+            color: #fff;
+        }
+
+        /* Top Header Styling */
+        .manager-header {
+            height: var(--header-height);
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: var(--sidebar-width);
+            background: #fff;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.05);
+            z-index: 1030;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            transition: left 0.3s ease;
+        }
+
+        .manager-content {
+            margin-left: var(--sidebar-width);
+            padding-top: calc(var(--header-height) + 1.5rem);
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+            padding-bottom: 2.5rem;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Card Custom */
+        .card-custom {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            transition: all 0.2s ease;
+        }
+
+        .card-custom:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .table thead th {
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding-top: 0.85rem;
+            padding-bottom: 0.85rem;
+        }
+
+        .table tbody td {
+            font-size: 0.87rem;
+            padding-top: 0.85rem;
+            padding-bottom: 0.85rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .badge-status {
+            padding: 0.35rem 0.65rem;
+            font-weight: 500;
+            font-size: 0.75rem;
+            border-radius: 6px;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1035;
+        }
+
+        @@media (max-width: 991.98px) {
+            .manager-sidebar {
+                transform: translateX(-100%);
+            }
+            .manager-sidebar.show {
+                transform: translateX(0);
+            }
+            .manager-header {
+                left: 0;
+            }
+            .manager-content {
+                margin-left: 0;
+            }
+            .sidebar-overlay.show {
+                display: block;
+            }
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="manager-sidebar" id="managerSidebar">
+        <a href="/Manager/Home" class="sidebar-brand">
+            <i class="fa-solid fa-trophy text-warning"></i>
+            <div>
+                <span class="fw-bold">SPORT MANAGER</span>
+                <span class="badge bg-info-subtle text-info border ms-1" style="font-size: 0.65rem;">BTC GIẢI</span>
+            </div>
+        </a>
+
+        <div class="sidebar-nav">
+            <div class="nav-section-title">ĐIỀU HÀNH & TỔNG QUAN</div>
+            <a href="/Manager/Home" class="nav-item-custom" data-route="/Manager/Home">
+                <i class="fa-solid fa-chart-pie text-info"></i>
+                <span>Tổng Quan Giải</span>
+            </a>
+            <a href="/Manager/GiaiDau" class="nav-item-custom" data-route="/Manager/GiaiDau">
+                <i class="fa-solid fa-trophy text-warning"></i>
+                <span>Quản Lý Giải Đấu</span>
+            </a>
+            <a href="/Manager/PhanCong" class="nav-item-custom" data-route="/Manager/PhanCong">
+                <i class="fa-solid fa-users-gear text-warning"></i>
+                <span>Phân Công Trọng Tài & Môn</span>
+            </a>
+
+            <div class="nav-section-title">ĐIỀU HÀNH THI ĐẤU</div>
+            <a href="/TruongBanTrongTai/Home" class="nav-item-custom" data-route="/TruongBanTrongTai">
+                <i class="fa-solid fa-whistle text-warning"></i>
+                <span>Ban Trọng Tài (Trưởng Ban)</span>
+            </a>
+            <a href="/DieuHanhMon/Home" class="nav-item-custom" data-route="/DieuHanhMon">
+                <i class="fa-solid fa-volleyball text-info"></i>
+                <span>Người Điều Hành Môn</span>
+            </a>
+            <a href="/Manager/DangKyThiDau" class="nav-item-custom" data-route="/Manager/DangKyThiDau">
+                <i class="fa-solid fa-address-card text-success"></i>
+                <span>Hồ Sơ Đăng Ký Thi Đấu</span>
+            </a>
+            <a href="/Manager/LichThiDau" class="nav-item-custom" data-route="/Manager/LichThiDau">
+                <i class="fa-solid fa-calendar-check text-primary"></i>
+                <span>Lịch Thi Đấu & Bốc Thăm</span>
+            </a>
+            <a href="/Manager/BangDau" class="nav-item-custom" data-route="/Manager/BangDau">
+                <i class="fa-solid fa-sitemap text-purple" style="color: #a855f7;"></i>
+                <span>Bảng Thi Đấu & Nhánh</span>
+            </a>
+            <a href="/Manager/HuyChuong" class="nav-item-custom" data-route="/Manager/HuyChuong">
+                <i class="fa-solid fa-award text-warning"></i>
+                <span>Tổng Kết Huy Chương</span>
+            </a>
+
+            <div class="nav-section-title">QUẢN TRỊ THỂ THAO</div>
+            <a href="/Manager/Khoi" class="nav-item-custom" data-route="/Manager/Khoi">
+                <i class="fa-solid fa-layer-group text-info"></i>
+                <span>Khối Tham Gia</span>
+            </a>
+            <a href="/Manager/DonVi" class="nav-item-custom" data-route="/Manager/DonVi">
+                <i class="fa-solid fa-building-columns text-primary"></i>
+                <span>Đơn Vị / Đoàn</span>
+            </a>
+            <a href="/Manager/VanDongVien" class="nav-item-custom" data-route="/Manager/VanDongVien">
+                <i class="fa-solid fa-person-running text-success"></i>
+                <span>Vận Động Viên</span>
+            </a>
+            <a href="/Manager/DanhMucMonTheThao" class="nav-item-custom" data-route="/Manager/DanhMucMonTheThao">
+                <i class="fa-solid fa-tags text-warning"></i>
+                <span>Danh Mục Môn</span>
+            </a>
+            <a href="/Manager/MonTheThao" class="nav-item-custom" data-route="/Manager/MonTheThao">
+                <i class="fa-solid fa-volleyball text-danger"></i>
+                <span>Môn Thi Đấu</span>
+            </a>
+            <a href="/Manager/TrongTai" class="nav-item-custom" data-route="/Manager/TrongTai">
+                <i class="fa-solid fa-user-shield text-info"></i>
+                <span>Trọng Tài</span>
+            </a>
+            <a href="/Manager/ThuKy" class="nav-item-custom" data-route="/Manager/ThuKy">
+                <i class="fa-solid fa-file-signature text-secondary"></i>
+                <span>Thư Ký Giải Đấu</span>
+            </a>
+            <a href="/Manager/CumSan" class="nav-item-custom" data-route="/Manager/CumSan">
+                <i class="fa-solid fa-map-location-dot text-success"></i>
+                <span>Cụm Sân Thi Đấu</span>
+            </a>
+            <a href="/Manager/SanDau" class="nav-item-custom" data-route="/Manager/SanDau">
+                <i class="fa-solid fa-futbol text-primary"></i>
+                <span>Sân Thi Đấu</span>
+            </a>
+
+            <div class="nav-section-title">HỆ THỐNG</div>
+            <a href="/" class="nav-item-custom" target="_blank">
+                <i class="fa-solid fa-globe text-info"></i>
+                <span>Xem Cổng Trang Chủ</span>
+            </a>
+            @if (User.IsInRole(AppRoles.Admin))
+            {
+                <a href="/Admin/Home" class="nav-item-custom text-warning">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Sang Bảng Điều Khiển Admin</span>
+                </a>
+            }
+        </div>
+    </aside>
+
+    <!-- Top Header -->
+    <header class="manager-header">
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-sm btn-light border d-lg-none" id="btnToggleSidebar" type="button">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="d-none d-md-flex align-items-center text-muted small">
+                <i class="fa-solid fa-shield-halved text-primary me-2"></i>
+                <span class="fw-semibold">Ban Quản Lý & Điều Hành Giải Đấu Thể Thao</span>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="dropdown">
+                <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                        <i class="fa-solid fa-user-tie"></i>
+                    </div>
+                    <span class="fw-semibold small">@(User.Identity?.Name ?? "Quản Lý")</span>
+                    <span class="badge bg-primary-subtle text-primary border" style="font-size: 0.65rem;">Manager</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                    <li>
+                        <div class="dropdown-header text-muted small">
+                            Tài khoản: <strong>@(User.Identity?.Name)</strong>
+                        </div>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form method="post" action="/Account/Logout" class="m-0">
+                            <button type="submit" class="dropdown-item text-danger d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="manager-content">
+        @RenderBody()
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        // Sidebar toggle for mobile
+        $('#btnToggleSidebar, #sidebarOverlay').on('click', function () {
+            $('#managerSidebar').toggleClass('show');
+            $('#sidebarOverlay').toggleClass('show');
+        });
+
+        // Highlight active menu item based on current URL path
+        $(document).ready(function () {
+            const currentPath = window.location.pathname.toLowerCase();
+            $('.sidebar-nav .nav-item-custom').each(function () {
+                const route = $(this).data('route');
+                if (route && currentPath.startsWith(route.toLowerCase())) {
+                    $(this).addClass('active');
+                }
+            });
+        });
+
+        // Global Alert & Toast Helpers
+        const SportApp = {
+            toast: function (icon, title) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    icon: icon,
+                    title: title
+                });
+            },
+            confirm: function (title, text, callback) {
+                Swal.fire({
+                    title: title,
+                    text: text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0284c7',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Đồng ý',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        callback();
+                    }
+                });
+            }
+        };
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

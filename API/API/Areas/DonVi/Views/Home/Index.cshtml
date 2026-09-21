@@ -1,0 +1,309 @@
+@model List<VanDongVienDto>
+@{
+    ViewData["Title"] = "Tổng quan Đoàn";
+    var currentUnit = ViewBag.CurrentDonVi as DonViDto;
+    var recentVdvs = ViewBag.RecentAthletes as List<VanDongVienDto> ?? new();
+    var tournaments = ViewBag.AvailableTournaments as List<GiaiDauDto> ?? new();
+}
+
+<div class="d-flex flex-column gap-4">
+    <!-- Banner Chào Mừng -->
+    <div class="rounded-4 p-4 p-md-5 text-white position-relative overflow-hidden shadow-sm"
+         style="background: linear-gradient(135deg, #065f46 0%, #0f766e 50%, #0f172a 100%);">
+        <div class="position-absolute end-0 top-0 bottom-0 d-none d-md-flex align-items-center justify-content-end pe-5 opacity-10"
+             style="pointer-events: none;">
+            <i class="fa-solid fa-building-columns" style="font-size: 180px;"></i>
+        </div>
+
+        <div class="position-relative" style="z-index: 2;">
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3 border"
+                 style="background-color: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.2); font-size: 12px;">
+                <i class="fa-solid fa-shield-halved text-warning"></i>
+                <span class="fw-semibold text-white">Phân hệ Quản Trị Đoàn Thi Đấu</span>
+            </div>
+
+            <h2 class="fw-bold mb-2 fs-3 fs-md-2">
+                Xin chào, @(currentUnit?.Ten ?? User.Identity?.Name)!
+            </h2>
+            <p class="text-white-50 mb-0 small" style="max-width: 680px; line-height: 1.6;">
+                Chào mừng bạn đến với cổng quản trị đoàn tham gia thi đấu. Tại đây bạn có thể quản lý danh sách vận động viên, gửi hồ sơ đăng ký nội dung, và theo dõi lịch thi đấu, thành tích của đoàn.
+            </p>
+        </div>
+    </div>
+
+    <!-- 4 Thẻ Thống Kê Nhanh -->
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <div class="card-custom p-3.5 p-3 d-flex align-items-center gap-3">
+                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width: 48px; height: 48px; background-color: #ecfdf5; color: #059669;">
+                    <i class="fa-solid fa-users fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block" style="font-size: 11px; font-weight: 500;">
+                        Tổng số VĐV
+                    </span>
+                    <span class="fw-bold fs-4 text-dark">@ViewBag.TotalVdvs</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card-custom p-3.5 p-3 d-flex align-items-center gap-3">
+                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width: 48px; height: 48px; background-color: #eff6ff; color: #2563eb;">
+                    <i class="fa-solid fa-circle-check fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block" style="font-size: 11px; font-weight: 500;">
+                        Hồ sơ đã duyệt
+                    </span>
+                    <span class="fw-bold fs-4 text-primary">@ViewBag.ApprovedRegs</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card-custom p-3.5 p-3 d-flex align-items-center gap-3">
+                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width: 48px; height: 48px; background-color: #fffbeb; color: #d97706;">
+                    <i class="fa-solid fa-clock fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block" style="font-size: 11px; font-weight: 500;">
+                        Chờ BTC duyệt
+                    </span>
+                    <span class="fw-bold fs-4 text-warning">@ViewBag.PendingRegs</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card-custom p-3.5 p-3 d-flex align-items-center gap-3">
+                <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width: 48px; height: 48px; background-color: #faf5ff; color: #9333ea;">
+                    <i class="fa-solid fa-trophy fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-secondary small d-block" style="font-size: 11px; font-weight: 500;">
+                        Giải đang mở
+                    </span>
+                    <span class="fw-bold fs-4" style="color: #9333ea;">@ViewBag.ActiveTournamentsCount</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main 2-column content -->
+    <div class="row g-4">
+        <!-- Cột Trái: Danh sách VĐV gần đây -->
+        <div class="col-lg-8">
+            <div class="card-custom p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1">
+                            <i class="fa-solid fa-users me-2 text-success"></i> Vận Động Viên Của Đoàn
+                        </h5>
+                        <p class="text-muted small mb-0">Danh sách lực lượng VĐV đăng ký tham gia các giải</p>
+                    </div>
+                    <a href="/DonVi/VanDongVien" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                        Quản lý đầy đủ <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+
+                @if (recentVdvs.Count == 0)
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-user-plus fs-1 text-secondary opacity-50 mb-2"></i>
+                        <p class="mb-2">Đoàn của bạn chưa có vận động viên nào trong danh sách.</p>
+                        <a href="/DonVi/VanDongVien" class="btn btn-sm btn-donvi-primary rounded-pill px-3">
+                            <i class="fa-solid fa-plus me-1"></i> Thêm VĐV đầu tiên
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr style="font-size: 12px;">
+                                    <th>MÃ / HỌ TÊN</th>
+                                    <th>GIỚI TÍNH</th>
+                                    <th>NGÀY SINH</th>
+                                    <th>SỐ ĐIỆN THOẠI</th>
+                                    <th>TRẠNG THÁI</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 13px;">
+                                @foreach (var a in recentVdvs)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                                                     style="width: 32px; height: 32px; font-size: 11px; background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                                                    @(string.IsNullOrEmpty(a.HoTen) ? "V" : a.HoTen.Substring(0, 1).ToUpper())
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold text-dark">@a.HoTen</div>
+                                                    <small class="text-muted">@a.Ma</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (a.GioiTinh == "Nam")
+                                            {
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Nam</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Nữ</span>
+                                            }
+                                        </td>
+                                        <td>@(a.NgaySinh?.ToString("dd/MM/yyyy") ?? "--")</td>
+                                        <td>@(string.IsNullOrEmpty(a.SoDienThoai) ? "--" : a.SoDienThoai)</td>
+                                        <td>
+                                            @if (a.TrangThai)
+                                            {
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                    <i class="fa-solid fa-circle-check me-1"></i> Sẵn sàng
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                                    Tạm ngừng
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Cột Phải: Thêm nhanh VĐV & Giải đấu mở -->
+        <div class="col-lg-4 d-flex flex-column gap-4">
+            <!-- Thêm nhanh VĐV -->
+            <div class="card-custom p-4">
+                <h6 class="fw-bold text-dark mb-3">
+                    <i class="fa-solid fa-user-plus text-primary me-2"></i> Thêm Nhanh Vận Động Viên
+                </h6>
+                <form id="quickAddForm">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Họ và tên VĐV <span class="text-danger">*</span></label>
+                        <input type="text" id="qaHoTen" class="form-control form-control-sm" placeholder="VD: Nguyễn Văn An" required />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Giới tính</label>
+                            <select id="qaGioiTinh" class="form-select form-select-sm">
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Ngày sinh</label>
+                            <input type="date" id="qaNgaySinh" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Số CCCD / Định danh</label>
+                        <input type="text" id="qaSoCccd" class="form-control form-control-sm" placeholder="12 chữ số" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Số điện thoại</label>
+                        <input type="tel" id="qaSoDienThoai" class="form-control form-control-sm" placeholder="09xxxx" />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-donvi-primary w-100 rounded-pill py-2">
+                        <i class="fa-solid fa-plus me-1"></i> Lưu Vận Động Viên
+                    </button>
+                </form>
+            </div>
+
+            <!-- Giải đấu mở đăng ký -->
+            <div class="card-custom p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-trophy text-warning me-2"></i> Giải Đang Mở Đăng Ký
+                    </h6>
+                    <a href="/DonVi/DangKy" class="small text-decoration-none fw-semibold text-success">
+                        Xem tất cả
+                    </a>
+                </div>
+
+                @if (tournaments.Count == 0)
+                {
+                    <p class="text-muted small mb-0">Hiện chưa có giải đấu nào mở đăng ký.</p>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-2.5">
+                        @foreach (var t in tournaments)
+                        {
+                            <div class="p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
+                                <div class="overflow-hidden pe-2">
+                                    <h6 class="fw-bold text-dark text-truncate mb-1" style="font-size: 13px;">@t.Ten</h6>
+                                    <div class="text-muted small" style="font-size: 11px;">
+                                        <i class="fa-solid fa-calendar-day me-1"></i> @t.NgayBatDau.ToString("dd/MM/yyyy") - @t.NgayKetThuc.ToString("dd/MM/yyyy")
+                                    </div>
+                                </div>
+                                <a href="/DonVi/DangKy/ChiTiet/@t.Id" class="btn btn-sm btn-donvi-primary rounded-pill px-2.5 py-1 text-nowrap" style="font-size: 12px;">
+                                    Đăng ký <i class="fa-solid fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#quickAddForm').on('submit', function (e) {
+            e.preventDefault();
+            const hoTen = $('#qaHoTen').val().trim();
+            if (!hoTen) {
+                Swal.fire('Lỗi', 'Vui lòng nhập họ tên VĐV', 'warning');
+                return;
+            }
+
+            const payload = {
+                hoTen: hoTen,
+                gioiTinh: $('#qaGioiTinh').val(),
+                ngaySinh: $('#qaNgaySinh').val() || null,
+                soCCCD: $('#qaSoCccd').val().trim(),
+                soDienThoai: $('#qaSoDienThoai').val().trim(),
+                trangThai: true
+            };
+
+            $.ajax({
+                url: '/DonVi/Home/QuickAddAthlete',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: res.message,
+                            timer: 1800,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu VĐV', 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
+                }
+            });
+        });
+    </script>
+}

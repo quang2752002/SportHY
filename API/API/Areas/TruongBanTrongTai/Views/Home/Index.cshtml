@@ -1,0 +1,279 @@
+@{
+    ViewData["Title"] = "Tổng Quan Ban Trọng Tài";
+}
+
+<!-- Trạng thái Loading -->
+<div id="tbLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Đang tải dữ liệu...</span>
+    </div>
+    <p class="text-muted mt-3 fw-semibold">Đang tải dữ liệu Ban trọng tài...</p>
+</div>
+
+<!-- Trạng thái Thông báo khi chưa được phân công -->
+<div id="tbAlert" class="alert alert-info border-0 shadow-sm p-4 rounded-4 d-none">
+    <h4 class="alert-heading fw-bold"><i class="fa-solid fa-circle-info me-2"></i> Thông báo</h4>
+    <p id="tbAlertMsg" class="mb-0">Bạn chưa được phân công làm Trưởng ban trọng tài cho giải đấu nào.</p>
+</div>
+
+<!-- Khung nội dung chính hiển thị qua AJAX -->
+<div id="tbContent" class="d-none">
+    <!-- Banner giải đấu -->
+    <div class="card card-custom border-0 mb-4 text-white overflow-hidden position-relative" style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);">
+        <div class="card-body p-4 position-relative" style="z-index: 2;">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">BAN TRỌNG TÀI ĐIỀU HÀNH</span>
+                        <span id="bannerYear" class="badge bg-white bg-opacity-20 text-white px-3 py-1 rounded-pill">2026</span>
+                    </div>
+                    <h2 id="bannerTenGiai" class="fw-bold mb-1 text-white">Giải thể thao</h2>
+                    <p class="mb-0 text-white-50 fs-6">
+                        <i class="fa-regular fa-calendar me-1"></i> <span id="bannerThoiGian">--</span> &nbsp;|&nbsp;
+                        <i class="fa-solid fa-location-dot me-1"></i> <span id="bannerDiaDiem">Chưa cập nhật địa điểm</span>
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/TruongBanTrongTai/PhanCong" class="btn btn-warning fw-bold px-3 py-2 shadow-sm">
+                        <i class="fa-solid fa-clipboard-user me-1"></i> Phân Công Trận Đấu
+                    </a>
+                    <a href="/TruongBanTrongTai/KiemTraTrungLich" class="btn btn-outline-light px-3 py-2">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Kiểm Tra Trùng Lịch
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="position-absolute end-0 bottom-0 opacity-10" style="font-size: 15rem; line-height: 0.8; margin-right: -2rem; margin-bottom: -3rem;">
+            <i class="fa-solid fa-whistle"></i>
+        </div>
+    </div>
+
+    <!-- Cảnh báo nếu có trùng lịch -->
+    <div id="conflictAlertBox" class="alert alert-danger border-0 shadow-sm p-4 rounded-4 mb-4 d-none">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-danger text-white p-3 fs-4 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h5 class="alert-heading fw-bold mb-1 text-danger">Cảnh Báo Xung Đột Lịch Trọng Tài</h5>
+                    <p class="mb-0 text-dark">Hệ thống phát hiện có <strong id="conflictCountText" class="text-danger">0</strong> cặp trận bị trùng hoặc cách nhau dưới 90 phút.</p>
+                </div>
+            </div>
+            <a href="/TruongBanTrongTai/KiemTraTrungLich" class="btn btn-danger fw-bold px-4 py-2">
+                <i class="fa-solid fa-arrow-right me-1"></i> Xử Lý Trùng Lịch Ngay
+            </a>
+        </div>
+    </div>
+
+    <!-- Hàng thống kê KPI -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card card-custom p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Lực Lượng Trọng Tài</span>
+                        <h3 class="fw-bold mt-1 mb-0 text-primary"><span id="statTotalReferees">0</span> <span class="fs-6 fw-normal text-muted">người</span></h3>
+                        <small class="text-success fw-semibold"><i class="fa-solid fa-user-check me-1"></i> <span id="statAssignedReferees">0</span> đã nhận trận</small>
+                    </div>
+                    <div class="rounded-3 bg-primary bg-opacity-10 p-3 text-primary fs-3">
+                        <i class="fa-solid fa-users-gear"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card card-custom p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Môn Thi Đấu</span>
+                        <h3 class="fw-bold mt-1 mb-0 text-info"><span id="statTotalSports">0</span> <span class="fs-6 fw-normal text-muted">môn</span></h3>
+                        <small class="text-muted">Trong khuôn khổ giải</small>
+                    </div>
+                    <div class="rounded-3 bg-info bg-opacity-10 p-3 text-info fs-3">
+                        <i class="fa-solid fa-medal"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card card-custom p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng Số Trận Đấu</span>
+                        <h3 class="fw-bold mt-1 mb-0 text-dark"><span id="statTotalMatches">0</span> <span class="fs-6 fw-normal text-muted">trận</span></h3>
+                        <small class="text-muted"><span id="statCompletedMatches">0</span> đã xong | <span id="statOngoingMatches">0</span> đang đấu</small>
+                    </div>
+                    <div class="rounded-3 bg-dark bg-opacity-10 p-3 text-dark fs-3">
+                        <i class="fa-solid fa-stopwatch-20"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card card-custom p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Trận Sắp Diễn Ra</span>
+                        <h3 class="fw-bold mt-1 mb-0 text-warning"><span id="statUpcomingMatches">0</span> <span class="fs-6 fw-normal text-muted">trận</span></h3>
+                        <small class="text-warning fw-semibold"><i class="fa-solid fa-clock me-1"></i> Cần đảm bảo trọng tài</small>
+                    </div>
+                    <div class="rounded-3 bg-warning bg-opacity-10 p-3 text-warning fs-3">
+                        <i class="fa-solid fa-calendar-day"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách các trận sắp diễn ra -->
+    <div class="card card-custom mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark">
+                <i class="fa-solid fa-list-check text-primary me-2"></i> Trận Đấu Sắp Tới & Tình Trạng Phân Công
+            </h5>
+            <a href="/TruongBanTrongTai/PhanCong" class="btn btn-sm btn-outline-primary">
+                Xem toàn bộ <i class="fa-solid fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th style="width: 70px;">Trận</th>
+                        <th>Môn Thi Đấu</th>
+                        <th>Tên Trận</th>
+                        <th>Thời Gian Dự Kiến</th>
+                        <th>Trọng Tài Chính</th>
+                        <th>Tình Trạng Tổ Trọng Tài</th>
+                        <th class="text-end">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="upcomingMatchesBody">
+                    <!-- Render động qua AJAX -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            loadTruongBanDashboard();
+        });
+
+        async function loadTruongBanDashboard() {
+            const loadingEl = document.getElementById('tbLoading');
+            const alertEl = document.getElementById('tbAlert');
+            const alertMsgEl = document.getElementById('tbAlertMsg');
+            const contentEl = document.getElementById('tbContent');
+
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const queryStr = params.toString() ? ('?' + params.toString()) : '';
+                const response = await fetch('/TruongBanTrongTai/Home/GetDashboardData' + queryStr);
+                const result = await response.json();
+
+                loadingEl.classList.add('d-none');
+
+                if (!result.success || !result.data) {
+                    alertMsgEl.textContent = result.message || 'Không tìm thấy thông tin phân công Trưởng ban trọng tài.';
+                    alertEl.classList.remove('d-none');
+                    contentEl.classList.add('d-none');
+                    return;
+                }
+
+                alertEl.classList.add('d-none');
+                contentEl.classList.remove('d-none');
+
+                const d = result.data;
+                const t = d.currentTournament || {};
+
+                // Banner
+                const startYear = t.ngayBatDau ? new Date(t.ngayBatDau).getFullYear() : new Date().getFullYear();
+                document.getElementById('bannerYear').textContent = startYear;
+                document.getElementById('bannerTenGiai').textContent = t.ten || 'Giải thể thao';
+                
+                let timeStr = '--';
+                if (t.ngayBatDau && t.ngayKetThuc) {
+                    const d1 = new Date(t.ngayBatDau).toLocaleDateString('vi-VN');
+                    const d2 = new Date(t.ngayKetThuc).toLocaleDateString('vi-VN');
+                    timeStr = `${d1} - ${d2}`;
+                }
+                document.getElementById('bannerThoiGian').textContent = timeStr;
+                document.getElementById('bannerDiaDiem').textContent = t.diaDiem || 'Chưa cập nhật địa điểm';
+
+                // Cảnh báo trùng lịch
+                const conflictBox = document.getElementById('conflictAlertBox');
+                if (d.conflictCount > 0) {
+                    document.getElementById('conflictCountText').textContent = d.conflictCount;
+                    conflictBox.classList.remove('d-none');
+                } else {
+                    conflictBox.classList.add('d-none');
+                }
+
+                // KPIs
+                document.getElementById('statTotalReferees').textContent = d.totalReferees || 0;
+                document.getElementById('statAssignedReferees').textContent = d.assignedReferees || 0;
+                document.getElementById('statTotalSports').textContent = d.totalSports || 0;
+                document.getElementById('statTotalMatches').textContent = d.totalMatches || 0;
+                document.getElementById('statCompletedMatches').textContent = d.completedMatches || 0;
+                document.getElementById('statOngoingMatches').textContent = d.ongoingMatches || 0;
+                document.getElementById('statUpcomingMatches').textContent = d.upcomingMatches || 0;
+
+                // Bảng trận sắp tới
+                const tbody = document.getElementById('upcomingMatchesBody');
+                tbody.innerHTML = '';
+
+                if (!d.upcomingMatchesList || d.upcomingMatchesList.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Chưa có trận đấu nào trong lịch sắp tới.</td></tr>';
+                    return;
+                }
+
+                d.upcomingMatchesList.forEach(m => {
+                    let assignedBadge = `<span class="badge bg-success bg-opacity-10 text-success fw-semibold px-2 py-1"><i class="fa-solid fa-check me-1"></i> Đã đủ (${m.totalAssigned}/5)</span>`;
+                    if (m.totalAssigned === 0) {
+                        assignedBadge = `<span class="badge bg-danger bg-opacity-10 text-danger fw-semibold px-2 py-1"><i class="fa-solid fa-xmark me-1"></i> Chưa phân công</span>`;
+                    } else if (m.totalAssigned < 2) {
+                        assignedBadge = `<span class="badge bg-warning bg-opacity-10 text-warning fw-semibold px-2 py-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Còn thiếu (${m.totalAssigned}/5)</span>`;
+                    }
+
+                    let timeDisplay = '<span class="text-muted small">Chưa xếp giờ</span>';
+                    if (m.thoiGianDuKien) {
+                        const dt = new Date(m.thoiGianDuKien);
+                        timeDisplay = `<div class="small text-dark"><i class="fa-regular fa-clock text-muted me-1"></i>${dt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} ${dt.toLocaleDateString('vi-VN')}</div>`;
+                    }
+
+                    const rowHtml = `
+                        <tr>
+                            <td class="fw-bold text-center">#${m.soTran || ''}</td>
+                            <td><span class="badge bg-light text-dark border fw-semibold px-2 py-1">${m.tenMon || ''}</span></td>
+                            <td class="fw-semibold text-dark">${m.tenTran || ''}</td>
+                            <td>${timeDisplay}</td>
+                            <td>
+                                ${m.tenTrongTaiChinh ? `<span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1"><i class="fa-solid fa-user me-1"></i> ${m.tenTrongTaiChinh}</span>` : '<span class="text-muted small fst-italic">Chưa có</span>'}
+                            </td>
+                            <td>${assignedBadge}</td>
+                            <td class="text-end">
+                                <a href="/TruongBanTrongTai/PhanCong?tranDauId=${m.tranDauId}" class="btn btn-sm btn-light border">
+                                    <i class="fa-solid fa-pen-to-square me-1 text-primary"></i> Phân công
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', rowHtml);
+                });
+
+            } catch (err) {
+                console.error('Lỗi khi tải Dashboard Trưởng ban trọng tài:', err);
+                loadingEl.classList.add('d-none');
+                alertMsgEl.textContent = 'Đã có lỗi xảy ra khi kết nối máy chủ để tải dữ liệu.';
+                alertEl.classList.remove('d-none');
+            }
+        }
+    </script>
+}

@@ -1,0 +1,451 @@
+@model Dms.Application.DTOs.GiaiDauDto
+@{
+    ViewData["Title"] = "Chỉnh sửa Giải Đấu: " + Model.Ten;
+    var khois = ViewBag.Khois as IEnumerable<KhoiDto> ?? Enumerable.Empty<KhoiDto>();
+    var monTheThaos = ViewBag.MonTheThaos as IEnumerable<MonTheThaoDto> ?? Enumerable.Empty<MonTheThaoDto>();
+    var selectedMonIds = Model.MonTheThaos?.Select(m => m.MonTheThaoId).ToHashSet() ?? new HashSet<int>();
+    var selectedKhoiIds = Model.KhoiIds?.ToHashSet() ?? new HashSet<int>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-pen-to-square text-success me-2"></i>Chỉnh Sửa Giải Đấu
+        </h4>
+        <p class="text-muted small mb-0">Cập nhật thông tin cho giải: <strong>@Model.Ten</strong> (Mã: @Model.Ma)</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/Admin/GiaiDau" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i> Quay lại danh sách
+        </a>
+    </div>
+</div>
+
+<form id="formEditGiaiDau" novalidate>
+    <input type="hidden" id="giaiDauId" value="@Model.Id" />
+    <div class="row g-4">
+        <!-- Cột trái: Thông tin chính -->
+        <div class="col-lg-8">
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-circle-info text-primary me-2"></i>1. Thông Tin Cơ Bản
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Tên giải đấu <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="ten" value="@Model.Ten" required>
+                            <div class="invalid-feedback">Vui lòng nhập tên giải đấu.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Mã giải đấu <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="ma" value="@Model.Ma" required>
+                            <div class="invalid-feedback">Vui lòng nhập mã giải đấu.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Đường dẫn thân thiện (Slug)</label>
+                            <input type="text" class="form-control" id="slug" value="@Model.Slug">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Địa điểm tổ chức</label>
+                            <input type="text" class="form-control" id="diaDiem" value="@Model.DiaDiem">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Ngày bắt đầu <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="ngayBatDau" value="@Model.NgayBatDau.ToString("yyyy-MM-dd")" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Ngày kết thúc <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="ngayKetThuc" value="@Model.NgayKetThuc.ToString("yyyy-MM-dd")" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Hạn nộp hồ sơ đăng ký</label>
+                            <input type="date" class="form-control" id="hanDangKy" value="@(Model.HanDangKy.HasValue ? Model.HanDangKy.Value.ToString("yyyy-MM-dd") : "")">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Mô tả tóm tắt giải đấu</label>
+                            <textarea class="form-control" id="moTa" rows="3">@Model.MoTa</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Môn thi đấu tổ chức -->
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-volleyball text-success me-2"></i>2. Các Môn Thi Đấu Tổ Chức
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAllMon">Chọn tất cả</button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2" id="listMonTheThao">
+                        @foreach (var mon in monTheThaos)
+                        {
+                            var isChecked = selectedMonIds.Contains(mon.Id);
+                            <div class="col-md-4 col-sm-6">
+                                <div class="form-check p-2 border rounded hover-shadow h-100 @(isChecked ? "border-primary bg-primary-subtle" : "")">
+                                    <input class="form-check-input chk-mon me-2" type="checkbox" value="@mon.Id" id="mon_@mon.Id" @(isChecked ? "checked" : "")>
+                                    <label class="form-check-label fw-semibold text-dark small" for="mon_@mon.Id">
+                                        @mon.Ten
+                                        @if (mon.LaMonDongDoi)
+                                        {
+                                            <span class="badge bg-info-subtle text-info border">Đồng đội</span>
+                                        }
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Điều lệ giải đấu -->
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-book-bookmark text-warning me-2"></i>3. Điều Lệ Giải Đấu
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnAddDieuLe">
+                        <i class="fa-solid fa-plus me-1"></i> Thêm mục điều lệ
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="dieuLeContainer"></div>
+                    <div id="emptyDieuLe" class="text-center py-4 text-muted border border-dashed rounded" style="display: none;">
+                        <i class="fa-regular fa-file-lines fa-2x mb-2 text-muted"></i>
+                        <p class="small mb-0">Chưa có mục điều lệ nào. Nhấn "Thêm mục điều lệ" để thêm quy định, tệp điều lệ đính kèm.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Banner, Phạm vi, Trạng thái, Lưu -->
+        <div class="col-lg-4">
+            <!-- Ảnh Banner -->
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-image text-info me-2"></i>Banner Giải Đấu
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3 position-relative">
+                        <img id="bannerPreview" src="@(string.IsNullOrEmpty(Model.HinhAnh) ? "https://placehold.co/600x350/2563eb/white?text=Sport+DMS" : Model.HinhAnh)" class="img-fluid rounded border shadow-sm w-100 object-fit-cover" style="height: 180px;" alt="Banner Preview">
+                        <input type="hidden" id="hinhAnh" value="@Model.HinhAnh">
+                    </div>
+                    <input type="file" id="bannerFileInput" class="d-none" accept="image/*">
+                    <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-2" id="btnUploadBanner">
+                        <i class="fa-solid fa-upload me-1"></i> Thay đổi ảnh banner
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cài đặt Trạng thái & Phạm vi -->
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-sliders text-secondary me-2"></i>Thiết Lập Vận Hành
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Trạng thái giải đấu</label>
+                        <select class="form-select" id="trangThai">
+                            <option value="1" selected="@(Model.TrangThai == TrangThaiGiaiDau.Nhap)">Bản nháp</option>
+                            <option value="2" selected="@(Model.TrangThai == TrangThaiGiaiDau.SapDienRa)">Sắp diễn ra</option>
+                            <option value="3" selected="@(Model.TrangThai == TrangThaiGiaiDau.DangDienRa)">Đang diễn ra</option>
+                            <option value="4" selected="@(Model.TrangThai == TrangThaiGiaiDau.KetThuc)">Đã kết thúc</option>
+                            <option value="5" selected="@(Model.TrangThai == TrangThaiGiaiDau.Huy)">Đã hủy giải</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Phạm vi đối tượng tham gia</label>
+                        <select class="form-select" id="phamVi">
+                            <option value="1" selected="@(Model.PhamVi == PhamViGiaiDau.TatCa)">Tất cả đơn vị</option>
+                            <option value="2" selected="@(Model.PhamVi == PhamViGiaiDau.TheoKhoi)">Giới hạn theo khối cụ thể</option>
+                        </select>
+                    </div>
+
+                    <!-- Danh sách khối áp dụng -->
+                    <div id="khoiSection" class="@(Model.PhamVi == PhamViGiaiDau.TheoKhoi ? "" : "d-none") border rounded p-3 bg-light mb-3">
+                        <label class="form-label fw-semibold text-dark small mb-2">Chọn các khối áp dụng:</label>
+                        @foreach (var k in khois)
+                        {
+                            var isKhoiChecked = selectedKhoiIds.Contains(k.Id);
+                            <div class="form-check mb-1">
+                                <input class="form-check-input chk-khoi" type="checkbox" value="@k.Id" id="khoi_@k.Id" @(isKhoiChecked ? "checked" : "")>
+                                <label class="form-check-label small" for="khoi_@k.Id">@k.Ten</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nút Lưu & Hoàn tất -->
+            <div class="card card-custom">
+                <div class="card-body p-3">
+                    <button type="submit" class="btn btn-success w-100 py-2 fw-bold mb-2" id="btnSubmit">
+                        <i class="fa-solid fa-floppy-disk me-2"></i> Cập Nhật Thay Đổi
+                    </button>
+                    <a href="/Admin/GiaiDau" class="btn btn-light border w-100 py-2 text-muted">
+                        Hủy bỏ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        let dieuLeIndex = 0;
+        const initialDieuLes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DieuLeGiaiDaus ?? new List<DieuLeGiaiDauDto>()));
+
+        $(document).ready(function () {
+            // Load existing điều lệ
+            if (initialDieuLes && initialDieuLes.length > 0) {
+                $.each(initialDieuLes, function (_, dl) {
+                    addDieuLeRow(dl);
+                });
+            } else {
+                $('#emptyDieuLe').show();
+            }
+
+            // Toggle khối áp dụng
+            $('#phamVi').on('change', function () {
+                if ($(this).val() === '2') {
+                    $('#khoiSection').removeClass('d-none');
+                } else {
+                    $('#khoiSection').addClass('d-none');
+                }
+            });
+
+            // Chọn tất cả môn
+            $('#btnSelectAllMon').on('click', function () {
+                const allChecked = $('.chk-mon:checked').length === $('.chk-mon').length;
+                $('.chk-mon').prop('checked', !allChecked);
+                $(this).text(allChecked ? 'Chọn tất cả' : 'Bỏ chọn tất cả');
+            });
+
+            // Upload Banner
+            $('#btnUploadBanner').on('click', function () {
+                $('#bannerFileInput').click();
+            });
+
+            $('#bannerFileInput').on('change', function () {
+                const file = this.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                $('#btnUploadBanner').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang tải...');
+
+                $.ajax({
+                    url: '/Admin/GiaiDau/UploadBanner',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.success && res.url) {
+                            $('#bannerPreview').attr('src', res.url);
+                            $('#hinhAnh').val(res.url);
+                            SportApp.toast('success', 'Đã cập nhật ảnh banner!');
+                        } else {
+                            Swal.fire('Lỗi', res.message || 'Không thể tải ảnh.', 'error');
+                        }
+                    },
+                    complete: function () {
+                        $('#btnUploadBanner').prop('disabled', false).html('<i class="fa-solid fa-upload me-1"></i> Thay đổi ảnh banner');
+                    }
+                });
+            });
+
+            // Thêm mục điều lệ
+            $('#btnAddDieuLe').on('click', function () {
+                addDieuLeRow();
+            });
+
+            // Form Submit (Update)
+            $('#formEditGiaiDau').on('submit', function (e) {
+                e.preventDefault();
+
+                const id = parseInt($('#giaiDauId').val());
+                const ten = $('#ten').val().trim();
+                const ma = $('#ma').val().trim();
+                const ngayBatDau = $('#ngayBatDau').val();
+                const ngayKetThuc = $('#ngayKetThuc').val();
+
+                if (!ten || !ma || !ngayBatDau || !ngayKetThuc) {
+                    Swal.fire('Thiếu thông tin', 'Vui lòng điền đầy đủ Tên, Mã, Ngày bắt đầu và Ngày kết thúc giải đấu.', 'warning');
+                    return;
+                }
+
+                const monTheThaoIds = [];
+                $('.chk-mon:checked').each(function () {
+                    monTheThaoIds.push(parseInt($(this).val()));
+                });
+
+                const khoiIds = [];
+                if ($('#phamVi').val() === '2') {
+                    $('.chk-khoi:checked').each(function () {
+                        khoiIds.push(parseInt($(this).val()));
+                    });
+                }
+
+                const dieuLes = [];
+                $('.dieu-le-item').each(function (i) {
+                    const row = $(this);
+                    const tieuDe = row.find('.dl-tieude').val().trim();
+                    const noiDung = row.find('.dl-noidung').val().trim();
+                    const tepDinhKem = row.find('.dl-tep').val();
+                    const dlId = row.data('id');
+
+                    if (tieuDe) {
+                        dieuLes.push({
+                            id: dlId ? parseInt(dlId) : null,
+                            tieuDe: tieuDe,
+                            noiDung: noiDung,
+                            tepDinhKem: tepDinhKem || null,
+                            thuTu: i + 1,
+                            trangThai: true
+                        });
+                    }
+                });
+
+                const payload = {
+                    ma: ma,
+                    ten: ten,
+                    slug: $('#slug').val().trim(),
+                    hinhAnh: $('#hinhAnh').val() || null,
+                    moTa: $('#moTa').val().trim() || null,
+                    ngayBatDau: ngayBatDau,
+                    ngayKetThuc: ngayKetThuc,
+                    hanDangKy: $('#hanDangKy').val() || null,
+                    diaDiem: $('#diaDiem').val().trim() || null,
+                    phamVi: parseInt($('#phamVi').val()),
+                    trangThai: parseInt($('#trangThai').val()),
+                    khoiIds: khoiIds,
+                    monTheThaoIds: monTheThaoIds,
+                    dieuLeGiaiDaus: dieuLes
+                };
+
+                $('#btnSubmit').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang lưu...');
+
+                $.ajax({
+                    url: '/Admin/GiaiDau/Save?id=' + id,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload),
+                    success: function (res) {
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công!',
+                                text: res.message || 'Cập nhật giải đấu thành công.',
+                                confirmButtonText: 'Về danh sách giải đấu'
+                            }).then(() => {
+                                window.location.href = '/Admin/GiaiDau';
+                            });
+                        } else {
+                            Swal.fire('Lỗi cập nhật', res.message || 'Không thể lưu giải đấu.', 'error');
+                            $('#btnSubmit').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-2"></i> Cập Nhật Thay Đổi');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Lỗi kết nối', 'Không thể gửi dữ liệu lên máy chủ.', 'error');
+                        $('#btnSubmit').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-2"></i> Cập Nhật Thay Đổi');
+                    }
+                });
+            });
+        });
+
+        function addDieuLeRow(data) {
+            dieuLeIndex++;
+            $('#emptyDieuLe').hide();
+
+            const dlId = data ? data.id : '';
+            const title = data ? data.tieuDe : '';
+            const content = data ? data.noiDung : '';
+            const fileUrl = data ? data.tepDinhKem : '';
+
+            const rowHtml = `
+                <div class="dieu-le-item border rounded p-3 mb-3 bg-light position-relative" id="dlRow_${dieuLeIndex}" data-id="${dlId}">
+                    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2" onclick="removeDieuLeRow(${dieuLeIndex})" title="Xóa mục này">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div class="row g-2">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold">Tiêu đề điều lệ <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm dl-tieude" value="${escapeHtml(title)}" placeholder="Ví dụ: Chương I: Quy định chung" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold">Tệp tài liệu đính kèm (PDF/Word)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control form-control-sm dl-tep" value="${escapeHtml(fileUrl || '')}" placeholder="/dieu-le/file.pdf" readonly>
+                                <button class="btn btn-outline-secondary btn-upload-dl" type="button" onclick="triggerUploadDl(${dieuLeIndex})">
+                                    <i class="fa-solid fa-paperclip"></i>
+                                </button>
+                            </div>
+                            <input type="file" class="d-none dl-file-input" id="dlFile_${dieuLeIndex}" onchange="handleDlFileChange(this, ${dieuLeIndex})">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Nội dung chi tiết</label>
+                            <textarea class="form-control form-control-sm dl-noidung" rows="2">${escapeHtml(content)}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#dieuLeContainer').append(rowHtml);
+        }
+
+        function removeDieuLeRow(idx) {
+            $(`#dlRow_${idx}`).remove();
+            if ($('.dieu-le-item').length === 0) {
+                $('#emptyDieuLe').show();
+            }
+        }
+
+        function triggerUploadDl(idx) {
+            $(`#dlFile_${idx}`).click();
+        }
+
+        function handleDlFileChange(input, idx) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            $.ajax({
+                url: '/Admin/GiaiDau/UploadDieuLe',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success && res.url) {
+                        $(`#dlRow_${idx}`).find('.dl-tep').val(res.url);
+                        SportApp.toast('success', 'Đã tải tệp tài liệu thành công!');
+                    } else {
+                        Swal.fire('Lỗi tải file', res.message || 'Không thể tải tài liệu.', 'error');
+                    }
+                }
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div>').text(text).html();
+        }
+    </script>
+}

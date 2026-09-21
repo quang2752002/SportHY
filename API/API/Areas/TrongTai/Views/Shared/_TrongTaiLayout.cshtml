@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Phân Hệ Trọng Tài & Điều Hành Thi Đấu</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+    <!-- Select2 CSS & Bootstrap theme -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --trongtai-sidebar-width: 270px;
+            --trongtai-sidebar-bg: #0f172a;
+            --trongtai-sidebar-dark: #020617;
+            --trongtai-sidebar-hover: #1e293b;
+            --trongtai-sidebar-active: #d97706;
+            --trongtai-header-height: 64px;
+            --trongtai-primary: #d97706;
+            --trongtai-accent: #f59e0b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styling */
+        .trongtai-sidebar {
+            width: var(--trongtai-sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: linear-gradient(180deg, var(--trongtai-sidebar-bg) 0%, var(--trongtai-sidebar-dark) 100%);
+            color: #fde68a;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1040;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .trongtai-brand {
+            height: var(--trongtai-header-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            text-decoration: none;
+        }
+
+        .trongtai-brand-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.15rem;
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.35);
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .trongtai-nav {
+            padding: 1rem 0.75rem;
+        }
+
+        .trongtai-nav-header {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #fcd34d;
+            opacity: 0.85;
+            padding: 0.75rem 0.85rem 0.35rem;
+        }
+
+        .trongtai-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 0.85rem;
+            border-radius: 8px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .trongtai-nav-link i {
+            width: 24px;
+            font-size: 1.1rem;
+            margin-right: 0.75rem;
+            color: #fbbf24;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .trongtai-nav-link:hover {
+            background: rgba(255,255,255,0.08);
+            color: #ffffff;
+            transform: translateX(3px);
+        }
+
+        .trongtai-nav-link:hover i {
+            color: #fde68a;
+        }
+
+        .trongtai-nav-link.active {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+        }
+
+        .trongtai-nav-link.active i {
+            color: #ffffff;
+        }
+
+        /* Referee Card in Sidebar */
+        .trongtai-user-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 0.75rem 0.9rem;
+            margin: 0.5rem 0.75rem 1rem;
+        }
+
+        /* Top Header */
+        .trongtai-topbar {
+            height: var(--trongtai-header-height);
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: var(--trongtai-sidebar-width);
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            z-index: 1030;
+            transition: left 0.3s ease;
+        }
+
+        /* Main Content */
+        .trongtai-main {
+            margin-left: var(--trongtai-sidebar-width);
+            padding: calc(var(--trongtai-header-height) + 1.5rem) 1.5rem 2rem;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Responsive Mobile */
+        @@media (max-width: 991.98px) {
+            .trongtai-sidebar {
+                transform: translateX(-100%);
+            }
+            .trongtai-sidebar.show {
+                transform: translateX(0);
+            }
+            .trongtai-topbar {
+                left: 0 !important;
+            }
+            .trongtai-main {
+                margin-left: 0 !important;
+            }
+            .trongtai-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0,0,0,0.5);
+                z-index: 1035;
+                display: none;
+            }
+            .trongtai-backdrop.show {
+                display: block;
+            }
+        }
+
+        /* Cards & Buttons */
+        .card-custom {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            background-color: #fff;
+            transition: all 0.2s ease;
+        }
+        .card-custom:hover {
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+        }
+
+        .btn-referee-primary {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            border: none;
+            color: #ffffff;
+            font-weight: 500;
+            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+        }
+        .btn-referee-primary:hover {
+            background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(217, 119, 6, 0.35);
+        }
+
+        .badge-soft-amber {
+            background-color: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="trongtai-backdrop" id="trongtaiBackdrop" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="trongtai-sidebar" id="trongtaiSidebar">
+        <!-- Brand -->
+        <a href="/TrongTai/Home" class="trongtai-brand">
+            <div class="trongtai-brand-badge">
+                <i class="fa-solid fa-flag"></i>
+            </div>
+            <div class="lh-sm overflow-hidden">
+                <div class="fw-bold fs-6 text-white text-truncate">TRỌNG TÀI</div>
+                <small class="text-warning text-truncate d-block" style="font-size: 11px;">
+                    Điều hành thi đấu
+                </small>
+            </div>
+        </a>
+
+        <!-- Current Referee Info Card -->
+        @{
+            var currentRef = ViewBag.CurrentReferee as TrongTaiDto;
+            var allRefs = ViewBag.AllReferees as List<TrongTaiDto>;
+            bool canSwitch = ViewBag.CanSwitchReferee == true;
+        }
+        <div class="trongtai-user-card">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="small fw-semibold text-white-50" style="font-size: 11px;">TRỌNG TÀI HIỆN TẠI</span>
+                @if (canSwitch)
+                {
+                    <span class="badge bg-warning text-dark px-1.5 py-0.5" style="font-size: 10px;">Admin/Manager</span>
+                }
+            </div>
+            <div class="fw-bold text-white text-truncate" style="font-size: 13px;" title="@(currentRef?.HoTen ?? "Trọng tài")">
+                <i class="fa-solid fa-user-shield me-1 text-warning"></i>
+                @(currentRef?.HoTen ?? "Trọng tài điều hành")
+            </div>
+            <div class="d-flex align-items-center justify-content-between mt-1 text-white-50" style="font-size: 11px;">
+                <span>Cấp bậc: <strong class="text-warning">@(currentRef?.CapBac ?? "Quốc gia")</strong></span>
+                <span>@(currentRef?.Ma ?? "")</span>
+            </div>
+
+            @if (canSwitch && allRefs != null && allRefs.Count > 1)
+            {
+                <div class="mt-2 pt-2 border-top border-white border-opacity-10">
+                    <form method="post" action="/TrongTai/BaseTrongTai/SwitchReferee">
+                        <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                        <select name="trongTaiId" class="form-select form-select-sm bg-dark text-white border-secondary" style="font-size: 11px;" onchange="this.form.submit()">
+                            @foreach (var r in allRefs)
+                            {
+                                if (currentRef != null && r.Id == currentRef.Id)
+                                {
+                                    <option value="@r.Id" selected="selected">@r.HoTen (@r.CapBac)</option>
+                                }
+                                else
+                                {
+                                    <option value="@r.Id">@r.HoTen (@r.CapBac)</option>
+                                }
+                            }
+                        </select>
+                    </form>
+                </div>
+            }
+        </div>
+
+        <!-- Navigation Menu -->
+        <div class="trongtai-nav">
+            <div class="trongtai-nav-header">Nhiệm Vụ Điều Hành</div>
+
+            @{
+                string currentPath = Context.Request.Path.Value?.ToLower() ?? "";
+            }
+
+            <a href="/TrongTai/Home" class="trongtai-nav-link @(currentPath == "/trongtai" || currentPath == "/trongtai/home" ? "active" : "")">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Nhiệm vụ Phân công</span>
+            </a>
+
+            <a href="/TrongTai/KetQua" class="trongtai-nav-link @(currentPath.StartsWith("/trongtai/ketqua") ? "active" : "")">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>Ghi nhận Kết quả & Thẻ</span>
+            </a>
+
+            <a href="/TrongTai/BienBan" class="trongtai-nav-link @(currentPath.StartsWith("/trongtai/bienban") ? "active" : "")">
+                <i class="fa-solid fa-file-signature"></i>
+                <span>Biên bản Trận đấu</span>
+            </a>
+
+            <div class="trongtai-nav-header mt-3">Hệ thống</div>
+
+            <a href="/" class="trongtai-nav-link" target="_blank">
+                <i class="fa-solid fa-globe"></i>
+                <span>Về Cổng Trang Chủ</span>
+            </a>
+
+            <a href="/Account/Logout" class="trongtai-nav-link text-danger mt-2">
+                <i class="fa-solid fa-arrow-right-from-bracket text-danger"></i>
+                <span>Đăng xuất</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Topbar -->
+    <header class="trongtai-topbar">
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-light border d-lg-none py-1.5 px-2.5 rounded-2" onclick="toggleSidebar()">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="d-flex align-items-center gap-2">
+                <span class="d-none d-sm-inline fw-semibold text-dark" style="font-size: 14px;">
+                    Cổng Điều Hành & Trọng Tài Thi Đấu
+                </span>
+                <span class="d-none d-sm-inline text-muted">•</span>
+                <span class="badge badge-soft-amber rounded-pill px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1">
+                    <i class="fa-solid fa-shield text-warning"></i>
+                    @(ViewBag.CurrentReferee?.HoTen ?? "Trọng tài")
+                </span>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <a href="/" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-none d-md-inline-flex align-items-center gap-1.5" style="font-size: 12px;">
+                <i class="fa-solid fa-house"></i> Trang Chủ Giải
+            </a>
+
+            <div class="vr d-none d-sm-block my-1"></div>
+
+            <div class="dropdown">
+                <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2 py-1 px-2.5 rounded-pill" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 12px; background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);">
+                        <i class="fa-solid fa-whistle fa-user-shield"></i>
+                    </div>
+                    <div class="d-none d-md-block text-start lh-1">
+                        <span class="fw-semibold text-dark d-block" style="font-size: 13px;">@User.Identity?.Name</span>
+                        <small class="text-muted" style="font-size: 11px;">Trọng tài / Thư ký</small>
+                    </div>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                    <li class="px-3 py-2 border-bottom">
+                        <div class="small text-muted">Đang đăng nhập:</div>
+                        <div class="fw-bold text-dark">@User.Identity?.Name</div>
+                        <div class="small text-warning mt-1">@(ViewBag.CurrentReferee?.HoTen ?? "Trọng tài")</div>
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2" href="/TrongTai/Home">
+                            <i class="fa-solid fa-calendar-check me-2 text-warning"></i> Nhiệm vụ Phân công
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2" href="/TrongTai/KetQua">
+                            <i class="fa-solid fa-clipboard-list me-2 text-primary"></i> Ghi nhận Kết quả
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2" href="/TrongTai/BienBan">
+                            <i class="fa-solid fa-file-signature me-2 text-success"></i> Biên bản Trận đấu
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item py-2 text-danger" href="/Account/Logout">
+                            <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Đăng Xuất
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="trongtai-main">
+        <div class="container-fluid p-0" style="max-width: 1400px;">
+            @RenderBody()
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('trongtaiSidebar').classList.toggle('show');
+            document.getElementById('trongtaiBackdrop').classList.toggle('show');
+        }
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

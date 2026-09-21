@@ -1,0 +1,375 @@
+@{
+    ViewData["Title"] = "Quản lý Danh mục Môn Thể Thao";
+    Layout = "~/Areas/Manager/Views/Shared/_ManagerLayout.cshtml";
+}
+
+<div class="container-fluid p-0">
+    <div class="card card-custom border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-body p-4">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 pb-3 mb-4 border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 bg-primary-subtle text-primary rounded-4">
+                        <i class="fa-solid fa-tags fs-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Quản Lý Danh Mục Môn Thể Thao</h4>
+                        <p class="text-muted small mb-0">Phân loại các nhóm môn thi đấu (Điền kinh, Bóng, Võ thuật, v.v.)</p>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary px-3 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2 shadow-sm" onclick="openCreateModal()">
+                        <i class="fa-solid fa-plus"></i> Thêm Danh Mục Mới
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter & Search -->
+            <div class="p-3 bg-light rounded-3 mb-4 border">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                        <div class="input-group bg-white rounded-3 border overflow-hidden">
+                            <span class="input-group-text bg-white border-0 text-muted ps-3">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" id="filterKeyword" class="form-control border-0 shadow-none ps-2" placeholder="Tìm kiếm theo mã, tên danh mục..." />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="filterTrangThai" class="form-select bg-white border rounded-3 shadow-none">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="true">Đang hoạt động</option>
+                            <option value="false">Tạm khóa / Ngừng</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-dark w-100 rounded-3 fw-medium" onclick="loadData(1)">
+                            <i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase fs-7 text-muted">
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th style="width: 140px;">Mã Danh Mục</th>
+                            <th>Tên Danh Mục</th>
+                            <th>Mô Tả</th>
+                            <th class="text-center" style="width: 130px;">Số Môn</th>
+                            <th style="width: 130px;">Trạng Thái</th>
+                            <th class="text-end" style="width: 120px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <div class="spinner-border text-primary spinner-border-sm me-2"></div> Đang tải dữ liệu danh mục môn...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
+                <div class="text-muted small" id="paginationInfo">
+                    Hiển thị 0 / 0 bản ghi
+                </div>
+                <ul class="pagination pagination-sm mb-0" id="paginationNav"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa -->
+<div class="modal fade" id="modalDanhMuc" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalTitle">
+                    <i class="fa-solid fa-tags text-primary"></i>
+                    <span>Thêm Danh Mục Môn</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formDanhMuc" onsubmit="handleSave(event)">
+                <input type="hidden" id="danhMucId" value="" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Mã Danh Mục <span class="text-danger">*</span></label>
+                        <input type="text" id="txtMa" class="form-control text-uppercase" placeholder="VD: DM_BONG, DM_VOT..." required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Tên Danh Mục <span class="text-danger">*</span></label>
+                        <input type="text" id="txtTen" class="form-control" placeholder="VD: Các môn Bóng, Thể thao đối kháng..." required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Mô Tả</label>
+                        <textarea id="txtMoTa" class="form-control" rows="3" placeholder="Mô tả nhóm môn thể thao..."></textarea>
+                    </div>
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" id="chkTrangThai" checked>
+                        <label class="form-check-label fw-semibold small" for="chkTrangThai">Kích hoạt hoạt động</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3 bg-light">
+                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4" id="btnSave">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu lại
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+        const modalEl = document.getElementById('modalDanhMuc');
+        let modalObj = null;
+
+        $(document).ready(function () {
+            modalObj = new bootstrap.Modal(modalEl);
+            loadData(1);
+
+            $('#filterKeyword').on('keypress', function (e) {
+                if (e.which === 13) {
+                    loadData(1);
+                }
+            });
+        });
+
+        function loadData(page) {
+            currentPage = page || 1;
+            const keyword = $('#filterKeyword').val().trim();
+            const trangThai = $('#filterTrangThai').val();
+
+            $('#tableBody').html(`
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <div class="spinner-border text-primary spinner-border-sm me-2"></div> Đang tải dữ liệu...
+                    </td>
+                </tr>
+            `);
+
+            $.ajax({
+                url: '/Manager/DanhMucMonTheThao/GetPagedData',
+                type: 'GET',
+                data: {
+                    pageIndex: currentPage,
+                    pageSize: pageSize,
+                    keyword: keyword || null,
+                    trangThai: trangThai !== '' ? trangThai : null
+                },
+                success: function (res) {
+                    if (res.success && res.data) {
+                        renderTable(res.data);
+                        renderPagination(res.data);
+                    } else {
+                        $('#tableBody').html('<tr><td colspan="7" class="text-center py-4 text-danger">Lỗi tải dữ liệu.</td></tr>');
+                    }
+                },
+                error: function () {
+                    $('#tableBody').html('<tr><td colspan="7" class="text-center py-4 text-danger">Không thể kết nối đến máy chủ.</td></tr>');
+                }
+            });
+        }
+
+        function renderTable(pagedData) {
+            const items = pagedData.items || [];
+            if (items.length === 0) {
+                $('#tableBody').html(`
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-regular fa-folder-open fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                            Chưa có danh mục môn thể thao nào.
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            let html = '';
+            items.forEach((item, index) => {
+                const stt = (pagedData.pageIndex - 1) * pagedData.pageSize + index + 1;
+                const statusBadge = item.trangThai
+                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i>Hoạt động</span>'
+                    : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1 rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i>Tạm dừng</span>';
+
+                html += `
+                    <tr>
+                        <td class="text-muted small">${stt}</td>
+                        <td><span class="badge bg-light text-primary border font-monospace px-2 py-1">${item.ma || '---'}</span></td>
+                        <td><strong class="text-dark">${item.ten}</strong></td>
+                        <td><span class="small text-muted text-truncate d-inline-block" style="max-width: 280px;">${item.moTa || '---'}</span></td>
+                        <td class="text-center">
+                            <span class="badge bg-primary-subtle text-primary fw-bold px-2 py-1">${item.soMonTheThao ?? 0} môn</span>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-light border text-primary" title="Chỉnh sửa" onclick="openEditModal(${item.id})">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light border text-danger" title="Xóa" onclick="deleteItem(${item.id}, '${encodeURIComponent(item.ten)}')">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#tableBody').html(html);
+        }
+
+        function renderPagination(pagedData) {
+            const totalCount = pagedData.totalCount || 0;
+            const totalPages = pagedData.totalPages || 1;
+            const pageIndex = pagedData.pageIndex || 1;
+
+            $('#paginationInfo').text(`Hiển thị ${totalCount > 0 ? (pageIndex - 1) * pageSize + 1 : 0} - ${Math.min(pageIndex * pageSize, totalCount)} / ${totalCount} bản ghi`);
+
+            if (totalPages <= 1) {
+                $('#paginationNav').empty();
+                return;
+            }
+
+            let html = '';
+            html += `<li class="page-item ${pageIndex === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadData(${pageIndex - 1})"><i class="fa-solid fa-chevron-left"></i></a>
+                     </li>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= pageIndex - 1 && i <= pageIndex + 1)) {
+                    html += `<li class="page-item ${i === pageIndex ? 'active' : ''}">
+                                <a class="page-link" href="javascript:void(0)" onclick="loadData(${i})">${i}</a>
+                             </li>`;
+                } else if (i === pageIndex - 2 || i === pageIndex + 2) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+            }
+
+            html += `<li class="page-item ${pageIndex === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadData(${pageIndex + 1})"><i class="fa-solid fa-chevron-right"></i></a>
+                     </li>`;
+
+            $('#paginationNav').html(html);
+        }
+
+        function openCreateModal() {
+            $('#danhMucId').val('');
+            $('#modalTitle span').text('Thêm Danh Mục Môn Mới');
+            $('#txtMa').val('').prop('readonly', false);
+            $('#txtTen').val('');
+            $('#txtMoTa').val('');
+            $('#chkTrangThai').prop('checked', true);
+            modalObj.show();
+        }
+
+        function openEditModal(id) {
+            $.ajax({
+                url: `/Manager/DanhMucMonTheThao/GetById?id=${id}`,
+                type: 'GET',
+                success: function (res) {
+                    if (res.success && res.data) {
+                        const item = res.data;
+                        $('#danhMucId').val(item.id);
+                        $('#modalTitle span').text('Chỉnh Sửa Danh Mục Môn');
+                        $('#txtMa').val(item.ma).prop('readonly', false);
+                        $('#txtTen').val(item.ten);
+                        $('#txtMoTa').val(item.moTa || '');
+                        $('#chkTrangThai').prop('checked', item.trangThai);
+                        modalObj.show();
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không tìm thấy dữ liệu', 'error');
+                    }
+                }
+            });
+        }
+
+        function handleSave(e) {
+            e.preventDefault();
+            const id = $('#danhMucId').val();
+            const dto = {
+                ma: $('#txtMa').val().trim().toUpperCase(),
+                ten: $('#txtTen').val().trim(),
+                moTa: $('#txtMoTa').val().trim(),
+                trangThai: $('#chkTrangThai').is(':checked')
+            };
+
+            const btn = $('#btnSave');
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Đang lưu...');
+
+            const url = id ? `/Manager/DanhMucMonTheThao/Save?id=${id}` : '/Manager/DanhMucMonTheThao/Save';
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(dto),
+                success: function (res) {
+                    btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu lại');
+                    if (res.success) {
+                        modalObj.hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message, 'error');
+                    }
+                },
+                error: function () {
+                    btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu lại');
+                    Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ.', 'error');
+                }
+            });
+        }
+
+        function deleteItem(id, tenEncoded) {
+            const ten = decodeURIComponent(tenEncoded);
+            Swal.fire({
+                title: 'Xác nhận xóa?',
+                text: `Bạn có chắc chắn muốn xóa danh mục "${ten}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Đồng ý xóa',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/Manager/DanhMucMonTheThao/Delete?id=${id}`,
+                        type: 'POST',
+                        success: function (res) {
+                            if (res.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Đã xóa!',
+                                    text: res.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                                loadData(currentPage);
+                            } else {
+                                Swal.fire('Lỗi', res.message, 'error');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

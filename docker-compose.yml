@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------
+  # Backend API (.NET 6)
+  # ----------------------------------------------------
+  backend:
+    build:
+      context: ./API
+      dockerfile: Dockerfile
+    container_name: sport_backend
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      # Kết nối đến SQL Server trên máy host local (nếu dùng SQL Server cài trên máy)
+      - ConnectionStrings__DefaultConnection=Server=host.docker.internal;Database=SportDb;User Id=sa;Password=123456;MultipleActiveResultSets=true;TrustServerCertificate=True
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # ----------------------------------------------------
+  # Frontend Next.js
+  # ----------------------------------------------------
+  frontend:
+    build:
+      context: ./my-app
+      dockerfile: Dockerfile
+      args:
+        # Client browser gọi đến backend qua cổng 5000 trên máy host
+        - NEXT_PUBLIC_API_URL=http://localhost:5000
+    container_name: sport_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+    restart: unless-stopped

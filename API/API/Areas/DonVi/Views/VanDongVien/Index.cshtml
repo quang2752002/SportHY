@@ -1,0 +1,523 @@
+@{
+    ViewData["Title"] = "Hồ Sơ Vận Động Viên";
+    var currentUnit = ViewBag.CurrentDonVi as DonViDto;
+}
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-users text-success me-2"></i> Hồ Sơ Vận Động Viên Của Đoàn
+            </h4>
+            <p class="text-muted small mb-0">
+                Đơn vị: <span class="fw-semibold text-emerald">@(currentUnit?.Ten ?? "Đoàn VĐV")</span> • Quản lý danh sách thành viên đoàn tham gia các giải
+            </p>
+        </div>
+        <button class="btn btn-donvi-primary rounded-pill px-3.5 py-2 d-inline-flex align-items-center gap-2" onclick="openCreateModal()">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Thêm Vận Động Viên</span>
+        </button>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card-custom p-3.5 p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" id="filterKeyword" class="form-control border-start-0" placeholder="Tìm theo tên, mã VĐV, CCCD..." />
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select id="filterGioiTinh" class="form-select form-select-sm">
+                    <option value="ALL">-- Tất cả giới tính --</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select id="filterTrangThai" class="form-select form-select-sm">
+                    <option value="">-- Trạng thái --</option>
+                    <option value="true">Sẵn sàng</option>
+                    <option value="false">Tạm ngừng</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button class="btn btn-sm btn-light border w-100" onclick="resetFilters()">
+                    <i class="fa-solid fa-arrow-rotate-right me-1"></i> Đặt lại
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card-custom p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="vdvTable">
+                <thead class="table-light">
+                    <tr style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em;">
+                        <th class="ps-3 py-3">Mã VĐV</th>
+                        <th>Họ Và Tên</th>
+                        <th>CCCD / Định Danh</th>
+                        <th>Ngày Sinh</th>
+                        <th>Giới Tính</th>
+                        <th>Liên Hệ</th>
+                        <th>Trạng Thái</th>
+                        <th class="text-end pe-3">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="vdvTableBody" style="font-size: 13px;">
+                    <!-- Rendered by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Footer -->
+        <div class="p-3 border-top d-flex align-items-center justify-content-between">
+            <small class="text-muted" id="pageInfo">Đang tải dữ liệu...</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa VĐV -->
+<div class="modal fade" id="vdvModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white py-2.5 px-3">
+                <h6 class="modal-title fw-bold" id="modalTitle">Thêm Vận Động Viên Mới</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="vdvForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="vdvId" />
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Mã VĐV (Tùy chọn)</label>
+                            <input type="text" id="vdvMa" class="form-control form-control-sm" placeholder="Hệ thống tự tạo nếu để trống" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold">Họ và tên VĐV <span class="text-danger">*</span></label>
+                            <input type="text" id="vdvHoTen" class="form-control form-control-sm" required placeholder="VD: Nguyễn Văn Hoàng" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Giới tính <span class="text-danger">*</span></label>
+                            <select id="vdvGioiTinh" class="form-select form-select-sm" required>
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Ngày sinh</label>
+                            <input type="date" id="vdvNgaySinh" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Số CCCD / Định danh</label>
+                            <input type="text" id="vdvSoCCCD" class="form-control form-control-sm" placeholder="12 chữ số" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Số điện thoại</label>
+                            <input type="tel" id="vdvSoDienThoai" class="form-control form-control-sm" placeholder="VD: 0987654321" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Email</label>
+                            <input type="email" id="vdvEmail" class="form-control form-control-sm" placeholder="VD: vdv@example.com" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Địa chỉ / Quê quán</label>
+                            <input type="text" id="vdvDiaChi" class="form-control form-control-sm" placeholder="VD: TP. Buôn Ma Thuột, Đắk Lắk" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Ảnh đại diện (URL)</label>
+                            <input type="text" id="vdvHinhAnh" class="form-control form-control-sm" placeholder="https://..." />
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="vdvTrangThai" checked />
+                                <label class="form-check-label small fw-semibold" for="vdvTrangThai">
+                                    Đang hoạt động / Sẵn sàng thi đấu
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-sm btn-donvi-primary px-3" id="btnSave">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Vận Động Viên
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xem Chi Tiết VĐV -->
+<div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white py-2 px-3">
+                <h6 class="modal-title fw-bold">Chi Tiết Hồ Sơ VĐV</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="viewDetailBody">
+                <!-- Injected by JS -->
+            </div>
+            <div class="modal-footer bg-light py-2 px-3">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+        let vdvModal = null;
+        let viewModal = null;
+
+        $(document).ready(function () {
+            vdvModal = new bootstrap.Modal(document.getElementById('vdvModal'));
+            viewModal = new bootstrap.Modal(document.getElementById('viewModal'));
+
+            loadData();
+
+            let debounceTimer;
+            $('#filterKeyword').on('input', function () {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    currentPage = 1;
+                    loadData();
+                }, 350);
+            });
+
+            $('#filterGioiTinh, #filterTrangThai').on('change', function () {
+                currentPage = 1;
+                loadData();
+            });
+
+            $('#vdvForm').on('submit', function (e) {
+                e.preventDefault();
+                saveVdv();
+            });
+        });
+
+        function resetFilters() {
+            $('#filterKeyword').val('');
+            $('#filterGioiTinh').val('ALL');
+            $('#filterTrangThai').val('');
+            currentPage = 1;
+            loadData();
+        }
+
+        function loadData() {
+            const keyword = $('#filterKeyword').val();
+            const gioiTinh = $('#filterGioiTinh').val();
+            const trangThai = $('#filterTrangThai').val();
+
+            $('#vdvTableBody').html(`<tr><td colspan="8" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-success me-2"></div>Đang tải dữ liệu...</td></tr>`);
+
+            $.ajax({
+                url: '/DonVi/VanDongVien/GetPagedData',
+                type: 'GET',
+                data: {
+                    pageIndex: currentPage,
+                    pageSize: pageSize,
+                    keyword: keyword,
+                    gioiTinh: gioiTinh,
+                    trangThai: trangThai !== '' ? trangThai : null
+                },
+                success: function (res) {
+                    if (res.success && res.data) {
+                        renderTable(res.data);
+                    } else {
+                        $('#vdvTableBody').html(`<tr><td colspan="8" class="text-center py-4 text-danger">${res.message || 'Lỗi tải dữ liệu'}</td></tr>`);
+                    }
+                },
+                error: function () {
+                    $('#vdvTableBody').html(`<tr><td colspan="8" class="text-center py-4 text-danger">Không thể kết nối đến máy chủ.</td></tr>`);
+                }
+            });
+        }
+
+        function renderTable(data) {
+            const tbody = $('#vdvTableBody');
+            tbody.empty();
+
+            if (!data.items || data.items.length === 0) {
+                tbody.html(`<tr><td colspan="8" class="text-center py-5 text-muted"><i class="fa-solid fa-address-card fs-2 mb-2 opacity-50 d-block"></i>Không tìm thấy vận động viên nào.</td></tr>`);
+                $('#pageInfo').text('Hiển thị 0 kết quả');
+                $('#pagination').empty();
+                return;
+            }
+
+            data.items.forEach(item => {
+                const dob = item.ngaySinh ? new Date(item.ngaySinh).toLocaleDateString('vi-VN') : '--';
+                const genderBadge = item.gioiTinh === 'Nam'
+                    ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5">Nam</span>'
+                    : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-0.5">Nữ</span>';
+
+                const statusBadge = item.trangThai
+                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5"><i class="fa-solid fa-circle-check me-1"></i>Sẵn sàng</span>'
+                    : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5">Tạm ngừng</span>';
+
+                const avatarLetter = (item.hoTen || 'V').charAt(0).toUpperCase();
+
+                const tr = `
+                    <tr>
+                        <td class="ps-3 fw-bold text-secondary font-monospace" style="font-size: 12px;">${item.ma || '--'}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                                     style="width: 32px; height: 32px; font-size: 12px; background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                                    ${avatarLetter}
+                                </div>
+                                <div class="fw-semibold text-dark">${item.hoTen}</div>
+                            </div>
+                        </td>
+                        <td><span class="font-monospace">${item.soCCCD || '--'}</span></td>
+                        <td>${dob}</td>
+                        <td>${genderBadge}</td>
+                        <td>
+                            <div>${item.soDienThoai ? `<i class="fa-solid fa-phone text-muted me-1 small"></i>${item.soDienThoai}` : '--'}</div>
+                            ${item.email ? `<small class="text-muted"><i class="fa-solid fa-envelope me-1"></i>${item.email}</small>` : ''}
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td class="text-end pe-3 text-nowrap">
+                            <button class="btn btn-sm btn-light border py-1 px-2 text-info me-1" title="Xem chi tiết" onclick="viewDetail(${item.id})">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-light border py-1 px-2 text-primary me-1" title="Chỉnh sửa" onclick="openEditModal(${item.id})">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="btn btn-sm btn-light border py-1 px-2 text-danger" title="Xóa" onclick="confirmDelete(${item.id}, '${item.hoTen}')">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(tr);
+            });
+
+            // Page info
+            const start = (data.pageIndex - 1) * data.pageSize + 1;
+            const end = Math.min(data.pageIndex * data.pageSize, data.totalCount);
+            $('#pageInfo').text(`Hiển thị ${start} - ${end} trên tổng số ${data.totalCount} VĐV`);
+
+            // Pagination buttons
+            renderPagination(data.pageIndex, data.totalPages);
+        }
+
+        function renderPagination(page, total) {
+            const container = $('#pagination');
+            container.empty();
+            if (total <= 1) return;
+
+            container.append(`
+                <li class="page-item ${page <= 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="javascript:void(0)" onclick="goToPage(${page - 1})"><i class="fa-solid fa-chevron-left"></i></a>
+                </li>
+            `);
+
+            for (let i = 1; i <= total; i++) {
+                if (i === 1 || i === total || (i >= page - 2 && i <= page + 2)) {
+                    container.append(`
+                        <li class="page-item ${i === page ? 'active' : ''}">
+                            <a class="page-link" href="javascript:void(0)" onclick="goToPage(${i})">${i}</a>
+                        </li>
+                    `);
+                } else if (i === page - 3 || i === page + 3) {
+                    container.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
+                }
+            }
+
+            container.append(`
+                <li class="page-item ${page >= total ? 'disabled' : ''}">
+                    <a class="page-link" href="javascript:void(0)" onclick="goToPage(${page + 1})"><i class="fa-solid fa-chevron-right"></i></a>
+                </li>
+            `);
+        }
+
+        function goToPage(p) {
+            currentPage = p;
+            loadData();
+        }
+
+        function openCreateModal() {
+            $('#modalTitle').text('Thêm Vận Động Viên Mới');
+            $('#vdvId').val('');
+            $('#vdvForm')[0].reset();
+            $('#vdvTrangThai').prop('checked', true);
+            vdvModal.show();
+        }
+
+        function openEditModal(id) {
+            $.get(`/DonVi/VanDongVien/GetById/${id}`, function (res) {
+                if (res.success && res.data) {
+                    const d = res.data;
+                    $('#modalTitle').text(`Chỉnh Sửa Hồ Sơ VĐV [${d.hoTen}]`);
+                    $('#vdvId').val(d.id);
+                    $('#vdvMa').val(d.ma);
+                    $('#vdvHoTen').val(d.hoTen);
+                    $('#vdvGioiTinh').val(d.gioiTinh || 'Nam');
+                    $('#vdvNgaySinh').val(d.ngaySinh ? d.ngaySinh.split('T')[0] : '');
+                    $('#vdvSoCCCD').val(d.soCCCD || '');
+                    $('#vdvSoDienThoai').val(d.soDienThoai || '');
+                    $('#vdvEmail').val(d.email || '');
+                    $('#vdvDiaChi').val(d.diaChi || '');
+                    $('#vdvHinhAnh').val(d.hinhAnh || '');
+                    $('#vdvTrangThai').prop('checked', d.trangThai);
+                    vdvModal.show();
+                } else {
+                    Swal.fire('Lỗi', res.message || 'Không thể tải chi tiết VĐV', 'error');
+                }
+            });
+        }
+
+        function saveVdv() {
+            const id = $('#vdvId').val();
+            const payload = {
+                ma: $('#vdvMa').val().trim(),
+                hoTen: $('#vdvHoTen').val().trim(),
+                gioiTinh: $('#vdvGioiTinh').val(),
+                ngaySinh: $('#vdvNgaySinh').val() || null,
+                soCCCD: $('#vdvSoCCCD').val().trim(),
+                soDienThoai: $('#vdvSoDienThoai').val().trim(),
+                email: $('#vdvEmail').val().trim(),
+                diaChi: $('#vdvDiaChi').val().trim(),
+                hinhAnh: $('#vdvHinhAnh').val().trim(),
+                trangThai: $('#vdvTrangThai').is(':checked')
+            };
+
+            const url = id ? `/DonVi/VanDongVien/Save?id=${id}` : '/DonVi/VanDongVien/Save';
+            $('#btnSave').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Đang lưu...');
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Vận Động Viên');
+                    if (res.success) {
+                        vdvModal.hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        loadData();
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu VĐV', 'error');
+                    }
+                },
+                error: function () {
+                    $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Vận Động Viên');
+                    Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
+                }
+            });
+        }
+
+        function viewDetail(id) {
+            $.get(`/DonVi/VanDongVien/GetById/${id}`, function (res) {
+                if (res.success && res.data) {
+                    const d = res.data;
+                    const dob = d.ngaySinh ? new Date(d.ngaySinh).toLocaleDateString('vi-VN') : '--';
+                    const html = `
+                        <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                            <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold fs-3"
+                                 style="width: 56px; height: 56px; background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                                ${(d.hoTen || 'V').charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">${d.hoTen}</h5>
+                                <div class="text-muted small">Mã: <span class="fw-semibold text-secondary font-monospace">${d.ma || '--'}</span></div>
+                                <span class="badge ${d.trangThai ? 'bg-success' : 'bg-secondary'} mt-1">
+                                    ${d.trangThai ? 'Sẵn sàng thi đấu' : 'Tạm ngừng'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row g-3" style="font-size: 13px;">
+                            <div class="col-6">
+                                <span class="text-muted d-block small">Giới tính</span>
+                                <span class="fw-semibold text-dark">${d.gioiTinh || '--'}</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted d-block small">Ngày sinh</span>
+                                <span class="fw-semibold text-dark">${dob}</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted d-block small">Số CCCD / Định danh</span>
+                                <span class="fw-semibold text-dark font-monospace">${d.soCCCD || '--'}</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted d-block small">Số điện thoại</span>
+                                <span class="fw-semibold text-dark">${d.soDienThoai || '--'}</span>
+                            </div>
+                            <div class="col-12">
+                                <span class="text-muted d-block small">Email</span>
+                                <span class="fw-semibold text-dark">${d.email || '--'}</span>
+                            </div>
+                            <div class="col-12">
+                                <span class="text-muted d-block small">Địa chỉ</span>
+                                <span class="fw-semibold text-dark">${d.diaChi || '--'}</span>
+                            </div>
+                        </div>
+                    `;
+                    $('#viewDetailBody').html(html);
+                    viewModal.show();
+                } else {
+                    Swal.fire('Lỗi', res.message || 'Không thể tải chi tiết VĐV', 'error');
+                }
+            });
+        }
+
+        function confirmDelete(id, name) {
+            Swal.fire({
+                title: 'Xác nhận xóa?',
+                html: `Bạn có chắc chắn muốn xóa VĐV <strong>${name}</strong> khỏi danh sách đoàn?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Xóa ngay',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/DonVi/VanDongVien/Delete/${id}`,
+                        type: 'POST',
+                        success: function (res) {
+                            if (res.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Đã xóa',
+                                    text: res.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                                loadData();
+                            } else {
+                                Swal.fire('Lỗi', res.message || 'Không thể xóa VĐV', 'error');
+                            }
+                        },
+                        error: function () {
+                            Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

@@ -1,0 +1,526 @@
+@model TranDauDto?
+@{
+    ViewData["Title"] = "Biên Bản Trận Đấu Chính Thức";
+    var tournaments = ViewBag.Tournaments as List<GiaiDauDto> ?? new();
+    var matches = ViewBag.Matches as List<TranDauDto> ?? new();
+    int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
+    var regTeam1 = ViewBag.RegTeam1 as DangKyThiDauDto;
+    var regTeam2 = ViewBag.RegTeam2 as DangKyThiDauDto;
+    int score1 = ViewBag.Score1 is int s1 ? s1 : 0;
+    int score2 = ViewBag.Score2 is int s2 ? s2 : 0;
+    string winner = ViewBag.Winner as string ?? "";
+    string notes = ViewBag.Notes as string ?? "";
+    var setScores = ViewBag.SetScores as List<SetScoreDto> ?? new();
+    var events = ViewBag.Events as List<MatchEventItemDto> ?? new();
+    var signatures = ViewBag.Signatures as Dictionary<string, SignatureInfoDto> ?? new();
+}
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header & Print Actions (Hidden on Print) -->
+    <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3 d-print-none">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-file-signature text-success me-2"></i> Biên Bản Trận Đấu Chính Thức
+            </h4>
+            <p class="text-muted small mb-0">Hồ sơ biên bản điện tử có chữ ký số xác nhận và định dạng chuẩn in ấn</p>
+        </div>
+        <div class="d-flex gap-2">
+            @if (Model != null)
+            {
+                <a href="/TrongTai/KetQua?tranDauId=@Model.Id&giaiDauId=@selectedGiaiDauId" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <i class="fa-solid fa-pen-to-square me-1"></i> Điều chỉnh kết quả
+                </a>
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3.5 shadow-sm" onclick="window.print()">
+                    <i class="fa-solid fa-print me-1"></i> In Biên Bản (A4)
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Match Picker (Hidden on Print) -->
+    <div class="card-custom p-3 d-print-none">
+        <form method="get" action="/TrongTai/BienBan" id="pickerForm">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold mb-1">Chọn Giải Đấu</label>
+                    <select name="giaiDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @foreach (var t in tournaments)
+                        {
+                            if (selectedGiaiDauId == t.Id)
+                            {
+                                <option value="@t.Id" selected="selected">@t.Ten</option>
+                            }
+                            else
+                            {
+                                <option value="@t.Id">@t.Ten</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label small fw-semibold mb-1">Chọn Trận Đấu</label>
+                    <select name="tranDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @if (matches.Count == 0)
+                        {
+                            <option value="">-- Chưa có trận đấu --</option>
+                        }
+                        else
+                        {
+                            @foreach (var m in matches)
+                            {
+                                if (Model != null && Model.Id == m.Id)
+                                {
+                                    <option value="@m.Id" selected="selected">Trận @m.SoTran: @(m.TenDoi1 ?? "Đội 1") VS @(m.TenDoi2 ?? "Đội 2") (@m.TenMonTheThao)</option>
+                                }
+                                else
+                                {
+                                    <option value="@m.Id">Trận @m.SoTran: @(m.TenDoi1 ?? "Đội 1") VS @(m.TenDoi2 ?? "Đội 2") (@m.TenMonTheThao)</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @if (Model == null)
+    {
+        <div class="card-custom p-5 text-center text-muted">
+            <i class="fa-solid fa-file-excel fs-1 mb-3 opacity-25"></i>
+            <h5>Vui lòng chọn một trận đấu để hiển thị biên bản</h5>
+        </div>
+    }
+    else
+    {
+        <!-- Khung Biên Bản Chuẩn Thể Thao (Official Match Sheet) -->
+        <div class="card-custom p-4 p-md-5 bg-white shadow-sm print-area" style="border: 1px solid #cbd5e1;">
+            <!-- Quốc hiệu & Ban tổ chức -->
+            <div class="row pb-3 border-bottom mb-4 text-center">
+                <div class="col-5">
+                    <div class="fw-bold text-uppercase" style="font-size: 13px;">BAN TỔ CHỨC GIẢI ĐẤU</div>
+                    <div class="fw-semibold text-muted small text-uppercase">HỘI ĐỒNG TRỌNG TÀI & THƯ KÝ</div>
+                </div>
+                <div class="col-7">
+                    <div class="fw-bold text-uppercase" style="font-size: 13px;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                    <div class="small fw-semibold text-muted">Độc lập - Tự do - Hạnh phúc</div>
+                    <div class="text-muted" style="font-size: 11px;">---------------o0o---------------</div>
+                </div>
+            </div>
+
+            <!-- Tên Biên Bản -->
+            <div class="text-center my-4">
+                <h3 class="fw-bold text-dark text-uppercase mb-1">BIÊN BẢN THI ĐẤU CHÍNH THỨC</h3>
+                <div class="text-muted small">
+                    Số biên bản: <span class="fw-bold font-monospace text-dark">BB-TD@(Model.Id)-@DateTime.Now.Year</span>
+                </div>
+                <div class="text-primary fw-semibold mt-1">@Model.TenGiaiDau</div>
+            </div>
+
+            <!-- 1. Thông Tin Chung Trận Đấu -->
+            <div class="mb-4">
+                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                    I. THÔNG TIN TRẬN ĐẤU
+                </h6>
+                <div class="row g-2 small mt-1">
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted">Môn thi đấu:</span> <strong class="text-dark">@Model.TenMonTheThao</strong>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted">Trận số:</span> <strong class="text-dark">Trận @Model.SoTran</strong>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted">Vòng / Bảng:</span> <strong class="text-dark">@(Model.TenVongDau ?? "--") @(Model.TenBangDau != null ? $"- {Model.TenBangDau}" : "")</strong>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted">Địa điểm:</span> <strong class="text-dark">@(Model.TenSanDau ?? "Chưa xếp sân")</strong>
+                    </div>
+                    <div class="col-6 col-md-6">
+                        <span class="text-muted">Thời gian bắt đầu:</span> <strong class="text-dark">@(Model.ThoiGianBatDau?.ToString("HH:mm - dd/MM/yyyy") ?? Model.ThoiGianDuKien?.ToString("HH:mm - dd/MM/yyyy") ?? "--")</strong>
+                    </div>
+                    <div class="col-6 col-md-6">
+                        <span class="text-muted">Thời gian kết thúc:</span> <strong class="text-dark">@(Model.ThoiGianKetThuc?.ToString("HH:mm - dd/MM/yyyy") ?? "--")</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Tổ Trọng Tài Điều Hành -->
+            <div class="mb-4">
+                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                    II. TỔ TRỌNG TÀI & ĐIỀU HÀNH THI ĐẤU
+                </h6>
+                <div class="row g-2 small mt-1">
+                    @if (Model.DanhSachTrongTai != null && Model.DanhSachTrongTai.Count > 0)
+                    {
+                        @foreach (var tt in Model.DanhSachTrongTai)
+                        {
+                            <div class="col-md-6">
+                                <span class="text-muted">@(tt.VaiTro ?? "Trọng tài"):</span> <strong class="text-dark">@tt.TenTrongTai</strong> (@(tt.CapBac ?? "Quốc gia"))
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12 text-muted">Ban tổ chức phân công điều hành trận đấu theo quy định.</div>
+                    }
+                </div>
+            </div>
+
+            <!-- 3. Thành Phần Hai Đội & Đội Hình -->
+            <div class="mb-4">
+                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                    III. THÀNH PHẦN HAI ĐỘI THI ĐẤU
+                </h6>
+                <div class="row g-3 mt-1">
+                    <!-- Đội 1 -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-2 bg-light">
+                            <div class="fw-bold text-dark">ĐỘI 1: @(Model.TenDoi1 ?? "Đội 1")</div>
+                            <div class="small text-muted mb-2">Đơn vị: @(Model.DonViDoi1 ?? "--")</div>
+                            <div class="small fw-semibold text-secondary">Danh sách vận động viên:</div>
+                            <ul class="mb-0 ps-3 small text-dark">
+                                @if (regTeam1 != null && regTeam1.VanDongVienNames.Count > 0)
+                                {
+                                    @foreach (var v in regTeam1.VanDongVienNames)
+                                    {
+                                        <li>@v</li>
+                                    }
+                                }
+                                else
+                                {
+                                    <li>Vận động viên thi đấu chính thức</li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Đội 2 -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-2 bg-light">
+                            <div class="fw-bold text-dark">ĐỘI 2: @(Model.TenDoi2 ?? "Đội 2")</div>
+                            <div class="small text-muted mb-2">Đơn vị: @(Model.DonViDoi2 ?? "--")</div>
+                            <div class="small fw-semibold text-secondary">Danh sách vận động viên:</div>
+                            <ul class="mb-0 ps-3 small text-dark">
+                                @if (regTeam2 != null && regTeam2.VanDongVienNames.Count > 0)
+                                {
+                                    @foreach (var v in regTeam2.VanDongVienNames)
+                                    {
+                                        <li>@v</li>
+                                    }
+                                }
+                                else
+                                {
+                                    <li>Vận động viên thi đấu chính thức</li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Kết Quả Thi Đấu Chung Cuộc -->
+            <div class="mb-4">
+                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                    IV. KẾT QUẢ THI ĐẤU
+                </h6>
+                <div class="text-center p-3 border rounded-2 bg-light my-2">
+                    <div class="row align-items-center">
+                        <div class="col-5">
+                            <h5 class="fw-bold text-dark mb-0">@(Model.TenDoi1 ?? "Đội 1")</h5>
+                            <small class="text-muted">@(Model.DonViDoi1 ?? "")</small>
+                        </div>
+                        <div class="col-2">
+                            <div class="fs-2 fw-bold font-monospace text-danger">
+                                @score1 - @score2
+                            </div>
+                            <small class="text-muted">Tỷ số chung cuộc</small>
+                        </div>
+                        <div class="col-5">
+                            <h5 class="fw-bold text-dark mb-0">@(Model.TenDoi2 ?? "Đội 2")</h5>
+                            <small class="text-muted">@(Model.DonViDoi2 ?? "")</small>
+                        </div>
+                    </div>
+
+                    @if (setScores.Count > 0)
+                    {
+                        <div class="d-flex justify-content-center gap-3 mt-3 pt-2 border-top small">
+                            @foreach (var s in setScores)
+                            {
+                                <span class="badge bg-white text-dark border">
+                                    Hiệp @s.SetNumber: <strong>@s.Score1 - @s.Score2</strong>
+                                </span>
+                            }
+                        </div>
+                    }
+
+                    <div class="mt-2 text-success fw-bold small">
+                        @if (winner == "1")
+                        {
+                            <span>🏆 Kết quả: <strong>@(Model.TenDoi1 ?? "Đội 1")</strong> Thắng chung cuộc</span>
+                        }
+                        else if (winner == "2")
+                        {
+                            <span>🏆 Kết quả: <strong>@(Model.TenDoi2 ?? "Đội 2")</strong> Thắng chung cuộc</span>
+                        }
+                        else if (winner == "draw")
+                        {
+                            <span>🤝 Kết quả: Hai đội Hòa</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Diễn Biến & Thẻ Phạt -->
+            @if (events.Count > 0)
+            {
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                        V. DIỄN BIẾN & CÁC SỰ KIỆN PHÁT SINH
+                    </h6>
+                    <table class="table table-sm table-bordered small mt-2">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 70px;">Phút</th>
+                                <th>Loại Sự Kiện</th>
+                                <th>Đội</th>
+                                <th>Vận Động Viên</th>
+                                <th>Chi Tiết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ev in events)
+                            {
+                                string evTitle = ev.Type switch
+                                {
+                                    "yellow_card" => "🟨 Thẻ vàng",
+                                    "red_card" => "🟥 Thẻ đỏ",
+                                    "foul" => "⚠️ Lỗi phạm quy",
+                                    "sub" => "🔄 Thay người",
+                                    _ => "⚽ Bàn thắng / Điểm"
+                                };
+                                string teamName = ev.Team == 1 ? (Model.TenDoi1 ?? "Đội 1") : (Model.TenDoi2 ?? "Đội 2");
+                                <tr>
+                                    <td class="text-center font-monospace">@ev.Minute'</td>
+                                    <td>@evTitle</td>
+                                    <td>@teamName</td>
+                                    <td>@(ev.Player ?? "--")</td>
+                                    <td>@(ev.Notes ?? "--")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <!-- 6. Nhận Xét Của Trọng Tài -->
+            <div class="mb-4">
+                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                    VI. NHẬN XÉT CỦA TỔ TRỌNG TÀI
+                </h6>
+                <p class="small text-dark mt-1" style="min-height: 40px; font-style: italic;">
+                    @(string.IsNullOrWhiteSpace(notes) ? "Trận đấu diễn ra theo đúng điều lệ và tinh thần thể thao cao thượng, không có khiếu nại phát sinh." : notes)
+                </p>
+            </div>
+
+            <!-- 7. Chữ Ký Xác Nhận (4 Bên) -->
+            <div class="mt-5 pt-3">
+                <div class="row text-center g-3" style="font-size: 13px;">
+                    <!-- Đội 1 -->
+                    <div class="col-3">
+                        <div class="fw-bold text-uppercase">ĐẠI DIỆN ĐỘI 1</div>
+                        <small class="text-muted">(Ký & ghi rõ họ tên)</small>
+                        <div class="mt-4 signature-box" id="sigBox_team1">
+                            @if (signatures.TryGetValue("team1", out var sig1))
+                            {
+                                <div class="fw-bold text-success"><i class="fa-solid fa-signature"></i> @sig1.SignerName</div>
+                                <div class="text-muted" style="font-size: 10px;">@sig1.SignedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-print-none"
+                                        onclick="openSignModal('team1', 'Đại diện Đội 1')">
+                                    <i class="fa-solid fa-pen me-1"></i> Ký tên
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Đội 2 -->
+                    <div class="col-3">
+                        <div class="fw-bold text-uppercase">ĐẠI DIỆN ĐỘI 2</div>
+                        <small class="text-muted">(Ký & ghi rõ họ tên)</small>
+                        <div class="mt-4 signature-box" id="sigBox_team2">
+                            @if (signatures.TryGetValue("team2", out var sig2))
+                            {
+                                <div class="fw-bold text-success"><i class="fa-solid fa-signature"></i> @sig2.SignerName</div>
+                                <div class="text-muted" style="font-size: 10px;">@sig2.SignedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-print-none"
+                                        onclick="openSignModal('team2', 'Đại diện Đội 2')">
+                                    <i class="fa-solid fa-pen me-1"></i> Ký tên
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Thư Ký -->
+                    <div class="col-3">
+                        <div class="fw-bold text-uppercase">THƯ KÝ TRẬN ĐẤU</div>
+                        <small class="text-muted">(Ký & ghi rõ họ tên)</small>
+                        <div class="mt-4 signature-box" id="sigBox_secretary">
+                            @if (signatures.TryGetValue("secretary", out var sigSec))
+                            {
+                                <div class="fw-bold text-success"><i class="fa-solid fa-signature"></i> @sigSec.SignerName</div>
+                                <div class="text-muted" style="font-size: 10px;">@sigSec.SignedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-print-none"
+                                        onclick="openSignModal('secretary', 'Thư ký trận đấu')">
+                                    <i class="fa-solid fa-pen me-1"></i> Ký tên
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Trọng Tài Chính -->
+                    <div class="col-3">
+                        <div class="fw-bold text-uppercase">TRỌNG TÀI CHÍNH</div>
+                        <small class="text-muted">(Ký & ghi rõ họ tên)</small>
+                        <div class="mt-4 signature-box" id="sigBox_referee">
+                            @if (signatures.TryGetValue("referee", out var sigRef))
+                            {
+                                <div class="fw-bold text-success"><i class="fa-solid fa-signature"></i> @sigRef.SignerName</div>
+                                <div class="text-muted" style="font-size: 10px;">@sigRef.SignedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-warning text-dark fw-semibold rounded-pill px-2.5 py-1 d-print-none"
+                                        onclick="openSignModal('referee', 'Trọng tài chính')">
+                                    <i class="fa-solid fa-pen me-1"></i> Ký tên
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal Ký Điện Tử -->
+<div class="modal fade" id="signModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white py-2.5 px-3">
+                <h6 class="modal-title fw-bold" id="signModalTitle">Xác Nhận Ký Biên Bản</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="signForm">
+                <input type="hidden" id="signRole" />
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Nhập họ và tên của người ký đại diện để xác thực biên bản thi đấu chính thức.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Họ và tên người ký <span class="text-danger">*</span></label>
+                        <input type="text" id="signerNameInput" class="form-control" required placeholder="VD: Nguyễn Văn Trưởng" />
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-sm btn-primary px-3">
+                        <i class="fa-solid fa-signature me-1"></i> Xác Nhận Ký Tên
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .trongtai-sidebar, .trongtai-topbar, .donvi-backdrop {
+                display: none !important;
+            }
+            .trongtai-main {
+                margin-left: 0 !important;
+                padding: 0 !important;
+            }
+            .print-area {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            .signature-box button {
+                display: none !important;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        const matchId = @(Model?.Id ?? 0);
+        let signModal = null;
+
+        $(document).ready(function () {
+            signModal = new bootstrap.Modal(document.getElementById('signModal'));
+
+            $('#signForm').on('submit', function (e) {
+                e.preventDefault();
+                submitSignature();
+            });
+        });
+
+        function openSignModal(role, roleTitle) {
+            $('#signRole').val(role);
+            $('#signModalTitle').text(`Ký Biên Bản: ${roleTitle}`);
+            $('#signerNameInput').val('');
+            signModal.show();
+        }
+
+        function submitSignature() {
+            const role = $('#signRole').val();
+            const name = $('#signerNameInput').val().trim();
+            if (!name) return;
+
+            const payload = {
+                tranDauId: matchId,
+                role: role,
+                signerName: name
+            };
+
+            $.ajax({
+                url: '/TrongTai/BienBan/SignReport',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    if (res.success) {
+                        signModal.hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Đã ký xác nhận',
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu chữ ký', 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
+                }
+            });
+        }
+    </script>
+}

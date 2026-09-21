@@ -1,0 +1,421 @@
+@{
+    ViewData["Title"] = "Quản lý Giải đấu";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-trophy text-primary me-2"></i>Quản lý Giải Đấu Thể Thao
+        </h4>
+        <p class="text-muted small mb-0">Quản lý danh sách các mùa giải, thời gian tổ chức, môn thi đấu và điều lệ.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" id="btnRefresh">
+            <i class="fa-solid fa-arrows-rotate me-1"></i> Làm mới
+        </button>
+        <a href="/Admin/GiaiDau/Create" class="btn btn-primary shadow-sm">
+            <i class="fa-solid fa-plus me-1"></i> Tạo Giải Đấu Mới
+        </a>
+    </div>
+</div>
+
+<!-- Bộ lọc & Tìm kiếm -->
+<div class="card card-custom mb-4">
+    <div class="card-body p-3">
+        <form id="filterForm" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="keyword" class="form-control border-start-0 ps-0" placeholder="Tìm kiếm theo mã, tên giải đấu...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select id="trangThaiFilter" class="form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="1">Bản nháp</option>
+                    <option value="2">Sắp diễn ra</option>
+                    <option value="3">Đang diễn ra</option>
+                    <option value="4">Đã kết thúc</option>
+                    <option value="5">Đã hủy</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="phamViFilter" class="form-select">
+                    <option value="">-- Tất cả phạm vi --</option>
+                    <option value="1">Tất cả đơn vị</option>
+                    <option value="2">Theo khối áp dụng</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fa-solid fa-filter me-1"></i> Lọc
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bảng dữ liệu Giải đấu -->
+<div class="card card-custom">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tblGiaiDau">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width: 50px;">STT</th>
+                        <th style="width: 80px;">Banner</th>
+                        <th>Thông tin giải đấu</th>
+                        <th>Thời gian tổ chức</th>
+                        <th>Hạn đăng ký</th>
+                        <th>Phạm vi</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end pe-3" style="width: 140px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="tblBody">
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            Đang tải danh sách giải đấu...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Phân trang -->
+    <div class="card-footer bg-white border-top d-flex flex-column flex-sm-row justify-content-between align-items-center py-3">
+        <div class="text-muted small mb-2 mb-sm-0" id="paginationInfo">
+            Hiển thị 0 trên 0 giải đấu
+        </div>
+        <nav aria-label="Page navigation">
+            <ul class="pagination pagination-sm mb-0" id="paginationList">
+                <!-- Phân trang sẽ render qua jQuery -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Modal Xem nhanh Chi tiết Giải Đấu -->
+<div class="modal fade" id="modalDetail" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="detailTitle">Chi tiết Giải đấu</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="detailBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <a href="#" id="btnDetailEdit" class="btn btn-primary">
+                    <i class="fa-solid fa-pen-to-square me-1"></i> Chỉnh sửa giải đấu này
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+
+        $(document).ready(function () {
+            loadGiaiDau(1);
+
+            // Tìm kiếm & Lọc
+            $('#filterForm').on('submit', function (e) {
+                e.preventDefault();
+                loadGiaiDau(1);
+            });
+
+            $('#trangThaiFilter, #phamViFilter').on('change', function () {
+                loadGiaiDau(1);
+            });
+
+            $('#btnRefresh').on('click', function () {
+                $('#keyword').val('');
+                $('#trangThaiFilter').val('');
+                $('#phamViFilter').val('');
+                loadGiaiDau(1);
+            });
+        });
+
+        // Hàm gọi AJAX lấy danh sách giải đấu
+        function loadGiaiDau(page) {
+            currentPage = page;
+            const keyword = $('#keyword').val().trim();
+            const trangThai = $('#trangThaiFilter').val();
+            const phamVi = $('#phamViFilter').val();
+
+            $('#tblBody').html(`
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                        Đang cập nhật danh sách...
+                    </td>
+                </tr>
+            `);
+
+            $.ajax({
+                url: '/Admin/GiaiDau/GetPagedData',
+                type: 'GET',
+                data: {
+                    pageIndex: page,
+                    pageSize: pageSize,
+                    keyword: keyword || undefined,
+                    trangThai: trangThai !== '' ? trangThai : undefined,
+                    phamVi: phamVi !== '' ? phamVi : undefined
+                },
+                success: function (res) {
+                    if (res.success && res.data) {
+                        renderTable(res.data);
+                    } else {
+                        $('#tblBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">Không thể tải dữ liệu.</td></tr>');
+                    }
+                },
+                error: function () {
+                    $('#tblBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">Lỗi kết nối máy chủ backend.</td></tr>');
+                }
+            });
+        }
+
+        // Render dữ liệu vào Table bằng jQuery
+        function renderTable(pagedResult) {
+            const items = pagedResult.items || [];
+            if (items.length === 0) {
+                $('#tblBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><i class="fa-solid fa-box-open fa-2x mb-2 d-block"></i>Chưa có giải đấu nào được tìm thấy.</td></tr>');
+                $('#paginationInfo').text('Hiển thị 0 trên 0 giải đấu');
+                $('#paginationList').empty();
+                return;
+            }
+
+            let html = '';
+            const startIndex = (pagedResult.pageIndex - 1) * pagedResult.pageSize;
+
+            $.each(items, function (index, item) {
+                const stt = startIndex + index + 1;
+                const bannerSrc = item.hinhAnh ? item.hinhAnh : 'https://placehold.co/120x80/2563eb/white?text=Sport+DMS';
+                const ngayBD = formatDate(item.ngayBatDau);
+                const ngayKT = formatDate(item.ngayKetThuc);
+                const hanDK = item.hanDangKy ? formatDate(item.hanDangKy) : '<span class="text-muted">Không giới hạn</span>';
+
+                html += `
+                    <tr>
+                        <td class="ps-3 fw-bold text-muted">${stt}</td>
+                        <td>
+                            <img src="${bannerSrc}" alt="Banner" class="rounded object-fit-cover shadow-sm" style="width: 70px; height: 48px; border: 1px solid #e2e8f0;" onerror="this.src='https://placehold.co/120x80/64748b/white?text=Sport'">
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark mb-0">${escapeHtml(item.ten)}</div>
+                            <small class="text-muted"><span class="badge bg-light text-secondary border">Mã: ${escapeHtml(item.ma)}</span></small>
+                            ${item.diaDiem ? `<div class="small text-muted mt-1"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${escapeHtml(item.diaDiem)}</div>` : ''}
+                        </td>
+                        <td>
+                            <div class="small fw-semibold text-dark"><i class="fa-regular fa-calendar-check me-1 text-primary"></i>${ngayBD}</div>
+                            <div class="small text-muted"><i class="fa-solid fa-arrow-right-long me-1"></i>${ngayKT}</div>
+                        </td>
+                        <td>
+                            <div class="small">${hanDK}</div>
+                        </td>
+                        <td>
+                            ${renderPhamViBadge(item.phamVi)}
+                        </td>
+                        <td>
+                            ${renderTrangThaiBadge(item.trangThai)}
+                        </td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-light border" title="Xem chi tiết" onclick="viewDetail(${item.id})">
+                                    <i class="fa-solid fa-eye text-primary"></i>
+                                </button>
+                                <a href="/Admin/GiaiDau/Edit/${item.id}" class="btn btn-light border" title="Chỉnh sửa">
+                                    <i class="fa-solid fa-pen-to-square text-success"></i>
+                                </a>
+                                <button type="button" class="btn btn-light border" title="Xóa giải đấu" onclick="deleteGiaiDau(${item.id}, '${escapeHtml(item.ten)}')">
+                                    <i class="fa-solid fa-trash text-danger"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#tblBody').html(html);
+
+            // Cập nhật phân trang
+            const total = pagedResult.totalCount || 0;
+            const from = total === 0 ? 0 : startIndex + 1;
+            const to = Math.min(startIndex + pagedResult.pageSize, total);
+            $('#paginationInfo').text(`Hiển thị ${from} - ${to} trên tổng số ${total} giải đấu`);
+            renderPagination(pagedResult.pageIndex, pagedResult.totalPages);
+        }
+
+        // Render badge Trạng Thái
+        function renderTrangThaiBadge(status) {
+            switch (status) {
+                case 1: return '<span class="badge bg-secondary badge-status">Bản nháp</span>';
+                case 2: return '<span class="badge bg-warning text-dark badge-status"><i class="fa-solid fa-clock me-1"></i>Sắp diễn ra</span>';
+                case 3: return '<span class="badge bg-primary badge-status"><i class="fa-solid fa-bolt me-1"></i>Đang diễn ra</span>';
+                case 4: return '<span class="badge bg-success badge-status"><i class="fa-solid fa-flag-checkered me-1"></i>Đã kết thúc</span>';
+                case 5: return '<span class="badge bg-danger badge-status"><i class="fa-solid fa-ban me-1"></i>Đã hủy</span>';
+                default: return '<span class="badge bg-secondary badge-status">Khác</span>';
+            }
+        }
+
+        // Render badge Phạm Vi
+        function renderPhamViBadge(phamVi) {
+            if (phamVi === 2) {
+                return '<span class="badge bg-purple text-white badge-status" style="background-color: #8b5cf6;"><i class="fa-solid fa-layer-group me-1"></i>Theo khối</span>';
+            }
+            return '<span class="badge bg-info text-dark badge-status"><i class="fa-solid fa-earth-asia me-1"></i>Tất cả đơn vị</span>';
+        }
+
+        // Render thanh phân trang
+        function renderPagination(current, totalPages) {
+            if (totalPages <= 1) {
+                $('#paginationList').empty();
+                return;
+            }
+
+            let pagHtml = '';
+            pagHtml += `<li class="page-item ${current === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadGiaiDau(${current - 1})"><i class="fa-solid fa-angle-left"></i></a>
+            </li>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= current - 2 && i <= current + 2)) {
+                    pagHtml += `<li class="page-item ${i === current ? 'active' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadGiaiDau(${i})">${i}</a>
+                    </li>`;
+                } else if (i === current - 3 || i === current + 3) {
+                    pagHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+            }
+
+            pagHtml += `<li class="page-item ${current === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadGiaiDau(${current + 1})"><i class="fa-solid fa-angle-right"></i></a>
+            </li>`;
+
+            $('#paginationList').html(pagHtml);
+        }
+
+        // Xóa giải đấu với SweetAlert2
+        function deleteGiaiDau(id, ten) {
+            SportApp.confirm(
+                'Xác nhận xóa giải đấu?',
+                `Bạn có chắc chắn muốn xóa giải đấu "${ten}" không? Tất cả dữ liệu liên quan sẽ bị loại bỏ!`,
+                function () {
+                    $.ajax({
+                        url: '/Admin/GiaiDau/Delete',
+                        type: 'POST',
+                        data: { id: id },
+                        success: function (res) {
+                            if (res.success) {
+                                SportApp.toast('success', res.message || 'Đã xóa giải đấu thành công!');
+                                loadGiaiDau(currentPage);
+                            } else {
+                                Swal.fire('Lỗi xóa', res.message || 'Không thể xóa giải đấu này.', 'error');
+                            }
+                        },
+                        error: function () {
+                            Swal.fire('Lỗi hệ thống', 'Đã có lỗi xảy ra khi kết nối máy chủ.', 'error');
+                        }
+                    });
+                }
+            );
+        }
+
+        // Xem nhanh chi tiết trong Modal
+        function viewDetail(id) {
+            $('#detailBody').html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>');
+            $('#btnDetailEdit').attr('href', '/Admin/GiaiDau/Edit/' + id);
+            $('#modalDetail').modal('show');
+
+            $.get('/Admin/GiaiDau/GetDetailJson', { id: id }, function (res) {
+                if (res.success && res.data) {
+                    const item = res.data;
+                    $('#detailTitle').text(item.ten);
+
+                    let monListHtml = '';
+                    if (item.monTheThaos && item.monTheThaos.length > 0) {
+                        $.each(item.monTheThaos, function (_, m) {
+                            monListHtml += `<span class="badge bg-light text-dark border p-2 me-1 mb-1"><i class="fa-solid fa-volleyball me-1 text-primary"></i>${escapeHtml(m.ten)}</span>`;
+                        });
+                    } else {
+                        monListHtml = '<span class="text-muted small">Chưa có môn thi đấu nào được gắn.</span>';
+                    }
+
+                    let dieuLeHtml = '';
+                    if (item.dieuLeGiaiDaus && item.dieuLeGiaiDaus.length > 0) {
+                        $.each(item.dieuLeGiaiDaus, function (i, dl) {
+                            dieuLeHtml += `
+                                <div class="border rounded p-3 mb-2 bg-light">
+                                    <h6 class="fw-bold mb-1">${i + 1}. ${escapeHtml(dl.tieuDe)}</h6>
+                                    <p class="small text-muted mb-1">${escapeHtml(dl.noiDung)}</p>
+                                    ${dl.tepDinhKem ? `<a href="${dl.tepDinhKem}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-paperclip me-1"></i>Tải tệp đính kèm</a>` : ''}
+                                </div>
+                            `;
+                        });
+                    } else {
+                        dieuLeHtml = '<span class="text-muted small">Chưa có điều lệ đính kèm.</span>';
+                    }
+
+                    const bodyHtml = `
+                        <div class="row g-3">
+                            <div class="col-md-4 text-center">
+                                <img src="${item.hinhAnh || 'https://placehold.co/300x200/2563eb/white?text=Sport+DMS'}" class="img-fluid rounded border shadow-sm mb-2" style="max-height: 180px;" alt="Banner">
+                                <div>${renderTrangThaiBadge(item.trangThai)}</div>
+                            </div>
+                            <div class="col-md-8">
+                                <table class="table table-sm table-borderless">
+                                    <tr><td class="text-muted" width="130">Mã giải:</td><td class="fw-bold">${escapeHtml(item.ma)}</td></tr>
+                                    <tr><td class="text-muted">Slug:</td><td><code>${escapeHtml(item.slug || '')}</code></td></tr>
+                                    <tr><td class="text-muted">Địa điểm:</td><td>${escapeHtml(item.diaDiem || 'Chưa cập nhật')}</td></tr>
+                                    <tr><td class="text-muted">Thời gian:</td><td class="text-primary fw-semibold">${formatDate(item.ngayBatDau)} - ${formatDate(item.ngayKetThuc)}</td></tr>
+                                    <tr><td class="text-muted">Hạn đăng ký:</td><td>${item.hanDangKy ? formatDate(item.hanDangKy) : 'Không giới hạn'}</td></tr>
+                                    <tr><td class="text-muted">Phạm vi:</td><td>${renderPhamViBadge(item.phamVi)}</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-12">
+                                <h6 class="fw-bold border-bottom pb-2 mt-2">Môn thi đấu trong giải (${item.monTheThaos ? item.monTheThaos.length : 0})</h6>
+                                <div>${monListHtml}</div>
+                            </div>
+                            <div class="col-12">
+                                <h6 class="fw-bold border-bottom pb-2 mt-2">Điều lệ giải đấu (${item.dieuLeGiaiDaus ? item.dieuLeGiaiDaus.length : 0})</h6>
+                                <div>${dieuLeHtml}</div>
+                            </div>
+                        </div>
+                    `;
+                    $('#detailBody').html(bodyHtml);
+                } else {
+                    $('#detailBody').html('<div class="alert alert-danger">Không tải được thông tin giải đấu.</div>');
+                }
+            });
+        }
+
+        // Tiện ích format ngày dd/MM/yyyy
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // XSS Escape
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div>').text(text).html();
+        }
+    </script>
+}

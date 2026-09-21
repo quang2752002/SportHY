@@ -1,0 +1,134 @@
+@model API.Controllers.LoginViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Đăng nhập Hệ thống Quản trị";
+}
+
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-5 col-lg-4">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="bg-primary text-white p-4 text-center">
+                <div class="d-inline-flex align-items-center justify-content-center bg-white text-primary rounded-circle mb-3 shadow-sm" style="width: 64px; height: 64px;">
+                    <i class="fa-solid fa-trophy fa-2x"></i>
+                </div>
+                <h4 class="fw-bold mb-1">SPORT DMS</h4>
+                <p class="small text-white-50 mb-0">Hệ Thống Quản Lý Giải Đấu Thể Thao</p>
+            </div>
+
+            <div class="card-body p-4 bg-white">
+                <form asp-action="Login" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ReturnUrl" />
+
+                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+                    {
+                        <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            @ViewData.ModelState[string.Empty]?.Errors[0].ErrorMessage
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-muted small">Tên đăng nhập</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0">
+                                <i class="fa-regular fa-user"></i>
+                            </span>
+                            <input asp-for="Username" class="form-control border-start-0 ps-0" placeholder="admin" required autofocus />
+                        </div>
+                        <span asp-validation-for="Username" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-muted small">Mật khẩu</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0">
+                                <i class="fa-solid fa-lock"></i>
+                            </span>
+                            <input asp-for="Password" type="password" class="form-control border-start-0 ps-0" placeholder="••••••••" required />
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input" type="checkbox" id="rememberMe" checked>
+                            <label class="form-check-label small text-muted" for="rememberMe">
+                                Ghi nhớ đăng nhập
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold shadow-sm mb-3">
+                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Đăng Nhập
+                    </button>
+                </form>
+
+                <!-- Quick Test Login Account -->
+                <div class="border-top pt-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-bolt text-warning me-1"></i> Đăng nhập nhanh
+                        </small>
+                        <span class="badge bg-light text-secondary border" style="font-size: 0.7rem;">Thử nghiệm</span>
+                    </div>
+
+                    <!-- Quản trị BTC -->
+                    <div class="d-flex gap-1 mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary flex-fill text-truncate py-1 px-2" onclick="fillAccount('admin', 'Admin@123')" title="Admin - Quản trị viên cao nhất">
+                            <i class="fa-solid fa-user-shield me-1 text-danger"></i> Admin
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary flex-fill text-truncate py-1 px-2" onclick="fillAccount('manager', 'Manager@123')" title="Quản lý giải đấu">
+                            <i class="fa-solid fa-user-tie me-1 text-primary"></i> Quản Lý
+                        </button>
+                    </div>
+
+                    <!-- 2 Đơn vị thi đấu chính -->
+                    <small class="text-muted d-block mb-1" style="font-size: 0.75rem;">
+                        <i class="fa-solid fa-building-columns text-success me-1"></i> Tài khoản Đơn vị / Đoàn:
+                    </small>
+                    <div class="d-flex gap-1 mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-success flex-fill text-truncate py-1 px-2 fw-semibold shadow-sm" onclick="fillAccount('donvi_bk', 'Delegation@123')" title="Đại học Bách Khoa (donvi_bk / Delegation@123)">
+                            <i class="fa-solid fa-graduation-cap me-1"></i> ĐH Bách Khoa
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-info flex-fill text-truncate py-1 px-2 fw-semibold shadow-sm" onclick="fillAccount('donvi_hvtc', 'Delegation@123')" title="Học Viện Tài Chính (donvi_hvtc / Delegation@123)">
+                            <i class="fa-solid fa-landmark me-1"></i> HV Tài Chính
+                        </button>
+                    </div>
+
+                    <!-- Các đơn vị khác -->
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-dark flex-fill text-truncate py-1 px-1" onclick="fillAccount('donvi_sphn', 'Delegation@123')" title="ĐH Sư Phạm Hà Nội (donvi_sphn / Delegation@123)" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-book-open-reader me-1 text-purple"></i> ĐH Sư Phạm
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-dark flex-fill text-truncate py-1 px-1" onclick="fillAccount('donvi_qghn', 'Delegation@123')" title="ĐH Quốc Gia Hà Nội (donvi_qghn / Delegation@123)" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-school me-1 text-primary"></i> ĐH Quốc Gia
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function fillAccount(username, password) {
+            $('input[name="Username"]').val(username);
+            $('input[name="Password"]').val(password);
+
+            const $inputs = $('input[name="Username"], input[name="Password"]');
+            $inputs.addClass('border-success bg-success-subtle');
+            setTimeout(function () {
+                $inputs.removeClass('border-success bg-success-subtle');
+            }, 600);
+        }
+
+        function fillAdmin() {
+            fillAccount('admin', 'Admin@123');
+        }
+        function fillManager() {
+            fillAccount('manager', 'Manager@123');
+        }
+    </script>
+}

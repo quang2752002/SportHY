@@ -1,0 +1,481 @@
+@using Dms.Application.Common
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SPORT DMS | Cổng Thông Tin Đại Hội & Giải Đấu Thể Thao</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS & FontAwesome & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --portal-primary: #0284c7;
+            --portal-navy: #0f172a;
+            --portal-dark: #1e293b;
+            --portal-accent: #f59e0b;
+            --portal-orange: #ea580c;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navbar */
+        .portal-navbar {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            position: sticky;
+            top: 0;
+            z-index: 1050;
+            transition: all 0.3s ease;
+        }
+
+        .portal-logo {
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--portal-navy);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .portal-logo-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+        }
+
+        .portal-nav-link {
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: #475569;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .portal-nav-link:hover {
+            color: var(--portal-primary);
+            background: #f1f5f9;
+        }
+
+        /* Footer */
+        .portal-footer {
+            background-color: var(--portal-navy);
+            color: #94a3b8;
+            margin-top: auto;
+            border-top: 1px solid #334155;
+        }
+
+        .portal-footer a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .portal-footer a:hover {
+            color: #38bdf8;
+        }
+
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        /* Search input style */
+        .search-box-wrap {
+            position: relative;
+        }
+        .search-box-input {
+            border-radius: 0.6rem;
+            border: 1px solid #e2e8f0;
+            padding-left: 2.4rem;
+            font-size: 0.875rem;
+            background-color: #ffffff;
+            height: 40px;
+        }
+        .search-box-input:focus {
+            border-color: #f97316;
+            box-shadow: 0 0 0 0.2rem rgba(249, 115, 22, 0.15);
+            outline: none;
+        }
+        .search-icon-pos {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        /* Status tabs */
+        .status-pill-btn {
+            border-radius: 9999px;
+            padding: 0.45rem 1.1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.2s ease;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+        }
+        .status-pill-btn:hover {
+            background-color: #f1f5f9;
+            color: #334155;
+        }
+        .status-pill-btn.active-orange {
+            background-color: #ea580c !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25);
+        }
+        .status-pill-btn .badge-pill-count {
+            border-radius: 9999px;
+            padding: 0.15rem 0.55rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+        .status-pill-btn.active-orange .badge-pill-count {
+            background-color: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+        }
+        .status-pill-btn:not(.active-orange) .badge-pill-count {
+            background-color: #e2e8f0;
+            color: #475569;
+        }
+
+        /* Tournament Card */
+        .tournament-card {
+            border-radius: 1rem;
+            border: 1px solid #edf2f7;
+            background-color: #ffffff;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .tournament-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+        .tournament-banner-container {
+            position: relative;
+            width: 100%;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: #0f172a;
+        }
+        .banner-click-hover {
+            transition: opacity 0.2s ease;
+        }
+        .banner-click-hover:hover {
+            opacity: 0.95;
+        }
+
+        /* Event categories inside tournament */
+        .category-item {
+            border-radius: 0.75rem;
+            padding: 0.75rem 0.9rem;
+            background-color: #f8fafc;
+            border: 1px solid #f1f5f9;
+            transition: all 0.15s ease;
+        }
+        .category-item:hover {
+            background-color: #ffffff;
+            border-color: #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+        .category-index-badge {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background-color: #e2e8f0;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <!-- Top Navbar (Đồng bộ phong cách PublicHeader bên React) -->
+    <nav class="portal-navbar shadow-sm py-2">
+        <div class="container-fluid px-lg-4 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/" class="portal-logo d-flex align-items-center text-decoration-none">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden"
+                         style="width: 44px; height: 44px; background: radial-gradient(circle, #f97316 0%, #1e3a8a 100%); border: 2px solid #ea580c;">
+                        <span class="text-white fw-bold" style="font-size: 10px; text-align: center; line-height: 1.1;">
+                            SPORT<br />DMS
+                        </span>
+                    </div>
+                    <div class="ms-2 d-none d-sm-block">
+                        <div class="fw-bold text-dark lh-1" style="font-size: 1.1rem;">SPORT <span style="color: #ea580c;">DMS</span></div>
+                        <div class="text-muted" style="font-size: 0.65rem; letter-spacing: 0.5px;">CỔNG THÔNG TIN THỂ THAO</div>
+                    </div>
+                </a>
+
+                <!-- Desktop Menu Navigation Links -->
+                <nav class="d-none d-md-flex align-items-center gap-1 ms-2">
+                    <a href="/" class="nav-link-custom active">
+                        <i class="bi bi-trophy"></i>
+                        <span>Giải đấu</span>
+                    </a>
+                    <a href="/Manager/BangDau" class="nav-link-custom">
+                        <i class="bi bi-activity"></i>
+                        <span>Bảng đấu</span>
+                    </a>
+                    <a href="/Manager/CumSan" class="nav-link-custom">
+                        <i class="bi bi-geo-alt"></i>
+                        <span>Sân bãi</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- User Auth Bar -->
+            <div class="d-flex align-items-center gap-2">
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    var isManager = User.IsInRole(AppRoles.Manager);
+                    var isAdmin = User.IsInRole(AppRoles.Admin);
+                    var isDelegation = User.IsInRole(AppRoles.Delegation);
+                    var isSecretary = User.IsInRole(AppRoles.Secretary);
+                    var isReferee = User.IsInRole(AppRoles.Referee);
+                    var isHeadReferee = User.IsInRole(AppRoles.HeadReferee);
+                    var isSportCoordinator = User.IsInRole(AppRoles.SportCoordinator);
+
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2 py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.8rem;">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <span class="fw-semibold text-dark small">@User.Identity.Name</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                            <li class="px-3 py-2 border-bottom">
+                                <div class="small text-muted">Đang đăng nhập:</div>
+                                <div class="fw-bold text-dark">@User.Identity.Name</div>
+                                @if (isHeadReferee)
+                                {
+                                    <span class="badge bg-warning text-dark mt-1">Trưởng Ban Trọng Tài</span>
+                                }
+                                else if (isSportCoordinator)
+                                {
+                                    <span class="badge bg-info text-dark mt-1">Điều Hành Môn</span>
+                                }
+                                else if (isSecretary)
+                                {
+                                    <span class="badge bg-primary text-white mt-1">Thư Ký Giải</span>
+                                }
+                                else if (isReferee)
+                                {
+                                    <span class="badge bg-warning text-dark mt-1">Trọng Tài</span>
+                                }
+                                else if (isDelegation)
+                                {
+                                    <span class="badge bg-success text-white mt-1">Đoàn Thi Đấu</span>
+                                }
+                                else if (isManager)
+                                {
+                                    <span class="badge bg-warning text-dark mt-1">Quản Lý Giải</span>
+                                }
+                                else if (isAdmin)
+                                {
+                                    <span class="badge bg-danger text-white mt-1">Quản Trị Viên</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary text-white mt-1">Thành viên</span>
+                                }
+                            </li>
+                            @if (isHeadReferee || isManager || isAdmin)
+                            {
+                                <li>
+                                    <a class="dropdown-item py-2" href="/TruongBanTrongTai/Home">
+                                        <i class="fa-solid fa-whistle text-warning me-2"></i> Cổng Trưởng Ban Trọng Tài
+                                    </a>
+                                </li>
+                            }
+                            @if (isSportCoordinator || isManager || isAdmin)
+                            {
+                                <li>
+                                    <a class="dropdown-item py-2" href="/DieuHanhMon/Home">
+                                        <i class="fa-solid fa-volleyball text-info me-2"></i> Cổng Điều Hành Môn
+                                    </a>
+                                </li>
+                            }
+                            @if (isSecretary || isManager || isAdmin)
+                            {
+                                <li>
+                                    <a class="dropdown-item py-2" href="/ThuKy/Home">
+                                        <i class="fa-solid fa-clipboard-check text-primary me-2"></i> Cổng Thư Ký Giải
+                                    </a>
+                                </li>
+                            }
+                            @if (isReferee)
+                            {
+                                <li>
+                                    <a class="dropdown-item py-2" href="/TrongTai/Home">
+                                        <i class="fa-solid fa-flag text-warning me-2"></i> Cổng Điều Hành Trọng Tài
+                                    </a>
+                                </li>
+                            }
+                            @if (isDelegation)
+                            {
+                                <li>
+                                    <a class="dropdown-item py-2" href="/DonVi/Home">
+                                        <i class="fa-solid fa-building-columns text-success me-2"></i> Cổng Quản Lý Đoàn
+                                    </a>
+                                </li>
+                            }
+                            @if (isManager)
+                            {
+                                <li>
+                                    <a class="dropdown-item py-2" href="/Manager/GiaiDau">
+                                        <i class="fa-solid fa-trophy text-warning me-2"></i> Bảng Quản Lý Giải
+                                    </a>
+                                </li>
+                            }
+                            @if (isAdmin)
+                            {
+                                <li>
+                                    <a class="dropdown-item py-2" href="/Admin/GiaiDau">
+                                        <i class="fa-solid fa-sliders text-primary me-2"></i> Bảng Quản Trị Hệ Thống
+                                    </a>
+                                </li>
+                            }
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item py-2 text-danger" href="/Account/Logout">
+                                    <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Đăng Xuất
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    @if (isReferee)
+                    {
+                        <a href="/TrongTai/Home" class="btn btn-warning btn-sm fw-bold shadow-sm d-none d-sm-inline-flex align-items-center text-dark">
+                            <i class="fa-solid fa-flag me-1"></i> Cổng Trọng Tài
+                        </a>
+                    }
+                    else if (isDelegation)
+                    {
+                        <a href="/DonVi/Home" class="btn btn-success btn-sm fw-bold shadow-sm d-none d-sm-inline-flex align-items-center">
+                            <i class="fa-solid fa-building-columns me-1"></i> Cổng Đoàn
+                        </a>
+                    }
+                    else if (isManager)
+                    {
+                        <a href="/Manager/GiaiDau" class="btn btn-warning btn-sm fw-bold shadow-sm d-none d-sm-inline-flex align-items-center">
+                            <i class="fa-solid fa-trophy me-1"></i> Quản Lý Giải
+                        </a>
+                    }
+                    else if (isAdmin)
+                    {
+                        <a href="/Admin/GiaiDau" class="btn btn-primary btn-sm fw-bold shadow-sm d-none d-sm-inline-flex align-items-center">
+                            <i class="fa-solid fa-sliders me-1"></i> Trang Admin
+                        </a>
+                    }
+                }
+                else
+                {
+                    <a href="/Account/Login" class="btn btn-sm rounded-3 px-3 py-1.5 fw-semibold text-white d-flex align-items-center gap-1 shadow-sm" style="background-color: #ea580c; border-color: #ea580c; font-size: 0.88rem;">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        <span>Đăng Nhập</span>
+                    </a>
+                }
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main role="main">
+        @RenderBody()
+    </main>
+
+    <!-- Public Footer -->
+    <footer class="portal-footer py-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="portal-logo-badge" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <span class="text-white fw-bold fs-5">SPORT DMS</span>
+                    </div>
+                    <p class="small text-muted mb-3" style="max-width: 400px;">
+                        Hệ thống phần mềm quản lý, điều hành và tổ chức các đại hội thể thao, giải đấu thể dục thể thao chuyên nghiệp và phong trào toàn diện.
+                    </p>
+                    <div class="d-flex gap-3 text-white-50">
+                        <a href="#" class="fs-5"><i class="fa-brands fa-facebook"></i></a>
+                        <a href="#" class="fs-5"><i class="fa-brands fa-youtube"></i></a>
+                        <a href="#" class="fs-5"><i class="fa-solid fa-globe"></i></a>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <h6 class="text-white fw-bold mb-3">Liên Kết Nhanh</h6>
+                    <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
+                        <li><a href="/#giai-dau"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Danh Sách Giải Đấu</a></li>
+                        <li><a href="/#mon-the-thao"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Các Môn Thi Đấu</a></li>
+                        <li><a href="/#san-dau"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Địa Điểm & Sân Đấu</a></li>
+                        <li><a href="/Account/Login"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Đăng Nhập Ban Tổ Chức</a></li>
+                    </ul>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <h6 class="text-white fw-bold mb-3">Hỗ Trợ & Liên Hệ</h6>
+                    <ul class="list-unstyled small d-flex flex-column gap-2 mb-0 text-muted">
+                        <li><i class="fa-solid fa-location-dot me-2 text-primary"></i> Sở Văn Hóa & Thể Thao TP.HCM</li>
+                        <li><i class="fa-solid fa-phone me-2 text-primary"></i> Hotline: (028) 3822 5588 - 0909 123 456</li>
+                        <li><i class="fa-solid fa-envelope me-2 text-primary"></i> Email: btc.thethao@sportdms.vn</li>
+                        <li><i class="fa-solid fa-clock me-2 text-primary"></i> Hỗ trợ kỹ thuật: 08:00 - 20:00 hàng ngày</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-top border-secondary border-opacity-25 pt-4 mt-4 text-center small text-muted">
+                © 2026 SPORT DMS. Nền Tảng Điều Hành & Quản Lý Giải Đấu Thể Thao. Tất cả các quyền được bảo lưu.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Core Scripts: jQuery, Bootstrap Bundle, SweetAlert2 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

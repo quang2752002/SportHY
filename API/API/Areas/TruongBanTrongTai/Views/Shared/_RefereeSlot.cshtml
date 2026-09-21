@@ -1,0 +1,32 @@
+@model dynamic
+@{
+    int tranDauId = Model.TranDauId;
+    string vaiTro = Model.VaiTro;
+    int? currentId = Model.CurrentId;
+    string? currentName = Model.CurrentName;
+    string badgeClass = Model.BadgeClass ?? "bg-primary text-white";
+}
+
+<div class="d-flex align-items-center justify-content-between p-1 rounded-2 border bg-light">
+    @if (currentId.HasValue && !string.IsNullOrEmpty(currentName))
+    {
+        <span class="badge @badgeClass fw-semibold px-2 py-1 text-truncate" style="max-width: 130px;" title="@currentName">
+            @currentName
+        </span>
+        <div class="btn-group btn-group-sm">
+            <button class="btn btn-sm btn-link text-primary p-0 px-1" onclick="openAssignModal(@tranDauId, '@vaiTro', @currentId.Value, '@currentName')" title="Đổi trọng tài">
+                <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button class="btn btn-sm btn-link text-danger p-0 px-1" onclick="openAssignModal(@tranDauId, '@vaiTro', null, null)" title="Hủy phân công">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    }
+    else
+    {
+        <span class="text-muted small fst-italic px-1">Chưa gán</span>
+        <button class="btn btn-sm btn-outline-primary py-0 px-2 small" onclick="openAssignModal(@tranDauId, '@vaiTro', null, null)">
+            <i class="fa-solid fa-plus me-1"></i> Gán
+        </button>
+    }
+</div>

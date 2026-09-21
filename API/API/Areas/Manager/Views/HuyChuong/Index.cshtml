@@ -1,0 +1,246 @@
+@{
+    ViewData["Title"] = "Tổng Kết & Bảng Tổng Sắp Huy Chương";
+    var giaiDaus = ViewBag.GiaiDaus as IEnumerable<GiaiDauDto> ?? Enumerable.Empty<GiaiDauDto>();
+    var donVis = ViewBag.DonVis as IEnumerable<DonViDto> ?? Enumerable.Empty<DonViDto>();
+    var selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-award text-warning me-2"></i>Bảng Tổng Sắp & Quản Lý Huy Chương
+        </h4>
+        <p class="text-muted small mb-0">Theo dõi xếp hạng các đoàn thể thao và ghi nhận kết quả trao huy chương giải đấu.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" onclick="loadData()">
+            <i class="fa-solid fa-arrows-rotate me-1"></i> Làm mới
+        </button>
+    </div>
+</div>
+
+<!-- Bộ lọc chọn giải đấu -->
+<div class="card card-custom mb-4">
+    <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <select id="giaiDauSelect" class="form-select" onchange="loadData()">
+                    <option value="">-- Chọn giải đấu để xem bảng xếp hạng --</option>
+                    @foreach (var g in giaiDaus)
+                    {
+                        if (selectedGiaiDauId.HasValue && selectedGiaiDauId.Value == g.Id)
+                        {
+                            <option value="@g.Id" selected>@g.Ten</option>
+                        }
+                        else
+                        {
+                            <option value="@g.Id">@g.Ten</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <span class="text-muted small">Quy tắc xếp hạng: <strong>Vàng > Bạc > Đồng</strong></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng tổng sắp huy chương (Medal Table) -->
+<div class="card card-custom mb-4">
+    <div class="card-header bg-white border-bottom py-3">
+        <h6 class="fw-bold mb-0 text-dark">
+            <i class="fa-solid fa-ranking-star text-primary me-2"></i>Bảng Tổng Sắp Huy Chương Toàn Đoàn
+        </h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tblMedalStanding">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width: 70px;">Hạng</th>
+                        <th>Đơn Vị / Đoàn Thể Thao</th>
+                        <th class="text-center" style="width: 100px;">
+                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-medal me-1"></i>Vàng</span>
+                        </th>
+                        <th class="text-center" style="width: 100px;">
+                            <span class="badge bg-secondary text-white"><i class="fa-solid fa-medal me-1"></i>Bạc</span>
+                        </th>
+                        <th class="text-center" style="width: 100px;">
+                            <span class="badge" style="background-color: #cd7f32; color: #fff;"><i class="fa-solid fa-medal me-1"></i>Đồng</span>
+                        </th>
+                        <th class="text-center pe-3 fw-bold" style="width: 100px;">Tổng Số</th>
+                    </tr>
+                </thead>
+                <tbody id="tblStandingBody">
+                    <tr><td colspan="6" class="text-center py-4 text-muted">Đang tải bảng tổng sắp...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Danh sách huy chương chi tiết đã trao -->
+<div class="card card-custom">
+    <div class="card-header bg-white border-bottom py-3">
+        <h6 class="fw-bold mb-0 text-dark">
+            <i class="fa-solid fa-list-check text-success me-2"></i>Danh Sách Huy Chương Chi Tiết
+        </h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tblMedalDetail">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width: 50px;">STT</th>
+                        <th>Môn / Nội Dung</th>
+                        <th>Loại Huy Chương</th>
+                        <th>Đoàn Đạt Giải</th>
+                        <th>Vận Động Viên / Đội Tuyển</th>
+                        <th class="text-end pe-3" style="width: 100px;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="tblDetailBody">
+                    <tr><td colspan="6" class="text-center py-4 text-muted">Đang tải danh sách huy chương...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            if ($('#giaiDauSelect option').length > 1) {
+                $('#giaiDauSelect').prop('selectedIndex', 1);
+            }
+            loadData();
+        });
+
+        function loadData() {
+            const giaiDauId = $('#giaiDauSelect').val();
+
+            $.get('/Manager/HuyChuong/GetAll', { giaiDauId: giaiDauId ? parseInt(giaiDauId) : undefined }, function (res) {
+                if (res.success && res.data) {
+                    processAndRender(res.data);
+                }
+            });
+        }
+
+        function processAndRender(items) {
+            renderDetails(items);
+            renderStandings(items);
+        }
+
+        function renderStandings(items) {
+            // Gom nhóm huy chương theo đơn vị
+            const map = {};
+            $.each(items, function (i, item) {
+                const donVi = item.tenDonVi || 'Khác';
+                if (!map[donVi]) {
+                    map[donVi] = { donVi: donVi, vang: 0, bac: 0, dong: 0, total: 0 };
+                }
+
+                const loai = (item.tenLoaiHuyChuong || item.loaiHuyChuong || '').toLowerCase();
+                if (loai.includes('vàng') || loai.includes('gold')) {
+                    map[donVi].vang++;
+                } else if (loai.includes('bạc') || loai.includes('silver')) {
+                    map[donVi].bac++;
+                } else {
+                    map[donVi].dong++;
+                }
+                map[donVi].total++;
+            });
+
+            // Sắp xếp theo Vàng > Bạc > Đồng
+            const list = Object.values(map).sort(function (a, b) {
+                if (b.vang !== a.vang) return b.vang - a.vang;
+                if (b.bac !== a.bac) return b.bac - a.bac;
+                return b.dong - a.dong;
+            });
+
+            if (list.length === 0) {
+                $('#tblStandingBody').html('<tr><td colspan="6" class="text-center py-4 text-muted">Chưa có dữ liệu huy chương nào được trao cho giải này.</td></tr>');
+                return;
+            }
+
+            let html = '';
+            $.each(list, function (idx, s) {
+                let rankBadge = `<span class="fw-bold text-muted">${idx + 1}</span>`;
+                if (idx === 0) rankBadge = `<span class="badge bg-warning text-dark fs-6 rounded-circle p-2">🥇 1</span>`;
+                else if (idx === 1) rankBadge = `<span class="badge bg-secondary text-white fs-6 rounded-circle p-2">🥈 2</span>`;
+                else if (idx === 2) rankBadge = `<span class="badge fs-6 rounded-circle p-2" style="background:#cd7f32; color:#fff;">🥉 3</span>`;
+
+                html += `
+                    <tr>
+                        <td class="ps-3">${rankBadge}</td>
+                        <td class="fw-bold text-dark"><i class="fa-solid fa-flag text-primary me-2"></i>${escapeHtml(s.donVi)}</td>
+                        <td class="text-center fw-bold text-warning fs-6">${s.vang}</td>
+                        <td class="text-center fw-bold text-secondary fs-6">${s.bac}</td>
+                        <td class="text-center fw-bold fs-6" style="color: #cd7f32;">${s.dong}</td>
+                        <td class="text-center pe-3 fw-bold fs-6 text-primary">${s.total}</td>
+                    </tr>
+                `;
+            });
+            $('#tblStandingBody').html(html);
+        }
+
+        function renderDetails(items) {
+            if (!items || items.length === 0) {
+                $('#tblDetailBody').html('<tr><td colspan="6" class="text-center py-4 text-muted">Chưa có huy chương nào được ghi nhận.</td></tr>');
+                return;
+            }
+
+            let html = '';
+            $.each(items, function (i, item) {
+                const loai = item.tenLoaiHuyChuong || item.loaiHuyChuong || 'Huy chương';
+                let medalBadge = `<span class="badge bg-warning text-dark"><i class="fa-solid fa-medal me-1"></i>${escapeHtml(loai)}</span>`;
+                if (loai.toLowerCase().includes('bạc')) {
+                    medalBadge = `<span class="badge bg-secondary text-white"><i class="fa-solid fa-medal me-1"></i>${escapeHtml(loai)}</span>`;
+                } else if (loai.toLowerCase().includes('đồng')) {
+                    medalBadge = `<span class="badge text-white" style="background:#cd7f32;"><i class="fa-solid fa-medal me-1"></i>${escapeHtml(loai)}</span>`;
+                }
+
+                html += `
+                    <tr>
+                        <td class="ps-3 fw-bold text-muted">${i + 1}</td>
+                        <td>
+                            <div class="fw-bold text-dark">${escapeHtml(item.tenMonTheThao || 'Môn thi đấu')}</div>
+                            <small class="text-muted">${escapeHtml(item.tenGiaiDau || '')}</small>
+                        </td>
+                        <td>${medalBadge}</td>
+                        <td class="fw-semibold text-dark">${escapeHtml(item.tenDonVi || 'Vãng lai')}</td>
+                        <td>
+                            <span class="text-primary fw-semibold">${escapeHtml(item.tenVanDongVien || item.tenDoi || '-')}</span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <button type="button" class="btn btn-sm btn-light border" title="Xóa / Thu hồi" onclick="deleteMedal(${item.id})">
+                                <i class="fa-solid fa-trash text-danger"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#tblDetailBody').html(html);
+        }
+
+        function deleteMedal(id) {
+            SportApp.confirm('Thu Hồi Huy Chương?', 'Bạn có chắc muốn thu hồi huy chương này?', function () {
+                $.post('/Manager/HuyChuong/Delete', { id: id }, function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã xóa huy chương!');
+                        loadData();
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể xóa.', 'error');
+                    }
+                });
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div>').text(text).html();
+        }
+    </script>
+}

@@ -1,0 +1,238 @@
+@{
+    ViewData["Title"] = "Tổng Quan Điều Hành Môn";
+}
+
+<!-- Trạng thái Loading -->
+<div id="dashboardLoading" class="text-center py-5">
+    <div class="spinner-border text-teal" style="color: #0d9488; width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Đang tải dữ liệu...</span>
+    </div>
+    <p class="text-muted mt-3 fw-semibold">Đang tải dữ liệu điều hành môn thể thao...</p>
+</div>
+
+<!-- Trạng thái Thông báo / Cảnh báo -->
+<div id="dashboardAlert" class="alert alert-info border-0 shadow-sm p-4 rounded-4 d-none">
+    <h4 class="alert-heading fw-bold"><i class="fa-solid fa-circle-info me-2"></i> Thông báo</h4>
+    <p id="dashboardAlertMsg" class="mb-0">Bạn chưa được phân công điều hành môn thể thao nào trong các giải đấu.</p>
+</div>
+
+<!-- Khung nội dung chính (Render qua AJAX) -->
+<div id="dashboardContent" class="d-none">
+    <!-- Banner môn điều hành -->
+    <div class="card card-custom border-0 mb-4 text-white overflow-hidden position-relative" style="background: linear-gradient(135deg, #042f2e 0%, #0f766e 100%);">
+        <div class="card-body p-4 position-relative" style="z-index: 2;">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-teal text-white fw-bold px-3 py-1 rounded-pill" style="background-color: #0d9488;">ĐIỀU HÀNH MÔN THỂ THAO</span>
+                        <span id="bannerMaDanhMuc" class="badge bg-white bg-opacity-20 text-white px-3 py-1 rounded-pill">DM</span>
+                    </div>
+                    <h2 id="bannerTenDanhMuc" class="fw-bold mb-1 text-white">Môn Thể Thao</h2>
+                    <p class="mb-0 text-white-50 fs-6">
+                        <i class="fa-solid fa-trophy text-warning me-1"></i> Giải đấu: <strong id="bannerTenGiaiDau" class="text-white">--</strong>
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/DieuHanhMon/LichThiDau" class="btn btn-light fw-bold px-3 py-2 shadow-sm text-teal" style="color: #0f766e;">
+                        <i class="fa-solid fa-calendar-check me-1"></i> Lịch Thi Đấu & Tiến Độ
+                    </a>
+                    <a href="/DieuHanhMon/KetQua" class="btn btn-outline-light px-3 py-2">
+                        <i class="fa-solid fa-square-poll-vertical me-1"></i> Kiểm Tra Kết Quả
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="position-absolute end-0 bottom-0 opacity-10" style="font-size: 14rem; line-height: 0.8; margin-right: -2rem; margin-bottom: -3rem;">
+            <i class="fa-solid fa-volleyball"></i>
+        </div>
+    </div>
+
+    <!-- Hàng thẻ KPI -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card card-custom p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Môn & Phân Môn</span>
+                        <h3 class="fw-bold mt-1 mb-0 text-teal" style="color: #0d9488;"><span id="statTotalSports">0</span> <span class="fs-6 fw-normal text-muted">môn</span></h3>
+                        <small class="text-muted">Thuộc danh mục quản lý</small>
+                    </div>
+                    <div class="rounded-3 bg-opacity-10 p-3 fs-3" style="background-color: rgba(13,148,136,0.1); color: #0d9488;">
+                        <i class="fa-solid fa-shapes"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card card-custom p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Nội Dung Thi Đấu</span>
+                        <h3 class="fw-bold mt-1 mb-0 text-primary"><span id="statTotalEvents">0</span> <span class="fs-6 fw-normal text-muted">nội dung</span></h3>
+                        <small class="text-muted">Đơn, đôi, đồng đội, hạng cân...</small>
+                    </div>
+                    <div class="rounded-3 bg-primary bg-opacity-10 p-3 text-primary fs-3">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card card-custom p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng Số Trận Đấu</span>
+                        <h3 class="fw-bold mt-1 mb-0 text-success"><span id="statTotalMatches">0</span> <span class="fs-6 fw-normal text-muted">trận</span></h3>
+                        <small class="text-success fw-semibold"><i class="fa-solid fa-check me-1"></i> <span id="statCompletedMatches">0</span> đã hoàn thành</small>
+                    </div>
+                    <div class="rounded-3 bg-success bg-opacity-10 p-3 text-success fs-3">
+                        <i class="fa-solid fa-futbol"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card card-custom p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Trọng Tài Của Môn</span>
+                        <h3 class="fw-bold mt-1 mb-0 text-warning"><span id="statTotalReferees">0</span> <span class="fs-6 fw-normal text-muted">trọng tài</span></h3>
+                        <small class="text-muted">Được ban trọng tài phân công</small>
+                    </div>
+                    <div class="rounded-3 bg-warning bg-opacity-10 p-3 text-warning fs-3">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách trận đấu mới nhất hoặc đang diễn ra của môn -->
+    <div class="card card-custom mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark">
+                <i class="fa-solid fa-clock-rotate-left text-teal me-2" style="color: #0d9488;"></i> Diễn Biến Trận Đấu Mới Nhất
+            </h5>
+            <a href="/DieuHanhMon/LichThiDau" class="btn btn-sm btn-outline-teal" style="color: #0d9488; border-color: #0d9488;">
+                Xem toàn bộ lịch <i class="fa-solid fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th style="width: 70px;">Trận</th>
+                        <th>Môn</th>
+                        <th>Tên Trận</th>
+                        <th>Thời Gian</th>
+                        <th>Trọng Tài Chính</th>
+                        <th>Trạng Thái</th>
+                        <th class="text-end">Chi Tiết</th>
+                    </tr>
+                </thead>
+                <tbody id="recentMatchesBody">
+                    <!-- Dynamic rendering qua AJAX -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDashboardData();
+        });
+
+        async function loadDashboardData() {
+            const loadingEl = document.getElementById('dashboardLoading');
+            const alertEl = document.getElementById('dashboardAlert');
+            const alertMsgEl = document.getElementById('dashboardAlertMsg');
+            const contentEl = document.getElementById('dashboardContent');
+
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const queryStr = params.toString() ? ('?' + params.toString()) : '';
+                const response = await fetch('/DieuHanhMon/Home/GetDashboardData' + queryStr);
+                const result = await response.json();
+
+                loadingEl.classList.add('d-none');
+
+                if (!result.success || !result.data) {
+                    alertMsgEl.textContent = result.message || 'Không có môn thể thao nào đang được điều hành.';
+                    alertEl.classList.remove('d-none');
+                    contentEl.classList.add('d-none');
+                    return;
+                }
+
+                alertEl.classList.add('d-none');
+                contentEl.classList.remove('d-none');
+
+                const d = result.data;
+                const a = d.assignment || {};
+
+                // Cập nhật Banner
+                document.getElementById('bannerMaDanhMuc').textContent = a.maDanhMuc || 'DM';
+                document.getElementById('bannerTenDanhMuc').textContent = a.tenDanhMuc || 'Môn Thể Thao';
+                document.getElementById('bannerTenGiaiDau').textContent = a.tenGiaiDau || '--';
+
+                // Cập nhật các chỉ số KPI
+                document.getElementById('statTotalSports').textContent = d.totalSports || 0;
+                document.getElementById('statTotalEvents').textContent = d.totalEvents || 0;
+                document.getElementById('statTotalMatches').textContent = d.totalMatches || 0;
+                document.getElementById('statCompletedMatches').textContent = d.completedMatches || 0;
+                document.getElementById('statTotalReferees').textContent = d.totalReferees || 0;
+
+                // Render danh sách trận đấu gần đây
+                const tbody = document.getElementById('recentMatchesBody');
+                tbody.innerHTML = '';
+
+                if (!d.recentMatches || d.recentMatches.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Chưa có trận đấu nào được lên lịch thi đấu.</td></tr>';
+                    return;
+                }
+
+                d.recentMatches.forEach(m => {
+                    let statusBadge = '<span class="badge bg-light text-muted border px-2 py-1">Chưa đấu</span>';
+                    if (m.trangThai === 'KetThuc' || m.trangThai === 'DaDau') {
+                        statusBadge = '<span class="badge bg-success bg-opacity-10 text-success fw-semibold px-2 py-1"><i class="fa-solid fa-check me-1"></i> Đã kết thúc</span>';
+                    } else if (m.trangThai === 'DangDau') {
+                        statusBadge = '<span class="badge bg-danger text-white fw-bold px-2 py-1"><i class="fa-solid fa-circle-play me-1"></i> Đang thi đấu</span>';
+                    }
+
+                    let timeDisplay = '<span class="text-muted small">Chưa xếp giờ</span>';
+                    if (m.thoiGianDuKien) {
+                        const dt = new Date(m.thoiGianDuKien);
+                        timeDisplay = `<div class="small text-dark"><i class="fa-regular fa-clock text-muted me-1"></i>${dt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} ${dt.toLocaleDateString('vi-VN')}</div>`;
+                    }
+
+                    const rowHtml = `
+                        <tr>
+                            <td class="fw-bold text-center">#${m.soTran || ''}</td>
+                            <td><span class="badge bg-light text-dark border fw-semibold px-2 py-1">${m.tenMon || ''}</span></td>
+                            <td class="fw-semibold text-dark">${m.tenTran || ''}</td>
+                            <td>${timeDisplay}</td>
+                            <td><span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1"><i class="fa-solid fa-user me-1"></i> ${m.trongTaiChinh || 'Chưa gán'}</span></td>
+                            <td>${statusBadge}</td>
+                            <td class="text-end">
+                                <a href="/DieuHanhMon/KetQua" class="btn btn-sm btn-light border">
+                                    <i class="fa-solid fa-file-lines me-1 text-teal" style="color: #0d9488;"></i> Kết quả
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', rowHtml);
+                });
+
+            } catch (err) {
+                console.error('Lỗi khi tải dữ liệu Dashboard qua AJAX:', err);
+                loadingEl.classList.add('d-none');
+                alertMsgEl.textContent = 'Đã có lỗi xảy ra khi kết nối máy chủ để tải dữ liệu.';
+                alertEl.classList.remove('d-none');
+            }
+        }
+    </script>
+}

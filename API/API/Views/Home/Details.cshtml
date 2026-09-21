@@ -1,0 +1,191 @@
+@model Dms.Application.DTOs.GiaiDauDto
+@using Dms.Application.Common
+@using Dms.Domain.Enums
+@{
+    ViewData["Title"] = "Chi Tiết Giải Đấu - " + Model.Ten;
+    var allMonTheThaos = ViewBag.AllMonTheThaos as List<Dms.Application.DTOs.MonTheThaoDto> ?? new();
+    var selectedMonIds = Model.MonTheThaoIds ?? new List<int>();
+    var sportsInTournament = allMonTheThaos.Where(m => selectedMonIds.Contains(m.Id)).ToList();
+    var bannerImg = !string.IsNullOrEmpty(Model.HinhAnh) ? Model.HinhAnh : "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1200&auto=format&fit=crop&q=80";
+
+    var statusClass = Model.TrangThai switch
+    {
+        TrangThaiGiaiDau.DangDienRa => "bg-success text-white",
+        TrangThaiGiaiDau.SapDienRa => "bg-primary text-white",
+        TrangThaiGiaiDau.KetThuc => "bg-secondary text-white",
+        _ => "bg-light text-dark border"
+    };
+    var statusText = Model.TrangThai switch
+    {
+        TrangThaiGiaiDau.DangDienRa => "Đang diễn ra",
+        TrangThaiGiaiDau.SapDienRa => "Sắp diễn ra",
+        TrangThaiGiaiDau.KetThuc => "Đã kết thúc",
+        _ => "Bản nháp"
+    };
+}
+
+<div class="container py-4">
+    <!-- Breadcrumb & Back -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="/" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="fa-solid fa-arrow-left me-1"></i> Quay lại trang chủ
+        </a>
+        @if (User.IsInRole(AppRoles.Manager) || User.IsInRole(AppRoles.Admin))
+        {
+            <a href="/Manager/GiaiDau/Edit/@Model.Id" class="btn btn-primary btn-sm rounded-pill px-3">
+                <i class="fa-solid fa-pen-to-square me-1"></i> Quản lý & Chỉnh sửa giải
+            </a>
+        }
+    </div>
+
+    <!-- Banner Header -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-white">
+        <div class="position-relative" style="height: 280px;">
+            <img src="@bannerImg" class="w-100 h-100" style="object-fit: cover;" alt="@Model.Ten">
+            <div class="position-absolute bottom-0 start-0 w-100 p-4" style="background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.6) 60%, transparent 100%);">
+                <span class="badge @statusClass px-3 py-1 rounded-pill mb-2">@statusText</span>
+                <h2 class="text-white fw-bold mb-1">@Model.Ten</h2>
+                <div class="d-flex flex-wrap gap-3 text-white-50 small mt-2">
+                    <span><i class="fa-solid fa-hashtag text-warning me-1"></i> Mã: <strong class="text-white">@Model.Ma</strong></span>
+                    <span><i class="fa-regular fa-calendar text-primary me-1"></i> @Model.NgayBatDau.ToString("dd/MM/yyyy") - @Model.NgayKetThuc.ToString("dd/MM/yyyy")</span>
+                    @if (!string.IsNullOrEmpty(Model.DiaDiem))
+                    {
+                        <span><i class="fa-solid fa-location-dot text-danger me-1"></i> @Model.DiaDiem</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Cột trái: Môn thi đấu & Giới thiệu -->
+        <div class="col-lg-8">
+            <!-- Giới thiệu giải đấu -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                <h5 class="fw-bold text-dark mb-3">
+                    <i class="fa-solid fa-circle-info text-primary me-2"></i>Giới Thiệu Chung
+                </h5>
+                <p class="text-muted mb-0" style="line-height: 1.7;">
+                    @(string.IsNullOrEmpty(Model.MoTa) ? "Chưa có mô tả chi tiết cho giải đấu này." : Model.MoTa)
+                </p>
+            </div>
+
+            <!-- Các Môn Thi Đấu Trong Giải -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-volleyball text-success me-2"></i>Các Môn Thi Đấu Trong Giải (@sportsInTournament.Count)
+                    </h5>
+                </div>
+
+                @if (!sportsInTournament.Any())
+                {
+                    <p class="text-muted small mb-0">Chưa có môn thi đấu nào được gán cho giải đấu này.</p>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var s in sportsInTournament)
+                        {
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
+                                    <div class="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fa-solid fa-medal"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">@s.Ten</div>
+                                        <div class="small">
+                                            @if (s.LaMonDongDoi)
+                                            {
+                                                <span class="badge bg-info-subtle text-info border" style="font-size: 0.65rem;">Đồng đội</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary-subtle text-secondary border" style="font-size: 0.65rem;">Cá nhân</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(s.TenDanhMuc))
+                                            {
+                                                <span class="text-muted ms-1" style="font-size: 0.65rem;">• @s.TenDanhMuc</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Điều Lệ Giải Đấu -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                <h5 class="fw-bold text-dark mb-3">
+                    <i class="fa-solid fa-file-contract text-warning me-2"></i>Điều Lệ & Quy Định Thi Đấu
+                </h5>
+
+                @if (Model.DieuLeGiaiDaus == null || !Model.DieuLeGiaiDaus.Any())
+                {
+                    <p class="text-muted small mb-0">Chưa có văn bản điều lệ đính kèm cho giải này.</p>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var dl in Model.DieuLeGiaiDaus.OrderBy(d => d.ThuTu))
+                        {
+                            <div class="p-3 border rounded-3 bg-light">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-1">
+                                            <i class="fa-regular fa-file-lines text-primary me-2"></i>@dl.TieuDe
+                                        </h6>
+                                        <p class="small text-muted mb-0">@dl.NoiDung</p>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(dl.TepDinhKem))
+                                    {
+                                        <a href="@dl.TepDinhKem" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill px-3 text-nowrap">
+                                            <i class="fa-solid fa-download me-1"></i> Tải tệp
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Cột phải: Thông tin tóm tắt & Đăng ký -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                <h6 class="fw-bold text-dark mb-3">Thông Tin Tổ Chức</h6>
+                <ul class="list-unstyled small d-flex flex-column gap-3 mb-0">
+                    <li class="d-flex justify-content-between border-bottom pb-2">
+                        <span class="text-muted">Phạm vi:</span>
+                        <span class="fw-semibold text-dark">@(Model.PhamVi == PhamViGiaiDau.TatCa ? "Toàn bộ đơn vị" : "Theo khối thi đua")</span>
+                    </li>
+                    <li class="d-flex justify-content-between border-bottom pb-2">
+                        <span class="text-muted">Hạn nộp hồ sơ:</span>
+                        <span class="fw-semibold text-danger">@(Model.HanDangKy?.ToString("dd/MM/yyyy") ?? "Không giới hạn")</span>
+                    </li>
+                    <li class="d-flex justify-content-between border-bottom pb-2">
+                        <span class="text-muted">Ngày bắt đầu:</span>
+                        <span class="fw-semibold text-dark">@Model.NgayBatDau.ToString("dd/MM/yyyy")</span>
+                    </li>
+                    <li class="d-flex justify-content-between">
+                        <span class="text-muted">Ngày bế mạc:</span>
+                        <span class="fw-semibold text-dark">@Model.NgayKetThuc.ToString("dd/MM/yyyy")</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-primary text-white text-center">
+                <h6 class="fw-bold mb-2">Đăng Ký Tham Gia Giải</h6>
+                <p class="small text-white-50 mb-3">
+                    Các đoàn thể thao hoặc đơn vị trực thuộc cần đăng nhập tài khoản Trưởng đoàn để nộp danh sách vận động viên.
+                </p>
+                <a href="/Account/Login" class="btn btn-warning w-100 fw-bold py-2 rounded-pill shadow-sm">
+                    <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Đăng Nhập Để Đăng Ký
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,394 @@
+@{
+    ViewData["Title"] = "Quản lý Sân Đấu";
+    var cumSans = ViewBag.CumSans as IEnumerable<CumSanDto> ?? Enumerable.Empty<CumSanDto>();
+    var monTheThaos = ViewBag.MonTheThaos as IEnumerable<MonTheThaoDto> ?? Enumerable.Empty<MonTheThaoDto>();
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-futbol text-primary me-2"></i>Quản lý Sân Đấu Thể Thao
+        </h4>
+        <p class="text-muted small mb-0">Quản lý chi tiết các sân thi đấu trực thuộc cụm sân và phân bổ bộ môn.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/Admin/CumSan" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i> Về Quản lý Cụm Sân
+        </a>
+        <button type="button" class="btn btn-primary shadow-sm" onclick="openCreateModal()">
+            <i class="fa-solid fa-plus me-1"></i> Thêm Sân Đấu Mới
+        </button>
+    </div>
+</div>
+
+<!-- Bộ lọc tìm kiếm -->
+<div class="card card-custom mb-4">
+    <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <input type="text" id="keyword" class="form-control" placeholder="Tìm theo tên sân, mã sân...">
+            </div>
+            <div class="col-md-3">
+                <select id="cumSanFilter" class="form-select">
+                    <option value="">-- Tất cả cụm sân --</option>
+                    @foreach (var cs in cumSans)
+                    {
+                        <option value="@cs.Id">@cs.Ten</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="monTheThaoFilter" class="form-select">
+                    <option value="">-- Tất cả môn thể thao --</option>
+                    @foreach (var m in monTheThaos)
+                    {
+                        <option value="@m.Id">@m.Ten</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="button" class="btn btn-primary flex-grow-1" onclick="loadData(1)">
+                    <i class="fa-solid fa-filter me-1"></i> Lọc
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="resetFilter()" title="Làm mới">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng dữ liệu Sân đấu -->
+<div class="card card-custom">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tblSanDau">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width: 50px;">STT</th>
+                        <th>Thông Tin Sân Đấu</th>
+                        <th>Cụm Sân Trực Thuộc</th>
+                        <th>Môn Thể Thao</th>
+                        <th>Loại Sân</th>
+                        <th>Sức Chứa</th>
+                        <th>Trạng Thái</th>
+                        <th class="text-end pe-3" style="width: 130px;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="tblBody">
+                    <tr><td colspan="8" class="text-center py-5 text-muted">Đang tải danh sách sân đấu...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-3">
+        <div class="text-muted small" id="paginationInfo">Hiển thị 0 trên 0 sân đấu</div>
+        <ul class="pagination pagination-sm mb-0" id="paginationList"></ul>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa Sân Đấu -->
+<div class="modal fade" id="modalSanDau" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalTitle">Thêm Sân Đấu Mới</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formSanDau">
+                <input type="hidden" id="sanDauId" value="">
+                <div class="modal-body p-4">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Tên sân đấu <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="ten" required placeholder="Ví dụ: Sân Bóng Đá Số 1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Mã sân</label>
+                            <input type="text" class="form-control" id="ma" placeholder="SD-01">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Thuộc cụm sân <span class="text-danger">*</span></label>
+                        <select class="form-select" id="cumSanId" required>
+                            <option value="">-- Chọn cụm sân --</option>
+                            @foreach (var cs in cumSans)
+                            {
+                                <option value="@cs.Id">@cs.Ten</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Môn thể thao áp dụng</label>
+                        <select class="form-select" id="monTheThaoId">
+                            <option value="">-- Đa năng / Chọn môn --</option>
+                            @foreach (var m in monTheThaos)
+                            {
+                                <option value="@m.Id">@m.Ten</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Loại sân</label>
+                            <input type="text" class="form-control" id="loaiSan" placeholder="Ví dụ: Cỏ nhân tạo / Trong nhà">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Sức chứa (khán giả)</label>
+                            <input type="number" class="form-control" id="sucChua" placeholder="500">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mô tả / Đặc điểm</label>
+                        <textarea class="form-control" id="moTa" rows="2" placeholder="Ghi chú về kích thước tiêu chuẩn, trang thiết bị..."></textarea>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="trangThai" checked>
+                        <label class="form-check-label fw-semibold" for="trangThai">Hoạt động (Sẵn sàng thi đấu)</label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary" id="btnSave">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu thông tin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+
+        $(document).ready(function () {
+            loadData(1);
+
+            $('#keyword').on('keypress', function (e) {
+                if (e.which === 13) loadData(1);
+            });
+
+            $('#cumSanFilter, #monTheThaoFilter').on('change', function () {
+                loadData(1);
+            });
+
+            $('#formSanDau').on('submit', function (e) {
+                e.preventDefault();
+                saveData();
+            });
+        });
+
+        function loadData(page) {
+            currentPage = page;
+            const keyword = $('#keyword').val().trim();
+            const cumSanId = $('#cumSanFilter').val();
+            const monTheThaoId = $('#monTheThaoFilter').val();
+
+            $.ajax({
+                url: '/Admin/SanDau/GetPagedData',
+                type: 'GET',
+                data: {
+                    pageIndex: page,
+                    pageSize: pageSize,
+                    keyword: keyword || undefined,
+                    cumSanId: cumSanId ? parseInt(cumSanId) : undefined,
+                    monTheThaoId: monTheThaoId ? parseInt(monTheThaoId) : undefined
+                },
+                success: function (res) {
+                    if (res.success && res.data) {
+                        renderTable(res.data);
+                    }
+                }
+            });
+        }
+
+        function renderTable(data) {
+            const items = data.items || [];
+            if (items.length === 0) {
+                $('#tblBody').html('<tr><td colspan="8" class="text-center py-5 text-muted">Chưa có sân đấu nào.</td></tr>');
+                $('#paginationInfo').text('Hiển thị 0 trên 0 sân đấu');
+                $('#paginationList').empty();
+                return;
+            }
+
+            let html = '';
+            const start = (data.pageIndex - 1) * data.pageSize;
+
+            $.each(items, function (i, item) {
+                const stt = start + i + 1;
+                html += `
+                    <tr>
+                        <td class="ps-3 fw-bold text-muted">${stt}</td>
+                        <td>
+                            <div class="fw-bold text-dark">${escapeHtml(item.ten)}</div>
+                            <small class="text-muted"><span class="badge bg-light text-secondary border">Mã: ${escapeHtml(item.ma)}</span></small>
+                        </td>
+                        <td>
+                            <span class="fw-semibold text-primary"><i class="fa-solid fa-map-location-dot me-1"></i>${escapeHtml(item.tenCumSan || 'Chưa gắn')}</span>
+                        </td>
+                        <td>
+                            ${item.tenMonTheThao ? `<span class="badge bg-info-subtle text-info border"><i class="fa-solid fa-volleyball me-1"></i>${escapeHtml(item.tenMonTheThao)}</span>` : '<span class="text-muted small">Đa năng</span>'}
+                        </td>
+                        <td><small>${escapeHtml(item.loaiSan || '-')}</small></td>
+                        <td><small>${item.sucChua ? `${item.sucChua} chỗ` : '-'}</small></td>
+                        <td>
+                            <span class="badge ${item.trangThai ? 'bg-success' : 'bg-danger'} badge-status">
+                                ${item.trangThai ? 'Sẵn sàng' : 'Tạm dừng'}
+                            </span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-light border" title="Sửa" onclick="openEditModal(${item.id})">
+                                    <i class="fa-solid fa-pen-to-square text-success"></i>
+                                </button>
+                                <button type="button" class="btn btn-light border" title="Xóa" onclick="deleteItem(${item.id}, '${escapeHtml(item.ten)}')">
+                                    <i class="fa-solid fa-trash text-danger"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#tblBody').html(html);
+
+            const total = data.totalCount || 0;
+            const from = total === 0 ? 0 : start + 1;
+            const to = Math.min(start + data.pageSize, total);
+            $('#paginationInfo').text(`Hiển thị ${from} - ${to} trên tổng số ${total} sân đấu`);
+
+            renderPagination(data.pageIndex, data.totalPages);
+        }
+
+        function renderPagination(current, totalPages) {
+            if (totalPages <= 1) {
+                $('#paginationList').empty();
+                return;
+            }
+
+            let pagHtml = '';
+            pagHtml += `<li class="page-item ${current === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadData(${current - 1})">&laquo;</a>
+            </li>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= current - 2 && i <= current + 2)) {
+                    pagHtml += `<li class="page-item ${i === current ? 'active' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadData(${i})">${i}</a>
+                    </li>`;
+                }
+            }
+
+            pagHtml += `<li class="page-item ${current === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadData(${current + 1})">&raquo;</a>
+            </li>`;
+
+            $('#paginationList').html(pagHtml);
+        }
+
+        function openCreateModal() {
+            $('#modalTitle').text('Thêm Sân Đấu Mới');
+            $('#sanDauId').val('');
+            $('#ten').val('');
+            $('#ma').val('');
+            $('#cumSanId').val('');
+            $('#monTheThaoId').val('');
+            $('#loaiSan').val('');
+            $('#sucChua').val('');
+            $('#moTa').val('');
+            $('#trangThai').prop('checked', true);
+            $('#modalSanDau').modal('show');
+        }
+
+        function openEditModal(id) {
+            $.get('/Admin/SanDau/GetById', { id: id }, function (res) {
+                if (res.success && res.data) {
+                    const item = res.data;
+                    $('#modalTitle').text('Chỉnh Sửa Sân Đấu');
+                    $('#sanDauId').val(item.id);
+                    $('#ten').val(item.ten);
+                    $('#ma').val(item.ma || '');
+                    $('#cumSanId').val(item.cumSanId);
+                    $('#monTheThaoId').val(item.monTheThaoId || '');
+                    $('#loaiSan').val(item.loaiSan || '');
+                    $('#sucChua').val(item.sucChua || '');
+                    $('#moTa').val(item.moTa || '');
+                    $('#trangThai').prop('checked', item.trangThai);
+                    $('#modalSanDau').modal('show');
+                }
+            });
+        }
+
+        function saveData() {
+            const id = $('#sanDauId').val();
+            const ten = $('#ten').val().trim();
+            const cumSanId = $('#cumSanId').val();
+
+            if (!ten || !cumSanId) {
+                Swal.fire('Lỗi', 'Vui lòng nhập tên sân và chọn cụm sân trực thuộc.', 'warning');
+                return;
+            }
+
+            const payload = {
+                cumSanId: parseInt(cumSanId),
+                monTheThaoId: $('#monTheThaoId').val() ? parseInt($('#monTheThaoId').val()) : null,
+                ten: ten,
+                ma: $('#ma').val().trim() || 'SD-' + Date.now().toString().slice(-6),
+                loaiSan: $('#loaiSan').val().trim() || null,
+                sucChua: $('#sucChua').val() ? parseInt($('#sucChua').val()) : null,
+                moTa: $('#moTa').val().trim() || null,
+                trangThai: $('#trangThai').is(':checked')
+            };
+
+            const url = id ? `/Admin/SanDau/Save?id=${id}` : '/Admin/SanDau/Save';
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    if (res.success) {
+                        $('#modalSanDau').modal('hide');
+                        SportApp.toast('success', res.message || 'Lưu sân đấu thành công!');
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu sân đấu.', 'error');
+                    }
+                }
+            });
+        }
+
+        function deleteItem(id, name) {
+            SportApp.confirm('Xóa Sân Đấu?', `Bạn có chắc muốn xóa sân đấu "${name}" không?`, function () {
+                $.post('/Admin/SanDau/Delete', { id: id }, function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã xóa sân đấu!');
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể xóa.', 'error');
+                    }
+                });
+            });
+        }
+
+        function resetFilter() {
+            $('#keyword').val('');
+            $('#cumSanFilter').val('');
+            $('#monTheThaoFilter').val('');
+            loadData(1);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div>').text(text).html();
+        }
+    </script>
+}

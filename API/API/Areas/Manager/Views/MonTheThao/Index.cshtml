@@ -1,0 +1,904 @@
+@using Dms.Application.DTOs
+@{
+    ViewData["Title"] = "Quản lý Môn Thể Thao";
+    Layout = "~/Areas/Manager/Views/Shared/_ManagerLayout.cshtml";
+    var danhMucs = ViewBag.DanhMucs as IEnumerable<DanhMucMonTheThaoDto> ?? Enumerable.Empty<DanhMucMonTheThaoDto>();
+}
+
+<div class="container-fluid p-0">
+    <div class="card card-custom border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-body p-4">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 pb-3 mb-4 border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 bg-primary-subtle text-primary rounded-4">
+                        <i class="fa-solid fa-volleyball fs-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Quản Lý Môn Thể Thao Thi Đấu</h4>
+                        <p class="text-muted small mb-0">Cấu hình danh mục môn, thể thức thi đấu, giới tính và quy định số lượng VĐV.</p>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary px-3 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2 shadow-sm" onclick="openCreateModal()">
+                        <i class="fa-solid fa-plus"></i> Thêm Môn Thể Thao Mới
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bộ lọc tìm kiếm -->
+            <div class="p-3 bg-light rounded-3 mb-4 border">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                        <div class="input-group bg-white rounded-3 border overflow-hidden">
+                            <span class="input-group-text bg-white border-0 text-muted ps-3">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" id="keyword" class="form-control border-0 shadow-none ps-2" placeholder="Tìm theo tên môn, mã môn...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="danhMucFilter" class="form-select bg-white border rounded-3 shadow-none">
+                            <option value="">-- Tất cả danh mục --</option>
+                            @foreach (var dm in danhMucs)
+                            {
+                                <option value="@dm.Id">@dm.Ten</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="gioiTinhFilter" class="form-select bg-white border rounded-3 shadow-none">
+                            <option value="">-- Giới tính --</option>
+                            <option value="Nam">Nam</option>
+                            <option value="Nu">Nữ</option>
+                            <option value="HonHop">Hỗn hợp (Nam/Nữ)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex gap-1">
+                        <button type="button" class="btn btn-dark flex-grow-1 rounded-3" onclick="loadData(1)">
+                            <i class="fa-solid fa-filter me-1"></i> Lọc
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary rounded-3" onclick="resetFilter()" title="Làm mới">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bảng danh sách Môn thể thao -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tblMonTheThao">
+                    <thead class="table-light text-uppercase fs-7 text-muted">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">STT</th>
+                            <th>Tên Môn Thể Thao</th>
+                            <th>Nhóm Danh Mục</th>
+                            <th>Thể Thức</th>
+                            <th>Giới Tính</th>
+                            <th>Số VĐV / Đội</th>
+                            <th>Trạng Thái</th>
+                            <th class="text-end pe-3" style="width: 130px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblBody">
+                        <tr><td colspan="8" class="text-center py-5 text-muted">Đang tải danh sách môn thể thao...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center py-3 mt-3 border-top">
+                <div class="text-muted small" id="paginationInfo">Hiển thị 0 trên 0 môn thể thao</div>
+                <ul class="pagination pagination-sm mb-0" id="paginationList"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa Môn Thể Thao -->
+<div class="modal fade" id="modalMon" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalTitle">
+                    <i class="fa-solid fa-volleyball text-primary"></i>
+                    <span>Thêm Môn Thể Thao Mới</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formMon">
+                <input type="hidden" id="monId" value="">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold small">Tên môn thể thao <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="ten" required placeholder="Bóng đá nam 7 người">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Mã môn</label>
+                            <input type="text" class="form-control text-uppercase" id="ma" placeholder="BD-07">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Thuộc nhóm danh mục</label>
+                            <select id="danhMucId" class="form-select">
+                                <option value="">-- Chọn nhóm môn --</option>
+                                @foreach (var dm in danhMucs)
+                                {
+                                    <option value="@dm.Id">@dm.Ten</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold small">Thể thức thi đấu</label>
+                            <select id="loaiThiDau" class="form-select">
+                                <option value="DongDoi">Đồng đội</option>
+                                <option value="CaNhan">Cá nhân</option>
+                                <option value="DoiKhang">Đối kháng</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold small">Giới tính</label>
+                            <select id="gioiTinh" class="form-select">
+                                <option value="Nam">Nam</option>
+                                <option value="Nu">Nữ</option>
+                                <option value="HonHop">Hỗn hợp (Nam/Nữ)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Số VĐV tối thiểu trong đội</label>
+                            <input type="number" class="form-control" id="soLuongVdvToiThieu" value="1" min="1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Số VĐV tối đa trong đội</label>
+                            <input type="number" class="form-control" id="soLuongVdvToiDa" value="1" min="1">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Mô tả / Luật thi đấu cơ bản</label>
+                            <textarea class="form-control" id="moTa" rows="3" placeholder="Ghi chú về thể thức tính điểm, thời lượng trận đấu..."></textarea>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="trangThai" checked>
+                                <label class="form-check-label fw-semibold small" for="trangThai">Hoạt động (Được đưa vào các giải đấu)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3 bg-light">
+                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4" id="btnSave">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu thông tin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cấu hình Thể thức & Luật thi đấu -->
+<div class="modal fade" id="modalTheThuc" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-gradient bg-primary text-white px-4 py-3 border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-sliders fs-5"></i>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0 text-white" id="formatModalTitle">Cấu Hình Thể Thức & Luật Thi Đấu</h5>
+                        <div class="small opacity-75" id="formatModalSubtitle">Tùy biến số hiệp, điểm số, thời gian, tie-break, penalty và quy cách xếp hạng</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formTheThuc">
+                <input type="hidden" id="fmtMonId" value="">
+                <div class="modal-body p-4 bg-light">
+                    <!-- Quick Presets -->
+                    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white">
+                        <div class="card-body p-3">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <div class="d-flex align-items-center gap-2 text-primary fw-bold small">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                    <span>Mẫu cấu hình chuẩn quốc tế (Nhanh):</span>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('badminton')">
+                                        🏸 Cầu lông (Best of 3, 21đ)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('volleyball')">
+                                        🏐 Bóng chuyền (Best of 5, 25đ)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('football')">
+                                        ⚽ Bóng đá (Hiệp phụ + Penalty)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('tabletennis')">
+                                        🏓 Bóng bàn (Best of 5, 11đ)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('athletics')">
+                                        🏃 Điền kinh 100m (8 Làn)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('swimming')">
+                                        🏊 Bơi lội (8 Làn)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Format Configuration -->
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-secondary">Hạng mục thể thức cốt lõi <span class="text-danger">*</span></label>
+                            <select id="fmtLoaiTheThuc" class="form-select fw-semibold border-primary" onchange="onFormatTypeChange()">
+                                <option value="SetDiem">🎯 Đấu Set / Hiệp tính điểm (Cầu lông, Bóng chuyền, Bóng bàn, Tennis...)</option>
+                                <option value="ThoiGianHiep">⏱️ Tính thời gian hiệp (Bóng đá, Futsal, Bóng rổ...)</option>
+                                <option value="TinhDiemXepHang">🏅 Đo thành tích / Chạy làn (Điền kinh, Bơi lội...)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="alert alert-info border-0 rounded-3 py-2 px-3 mb-0 small" id="fmtTypeNote">
+                                <i class="fa-solid fa-circle-info me-1"></i>
+                                Hệ thống sẽ tự động hiển thị giao diện chấm điểm và vận hành bracket tương ứng cho môn này.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Đấu Set Điểm -->
+                    <div class="card border-0 shadow-sm rounded-3 mt-3 bg-white" id="panelSetDiem">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-list-ol text-primary"></i> Quy định Game / Set đấu & Luật Deuce
+                            </h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Số hiệp tối đa (Best of X)</label>
+                                    <input type="number" class="form-control" id="fmtSoHiepToiDa" value="3" min="1" max="15">
+                                    <small class="text-muted">VD: 3 (thắng 2), 5 (thắng 3)</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Số hiệp thắng để thắng trận</label>
+                                    <input type="number" class="form-control" id="fmtSoHiepThang" value="2" min="1" max="10">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Điểm chuẩn mỗi hiệp thường</label>
+                                    <input type="number" class="form-control" id="fmtDiemMoiHiep" value="21" min="1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Điểm hiệp quyết định (Hiệp cuối/tie-break)</label>
+                                    <input type="number" class="form-control" id="fmtDiemHiepQuyetDinh" value="21" min="1">
+                                    <small class="text-muted">VD: Bóng chuyền set 5 là 15đ</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Cách biệt điểm tối thiểu (Deuce)</label>
+                                    <input type="number" class="form-control" id="fmtCachBiet" value="2" min="1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Điểm tối đa kịch trần (Cap point)</label>
+                                    <input type="number" class="form-control" id="fmtDiemToiDa" value="30" min="1">
+                                    <small class="text-muted">VD: Cầu lông chạm 30 trước là thắng; 0 = không giới hạn</small>
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="fmtCachTinhDiemTheoSet">
+                                        <label class="form-check-label fw-semibold small" for="fmtCachTinhDiemTheoSet">
+                                            Quy đổi điểm BXH vòng bảng theo tỉ số set (Kiểu Bóng chuyền FIVB: 3-0/3-1 = 3đ; 3-2 = 2đ; 2-3 = 1đ)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Tính Thời Gian Hiệp -->
+                    <div class="card border-0 shadow-sm rounded-3 mt-3 bg-white d-none" id="panelThoiGianHiep">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-stopwatch text-primary"></i> Quy định Thời gian, Hiệp phụ & Sút Luân lưu Penalty
+                            </h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Thời gian hiệp chính (phút)</label>
+                                    <input type="number" class="form-control" id="fmtThoiGianChinh" value="45" min="1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Điểm vòng bảng: Thắng / Hòa / Thua</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control text-center" id="fmtDiemThang" value="3" title="Thắng">
+                                        <input type="number" class="form-control text-center" id="fmtDiemHoa" value="1" title="Hòa">
+                                        <input type="number" class="form-control text-center" id="fmtDiemThua" value="0" title="Thua">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="fmtChoPhepHoaVongBang" checked>
+                                        <label class="form-check-label fw-semibold small" for="fmtChoPhepHoaVongBang">Cho phép kết quả Hòa ở vòng bảng</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="fmtCoHiepPhu">
+                                            <label class="form-check-label fw-bold small" for="fmtCoHiepPhu">Áp dụng Hiệp phụ (Khi hòa ở Knockout)</label>
+                                        </div>
+                                        <div class="row g-2 mt-1">
+                                            <div class="col-6">
+                                                <label class="form-label small text-muted">Số hiệp phụ</label>
+                                                <input type="number" class="form-control form-control-sm" id="fmtSoHiepPhu" value="2">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small text-muted">Phút mỗi hiệp phụ</label>
+                                                <input type="number" class="form-control form-control-sm" id="fmtThoiGianPhu" value="15">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="fmtCoPenalty" checked>
+                                            <label class="form-check-label fw-bold small" for="fmtCoPenalty">Áp dụng Sút luân lưu Penalty</label>
+                                        </div>
+                                        <div class="mt-1">
+                                            <label class="form-label small text-muted">Số lượt sút luân lưu cơ bản mỗi đội</label>
+                                            <input type="number" class="form-control form-control-sm" id="fmtSoLuotPen" value="5">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Đo thành tích / Chạy làn -->
+                    <div class="card border-0 shadow-sm rounded-3 mt-3 bg-white d-none" id="panelTinhDiemXepHang">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-person-running text-primary"></i> Quy cách Đợt chạy/Lượt bơi, Làn thi đấu & Tiến vào Chung kết
+                            </h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Loại đo lường thành tích</label>
+                                    <select id="fmtLoaiDo" class="form-select">
+                                        <option value="ThoiGian">⏱️ Thời gian (Giây / mili-giây)</option>
+                                        <option value="KhoangCach">📏 Khoảng cách (Mét / cm)</option>
+                                        <option value="DiemSo">🎯 Điểm số ban giám khảo</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Tiêu chí xếp hạng</label>
+                                    <select id="fmtTieuChiThanhTich" class="form-select">
+                                        <option value="CangNhoCangTot">Nhỏ hơn là tốt hơn (Thời gian ngắn nhất thắng)</option>
+                                        <option value="CangLonCangTot">Lớn hơn là tốt hơn (Xa nhất / Cao nhất thắng)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Số làn / VĐV mỗi lượt thi</label>
+                                    <input type="number" class="form-control" id="fmtSoVdvLuot" value="8" min="1" max="12">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Quy cách chọn vào Chung kết</label>
+                                    <select id="fmtQuyCachVaoCk" class="form-select">
+                                        <option value="TopNToanVong">Lấy Top N thành tích tốt nhất toàn vòng</option>
+                                        <option value="TopNTheoBang">Nhất & Nhì mỗi đợt + Top thành tích</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Số VĐV vào Chung kết</label>
+                                    <input type="number" class="form-control" id="fmtSoVdvVaoCk" value="8" min="1" max="16">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Kỷ lục hiện tại (để phá kỷ lục)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.001" class="form-control" id="fmtKyLuc" placeholder="9.58">
+                                        <span class="input-group-text bg-light text-muted" id="fmtDonViText">giây</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3 bg-white">
+                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4 shadow-sm" id="btnSaveTheThuc">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình Thể Thức
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+
+        $(document).ready(function () {
+            loadData(1);
+
+            $('#keyword').on('keypress', function (e) {
+                if (e.which === 13) loadData(1);
+            });
+
+            $('#danhMucFilter, #gioiTinhFilter').on('change', function () {
+                loadData(1);
+            });
+
+            $('#formMon').on('submit', function (e) {
+                e.preventDefault();
+                saveData();
+            });
+        });
+
+        function loadData(page) {
+            currentPage = page;
+            const keyword = $('#keyword').val().trim();
+            const danhMucId = $('#danhMucFilter').val();
+            const gioiTinh = $('#gioiTinhFilter').val();
+
+            $.ajax({
+                url: '/Manager/MonTheThao/GetPagedData',
+                type: 'GET',
+                data: {
+                    pageIndex: page,
+                    pageSize: pageSize,
+                    keyword: keyword || undefined,
+                    danhMucId: danhMucId ? parseInt(danhMucId) : undefined,
+                    gioiTinh: gioiTinh || undefined
+                },
+                success: function (res) {
+                    if (res.success && res.data) {
+                        renderTable(res.data);
+                    }
+                }
+            });
+        }
+
+        function renderTable(data) {
+            const items = data.items || [];
+            if (items.length === 0) {
+                $('#tblBody').html('<tr><td colspan="8" class="text-center py-5 text-muted">Chưa có môn thể thao nào.</td></tr>');
+                $('#paginationInfo').text('Hiển thị 0 trên 0 môn thể thao');
+                $('#paginationList').empty();
+                return;
+            }
+
+            let html = '';
+            const start = (data.pageIndex - 1) * data.pageSize;
+
+            $.each(items, function (i, item) {
+                const stt = start + i + 1;
+                const loai = item.loaiThiDau === 'DongDoi' ? 'Đồng đội' : (item.loaiThiDau === 'CaNhan' ? 'Cá nhân' : 'Đối kháng');
+                const gt = item.gioiTinh === 'Nu' ? 'Nữ' : (item.gioiTinh === 'HonHop' ? 'Hỗn hợp' : 'Nam');
+
+                html += `
+                    <tr>
+                        <td class="ps-3 fw-bold text-muted">${stt}</td>
+                        <td>
+                            <div class="fw-bold text-dark">${escapeHtml(item.ten)}</div>
+                            <small class="text-muted"><span class="badge bg-light text-secondary border font-monospace">Mã: ${escapeHtml(item.ma)}</span></small>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary border">
+                                <i class="fa-solid fa-tags me-1"></i>${escapeHtml(item.tenDanhMuc || 'Khác')}
+                            </span>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">${loai}</span></td>
+                        <td>
+                            <span class="badge ${item.gioiTinh === 'Nu' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'} border">
+                                ${gt}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="small fw-semibold text-muted">
+                                ${item.soLuongVdvToiThieu} - ${item.soLuongVdvToiDa} người
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge ${item.trangThai ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'} px-2.5 py-1 rounded-pill">
+                                ${item.trangThai ? 'Hoạt động' : 'Tạm dừng'}
+                            </span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-light border text-primary" title="Cấu hình thể thức & luật thi đấu" onclick="openFormatModal(${item.id}, '${escapeHtml(item.ten)}')">
+                                    <i class="fa-solid fa-sliders"></i>
+                                </button>
+                                <button type="button" class="btn btn-light border" title="Sửa" onclick="openEditModal(${item.id})">
+                                    <i class="fa-solid fa-pen-to-square text-success"></i>
+                                </button>
+                                <button type="button" class="btn btn-light border" title="Xóa" onclick="deleteItem(${item.id}, '${escapeHtml(item.ten)}')">
+                                    <i class="fa-solid fa-trash text-danger"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#tblBody').html(html);
+
+            const total = data.totalCount || 0;
+            const from = total === 0 ? 0 : start + 1;
+            const to = Math.min(start + data.pageSize, total);
+            $('#paginationInfo').text(`Hiển thị ${from} - ${to} trên tổng số ${total} môn thể thao`);
+
+            renderPagination(data.pageIndex, data.totalPages);
+        }
+
+        function renderPagination(current, totalPages) {
+            if (totalPages <= 1) {
+                $('#paginationList').empty();
+                return;
+            }
+
+            let pagHtml = '';
+            pagHtml += `<li class="page-item ${current === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadData(${current - 1})">&laquo;</a>
+            </li>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= current - 2 && i <= current + 2)) {
+                    pagHtml += `<li class="page-item ${i === current ? 'active' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadData(${i})">${i}</a>
+                    </li>`;
+                }
+            }
+
+            pagHtml += `<li class="page-item ${current === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadData(${current + 1})">&raquo;</a>
+            </li>`;
+
+            $('#paginationList').html(pagHtml);
+        }
+
+        function openCreateModal() {
+            $('#modalTitle span').text('Thêm Môn Thể Thao Mới');
+            $('#monId').val('');
+            $('#ten').val('');
+            $('#ma').val('');
+            $('#danhMucId').val('');
+            $('#loaiThiDau').val('DongDoi');
+            $('#gioiTinh').val('Nam');
+            $('#soLuongVdvToiThieu').val('1');
+            $('#soLuongVdvToiDa').val('1');
+            $('#moTa').val('');
+            $('#trangThai').prop('checked', true);
+            $('#modalMon').modal('show');
+        }
+
+        function openEditModal(id) {
+            $.get('/Manager/MonTheThao/GetById', { id: id }, function (res) {
+                if (res.success && res.data) {
+                    const item = res.data;
+                    $('#modalTitle span').text('Chỉnh Sửa Môn Thể Thao');
+                    $('#monId').val(item.id);
+                    $('#ten').val(item.ten);
+                    $('#ma').val(item.ma || '');
+                    $('#danhMucId').val(item.danhMucId || '');
+                    $('#loaiThiDau').val(item.loaiThiDau || 'DongDoi');
+                    $('#gioiTinh').val(item.gioiTinh || 'Nam');
+                    $('#soLuongVdvToiThieu').val(item.soLuongVdvToiThieu || 1);
+                    $('#soLuongVdvToiDa').val(item.soLuongVdvToiDa || 1);
+                    $('#moTa').val(item.moTa || '');
+                    $('#trangThai').prop('checked', item.trangThai);
+                    $('#modalMon').modal('show');
+                }
+            });
+        }
+
+        function saveData() {
+            const id = $('#monId').val();
+            const ten = $('#ten').val().trim();
+            if (!ten) {
+                Swal.fire('Lỗi', 'Vui lòng nhập tên môn thể thao.', 'warning');
+                return;
+            }
+
+            const payload = {
+                ten: ten,
+                ma: $('#ma').val().trim() || 'MON-' + Date.now().toString().slice(-5),
+                danhMucId: $('#danhMucId').val() ? parseInt($('#danhMucId').val()) : null,
+                loaiThiDau: $('#loaiThiDau').val(),
+                gioiTinh: $('#gioiTinh').val(),
+                soLuongVdvToiThieu: parseInt($('#soLuongVdvToiThieu').val()) || 1,
+                soLuongVdvToiDa: parseInt($('#soLuongVdvToiDa').val()) || 1,
+                moTa: $('#moTa').val().trim() || null,
+                trangThai: $('#trangThai').is(':checked')
+            };
+
+            const url = id ? `/Manager/MonTheThao/Save?id=${id}` : '/Manager/MonTheThao/Save';
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    if (res.success) {
+                        $('#modalMon').modal('hide');
+                        SportApp.toast('success', res.message || 'Lưu môn thành công!');
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu môn.', 'error');
+                    }
+                }
+            });
+        }
+
+        function deleteItem(id, name) {
+            SportApp.confirm('Xóa Môn Thể Thao?', `Bạn có chắc muốn xóa môn "${name}" không?`, function () {
+                $.post('/Manager/MonTheThao/Delete', { id: id }, function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã xóa môn!');
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể xóa.', 'error');
+                    }
+                });
+            });
+        }
+
+        function resetFilter() {
+            $('#keyword').val('');
+            $('#danhMucFilter').val('');
+            $('#gioiTinhFilter').val('');
+            loadData(1);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div>').text(text).html();
+        }
+
+        // ================= CẤU HÌNH THỂ THỨC & LUẬT THI ĐẤU =================
+        function onFormatTypeChange() {
+            const loai = $('#fmtLoaiTheThuc').val();
+            $('#panelSetDiem').toggleClass('d-none', loai !== 'SetDiem');
+            $('#panelThoiGianHiep').toggleClass('d-none', loai !== 'ThoiGianHiep');
+            $('#panelTinhDiemXepHang').toggleClass('d-none', loai !== 'TinhDiemXepHang');
+
+            if (loai === 'SetDiem') {
+                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Thể thức Set điểm:</strong> Trọng tài nhập điểm từng hiệp, áp dụng luật Deuce cách biệt 2 điểm và trần điểm.');
+            } else if (loai === 'ThoiGianHiep') {
+                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Thể thức Thời gian:</strong> Trọng tài tính tỉ số theo thời gian hiệp, áp dụng hiệp phụ và sút luân lưu (Penalty) ở vòng Knockout.');
+            } else {
+                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Thể thức Đo thành tích:</strong> Xếp hạng VĐV theo làn chạy/bơi, kiểm tra phá kỷ lục và tự động xếp hạt giống vào đợt Chung kết.');
+            }
+        }
+
+        function openFormatModal(monId, monTen) {
+            $('#fmtMonId').val(monId);
+            $('#formatModalTitle').text(`Cấu Hình Thể Thức & Luật Thi Đấu - ${monTen}`);
+            $('#formatModalSubtitle').text(`Mã môn #${monId}: ${monTen} • Tùy chỉnh luật và bracket engine`);
+
+            // Mặc định ban đầu
+            resetFormatForm();
+
+            // Lấy cấu hình từ server
+            $.get('/Manager/CauHinhTheThuc/GetConfig', { monTheThaoId: monId }, function (res) {
+                if (res && res.success && res.data) {
+                    populateFormatForm(res.data);
+                } else {
+                    guessPreset(monTen);
+                }
+                $('#modalTheThuc').modal('show');
+            }).fail(function () {
+                guessPreset(monTen);
+                $('#modalTheThuc').modal('show');
+            });
+        }
+
+        function resetFormatForm() {
+            $('#fmtLoaiTheThuc').val('SetDiem');
+            $('#fmtSoHiepToiDa').val(3);
+            $('#fmtSoHiepThang').val(2);
+            $('#fmtDiemMoiHiep').val(21);
+            $('#fmtDiemHiepQuyetDinh').val(21);
+            $('#fmtCachBiet').val(2);
+            $('#fmtDiemToiDa').val(30);
+            $('#fmtCachTinhDiemTheoSet').prop('checked', false);
+
+            $('#fmtThoiGianChinh').val(45);
+            $('#fmtDiemThang').val(3);
+            $('#fmtDiemHoa').val(1);
+            $('#fmtDiemThua').val(0);
+            $('#fmtChoPhepHoaVongBang').prop('checked', true);
+            $('#fmtCoHiepPhu').prop('checked', false);
+            $('#fmtSoHiepPhu').val(2);
+            $('#fmtThoiGianPhu').val(15);
+            $('#fmtCoPenalty').prop('checked', true);
+            $('#fmtSoLuotPen').val(5);
+
+            $('#fmtLoaiDo').val('ThoiGian');
+            $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
+            $('#fmtSoVdvLuot').val(8);
+            $('#fmtQuyCachVaoCk').val('TopNToanVong');
+            $('#fmtSoVdvVaoCk').val(8);
+            $('#fmtKyLuc').val('');
+            onFormatTypeChange();
+        }
+
+        function populateFormatForm(data) {
+            $('#fmtLoaiTheThuc').val(data.loaiTheThuc || 'SetDiem');
+            $('#fmtSoHiepToiDa').val(data.soHiepToiDa || 3);
+            $('#fmtSoHiepThang').val(data.soHiepThangDeThangTran || 2);
+            $('#fmtDiemMoiHiep').val(data.diemMoiHiep || 21);
+            $('#fmtDiemHiepQuyetDinh').val(data.diemHiepQuyetDinh || 21);
+            $('#fmtCachBiet').val(data.cachBietDiemToiThieu ?? 2);
+            $('#fmtDiemToiDa').val(data.diemToiDaMoiHiep || '');
+            $('#fmtCachTinhDiemTheoSet').prop('checked', !!data.cachTinhDiemTheoSet);
+
+            $('#fmtThoiGianChinh').val(data.thoiGianHiepChinhPhut || 45);
+            $('#fmtDiemThang').val(data.diemThang ?? 3);
+            $('#fmtDiemHoa').val(data.diemHoa ?? 1);
+            $('#fmtDiemThua').val(data.diemThua ?? 0);
+            $('#fmtChoPhepHoaVongBang').prop('checked', data.choPhepHoaVongBang !== false);
+            $('#fmtCoHiepPhu').prop('checked', !!data.coHiepPhu);
+            $('#fmtSoHiepPhu').val(data.soHiepPhu || 2);
+            $('#fmtThoiGianPhu').val(data.thoiGianHiepPhuPhut || 15);
+            $('#fmtCoPenalty').prop('checked', data.coPenalty !== false);
+            $('#fmtSoLuotPen').val(data.soLuotPenaltyMoiDoi || 5);
+
+            $('#fmtLoaiDo').val(data.loaiDoThanhTich || 'ThoiGian');
+            $('#fmtTieuChiThanhTich').val(data.tieuChiXepHangThanhTich || 'CangNhoCangTot');
+            $('#fmtSoVdvLuot').val(data.soVdvMoiLuotThi || 8);
+            $('#fmtQuyCachVaoCk').val(data.quyCachTienVaoChungKet || 'TopNToanVong');
+            $('#fmtSoVdvVaoCk').val(data.soVdvVaoChungKet || 8);
+            $('#fmtKyLuc').val(data.kyLucHienTai || '');
+
+            onFormatTypeChange();
+        }
+
+        function guessPreset(name) {
+            const lower = (name || '').toLowerCase();
+            if (lower.includes('cầu lông') || lower.includes('badminton')) {
+                applyPreset('badminton');
+            } else if (lower.includes('bóng chuyền') || lower.includes('volleyball')) {
+                applyPreset('volleyball');
+            } else if (lower.includes('bóng bàn') || lower.includes('table tennis')) {
+                applyPreset('tabletennis');
+            } else if (lower.includes('bóng đá') || lower.includes('football') || lower.includes('futsal')) {
+                applyPreset('football');
+            } else if (lower.includes('điền kinh') || lower.includes('chạy') || lower.includes('100m')) {
+                applyPreset('athletics');
+            } else if (lower.includes('bơi')) {
+                applyPreset('swimming');
+            } else {
+                applyPreset('badminton');
+            }
+        }
+
+        function applyPreset(preset) {
+            if (preset === 'badminton') {
+                $('#fmtLoaiTheThuc').val('SetDiem');
+                $('#fmtSoHiepToiDa').val(3);
+                $('#fmtSoHiepThang').val(2);
+                $('#fmtDiemMoiHiep').val(21);
+                $('#fmtDiemHiepQuyetDinh').val(21);
+                $('#fmtCachBiet').val(2);
+                $('#fmtDiemToiDa').val(30);
+                $('#fmtCachTinhDiemTheoSet').prop('checked', false);
+            } else if (preset === 'volleyball') {
+                $('#fmtLoaiTheThuc').val('SetDiem');
+                $('#fmtSoHiepToiDa').val(5);
+                $('#fmtSoHiepThang').val(3);
+                $('#fmtDiemMoiHiep').val(25);
+                $('#fmtDiemHiepQuyetDinh').val(15);
+                $('#fmtCachBiet').val(2);
+                $('#fmtDiemToiDa').val('');
+                $('#fmtCachTinhDiemTheoSet').prop('checked', true);
+            } else if (preset === 'football') {
+                $('#fmtLoaiTheThuc').val('ThoiGianHiep');
+                $('#fmtThoiGianChinh').val(45);
+                $('#fmtDiemThang').val(3);
+                $('#fmtDiemHoa').val(1);
+                $('#fmtDiemThua').val(0);
+                $('#fmtChoPhepHoaVongBang').prop('checked', true);
+                $('#fmtCoHiepPhu').prop('checked', true);
+                $('#fmtSoHiepPhu').val(2);
+                $('#fmtThoiGianPhu').val(15);
+                $('#fmtCoPenalty').prop('checked', true);
+                $('#fmtSoLuotPen').val(5);
+            } else if (preset === 'tabletennis') {
+                $('#fmtLoaiTheThuc').val('SetDiem');
+                $('#fmtSoHiepToiDa').val(5);
+                $('#fmtSoHiepThang').val(3);
+                $('#fmtDiemMoiHiep').val(11);
+                $('#fmtDiemHiepQuyetDinh').val(11);
+                $('#fmtCachBiet').val(2);
+                $('#fmtDiemToiDa').val('');
+                $('#fmtCachTinhDiemTheoSet').prop('checked', false);
+            } else if (preset === 'athletics') {
+                $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
+                $('#fmtLoaiDo').val('ThoiGian');
+                $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
+                $('#fmtSoVdvLuot').val(8);
+                $('#fmtQuyCachVaoCk').val('TopNToanVong');
+                $('#fmtSoVdvVaoCk').val(8);
+                $('#fmtKyLuc').val(9.58);
+            } else if (preset === 'swimming') {
+                $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
+                $('#fmtLoaiDo').val('ThoiGian');
+                $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
+                $('#fmtSoVdvLuot').val(8);
+                $('#fmtQuyCachVaoCk').val('TopNToanVong');
+                $('#fmtSoVdvVaoCk').val(8);
+                $('#fmtKyLuc').val(20.91);
+            }
+            onFormatTypeChange();
+            SportApp.toast('info', `Đã áp dụng mẫu luật: ${preset.toUpperCase()}`);
+        }
+
+        $('#formTheThuc').on('submit', function (e) {
+            e.preventDefault();
+            saveFormatData();
+        });
+
+        function saveFormatData() {
+            const monId = parseInt($('#fmtMonId').val());
+            if (!monId) return;
+
+            const loaiTheThuc = $('#fmtLoaiTheThuc').val();
+            const payload = {
+                monTheThaoId: monId,
+                loaiTheThuc: loaiTheThuc,
+                soHiepToiDa: parseInt($('#fmtSoHiepToiDa').val()) || 3,
+                soHiepThangDeThangTran: parseInt($('#fmtSoHiepThang').val()) || 2,
+                diemMoiHiep: parseInt($('#fmtDiemMoiHiep').val()) || 21,
+                diemHiepQuyetDinh: parseInt($('#fmtDiemHiepQuyetDinh').val()) || 21,
+                cachBietDiemToiThieu: parseInt($('#fmtCachBiet').val()) || 2,
+                diemToiDaMoiHiep: $('#fmtDiemToiDa').val() ? parseInt($('#fmtDiemToiDa').val()) : null,
+                cachTinhDiemTheoSet: $('#fmtCachTinhDiemTheoSet').is(':checked'),
+
+                thoiGianHiepChinhPhut: parseInt($('#fmtThoiGianChinh').val()) || 45,
+                diemThang: parseFloat($('#fmtDiemThang').val()) || 3,
+                diemHoa: parseFloat($('#fmtDiemHoa').val()) || 1,
+                diemThua: parseFloat($('#fmtDiemThua').val()) || 0,
+                choPhepHoaVongBang: $('#fmtChoPhepHoaVongBang').is(':checked'),
+                coHiepPhu: $('#fmtCoHiepPhu').is(':checked'),
+                soHiepPhu: parseInt($('#fmtSoHiepPhu').val()) || 2,
+                thoiGianHiepPhuPhut: parseInt($('#fmtThoiGianPhu').val()) || 15,
+                coPenalty: $('#fmtCoPenalty').is(':checked'),
+                soLuotPenaltyMoiDoi: parseInt($('#fmtSoLuotPen').val()) || 5,
+
+                loaiDoThanhTich: $('#fmtLoaiDo').val(),
+                tieuChiXepHangThanhTich: $('#fmtTieuChiThanhTich').val(),
+                soVdvMoiLuotThi: parseInt($('#fmtSoVdvLuot').val()) || 8,
+                quyCachTienVaoChungKet: $('#fmtQuyCachVaoCk').val(),
+                soVdvVaoChungKet: parseInt($('#fmtSoVdvVaoCk').val()) || 8,
+                kyLucHienTai: $('#fmtKyLuc').val() ? parseFloat($('#fmtKyLuc').val()) : null
+            };
+
+            const $btn = $('#btnSaveTheThuc');
+            $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu...');
+
+            $.ajax({
+                url: '/Manager/CauHinhTheThuc/SaveConfig',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    $btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình Thể Thức');
+                    if (res && res.success) {
+                        $('#modalTheThuc').modal('hide');
+                        SportApp.toast('success', res.message || 'Đã lưu cấu hình thể thức thành công!');
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu cấu hình thể thức.', 'error');
+                    }
+                },
+                error: function (xhr) {
+                    $btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình Thể Thức');
+                    Swal.fire('Lỗi', 'Không thể kết nối máy chủ để lưu cấu hình.', 'error');
+                }
+            });
+        }
+    </script>
+}

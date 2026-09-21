@@ -1,0 +1,146 @@
+@model List<Dms.Application.DTOs.CoordinatorResultItemDto>
+@{
+    ViewData["Title"] = "Kiểm Tra Kết Quả & Biên Bản";
+    var sportList = ViewBag.SportList as List<MonTheThao> ?? new();
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-square-poll-vertical text-teal me-2" style="color: #0d9488;"></i> Kiểm Tra Kết Quả & Biên Bản
+        </h4>
+        <p class="text-muted small mb-0">Rà soát, đối chiếu tỉ số, biên bản trận đấu và phê duyệt kết quả chính thức cho môn thi đấu</p>
+    </div>
+</div>
+
+<!-- Tabs môn -->
+<div class="card card-custom mb-3 p-2 bg-white">
+    <div class="d-flex align-items-center overflow-auto py-1 gap-2">
+        <span class="text-muted small fw-bold text-uppercase px-2 text-nowrap"><i class="fa-solid fa-filter me-1 text-teal" style="color: #0d9488;"></i> Môn:</span>
+        <a href="/DieuHanhMon/KetQua" class="btn btn-sm text-nowrap rounded-pill @(!ViewBag.SelectedMonId.HasValue ? "btn-primary fw-bold" : "btn-light border")">
+            Tất cả
+        </a>
+        @foreach (var sp in sportList)
+        {
+            bool isActive = ViewBag.SelectedMonId == sp.Id;
+            <a href="/DieuHanhMon/KetQua?monTheThaoId=@sp.Id" class="btn btn-sm text-nowrap rounded-pill @(isActive ? "btn-primary fw-bold" : "btn-light border")">
+                @sp.Ten
+            </a>
+        }
+    </div>
+</div>
+
+<!-- Bảng kết quả -->
+<div class="card card-custom">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                    <th style="width: 80px;">Trận</th>
+                    <th>Môn</th>
+                    <th>Tên Trận Đấu</th>
+                    <th>Thời Gian</th>
+                    <th class="text-center" style="width: 180px;">Tỉ Số / Điểm Số</th>
+                    <th>Ghi Chú & Tình Trạng Duyệt</th>
+                    <th class="text-end" style="width: 150px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Count > 0)
+                {
+                    foreach (var item in Model)
+                    {
+                        bool isApproved = item.GhiChu != null && item.GhiChu.Contains("[Đã kiểm tra & duyệt");
+                        <tr>
+                            <td class="fw-bold text-center">#@item.SoTran</td>
+                            <td>
+                                <span class="badge bg-light text-dark border">@item.TenMon</span>
+                            </td>
+                            <td class="fw-semibold text-dark">@item.TenTran</td>
+                            <td>
+                                <span class="small text-muted">
+                                    @(item.ThoiGian?.ToString("HH:mm - dd/MM/yyyy") ?? "--")
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-dark text-white px-3 py-2 fs-6 fw-bold">
+                                    @item.KetQuaTySo
+                                </span>
+                            </td>
+                            <td>
+                                @if (isApproved)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success fw-bold px-2 py-1">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Đã duyệt kết quả
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning bg-opacity-10 text-dark fw-medium px-2 py-1">
+                                        <i class="fa-regular fa-clock me-1"></i> Chờ duyệt biên bản
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (!isApproved)
+                                {
+                                    <button class="btn btn-sm btn-primary fw-semibold" style="background-color: #0d9488; border-color: #0d9488;" onclick="approveMatchResult(@item.TranDauId)">
+                                        <i class="fa-solid fa-check-double me-1"></i> Duyệt kết quả
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-light border text-muted" disabled>
+                                        <i class="fa-solid fa-check text-success me-1"></i> Đã duyệt
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-regular fa-folder-open fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            Chưa có kết quả trận đấu nào được ghi nhận.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function approveMatchResult(tranId) {
+            Swal.fire({
+                title: 'Xác nhận duyệt kết quả?',
+                text: 'Bạn xác nhận kết quả và biên bản trận đấu này đã chính xác?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận duyệt',
+                cancelButtonText: 'Đóng'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('/DieuHanhMon/KetQua/ApproveResult', { tranDauId: tranId }, function (res) {
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: res.message,
+                                timer: 1200,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Lỗi', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

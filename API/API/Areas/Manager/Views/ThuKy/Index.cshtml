@@ -1,0 +1,425 @@
+@{
+    ViewData["Title"] = "Quản lý Thư ký Giải đấu";
+    Layout = "~/Areas/Manager/Views/Shared/_ManagerLayout.cshtml";
+}
+
+<div class="container-fluid p-0">
+    <div class="card card-custom border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-body p-4">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 pb-3 mb-4 border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 bg-info-subtle text-info rounded-4">
+                        <i class="fa-solid fa-file-signature fs-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Quản Lý Thư Ký Giải Đấu</h4>
+                        <p class="text-muted small mb-0">Hồ sơ ban thư ký bàn, thư ký biên bản và giám sát trận đấu</p>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-info text-white px-3 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2 shadow-sm" onclick="openCreateModal()">
+                        <i class="fa-solid fa-user-plus"></i> Thêm Thư Ký Mới
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter & Search -->
+            <div class="p-3 bg-light rounded-3 mb-4 border">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                        <div class="input-group bg-white rounded-3 border overflow-hidden">
+                            <span class="input-group-text bg-white border-0 text-muted ps-3">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" id="filterKeyword" class="form-control border-0 shadow-none ps-2" placeholder="Tìm kiếm theo mã, họ tên, chức vụ, SĐT..." />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="filterTrangThai" class="form-select bg-white border rounded-3 shadow-none">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="true">Đang làm nhiệm vụ</option>
+                            <option value="false">Tạm dừng / Nghỉ</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-dark w-100 rounded-3 fw-medium" onclick="loadData(1)">
+                            <i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase fs-7 text-muted">
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th style="width: 120px;">Mã Thư Ký</th>
+                            <th>Họ và Tên</th>
+                            <th style="width: 100px;">Giới Tính</th>
+                            <th>Chức Vụ & Cơ Quan</th>
+                            <th>Liên Hệ</th>
+                            <th style="width: 130px;">Trạng Thái</th>
+                            <th class="text-end" style="width: 120px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <div class="spinner-border text-info spinner-border-sm me-2"></div> Đang tải danh sách thư ký...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
+                <div class="text-muted small" id="paginationInfo">
+                    Hiển thị 0 / 0 bản ghi
+                </div>
+                <ul class="pagination pagination-sm mb-0" id="paginationNav"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa Thư Ký -->
+<div class="modal fade" id="modalThuKy" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalTitle">
+                    <i class="fa-solid fa-file-signature text-info"></i>
+                    <span>Thêm Thư Ký Mới</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formThuKy" onsubmit="handleSave(event)">
+                <input type="hidden" id="thuKyId" value="" />
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Mã Thư Ký <span class="text-danger">*</span></label>
+                            <input type="text" id="txtMa" class="form-control text-uppercase" placeholder="VD: TK001, TKBAN..." required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Họ và Tên <span class="text-danger">*</span></label>
+                            <input type="text" id="txtHoTen" class="form-control" placeholder="Nhập họ và tên..." required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Giới Tính</label>
+                            <select id="txtGioiTinh" class="form-select">
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Chức Vụ</label>
+                            <input type="text" id="txtChucVu" class="form-control" placeholder="VD: Thư ký bàn, Trưởng ban biên bản..." />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Đơn Vị Công Tác / Cơ Quan</label>
+                            <input type="text" id="txtDonViCongTac" class="form-control" placeholder="VD: Trung tâm Huấn luyện TDTT, Sở VHTT..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Số Điện Thoại</label>
+                            <input type="text" id="txtSoDienThoai" class="form-control" placeholder="VD: 0912..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Email</label>
+                            <input type="email" id="txtEmail" class="form-control" placeholder="VD: thuky@sport.vn..." />
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="chkTrangThai" checked>
+                                <label class="form-check-label fw-semibold small" for="chkTrangThai">Đang hoạt động (sẵn sàng làm nhiệm vụ)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3 bg-light">
+                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-info text-white rounded-3 px-4" id="btnSave">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu lại
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+        const modalEl = document.getElementById('modalThuKy');
+        let modalObj = null;
+
+        $(document).ready(function () {
+            modalObj = new bootstrap.Modal(modalEl);
+            loadData(1);
+
+            $('#filterKeyword').on('keypress', function (e) {
+                if (e.which === 13) {
+                    loadData(1);
+                }
+            });
+        });
+
+        function loadData(page) {
+            currentPage = page || 1;
+            const keyword = $('#filterKeyword').val().trim();
+            const trangThai = $('#filterTrangThai').val();
+
+            $('#tableBody').html(`
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <div class="spinner-border text-info spinner-border-sm me-2"></div> Đang tải danh sách...
+                    </td>
+                </tr>
+            `);
+
+            $.ajax({
+                url: '/Manager/ThuKy/GetPagedData',
+                type: 'GET',
+                data: {
+                    pageIndex: currentPage,
+                    pageSize: pageSize,
+                    keyword: keyword || null,
+                    trangThai: trangThai !== '' ? trangThai : null
+                },
+                success: function (res) {
+                    if (res.success && res.data) {
+                        renderTable(res.data);
+                        renderPagination(res.data);
+                    } else {
+                        $('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">Lỗi tải dữ liệu.</td></tr>');
+                    }
+                },
+                error: function () {
+                    $('#tableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">Không thể kết nối đến máy chủ.</td></tr>');
+                }
+            });
+        }
+
+        function renderTable(pagedData) {
+            const items = pagedData.items || [];
+            if (items.length === 0) {
+                $('#tableBody').html(`
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-inbox fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                            Chưa có hồ sơ thư ký nào.
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            let html = '';
+            items.forEach((item, index) => {
+                const stt = (pagedData.pageIndex - 1) * pagedData.pageSize + index + 1;
+                const statusBadge = item.trangThai
+                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i>Hoạt động</span>'
+                    : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1 rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i>Tạm nghỉ</span>';
+
+                let contactInfo = '---';
+                if (item.soDienThoai && item.email) {
+                    contactInfo = `<div><i class="fa-solid fa-phone me-1 text-muted"></i>${item.soDienThoai}</div><small class="text-muted"><i class="fa-solid fa-envelope me-1"></i>${item.email}</small>`;
+                } else if (item.soDienThoai) {
+                    contactInfo = `<div><i class="fa-solid fa-phone me-1 text-muted"></i>${item.soDienThoai}</div>`;
+                } else if (item.email) {
+                    contactInfo = `<small class="text-muted"><i class="fa-solid fa-envelope me-1"></i>${item.email}</small>`;
+                }
+
+                html += `
+                    <tr>
+                        <td class="text-muted small">${stt}</td>
+                        <td><span class="badge bg-light text-dark border font-monospace px-2 py-1">${item.ma || '---'}</span></td>
+                        <td><strong class="text-dark">${item.hoTen}</strong></td>
+                        <td><span class="badge bg-light text-secondary border">${item.gioiTinh || 'Nam'}</span></td>
+                        <td>
+                            <div class="small fw-semibold text-dark">${item.chucVu || 'Thư ký'}</div>
+                            <small class="text-muted text-truncate d-inline-block" style="max-width: 220px;">
+                                <i class="fa-solid fa-building me-1"></i>${item.donViCongTac || '---'}
+                            </small>
+                        </td>
+                        <td class="small">${contactInfo}</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-light border text-primary" title="Chỉnh sửa" onclick="openEditModal(${item.id})">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light border text-danger" title="Xóa" onclick="deleteItem(${item.id}, '${encodeURIComponent(item.hoTen)}')">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#tableBody').html(html);
+        }
+
+        function renderPagination(pagedData) {
+            const totalCount = pagedData.totalCount || 0;
+            const totalPages = pagedData.totalPages || 1;
+            const pageIndex = pagedData.pageIndex || 1;
+
+            $('#paginationInfo').text(`Hiển thị ${totalCount > 0 ? (pageIndex - 1) * pageSize + 1 : 0} - ${Math.min(pageIndex * pageSize, totalCount)} / ${totalCount} bản ghi`);
+
+            if (totalPages <= 1) {
+                $('#paginationNav').empty();
+                return;
+            }
+
+            let html = '';
+            html += `<li class="page-item ${pageIndex === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadData(${pageIndex - 1})"><i class="fa-solid fa-chevron-left"></i></a>
+                     </li>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= pageIndex - 1 && i <= pageIndex + 1)) {
+                    html += `<li class="page-item ${i === pageIndex ? 'active' : ''}">
+                                <a class="page-link" href="javascript:void(0)" onclick="loadData(${i})">${i}</a>
+                             </li>`;
+                } else if (i === pageIndex - 2 || i === pageIndex + 2) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+            }
+
+            html += `<li class="page-item ${pageIndex === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadData(${pageIndex + 1})"><i class="fa-solid fa-chevron-right"></i></a>
+                     </li>`;
+
+            $('#paginationNav').html(html);
+        }
+
+        function openCreateModal() {
+            $('#thuKyId').val('');
+            $('#modalTitle span').text('Thêm Thư Ký Mới');
+            $('#txtMa').val('').prop('readonly', false);
+            $('#txtHoTen').val('');
+            $('#txtGioiTinh').val('Nam');
+            $('#txtChucVu').val('');
+            $('#txtDonViCongTac').val('');
+            $('#txtSoDienThoai').val('');
+            $('#txtEmail').val('');
+            $('#chkTrangThai').prop('checked', true);
+            modalObj.show();
+        }
+
+        function openEditModal(id) {
+            $.ajax({
+                url: `/Manager/ThuKy/GetById?id=${id}`,
+                type: 'GET',
+                success: function (res) {
+                    if (res.success && res.data) {
+                        const item = res.data;
+                        $('#thuKyId').val(item.id);
+                        $('#modalTitle span').text('Chỉnh Sửa Hồ Sơ Thư Ký');
+                        $('#txtMa').val(item.ma).prop('readonly', false);
+                        $('#txtHoTen').val(item.hoTen);
+                        $('#txtGioiTinh').val(item.gioiTinh || 'Nam');
+                        $('#txtChucVu').val(item.chucVu || '');
+                        $('#txtDonViCongTac').val(item.donViCongTac || '');
+                        $('#txtSoDienThoai').val(item.soDienThoai || '');
+                        $('#txtEmail').val(item.email || '');
+                        $('#chkTrangThai').prop('checked', item.trangThai);
+                        modalObj.show();
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không tìm thấy dữ liệu', 'error');
+                    }
+                }
+            });
+        }
+
+        function handleSave(e) {
+            e.preventDefault();
+            const id = $('#thuKyId').val();
+            const dto = {
+                ma: $('#txtMa').val().trim().toUpperCase(),
+                hoTen: $('#txtHoTen').val().trim(),
+                gioiTinh: $('#txtGioiTinh').val(),
+                chucVu: $('#txtChucVu').val().trim(),
+                donViCongTac: $('#txtDonViCongTac').val().trim(),
+                soDienThoai: $('#txtSoDienThoai').val().trim(),
+                email: $('#txtEmail').val().trim(),
+                trangThai: $('#chkTrangThai').is(':checked')
+            };
+
+            const btn = $('#btnSave');
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Đang lưu...');
+
+            const url = id ? `/Manager/ThuKy/Save?id=${id}` : '/Manager/ThuKy/Save';
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(dto),
+                success: function (res) {
+                    btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu lại');
+                    if (res.success) {
+                        modalObj.hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message, 'error');
+                    }
+                },
+                error: function () {
+                    btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu lại');
+                    Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ.', 'error');
+                }
+            });
+        }
+
+        function deleteItem(id, hoTenEncoded) {
+            const hoTen = decodeURIComponent(hoTenEncoded);
+            Swal.fire({
+                title: 'Xác nhận xóa?',
+                text: `Bạn có chắc chắn muốn xóa thư ký "${hoTen}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Đồng ý xóa',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/Manager/ThuKy/Delete?id=${id}`,
+                        type: 'POST',
+                        success: function (res) {
+                            if (res.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Đã xóa!',
+                                    text: res.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                                loadData(currentPage);
+                            } else {
+                                Swal.fire('Lỗi', res.message, 'error');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

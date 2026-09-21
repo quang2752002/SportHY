@@ -1,0 +1,244 @@
+@{
+    ViewData["Title"] = "Chia Bảng Đấu";
+    var giaiDaus = ViewBag.GiaiDaus as IEnumerable<GiaiDauDto> ?? Enumerable.Empty<GiaiDauDto>();
+    var monTheThaos = ViewBag.MonTheThaos as IEnumerable<MonTheThaoDto> ?? Enumerable.Empty<MonTheThaoDto>();
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-sitemap text-primary me-2"></i>Quản Lý & Phân Bổ Bảng Đấu
+        </h4>
+        <p class="text-muted small mb-0">Chia bảng, bốc thăm và quản lý hạt giống cho các môn thi đấu thể thao.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary shadow-sm" onclick="openCreateModal()">
+            <i class="fa-solid fa-plus me-1"></i> Thêm Bảng Đấu Mới
+        </button>
+    </div>
+</div>
+
+<!-- Bộ lọc chọn môn & giải -->
+<div class="card card-custom mb-4">
+    <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <label class="form-label small fw-semibold text-muted mb-1">Chọn Giải Đấu</label>
+                <select id="giaiDauSelect" class="form-select" onchange="loadData()">
+                    <option value="">-- Chọn giải đấu --</option>
+                    @foreach (var g in giaiDaus)
+                    {
+                        <option value="@g.Id">@g.Ten</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small fw-semibold text-muted mb-1">Môn Thi Đấu</label>
+                <select id="monSelect" class="form-select" onchange="loadData()">
+                    <option value="">-- Tất cả môn --</option>
+                    @foreach (var m in monTheThaos)
+                    {
+                        <option value="@m.Id">@m.Ten</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-secondary w-100" onclick="loadData()">
+                    <i class="fa-solid fa-arrows-rotate me-1"></i> Tải lại
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Danh sách các bảng đấu -->
+<div id="bangDauContainer" class="row g-3">
+    <div class="col-12 text-center py-5 text-muted">
+        <i class="fa-solid fa-sitemap fa-3x text-secondary mb-3"></i>
+        <p>Vui lòng chọn giải đấu và môn thi đấu để xem các bảng đấu.</p>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa Bảng Đấu -->
+<div class="modal fade" id="modalBangDau" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalTitle">Thêm Bảng Đấu Mới</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formBangDau">
+                <input type="hidden" id="bangDauId" value="">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên bảng đấu <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="ten" required placeholder="Ví dụ: Bảng A">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mã bảng</label>
+                        <input type="text" class="form-control" id="ma" placeholder="BANG_A">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Thứ tự hiển thị</label>
+                        <input type="number" class="form-control" id="thuTu" value="1">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary" id="btnSave">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu thông tin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Tự động chọn giải đấu đầu tiên nếu có
+            if ($('#giaiDauSelect option').length > 1) {
+                $('#giaiDauSelect').prop('selectedIndex', 1);
+                loadData();
+            }
+
+            $('#formBangDau').on('submit', function (e) {
+                e.preventDefault();
+                saveData();
+            });
+        });
+
+        function loadData() {
+            const monId = $('#monSelect').val();
+
+            $.get('/Manager/BangDau/GetAll', { giaiDauMonTheThaoId: monId ? parseInt(monId) : undefined }, function (res) {
+                if (res.success && res.data) {
+                    renderGroups(res.data);
+                }
+            });
+        }
+
+        function renderGroups(items) {
+            if (!items || items.length === 0) {
+                $('#bangDauContainer').html(`
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="fa-solid fa-folder-open fa-3x text-secondary mb-3"></i>
+                        <p>Chưa có bảng đấu nào. Nhấn "Thêm Bảng Đấu Mới" hoặc dùng "Tự Động Xếp Lịch" để sinh tự động.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = '';
+            $.each(items, function (i, item) {
+                const teams = item.bangDauDois || [];
+                let teamListHtml = '';
+
+                if (teams.length === 0) {
+                    teamListHtml = '<div class="text-center py-4 text-muted small">Chưa có đội nào trong bảng này.</div>';
+                } else {
+                    teamListHtml = '<ul class="list-group list-group-flush">';
+                    $.each(teams, function (idx, t) {
+                        teamListHtml += `
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-light text-secondary border rounded-circle" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;">${idx + 1}</span>
+                                    <span class="fw-semibold text-dark">${escapeHtml(t.tenDoi || 'Đội tuyển')}</span>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary border">${t.diemSo ?? 0} đ</span>
+                            </li>
+                        `;
+                    });
+                    teamListHtml += '</ul>';
+                }
+
+                html += `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card card-custom h-100 shadow-sm">
+                            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary text-white rounded-pill px-2 py-1">${escapeHtml(item.ma || 'BANG')}</span>
+                                    <h6 class="fw-bold text-dark mb-0">${escapeHtml(item.ten)}</h6>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-light border" title="Xóa" onclick="deleteItem(${item.id})">
+                                        <i class="fa-solid fa-trash text-danger"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                ${teamListHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            $('#bangDauContainer').html(html);
+        }
+
+        function openCreateModal() {
+            $('#modalTitle').text('Thêm Bảng Đấu Mới');
+            $('#bangDauId').val('');
+            $('#ten').val('');
+            $('#ma').val('');
+            $('#thuTu').val(1);
+            $('#modalBangDau').modal('show');
+        }
+
+        function saveData() {
+            const id = $('#bangDauId').val();
+            const ten = $('#ten').val().trim();
+            const monId = $('#monSelect').val();
+
+            if (!ten) {
+                Swal.fire('Lỗi', 'Vui lòng nhập tên bảng đấu.', 'warning');
+                return;
+            }
+
+            const payload = {
+                giaiDauMonTheThaoId: monId ? parseInt(monId) : 1,
+                ten: ten,
+                ma: $('#ma').val().trim() || 'B_' + Date.now().toString().slice(-4),
+                thuTu: parseInt($('#thuTu').val()) || 1
+            };
+
+            const url = id ? `/Manager/BangDau/Save?id=${id}` : '/Manager/BangDau/Save';
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    if (res.success) {
+                        $('#modalBangDau').modal('hide');
+                        SportApp.toast('success', res.message || 'Lưu bảng đấu thành công!');
+                        loadData();
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu bảng đấu.', 'error');
+                    }
+                }
+            });
+        }
+
+        function deleteItem(id) {
+            SportApp.confirm('Xóa Bảng Đấu?', 'Bạn có chắc muốn xóa bảng đấu này?', function () {
+                $.post('/Manager/BangDau/Delete', { id: id }, function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã xóa bảng đấu!');
+                        loadData();
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể xóa.', 'error');
+                    }
+                });
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div>').text(text).html();
+        }
+    </script>
+}

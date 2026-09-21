@@ -1,0 +1,365 @@
+@{
+    ViewData["Title"] = "Quản lý Trọng Tài";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-user-shield text-primary me-2"></i>Quản lý Ban Trọng Tài & Giám Sát
+        </h4>
+        <p class="text-muted small mb-0">Quản lý danh sách đội ngũ trọng tài, cấp bậc chuyên môn và điều hành giải đấu.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary shadow-sm" onclick="openCreateModal()">
+            <i class="fa-solid fa-plus me-1"></i> Thêm Trọng Tài Mới
+        </button>
+    </div>
+</div>
+
+<!-- Bộ lọc tìm kiếm -->
+<div class="card card-custom mb-4">
+    <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <input type="text" id="keyword" class="form-control" placeholder="Tìm theo họ tên, mã trọng tài, số điện thoại...">
+            </div>
+            <div class="col-md-3">
+                <select id="trangThaiFilter" class="form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="true">Sẵn sàng điều hành</option>
+                    <option value="false">Tạm nghỉ / Khóa</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-1">
+                <button type="button" class="btn btn-primary flex-grow-1" onclick="loadData(1)">
+                    <i class="fa-solid fa-filter me-1"></i> Lọc
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="resetFilter()" title="Làm mới">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng dữ liệu Trọng tài -->
+<div class="card card-custom">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tblTrongTai">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width: 50px;">STT</th>
+                        <th>Họ Và Tên Trọng Tài</th>
+                        <th>Cấp Bậc Chuyên Môn</th>
+                        <th>Giới Tính</th>
+                        <th>Số Điện Thoại</th>
+                        <th>Email</th>
+                        <th>Trạng Thái</th>
+                        <th class="text-end pe-3" style="width: 130px;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="tblBody">
+                    <tr><td colspan="8" class="text-center py-5 text-muted">Đang tải danh sách trọng tài...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-3">
+        <div class="text-muted small" id="paginationInfo">Hiển thị 0 trên 0 trọng tài</div>
+        <ul class="pagination pagination-sm mb-0" id="paginationList"></ul>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa Trọng Tài -->
+<div class="modal fade" id="modalTrongTai" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalTitle">Thêm Trọng Tài Mới</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formTrongTai">
+                <input type="hidden" id="trongTaiId" value="">
+                <div class="modal-body p-4">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="hoTen" required placeholder="Ví dụ: Trần Văn Trọng">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Mã trọng tài</label>
+                            <input type="text" class="form-control" id="ma" placeholder="TT-01">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Cấp bậc chuyên môn</label>
+                            <select class="form-select" id="capBac">
+                                <option value="QuocGia">Cấp Quốc Gia</option>
+                                <option value="Cap1">Cấp I</option>
+                                <option value="Cap2">Cấp II</option>
+                                <option value="Cap3">Cấp III</option>
+                                <option value="CoSo">Cơ sở / Tập sự</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Giới tính</label>
+                            <select class="form-select" id="gioiTinh">
+                                <option value="Nam">Nam</option>
+                                <option value="Nu">Nữ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Số điện thoại liên lạc</label>
+                        <input type="text" class="form-control" id="soDienThoai" placeholder="0912 xxx xxx">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email liên hệ</label>
+                        <input type="email" class="form-control" id="email" placeholder="trongtai@sportdms.com">
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="trangThai" checked>
+                        <label class="form-check-label fw-semibold" for="trangThai">Sẵn sàng nhận nhiệm vụ điều hành</label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary" id="btnSave">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu thông tin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+
+        $(document).ready(function () {
+            loadData(1);
+
+            $('#keyword').on('keypress', function (e) {
+                if (e.which === 13) loadData(1);
+            });
+
+            $('#trangThaiFilter').on('change', function () {
+                loadData(1);
+            });
+
+            $('#formTrongTai').on('submit', function (e) {
+                e.preventDefault();
+                saveData();
+            });
+        });
+
+        function loadData(page) {
+            currentPage = page;
+            const keyword = $('#keyword').val().trim();
+            const trangThai = $('#trangThaiFilter').val();
+
+            $.ajax({
+                url: '/Admin/TrongTai/GetPagedData',
+                type: 'GET',
+                data: {
+                    pageIndex: page,
+                    pageSize: pageSize,
+                    keyword: keyword || undefined,
+                    trangThai: trangThai !== '' ? (trangThai === 'true') : undefined
+                },
+                success: function (res) {
+                    if (res.success && res.data) {
+                        renderTable(res.data);
+                    }
+                }
+            });
+        }
+
+        function renderTable(data) {
+            const items = data.items || [];
+            if (items.length === 0) {
+                $('#tblBody').html('<tr><td colspan="8" class="text-center py-5 text-muted">Chưa có trọng tài nào.</td></tr>');
+                $('#paginationInfo').text('Hiển thị 0 trên 0 trọng tài');
+                $('#paginationList').empty();
+                return;
+            }
+
+            let html = '';
+            const start = (data.pageIndex - 1) * data.pageSize;
+
+            $.each(items, function (i, item) {
+                const stt = start + i + 1;
+                const gtBadge = item.gioiTinh === 'Nam' ? '<span class="badge bg-info text-dark">Nam</span>' : '<span class="badge bg-danger-subtle text-danger border">Nữ</span>';
+
+                html += `
+                    <tr>
+                        <td class="ps-3 fw-bold text-muted">${stt}</td>
+                        <td>
+                            <div class="fw-bold text-dark">${escapeHtml(item.hoTen)}</div>
+                            <small class="text-muted"><span class="badge bg-light text-secondary border">Mã: ${escapeHtml(item.ma)}</span></small>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary border p-2">
+                                <i class="fa-solid fa-award me-1"></i>${escapeHtml(item.capBac || 'Quốc Gia')}
+                            </span>
+                        </td>
+                        <td>${gtBadge}</td>
+                        <td>${item.soDienThoai ? `<i class="fa-solid fa-phone me-1 text-success"></i>${escapeHtml(item.soDienThoai)}` : '-'}</td>
+                        <td>${item.email ? `<i class="fa-regular fa-envelope me-1 text-muted"></i>${escapeHtml(item.email)}` : '-'}</td>
+                        <td>
+                            <span class="badge ${item.trangThai ? 'bg-success' : 'bg-danger'} badge-status">
+                                ${item.trangThai ? 'Sẵn sàng' : 'Tạm dừng'}
+                            </span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-light border" title="Sửa" onclick="openEditModal(${item.id})">
+                                    <i class="fa-solid fa-pen-to-square text-success"></i>
+                                </button>
+                                <button type="button" class="btn btn-light border" title="Xóa" onclick="deleteItem(${item.id}, '${escapeHtml(item.hoTen)}')">
+                                    <i class="fa-solid fa-trash text-danger"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#tblBody').html(html);
+
+            const total = data.totalCount || 0;
+            const from = total === 0 ? 0 : start + 1;
+            const to = Math.min(start + data.pageSize, total);
+            $('#paginationInfo').text(`Hiển thị ${from} - ${to} trên tổng số ${total} trọng tài`);
+
+            renderPagination(data.pageIndex, data.totalPages);
+        }
+
+        function renderPagination(current, totalPages) {
+            if (totalPages <= 1) {
+                $('#paginationList').empty();
+                return;
+            }
+
+            let pagHtml = '';
+            pagHtml += `<li class="page-item ${current === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadData(${current - 1})">&laquo;</a>
+            </li>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= current - 2 && i <= current + 2)) {
+                    pagHtml += `<li class="page-item ${i === current ? 'active' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadData(${i})">${i}</a>
+                    </li>`;
+                }
+            }
+
+            pagHtml += `<li class="page-item ${current === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadData(${current + 1})">&raquo;</a>
+            </li>`;
+
+            $('#paginationList').html(pagHtml);
+        }
+
+        function openCreateModal() {
+            $('#modalTitle').text('Thêm Trọng Tài Mới');
+            $('#trongTaiId').val('');
+            $('#hoTen').val('');
+            $('#ma').val('');
+            $('#capBac').val('QuocGia');
+            $('#gioiTinh').val('Nam');
+            $('#soDienThoai').val('');
+            $('#email').val('');
+            $('#trangThai').prop('checked', true);
+            $('#modalTrongTai').modal('show');
+        }
+
+        function openEditModal(id) {
+            $.get('/Admin/TrongTai/GetById', { id: id }, function (res) {
+                if (res.success && res.data) {
+                    const item = res.data;
+                    $('#modalTitle').text('Chỉnh Sửa Thông Tin Trọng Tài');
+                    $('#trongTaiId').val(item.id);
+                    $('#hoTen').val(item.hoTen);
+                    $('#ma').val(item.ma || '');
+                    $('#capBac').val(item.capBac || 'QuocGia');
+                    $('#gioiTinh').val(item.gioiTinh || 'Nam');
+                    $('#soDienThoai').val(item.soDienThoai || '');
+                    $('#email').val(item.email || '');
+                    $('#trangThai').prop('checked', item.trangThai);
+                    $('#modalTrongTai').modal('show');
+                }
+            });
+        }
+
+        function saveData() {
+            const id = $('#trongTaiId').val();
+            const hoTen = $('#hoTen').val().trim();
+
+            if (!hoTen) {
+                Swal.fire('Lỗi', 'Vui lòng nhập họ tên trọng tài.', 'warning');
+                return;
+            }
+
+            const payload = {
+                hoTen: hoTen,
+                ma: $('#ma').val().trim() || 'TT-' + Date.now().toString().slice(-5),
+                capBac: $('#capBac').val(),
+                gioiTinh: $('#gioiTinh').val(),
+                soDienThoai: $('#soDienThoai').val().trim() || null,
+                email: $('#email').val().trim() || null,
+                trangThai: $('#trangThai').is(':checked')
+            };
+
+            const url = id ? `/Admin/TrongTai/Save?id=${id}` : '/Admin/TrongTai/Save';
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    if (res.success) {
+                        $('#modalTrongTai').modal('hide');
+                        SportApp.toast('success', res.message || 'Lưu thông tin thành công!');
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu.', 'error');
+                    }
+                }
+            });
+        }
+
+        function deleteItem(id, name) {
+            SportApp.confirm('Xóa Trọng Tài?', `Bạn có chắc muốn xóa trọng tài "${name}" không?`, function () {
+                $.post('/Admin/TrongTai/Delete', { id: id }, function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã xóa trọng tài!');
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể xóa.', 'error');
+                    }
+                });
+            });
+        }
+
+        function resetFilter() {
+            $('#keyword').val('');
+            $('#trangThaiFilter').val('');
+            loadData(1);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div>').text(text).html();
+        }
+    </script>
+}

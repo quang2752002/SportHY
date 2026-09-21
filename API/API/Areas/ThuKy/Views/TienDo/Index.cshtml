@@ -1,0 +1,204 @@
+@{
+    ViewData["Title"] = "Theo Dõi Tiến Độ Từng Môn Thể Thao";
+}
+
+<div class="d-flex flex-column gap-3">
+    <!-- Breadcrumb & Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-bars-progress text-primary me-2"></i> Theo Dõi Tiến Độ Từng Môn Thể Thao
+            </h4>
+            <p class="text-muted small mb-0">Giám sát tổng thể tỷ lệ hoàn thành trận đấu, huy chương và hồ sơ biên bản theo môn</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="loadTienDo()">
+                <i class="fa-solid fa-rotate me-1"></i> Cập nhật tiến độ
+            </button>
+            <a href="/ThuKy/BaoCao?tab=tiendo" class="btn btn-sm btn-primary rounded-pill">
+                <i class="fa-solid fa-file-excel me-1"></i> Xuất Báo Cáo Tiến Độ
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row g-3" id="statsRow">
+        <div class="col-6 col-md-3">
+            <div class="card card-custom p-3 text-center border-bottom border-4 border-primary">
+                <small class="text-muted text-uppercase fw-semibold" style="font-size:0.75rem;">Tổng Số Môn</small>
+                <h3 class="fw-bold text-primary mb-0 mt-1" id="statSportCount">0</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-custom p-3 text-center border-bottom border-4 border-success">
+                <small class="text-muted text-uppercase fw-semibold" style="font-size:0.75rem;">Môn Đã Hoàn Tất</small>
+                <h3 class="fw-bold text-success mb-0 mt-1" id="statMonFinished">0</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-custom p-3 text-center border-bottom border-4 border-warning">
+                <small class="text-muted text-uppercase fw-semibold" style="font-size:0.75rem;">Môn Đang Thi Đấu</small>
+                <h3 class="fw-bold text-warning mb-0 mt-1" id="statMonInProgress">0</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-custom p-3 text-center border-bottom border-4 border-info">
+                <small class="text-muted text-uppercase fw-semibold" style="font-size:0.75rem;">Tổng Trận Đã Đấu</small>
+                <h3 class="fw-bold text-info mb-0 mt-1" id="statCompletedMatches">0</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards Grid Tiến Độ Từng Môn -->
+    <div class="row g-3" id="sportCardsContainer">
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2 small">Đang tổng hợp tiến độ các môn...</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            loadTienDo();
+        });
+
+        function loadTienDo() {
+            var gId = $('#headerSelectGiaiDau').val();
+            $('#sportCardsContainer').html(`
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted mt-2 small">Đang tổng hợp tiến độ các môn...</p>
+                </div>
+            `);
+
+            $.ajax({
+                url: '/ThuKy/TienDo/GetTienDo',
+                type: 'GET',
+                data: { giaiDauId: gId },
+                success: function (res) {
+                    if (!res.success || !res.data) {
+                        $('#sportCardsContainer').html('<div class="col-12 text-center py-5 text-danger">Không thể tải dữ liệu tiến độ môn.</div>');
+                        return;
+                    }
+                    renderProgress(res.data);
+                },
+                error: function () {
+                    $('#sportCardsContainer').html('<div class="col-12 text-center py-5 text-danger">Lỗi kết nối máy chủ.</div>');
+                }
+            });
+        }
+
+        function renderProgress(list) {
+            $('#statSportCount').text(list.length);
+            var finished = list.filter(x => x.tiLeHoanThanh >= 100).length;
+            var inProgress = list.filter(x => x.tiLeHoanThanh > 0 && x.tiLeHoanThanh < 100).length;
+            var totalDoneMatches = list.reduce((acc, cur) => acc + cur.soTranDaHoanThanh, 0);
+
+            $('#statMonFinished').text(finished);
+            $('#statMonInProgress').text(inProgress);
+            $('#statCompletedMatches').text(totalDoneMatches);
+
+            if (list.length === 0) {
+                $('#sportCardsContainer').html('<div class="col-12 text-center py-5 text-muted">Chưa có môn thi đấu nào trong giải này.</div>');
+                return;
+            }
+
+            var html = '';
+            list.forEach(function (m) {
+                var barColor = m.tiLeHoanThanh >= 100 ? 'bg-success' : (m.tiLeHoanThanh >= 50 ? 'bg-primary' : 'bg-info');
+                var statusBadge = m.tiLeHoanThanh >= 100
+                    ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1"><i class="fa-solid fa-circle-check me-1"></i> Đã hoàn thành môn</span>'
+                    : (m.tiLeHoanThanh > 0
+                        ? '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2.5 py-1"><i class="fa-solid fa-fire me-1"></i> Đang thi đấu</span>'
+                        : '<span class="badge bg-secondary bg-opacity-10 text-secondary border px-2.5 py-1"><i class="fa-regular fa-clock me-1"></i> Chưa diễn ra</span>');
+
+                html += `
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card card-custom h-100">
+                            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                                <div>
+                                    <!-- Card Header -->
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="rounded-3 bg-primary bg-opacity-10 p-3 text-primary fs-4">
+                                                <i class="fa-solid ${m.iconMon || 'fa-volleyball'}"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="fw-bold text-dark mb-0">${m.tenMon}</h5>
+                                                <small class="text-muted">Mã môn: <strong>${m.maMon || '--'}</strong></small>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            ${statusBadge}
+                                        </div>
+                                    </div>
+
+                                    <!-- Progress Bar -->
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small fw-semibold text-muted">Tiến độ thi đấu:</span>
+                                            <span class="fw-bold text-primary fs-6">${m.tiLeHoanThanh}%</span>
+                                        </div>
+                                        <div class="progress" style="height: 9px;">
+                                            <div class="progress-bar ${barColor} progress-bar-striped" role="progressbar" style="width: ${m.tiLeHoanThanh}%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Grid metrics -->
+                                    <div class="row g-2 text-center py-2 bg-light rounded-3 mb-3">
+                                        <div class="col-4 border-end">
+                                            <small class="text-muted d-block" style="font-size:0.75rem;">Tổng Trận</small>
+                                            <span class="fw-bold text-dark fs-6">${m.tongSoTran}</span>
+                                        </div>
+                                        <div class="col-4 border-end">
+                                            <small class="text-success d-block" style="font-size:0.75rem;">Đã Đấu</small>
+                                            <span class="fw-bold text-success fs-6">${m.soTranDaHoanThanh}</span>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted d-block" style="font-size:0.75rem;">Chưa Đấu</small>
+                                            <span class="fw-bold text-secondary fs-6">${m.soTranChuaDau}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Additional Info -->
+                                    <div class="d-flex flex-column gap-1.5 small text-muted mb-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span><i class="fa-solid fa-layer-group text-primary me-1.5"></i> Số nội dung thi đấu:</span>
+                                            <strong class="text-dark">${m.tongSoNoiDung} nội dung</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span><i class="fa-solid fa-users text-info me-1.5"></i> Vận động viên / Đội:</span>
+                                            <strong class="text-dark">${m.tongSoVdv} đăng ký</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span><i class="fa-solid fa-medal text-warning me-1.5"></i> Huy chương đã trao:</span>
+                                            <strong class="text-warning">${m.soHuyChuongDaTrao} huy chương</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span><i class="fa-solid fa-file-signature text-success me-1.5"></i> Biên bản đã duyệt:</span>
+                                            <span class="badge bg-success bg-opacity-10 text-success">${m.soBienBanDaDuyet} đã duyệt</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="d-flex gap-2 pt-2 border-top">
+                                    <a href="/ThuKy/KetQua?monTheThaoId=${m.monTheThaoId}" class="btn btn-sm btn-outline-primary w-100 rounded-pill">
+                                        <i class="fa-solid fa-square-check me-1"></i> Xem Kết Quả
+                                    </a>
+                                    <a href="/ThuKy/BienBan?monTheThaoId=${m.monTheThaoId}" class="btn btn-sm btn-outline-secondary w-100 rounded-pill">
+                                        <i class="fa-solid fa-file-signature me-1"></i> Xem Biên Bản
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            $('#sportCardsContainer').html(html);
+        }
+    </script>
+}

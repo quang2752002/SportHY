@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Ban Thư Ký Giải Đấu</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome 6 Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+    <!-- Select2 CSS & Theme -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --tk-sidebar-width: 275px;
+            --tk-sidebar-bg: #091326;
+            --tk-sidebar-dark: #040914;
+            --tk-sidebar-hover: #172554;
+            --tk-sidebar-active: #2563eb;
+            --tk-header-height: 64px;
+            --tk-primary: #1d4ed8;
+            --tk-accent: #38bdf8;
+            --tk-success: #10b981;
+            --tk-warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styling */
+        .tk-sidebar {
+            width: var(--tk-sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: linear-gradient(180deg, var(--tk-sidebar-bg) 0%, var(--tk-sidebar-dark) 100%);
+            color: #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1040;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .tk-brand {
+            height: var(--tk-header-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tk-brand-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: #ffffff;
+            margin-right: 0.85rem;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+        }
+
+        .tk-brand-text {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.3px;
+            line-height: 1.2;
+        }
+
+        .tk-brand-subtext {
+            font-size: 0.7rem;
+            color: #38bdf8;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 600;
+        }
+
+        .tk-nav-section {
+            padding: 1.2rem 1.5rem 0.4rem;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            color: #94a3b8;
+            opacity: 0.75;
+        }
+
+        .tk-nav-item {
+            margin: 0.2rem 0.8rem;
+        }
+
+        .tk-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .tk-nav-link i {
+            font-size: 1.15rem;
+            width: 26px;
+            margin-right: 0.8rem;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .tk-nav-link:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(3px);
+        }
+
+        .tk-nav-link.active {
+            color: #ffffff;
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.4) 0%, rgba(37, 99, 235, 0.15) 100%);
+            border-left: 3.5px solid #38bdf8;
+            font-weight: 600;
+        }
+
+        .tk-nav-link.active i {
+            color: #38bdf8;
+        }
+
+        .tk-main-wrapper {
+            margin-left: var(--tk-sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .tk-header {
+            height: var(--tk-header-height);
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        .tk-content {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .card-custom {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .card-custom:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Badge status styling */
+        .badge-status {
+            padding: 0.35rem 0.65rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        /* Print formatting */
+        @@media print {
+            .tk-sidebar, .tk-header, .d-print-none, .btn, .swal2-container {
+                display: none !important;
+            }
+            .tk-main-wrapper {
+                margin-left: 0 !important;
+                padding: 0 !important;
+            }
+            .tk-content {
+                padding: 0 !important;
+            }
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+            }
+        }
+
+        @@media (max-width: 991.98px) {
+            .tk-sidebar {
+                transform: translateX(-100%);
+            }
+            .tk-sidebar.show {
+                transform: translateX(0);
+            }
+            .tk-main-wrapper {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="tk-sidebar" id="sidebar">
+        <div class="tk-brand">
+            <div class="tk-brand-icon">
+                <i class="fa-solid fa-clipboard-check"></i>
+            </div>
+            <div>
+                <div class="tk-brand-text">THƯ KÝ GIẢI</div>
+                <div class="tk-brand-subtext">Ban Thư Ký & Hồ Sơ</div>
+            </div>
+        </div>
+
+        <div class="p-3">
+            <div class="p-2.5 rounded-3" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.09);">
+                <small class="text-secondary d-block mb-1" style="font-size:0.75rem;"><i class="fa-regular fa-id-badge me-1 text-info"></i> Cán bộ đảm nhiệm:</small>
+                <div class="fw-bold text-white text-truncate" style="font-size:0.9rem;">
+                    @(User.Identity?.Name ?? "Thư Ký Giải")
+                </div>
+                <span class="badge bg-primary bg-opacity-75 text-white mt-1" style="font-size:0.68rem;">Ban Thư Ký Giải Đấu</span>
+            </div>
+        </div>
+
+        <div class="tk-nav-section">Chuyên Môn & Giám Sát</div>
+        <div class="tk-nav-item">
+            <a class="tk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" href="/ThuKy/Home">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Tổng Quan Thư Ký</span>
+            </a>
+        </div>
+        <div class="tk-nav-item">
+            <a class="tk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "NoiDung" ? "active" : "")" href="/ThuKy/NoiDung">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Toàn Bộ Nội Dung</span>
+            </a>
+        </div>
+        <div class="tk-nav-item">
+            <a class="tk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TienDo" ? "active" : "")" href="/ThuKy/TienDo">
+                <i class="fa-solid fa-bars-progress"></i>
+                <span>Tiến Độ Từng Môn</span>
+            </a>
+        </div>
+        <div class="tk-nav-item">
+            <a class="tk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "KetQua" ? "active" : "")" href="/ThuKy/KetQua">
+                <i class="fa-solid fa-square-check"></i>
+                <span>Kiểm Tra Kết Quả</span>
+            </a>
+        </div>
+
+        <div class="tk-nav-section">Biên Bản & Báo Cáo</div>
+        <div class="tk-nav-item">
+            <a class="tk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BienBan" ? "active" : "")" href="/ThuKy/BienBan">
+                <i class="fa-solid fa-file-signature"></i>
+                <span>Biên Bản & In/PDF</span>
+            </a>
+        </div>
+        <div class="tk-nav-item">
+            <a class="tk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BaoCao" ? "active" : "")" href="/ThuKy/BaoCao">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>Báo Cáo & Xuất Excel</span>
+            </a>
+        </div>
+        <div class="tk-nav-item">
+            <a class="tk-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TraCuu" ? "active" : "")" href="/ThuKy/TraCuu">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <span>Tra Cứu Dữ Liệu Giải</span>
+            </a>
+        </div>
+
+        <div class="tk-nav-section">Liên Kết Hệ Thống</div>
+        <div class="tk-nav-item">
+            <a class="tk-nav-link" href="/Manager/GiaiDau">
+                <i class="fa-solid fa-trophy"></i>
+                <span>Quản Lý Giải Đấu</span>
+            </a>
+        </div>
+        <div class="tk-nav-item">
+            <a class="tk-nav-link" href="/Home/Index">
+                <i class="fa-solid fa-globe"></i>
+                <span>Cổng Thông Tin Giải</span>
+            </a>
+        </div>
+        <div class="tk-nav-item mt-3">
+            <a class="tk-nav-link text-danger" href="/Account/Logout">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Đăng Xuất</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="tk-main-wrapper">
+        <header class="tk-header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-outline-secondary btn-sm d-lg-none" id="sidebarToggle">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-trophy text-warning fs-5"></i>
+                    <span class="fw-semibold text-muted d-none d-sm-inline" style="font-size:0.88rem;">Giải đang thao tác:</span>
+                    <form method="get" id="formSelectTournament" class="m-0">
+                        <select name="giaiDauId" id="headerSelectGiaiDau" class="form-select form-select-sm fw-bold border-primary bg-light" style="min-width: 240px; max-width: 380px;" onchange="this.form.submit()">
+                            @if (ViewBag.Tournaments != null)
+                            {
+                                foreach (var t in (List<Dms.Application.DTOs.GiaiDauDto>)ViewBag.Tournaments)
+                                {
+                                    bool isSelected = ViewBag.SelectedGiaiDauId != null && (int)ViewBag.SelectedGiaiDauId == t.Id;
+                                    <option value="@t.Id" selected="@isSelected">
+                                        @t.Ten
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </form>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="/ThuKy/TraCuu" class="btn btn-sm btn-outline-primary rounded-pill d-none d-md-inline-flex align-items-center gap-1">
+                    <i class="fa-solid fa-magnifying-glass"></i> Tra cứu nhanh
+                </a>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2 py-1 px-2.5" data-bs-toggle="dropdown">
+                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center" style="background-color: #1d4ed8; width: 30px; height: 30px; font-size: 0.85rem;">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <span class="fw-semibold text-dark small text-truncate" style="max-width: 140px;">
+                            @(User.Identity?.Name ?? "Thư ký giải")
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li class="px-3 py-2 border-bottom">
+                            <small class="text-muted d-block">Vai trò hệ thống:</small>
+                            <span class="badge bg-primary text-white">Thư Ký Giải</span>
+                        </li>
+                        <li><a class="dropdown-item py-2" href="/ThuKy/Home"><i class="fa-solid fa-gauge text-primary me-2"></i> Dashboard Thư Ký</a></li>
+                        <li><a class="dropdown-item py-2" href="/ThuKy/BaoCao"><i class="fa-solid fa-file-excel text-success me-2"></i> Xuất Báo Cáo Giải</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item py-2 text-danger" href="/Account/Logout"><i class="fa-solid fa-power-off me-2"></i> Đăng xuất</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <main class="tk-content">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- html2pdf.js for client-side PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- SheetJS for client-side Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            $('#sidebarToggle').on('click', function () {
+                $('#sidebar').toggleClass('show');
+            });
+            $('.select2').select2({
+                theme: 'bootstrap-5'
+            });
+        });
+
+        // Toast Helper
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

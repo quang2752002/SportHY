@@ -1,0 +1,102 @@
+@model List<Dms.Application.DTOs.CoordinatorEventDto>
+@{
+    ViewData["Title"] = "Nội Dung Thuộc Môn Thể Thao";
+    var sportList = ViewBag.SportList as List<MonTheThao> ?? new();
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-layer-group text-teal me-2" style="color: #0d9488;"></i> Danh Sách Nội Dung Thuộc Môn
+        </h4>
+        <p class="text-muted small mb-0">Theo dõi chi tiết các thể thức, số lượng VĐV / đoàn đăng ký và số lượng trận đấu thuộc môn phụ trách</p>
+    </div>
+</div>
+
+<!-- Tabs môn cụ thể -->
+<div class="card card-custom mb-3 p-2 bg-white">
+    <div class="d-flex align-items-center overflow-auto py-1 gap-2">
+        <span class="text-muted small fw-bold text-uppercase px-2 text-nowrap"><i class="fa-solid fa-filter me-1 text-teal" style="color: #0d9488;"></i> Môn:</span>
+        <a href="/DieuHanhMon/NoiDung" class="btn btn-sm text-nowrap rounded-pill @(!ViewBag.SelectedMonId.HasValue ? "btn-primary fw-bold" : "btn-light border")">
+            Tất cả môn con
+        </a>
+        @foreach (var sp in sportList)
+        {
+            bool isActive = ViewBag.SelectedMonId == sp.Id;
+            <a href="/DieuHanhMon/NoiDung?monTheThaoId=@sp.Id" class="btn btn-sm text-nowrap rounded-pill @(isActive ? "btn-primary fw-bold" : "btn-light border")">
+                @sp.Ten
+            </a>
+        }
+    </div>
+</div>
+
+<!-- Bảng nội dung -->
+<div class="card card-custom">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                    <th style="width: 80px;">Mã</th>
+                    <th>Nội Dung Thi Đấu</th>
+                    <th>Môn</th>
+                    <th>Thể Thức</th>
+                    <th>Giới Tính</th>
+                    <th class="text-center">Số Lượng Đăng Ký</th>
+                    <th class="text-center">Số Trận Đấu</th>
+                    <th>Tiến Độ Trận</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Count > 0)
+                {
+                    foreach (var item in Model)
+                    {
+                        double percent = item.SoTranDau > 0 ? (double)item.SoTranDaDau / item.SoTranDau * 100 : 0;
+                        <tr>
+                            <td class="fw-bold text-secondary">@item.Ma</td>
+                            <td>
+                                <span class="fw-bold text-dark">@item.Ten</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2 py-1">@item.TenMon</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info bg-opacity-10 text-info fw-semibold px-2 py-1">
+                                    @(item.TheThuc ?? "Loại trực tiếp")
+                                </span>
+                            </td>
+                            <td>
+                                @(item.GioiTinh ?? "Tất cả")
+                            </td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill bg-primary px-3 py-2 fs-6">
+                                    @item.SoDangKy VĐV/Đội
+                                </span>
+                            </td>
+                            <td class="text-center fw-bold">
+                                @item.SoTranDau trận
+                            </td>
+                            <td style="min-width: 140px;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-fill" style="height: 6px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: @percent%;"></div>
+                                    </div>
+                                    <small class="text-muted text-nowrap">@item.SoTranDaDau/@item.SoTranDau</small>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fa-regular fa-folder-open fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            Chưa có nội dung thi đấu nào được thiết lập cho môn này.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

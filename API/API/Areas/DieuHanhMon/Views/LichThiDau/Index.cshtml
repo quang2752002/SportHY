@@ -1,0 +1,203 @@
+@model List<Dms.Application.DTOs.CoordinatorScheduleMatchDto>
+@{
+    ViewData["Title"] = "Lịch Thi Đấu & Tiến Độ Môn";
+    var sportList = ViewBag.SportList as List<MonTheThao> ?? new();
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-calendar-check text-teal me-2" style="color: #0d9488;"></i> Lịch Thi Đấu & Tiến Độ Môn
+        </h4>
+        <p class="text-muted small mb-0">Theo dõi toàn diện lịch trình, sân bãi và tiến độ tổ chức các trận đấu thuộc môn phụ trách</p>
+    </div>
+</div>
+
+<!-- Bộ lọc -->
+<div class="card card-custom mb-4 p-3">
+    <form method="get" class="row g-2 align-items-center">
+        <input type="hidden" name="giaiDauId" value="@ViewBag.SelectedGiaiDauId" />
+        <input type="hidden" name="danhMucId" value="@ViewBag.SelectedDanhMucId" />
+
+        <div class="col-md-3">
+            <select name="monTheThaoId" class="form-select">
+                <option value="">-- Tất cả môn con --</option>
+                @foreach (var sp in sportList)
+                {
+                    <option value="@sp.Id" selected="@(ViewBag.SelectedMonId == sp.Id)">@sp.Ten</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <input type="date" name="date" value="@ViewBag.SelectedDate" class="form-control" />
+        </div>
+
+        <div class="col-md-3">
+            <select name="status" class="form-select">
+                <option value="">-- Trạng thái trận đấu --</option>
+                <option value="ChuaDau" selected="@(ViewBag.SelectedStatus == "ChuaDau")">Chưa đấu</option>
+                <option value="DangDau" selected="@(ViewBag.SelectedStatus == "DangDau")">Đang thi đấu</option>
+                <option value="KetThuc" selected="@(ViewBag.SelectedStatus == "KetThuc")">Đã kết thúc</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill fw-semibold" style="background-color: #0d9488; border-color: #0d9488;">
+                <i class="fa-solid fa-filter me-1"></i> Lọc
+            </button>
+            <a href="/DieuHanhMon/LichThiDau" class="btn btn-light border"><i class="fa-solid fa-rotate-left"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- Bảng lịch thi đấu -->
+<div class="card card-custom">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                    <th style="width: 80px;">Trận</th>
+                    <th>Môn & Tên Trận</th>
+                    <th>Vòng & Sân Đấu</th>
+                    <th>Thời Gian Thi Đấu</th>
+                    <th>Trọng Tài Chính</th>
+                    <th>Trọng Tài Bàn</th>
+                    <th>Trạng Thái</th>
+                    <th class="text-end" style="width: 160px;">Cập Nhật Tiến Độ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Count > 0)
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="fw-bold text-center">#@item.SoTran</td>
+                            <td>
+                                <div class="fw-bold text-dark">@item.TenTran</div>
+                                <span class="badge bg-light text-secondary border small">@item.TenMon</span>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold text-dark">@item.TenVongDau</div>
+                                <div class="small text-muted"><i class="fa-solid fa-location-dot text-danger me-1"></i> @item.TenSanDau</div>
+                            </td>
+                            <td>
+                                @if (item.ThoiGianDuKien != null)
+                                {
+                                    <div class="small text-dark fw-medium">
+                                        <i class="fa-regular fa-clock text-warning me-1"></i>
+                                        @(((DateTime)item.ThoiGianDuKien).ToString("HH:mm - dd/MM/yyyy"))
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Chưa xếp giờ</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.TenTrongTaiChinh != "Chưa gán")
+                                {
+                                    <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold px-2 py-1">
+                                        @item.TenTrongTaiChinh
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted border">Chưa gán</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="small text-dark">@item.TenTrongTaiBan</span>
+                            </td>
+                            <td>
+                                @if (item.TrangThai == "KetThuc" || item.TrangThai == "DaDau")
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success fw-semibold px-2 py-1">
+                                        <i class="fa-solid fa-check me-1"></i> Đã kết thúc
+                                    </span>
+                                }
+                                else if (item.TrangThai == "DangDau")
+                                {
+                                    <span class="badge bg-danger text-white fw-bold px-2 py-1">
+                                        <i class="fa-solid fa-circle-play me-1"></i> Đang đấu
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted border px-2 py-1">
+                                        Chưa đấu
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    @if (item.TrangThai == "ChuaDau" || string.IsNullOrEmpty(item.TrangThai))
+                                    {
+                                        <button class="btn btn-outline-danger" onclick="updateMatchStatus(@item.TranDauId, 'DangDau')" title="Bắt đầu thi đấu">
+                                            <i class="fa-solid fa-play"></i> Bắt đầu
+                                        </button>
+                                    }
+                                    else if (item.TrangThai == "DangDau")
+                                    {
+                                        <button class="btn btn-outline-success" onclick="updateMatchStatus(@item.TranDauId, 'KetThuc')" title="Kết thúc trận">
+                                            <i class="fa-solid fa-flag-checkered"></i> Kết thúc
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <a href="/DieuHanhMon/KetQua" class="btn btn-light border" title="Xem kết quả">
+                                            <i class="fa-solid fa-file-invoice"></i> Kết quả
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fa-regular fa-calendar-xmark fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            Không có trận đấu nào theo điều kiện lọc.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updateMatchStatus(tranId, newStatus) {
+            Swal.fire({
+                title: 'Xác nhận cập nhật tiến độ?',
+                text: 'Chuyển trạng thái trận đấu thành: ' + (newStatus === 'DangDau' ? 'Đang thi đấu' : 'Đã kết thúc'),
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Đồng ý',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('/DieuHanhMon/LichThiDau/UpdateStatus', { tranDauId: tranId, status: newStatus }, function (res) {
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: res.message,
+                                timer: 1200,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Lỗi', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

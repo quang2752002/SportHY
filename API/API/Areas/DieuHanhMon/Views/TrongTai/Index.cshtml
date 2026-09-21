@@ -1,0 +1,78 @@
+@model List<Dms.Application.DTOs.CoordinatorRefereeItemDto>
+@{
+    ViewData["Title"] = "Theo Dõi Trọng Tài Của Môn";
+    var sportList = ViewBag.SportList as List<MonTheThao> ?? new();
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-user-shield text-teal me-2" style="color: #0d9488;"></i> Đội Ngũ Trọng Tài Phụ Trách Môn
+        </h4>
+        <p class="text-muted small mb-0">Theo dõi danh sách, số lượng trận đấu và vai trò điều hành của các trọng tài làm nhiệm vụ ở môn thi đấu này</p>
+    </div>
+</div>
+
+<!-- Bảng trọng tài -->
+<div class="card card-custom">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                    <th style="width: 80px;">Mã TT</th>
+                    <th>Họ và Tên</th>
+                    <th>Giới Tính</th>
+                    <th>Cấp Bậc</th>
+                    <th>Thông Tin Liên Hệ</th>
+                    <th class="text-center">Số Trận Điều Hành Môn</th>
+                    <th>Các Vai Trò Đảm Nhiệm</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Count > 0)
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="fw-bold text-secondary">@item.Ma</td>
+                            <td>
+                                <div class="fw-bold text-dark">@item.HoTen</div>
+                            </td>
+                            <td>@(item.GioiTinh ?? "Nam")</td>
+                            <td>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1">
+                                    @(item.CapBac ?? "Chưa xếp")
+                                </span>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <div><i class="fa-solid fa-phone text-muted me-1"></i> @(item.SoDienThoai ?? "--")</div>
+                                    <div class="text-muted"><i class="fa-regular fa-envelope text-muted me-1"></i> @(item.Email ?? "--")</div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill bg-primary px-3 py-2 fs-6">
+                                    @item.SoTranDieuHanh trận
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info bg-opacity-10 text-dark px-2 py-1">
+                                    @(string.IsNullOrEmpty(item.CacVaiTro) ? "Trọng tài" : item.CacVaiTro)
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-user-slash fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            Chưa có trọng tài nào được phân công điều hành môn này. Ban trọng tài sẽ phân công sớm.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

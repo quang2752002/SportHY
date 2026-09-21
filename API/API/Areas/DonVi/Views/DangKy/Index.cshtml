@@ -1,0 +1,177 @@
+@model List<GiaiDauDto>
+@{
+    ViewData["Title"] = "Đăng Ký Thi Đấu Giải";
+    var currentUnit = ViewBag.CurrentDonVi as DonViDto;
+    var unitRegs = ViewBag.UnitRegistrations as List<DangKyThiDauDto> ?? new();
+}
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-clipboard-check text-success me-2"></i> Danh Sách Giải Đấu & Đăng Ký Thi Đấu
+            </h4>
+            <p class="text-muted small mb-0">
+                Đơn vị: <span class="fw-semibold text-emerald">@(currentUnit?.Ten ?? "Đoàn VĐV")</span> • Chọn giải đấu để đăng ký vận động viên và nội dung thi đấu
+            </p>
+        </div>
+    </div>
+
+    <!-- Search & Filter Card -->
+    <div class="card-custom p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" id="filterTournament" class="form-control border-start-0" placeholder="Tìm kiếm giải đấu theo tên, địa điểm..." />
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select id="filterStatus" class="form-select form-select-sm">
+                    <option value="ALL">-- Tất cả trạng thái --</option>
+                    <option value="SapDienRa">Sắp diễn ra</option>
+                    <option value="DangDienRa">Đang diễn ra</option>
+                    <option value="KetThuc">Đã kết thúc</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-3 d-flex gap-2">
+                <button class="btn btn-sm btn-light border w-100" onclick="resetFilter()">
+                    <i class="fa-solid fa-arrow-rotate-right me-1"></i> Đặt lại
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tournament Grid -->
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="card-custom p-5 text-center text-muted">
+            <i class="fa-solid fa-trophy fs-1 mb-3 opacity-25"></i>
+            <h5>Chưa có giải đấu nào trong hệ thống</h5>
+            <p class="small mb-0">Hiện tại chưa có giải đấu nào được khởi tạo hoặc mở đăng ký.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4" id="tournamentGrid">
+            @foreach (var t in Model)
+            {
+                var myCount = unitRegs.Count(r => r.GiaiDauId == t.Id);
+                var isExpired = t.HanDangKy.HasValue && t.HanDangKy.Value < DateTime.Now;
+
+                string statusClass = t.TrangThai switch
+                {
+                    TrangThaiGiaiDau.SapDienRa => "bg-primary-subtle text-primary border-primary-subtle",
+                    TrangThaiGiaiDau.DangDienRa => "bg-success-subtle text-success border-success-subtle",
+                    TrangThaiGiaiDau.KetThuc => "bg-secondary-subtle text-secondary border-secondary-subtle",
+                    TrangThaiGiaiDau.Huy => "bg-danger-subtle text-danger border-danger-subtle",
+                    _ => "bg-light text-dark border"
+                };
+
+                string cardGradient = t.TrangThai switch
+                {
+                    TrangThaiGiaiDau.DangDienRa => "linear-gradient(135deg, #059669 0%, #0d9488 100%)",
+                    TrangThaiGiaiDau.SapDienRa => "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                    TrangThaiGiaiDau.KetThuc => "linear-gradient(135deg, #475569 0%, #334155 100%)",
+                    _ => "linear-gradient(135deg, #64748b 0%, #475569 100%)"
+                };
+
+                <div class="col-md-6 col-xl-4 tournament-card-item"
+                     data-name="@t.Ten.ToLower()"
+                     data-location="@(t.DiaDiem?.ToLower() ?? "")"
+                     data-status="@t.TrangThai.ToString()">
+                    <div class="card-custom h-100 d-flex flex-column overflow-hidden">
+                        <!-- Card Banner -->
+                        <div class="p-4 text-white position-relative" style="background: @cardGradient;">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="badge @statusClass border fw-semibold px-2 py-1" style="font-size: 11px;">
+                                    @t.TrangThaiText
+                                </span>
+                                <span class="badge bg-black bg-opacity-25 text-white fw-normal" style="font-size: 11px;">
+                                    @t.PhamViText
+                                </span>
+                            </div>
+                            <h5 class="fw-bold mb-1 text-white text-truncate" title="@t.Ten">
+                                @t.Ten
+                            </h5>
+                            <small class="text-white-50 font-monospace">Mã: @t.Ma</small>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="p-3.5 p-3 flex-grow-1 d-flex flex-column gap-2" style="font-size: 13px;">
+                            <div class="d-flex align-items-center text-muted gap-2">
+                                <i class="fa-solid fa-calendar-day text-secondary flex-shrink-0" style="width: 16px;"></i>
+                                <span>Thời gian: <strong>@t.NgayBatDau.ToString("dd/MM/yyyy")</strong> - <strong>@t.NgayKetThuc.ToString("dd/MM/yyyy")</strong></span>
+                            </div>
+
+                            @if (t.HanDangKy.HasValue)
+                            {
+                                <div class="d-flex align-items-center gap-2 @(isExpired ? "text-danger" : "text-warning")">
+                                    <i class="fa-solid fa-clock flex-shrink-0" style="width: 16px;"></i>
+                                    <span>Hạn đăng ký: <strong>@t.HanDangKy.Value.ToString("dd/MM/yyyy")</strong> @(isExpired ? "(Đã hết hạn)" : "")</span>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(t.DiaDiem))
+                            {
+                                <div class="d-flex align-items-center text-muted gap-2 text-truncate">
+                                    <i class="fa-solid fa-location-dot text-secondary flex-shrink-0" style="width: 16px;"></i>
+                                    <span class="text-truncate">Địa điểm: @t.DiaDiem</span>
+                                </div>
+                            }
+
+                            <div class="d-flex align-items-center text-muted gap-2 mt-auto pt-2 border-top">
+                                <i class="fa-solid fa-file-signature text-success flex-shrink-0" style="width: 16px;"></i>
+                                <span>Đoàn đã nộp: <strong class="text-emerald">@myCount hồ sơ</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="p-3 bg-light border-top">
+                            <a href="/DonVi/DangKy/ChiTiet/@t.Id" class="btn btn-sm btn-donvi-primary w-100 rounded-pill py-2 d-flex align-items-center justify-content-center gap-2">
+                                <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                                <span>Đăng Ký / Xem Hồ Sơ</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#filterTournament').on('input', filterTournaments);
+            $('#filterStatus').on('change', filterTournaments);
+        });
+
+        function filterTournaments() {
+            const keyword = $('#filterTournament').val().toLowerCase().trim();
+            const status = $('#filterStatus').val();
+
+            $('.tournament-card-item').each(function () {
+                const name = $(this).data('name') || '';
+                const loc = $(this).data('location') || '';
+                const st = $(this).data('status') || '';
+
+                const matchText = !keyword || name.includes(keyword) || loc.includes(keyword);
+                const matchStatus = status === 'ALL' || st === status;
+
+                if (matchText && matchStatus) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+
+        function resetFilter() {
+            $('#filterTournament').val('');
+            $('#filterStatus').val('ALL');
+            $('.tournament-card-item').show();
+        }
+    </script>
+}

@@ -1,0 +1,519 @@
+@{
+    ViewData["Title"] = "Kiểm Tra & Xác Nhận Kết Quả Thi Đấu";
+    var sports = ViewBag.Sports as IEnumerable<Dms.Application.DTOs.MonTheThaoDto> ?? new List<Dms.Application.DTOs.MonTheThaoDto>();
+}
+
+<div class="d-flex flex-column gap-3">
+    <!-- Breadcrumb & Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-square-check text-primary me-2"></i> Kiểm Tra & Xác Nhận Kết Quả Thi Đấu
+            </h4>
+            <p class="text-muted small mb-0">Rà soát tính chính xác của tỉ số, kiểm tra biên bản điện tử và phê duyệt kết quả chính thức</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="loadKetQua()">
+                <i class="fa-solid fa-rotate me-1"></i> Làm mới
+            </button>
+            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm" id="btnBulkApprove" onclick="bulkApproveSelected()" disabled>
+                <i class="fa-solid fa-check-double me-1"></i> Phê duyệt hàng loạt (<span id="selectedCount">0</span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- Status Tabs -->
+    <div class="card card-custom p-2">
+        <ul class="nav nav-pills nav-fill" id="statusPills">
+            <li class="nav-item">
+                <button class="nav-link active py-2" onclick="filterByStatus('')">
+                    <i class="fa-solid fa-list me-1"></i> Tất cả (<span id="cntAll">0</span>)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link py-2 text-warning fw-semibold" onclick="filterByStatus('ChoXacNhan')">
+                    <i class="fa-solid fa-hourglass-half me-1"></i> Chờ duyệt (<span id="cntChoDuyet">0</span>)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link py-2 text-success fw-semibold" onclick="filterByStatus('DaXacNhan')">
+                    <i class="fa-solid fa-circle-check me-1"></i> Đã duyệt (<span id="cntDaDuyet">0</span>)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link py-2 text-danger fw-semibold" onclick="filterByStatus('CanKiemTraLai')">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Cần kiểm tra lại (<span id="cntCanKiemTra">0</span>)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link py-2 text-secondary" onclick="filterByStatus('ChuaCoKetQua')">
+                    <i class="fa-regular fa-clock me-1"></i> Chưa có kết quả (<span id="cntChuaCo">0</span>)
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card card-custom p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold text-muted mb-1">Môn thể thao</label>
+                <select id="filterMon" class="form-select form-select-sm select2" onchange="loadKetQua()">
+                    <option value="">-- Tất cả môn thi đấu --</option>
+                    @foreach (var m in sports)
+                    {
+                        <option value="@m.Id">@m.Ten</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small fw-semibold text-muted mb-1">Tìm kiếm trận đấu / đội</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="filterKeyword" class="form-control" placeholder="Nhập tên trận, tên đội thi đấu..." onkeyup="if(event.key==='Enter') loadKetQua()">
+                </div>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="button" class="btn btn-sm btn-primary w-100 rounded-pill" onclick="loadKetQua()">
+                    <i class="fa-solid fa-filter me-1"></i> Áp dụng bộ lọc
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card card-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-muted">
+                        <tr>
+                            <th class="ps-3" style="width: 40px;">
+                                <input type="checkbox" class="form-check-input" id="checkAll" onchange="toggleCheckAll(this)">
+                            </th>
+                            <th>Trận</th>
+                            <th>Môn / Nội Dung</th>
+                            <th>Hai Đội Thi Đấu</th>
+                            <th class="text-center">Tỉ Số Chung Cuộc</th>
+                            <th>Điểm Từng Hiệp</th>
+                            <th>Biên Bản</th>
+                            <th>Trạng Thái Xác Nhận</th>
+                            <th class="text-end pe-3">Thao Tác Thư Ký</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ketQuaTableBody">
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                                <span class="ms-2 text-muted">Đang tải danh sách kết quả trận đấu...</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Chi Tiết Điểm Số & Sự Kiện Trận Đấu -->
+<div class="modal fade" id="modalChiTietKetQua" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold" id="modalKetQuaTitle">
+                    <i class="fa-solid fa-clipboard-check me-2"></i> Chi Tiết Kết Quả & Diễn Biến Trận Đấu
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="modalKetQuaBody">
+                <!-- Dynamic Content -->
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-sm btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Yêu Cầu Kiểm Tra Lại -->
+<div class="modal fade" id="modalDispute" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> Yêu Cầu Rà Soát / Kiểm Tra Lại Kết Quả
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="disputeTranDauId">
+                <div class="alert alert-warning small mb-3">
+                    <i class="fa-solid fa-circle-info me-1"></i> Thao tác này sẽ gắn cờ trận đấu và gửi thông báo đối soát đến Trọng tài chính và Ban trọng tài.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Lý do yêu cầu rà soát / Bất thường phát hiện <span class="text-danger">*</span></label>
+                    <textarea id="disputeReason" class="form-control" rows="4" placeholder="Ví dụ: Tỉ số hiệp 2 trong biên bản không khớp với tổng tỉ số; khiếu nại về thành phần VĐV..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" class="btn btn-sm btn-danger rounded-pill px-4" onclick="submitDispute()">
+                    <i class="fa-solid fa-paper-plane me-1"></i> Gửi Yêu Cầu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var currentFilterStatus = '';
+        var cachedResults = [];
+
+        $(document).ready(function () {
+            loadKetQua();
+        });
+
+        function filterByStatus(status) {
+            currentFilterStatus = status;
+            $('#statusPills .nav-link').removeClass('active');
+            $(event.target).closest('.nav-link').addClass('active');
+            renderTableData();
+        }
+
+        function loadKetQua() {
+            var gId = $('#headerSelectGiaiDau').val();
+            var mId = $('#filterMon').val();
+            var kw = $('#filterKeyword').val();
+
+            $('#ketQuaTableBody').html(`
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <div class="spinner-border text-primary spinner-border-sm"></div>
+                        <span class="ms-2 text-muted">Đang tải danh sách kết quả...</span>
+                    </td>
+                </tr>
+            `);
+
+            $.ajax({
+                url: '/ThuKy/KetQua/GetDanhSach',
+                type: 'GET',
+                data: { giaiDauId: gId, monTheThaoId: mId, keyword: kw },
+                success: function (res) {
+                    if (!res.success || !res.data) {
+                        $('#ketQuaTableBody').html('<tr><td colspan="9" class="text-center py-4 text-danger">Không thể tải dữ liệu.</td></tr>');
+                        return;
+                    }
+                    cachedResults = res.data;
+                    updateCounts();
+                    renderTableData();
+                },
+                error: function () {
+                    $('#ketQuaTableBody').html('<tr><td colspan="9" class="text-center py-4 text-danger">Lỗi kết nối máy chủ.</td></tr>');
+                }
+            });
+        }
+
+        function updateCounts() {
+            $('#cntAll').text(cachedResults.length);
+            $('#cntChoDuyet').text(cachedResults.filter(x => x.trangThaiXacNhan === 'ChoXacNhan').length);
+            $('#cntDaDuyet').text(cachedResults.filter(x => x.trangThaiXacNhan === 'DaXacNhan').length);
+            $('#cntCanKiemTra').text(cachedResults.filter(x => x.trangThaiXacNhan === 'CanKiemTraLai').length);
+            $('#cntChuaCo').text(cachedResults.filter(x => x.trangThaiXacNhan === 'ChuaCoKetQua').length);
+        }
+
+        function renderTableData() {
+            var list = cachedResults;
+            if (currentFilterStatus) {
+                list = list.filter(x => x.trangThaiXacNhan === currentFilterStatus);
+            }
+
+            $('#checkAll').prop('checked', false);
+            updateSelectedCount();
+
+            if (list.length === 0) {
+                $('#ketQuaTableBody').html('<tr><td colspan="9" class="text-center py-5 text-muted">Không có trận đấu nào trong danh mục này.</td></tr>');
+                return;
+            }
+
+            var html = '';
+            list.forEach(function (m) {
+                var canApprove = m.trangThaiXacNhan === 'ChoXacNhan' || m.trangThaiXacNhan === 'CanKiemTraLai';
+
+                var sheetBadge = m.hasScoresheet
+                    ? (m.isScoresheetComplete
+                        ? '<span class="badge bg-success bg-opacity-10 text-success"><i class="fa-solid fa-check me-1"></i> Đủ 4 chữ ký</span>'
+                        : `<span class="badge bg-warning bg-opacity-10 text-warning"><i class="fa-solid fa-signature me-1"></i> Có ${m.soChuKy}/4 chữ ký</span>`)
+                    : '<span class="badge bg-secondary bg-opacity-10 text-muted">Chưa có biên bản</span>';
+
+                var statusBadge = '';
+                if (m.trangThaiXacNhan === 'DaXacNhan') {
+                    statusBadge = `<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Đã phê duyệt
+                                   </span>
+                                   <div class="small text-muted" style="font-size:0.7rem;">Bởi: ${m.nguoiXacNhan || 'Thư ký'}</div>`;
+                } else if (m.trangThaiXacNhan === 'CanKiemTraLai') {
+                    statusBadge = `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Cần kiểm tra lại
+                                   </span>`;
+                } else if (m.trangThaiXacNhan === 'ChoXacNhan') {
+                    statusBadge = `<span class="badge bg-warning bg-opacity-15 text-warning-emphasis border border-warning border-opacity-25 px-2.5 py-1">
+                                    <i class="fa-solid fa-hourglass-half me-1"></i> Chờ Thư ký duyệt
+                                   </span>`;
+                } else {
+                    statusBadge = `<span class="badge bg-secondary bg-opacity-10 text-secondary border px-2.5 py-1">
+                                    Chưa có kết quả
+                                   </span>`;
+                }
+
+                // Điểm từng hiệp
+                var setStr = '--';
+                if (m.setScores && m.setScores.length > 0) {
+                    setStr = m.setScores.map(s => `(${s.score1}-${s.score2})`).join(' ');
+                }
+
+                html += `
+                    <tr>
+                        <td class="ps-3">
+                            ${canApprove ? `<input type="checkbox" class="form-check-input match-check" value="${m.tranDauId}" onchange="updateSelectedCount()">` : ''}
+                        </td>
+                        <td>
+                            <span class="fw-bold text-primary">#${m.soTran}</span>
+                            <div class="small text-muted">${m.tenVongDau || ''}</div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">${m.tenMonTheThao}</div>
+                            <small class="text-muted">${m.tenSanDau || 'Sân thi đấu'}</small>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column">
+                                <div class="fw-bold text-dark text-truncate" style="max-width: 220px;">
+                                    ${m.tenDoi1}
+                                    ${m.doiThang === '1' ? '<i class="fa-solid fa-crown text-warning ms-1" title="Thắng"></i>' : ''}
+                                </div>
+                                <div class="text-muted small">vs</div>
+                                <div class="fw-bold text-dark text-truncate" style="max-width: 220px;">
+                                    ${m.tenDoi2}
+                                    ${m.doiThang === '2' ? '<i class="fa-solid fa-crown text-warning ms-1" title="Thắng"></i>' : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-primary fs-6 px-3 py-1.5 shadow-sm">${m.tySoDoi1} - ${m.tySoDoi2}</span>
+                        </td>
+                        <td>
+                            <code class="small text-dark">${setStr}</code>
+                        </td>
+                        <td>${sheetBadge}</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <a href="/ThuKy/BienBan?tranDauId=${m.tranDauId}" class="btn btn-outline-primary" title="Xem & In Biên Bản">
+                                    <i class="fa-solid fa-file-signature"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-info" title="Xem chi tiết hiệp" onclick="viewMatchDetails(${m.tranDauId})">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                                ${canApprove ? `
+                                    <button type="button" class="btn btn-success" title="Xác nhận duyệt kết quả" onclick="approveSingle(${m.tranDauId})">
+                                        <i class="fa-solid fa-check"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" title="Yêu cầu kiểm tra lại" onclick="openDisputeModal(${m.tranDauId})">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#ketQuaTableBody').html(html);
+        }
+
+        function toggleCheckAll(master) {
+            $('.match-check').prop('checked', $(master).is(':checked'));
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            var selected = $('.match-check:checked').length;
+            $('#selectedCount').text(selected);
+            $('#btnBulkApprove').prop('disabled', selected === 0);
+        }
+
+        function approveSingle(id) {
+            Swal.fire({
+                title: 'Phê duyệt kết quả?',
+                text: 'Xác nhận duyệt kết quả trận đấu này là chính thức để tính vào bảng tổng sắp huy chương.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Đồng ý duyệt',
+                cancelButtonText: 'Hủy'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    $.ajax({
+                        url: '/ThuKy/KetQua/XacNhan',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ tranDauId: id, ghiChu: 'Đã kiểm tra biên bản và phê duyệt hợp lệ' }),
+                        success: function (r) {
+                            if (r.success) {
+                                Toast.fire({ icon: 'success', title: r.message });
+                                loadKetQua();
+                            } else {
+                                Swal.fire('Lỗi', r.message, 'error');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function bulkApproveSelected() {
+            var ids = [];
+            $('.match-check:checked').each(function () {
+                ids.push(parseInt($(this).val()));
+            });
+
+            if (ids.length === 0) return;
+
+            Swal.fire({
+                title: `Phê duyệt ${ids.length} trận đấu?`,
+                text: 'Các trận đấu được chọn sẽ được xác nhận kết quả hợp lệ đồng loạt.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: `Đồng ý duyệt (${ids.length})`,
+                cancelButtonText: 'Hủy'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    $.ajax({
+                        url: '/ThuKy/KetQua/XacNhanHangLoat',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ tranDauIds: ids, ghiChu: 'Phê duyệt hàng loạt bởi Thư ký giải' }),
+                        success: function (r) {
+                            if (r.success) {
+                                Toast.fire({ icon: 'success', title: r.message });
+                                loadKetQua();
+                            } else {
+                                Swal.fire('Lỗi', r.message, 'error');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function openDisputeModal(id) {
+            $('#disputeTranDauId').val(id);
+            $('#disputeReason').val('');
+            var myModal = new bootstrap.Modal(document.getElementById('modalDispute'));
+            myModal.show();
+        }
+
+        function submitDispute() {
+            var id = parseInt($('#disputeTranDauId').val());
+            var reason = $('#disputeReason').val().trim();
+            if (!reason) {
+                Swal.fire('Chú ý', 'Vui lòng nhập lý do cụ thể.', 'warning');
+                return;
+            }
+
+            $.ajax({
+                url: '/ThuKy/KetQua/YeuCauKiemTraLai',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ tranDauId: id, lyDo: reason }),
+                success: function (r) {
+                    $('#modalDispute').modal('hide');
+                    if (r.success) {
+                        Toast.fire({ icon: 'info', title: r.message });
+                        loadKetQua();
+                    } else {
+                        Swal.fire('Lỗi', r.message, 'error');
+                    }
+                }
+            });
+        }
+
+        function viewMatchDetails(id) {
+            var m = cachedResults.find(x => x.tranDauId === id);
+            if (!m) return;
+
+            $('#modalKetQuaTitle').html(`<i class="fa-solid fa-clipboard-check me-2"></i> ${m.tenTran} - ${m.tenMonTheThao}`);
+
+            var setRows = '';
+            if (m.setScores && m.setScores.length > 0) {
+                m.setScores.forEach(function (s) {
+                    setRows += `
+                        <tr>
+                            <td class="text-center fw-bold">Hiệp / Set ${s.setNumber}</td>
+                            <td class="text-center fw-bold text-primary">${s.score1}</td>
+                            <td class="text-center fw-bold text-danger">${s.score2}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                setRows = '<tr><td colspan="3" class="text-center text-muted">Chưa ghi nhận điểm số từng hiệp.</td></tr>';
+            }
+
+            var html = `
+                <div class="row g-3 text-center mb-4">
+                    <div class="col-5">
+                        <div class="p-3 bg-light rounded-3">
+                            <h5 class="fw-bold text-dark mb-1">${m.tenDoi1}</h5>
+                            <small class="text-muted">${m.donViDoi1 || 'Tự do'}</small>
+                            <h1 class="fw-bold text-primary mt-2 mb-0">${m.tySoDoi1}</h1>
+                        </div>
+                    </div>
+                    <div class="col-2 d-flex align-items-center justify-content-center">
+                        <span class="fs-4 text-muted fw-bold">VS</span>
+                    </div>
+                    <div class="col-5">
+                        <div class="p-3 bg-light rounded-3">
+                            <h5 class="fw-bold text-dark mb-1">${m.tenDoi2}</h5>
+                            <small class="text-muted">${m.donViDoi2 || 'Tự do'}</small>
+                            <h1 class="fw-bold text-primary mt-2 mb-0">${m.tySoDoi2}</h1>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-table-cells me-1 text-primary"></i> Điểm số chi tiết các hiệp</h6>
+                <div class="table-responsive mb-3">
+                    <table class="table table-bordered table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center">Hiệp đấu</th>
+                                <th class="text-center">${m.tenDoi1}</th>
+                                <th class="text-center">${m.tenDoi2}</th>
+                            </tr>
+                        </thead>
+                        <tbody>${setRows}</tbody>
+                    </table>
+                </div>
+
+                <div class="p-3 rounded-3 border bg-light">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span class="text-muted">Đội chiến thắng:</span>
+                        <strong class="text-success">${m.doiThang === '1' ? m.tenDoi1 : (m.doiThang === '2' ? m.tenDoi2 : (m.doiThang === 'draw' ? 'Hòa' : 'Chưa phân thắng bại'))}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span class="text-muted">Trạng thái xác nhận:</span>
+                        <strong>${m.trangThaiXacNhan}</strong>
+                    </div>
+                    ${m.ghiChuThuKy ? `
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-muted">Ghi chú Thư ký:</span>
+                            <span class="text-dark">${m.ghiChuThuKy}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            $('#modalKetQuaBody').html(html);
+            var myModal = new bootstrap.Modal(document.getElementById('modalChiTietKetQua'));
+            myModal.show();
+        }
+    </script>
+}

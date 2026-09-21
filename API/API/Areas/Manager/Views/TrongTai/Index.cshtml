@@ -1,0 +1,386 @@
+@{
+    ViewData["Title"] = "Quản lý Trọng Tài";
+    Layout = "~/Areas/Manager/Views/Shared/_ManagerLayout.cshtml";
+}
+
+<div class="container-fluid p-0">
+    <div class="card card-custom border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-body p-4">
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 pb-3 mb-4 border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 bg-primary-subtle text-primary rounded-4">
+                        <i class="fa-solid fa-user-shield fs-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Quản Lý Ban Trọng Tài & Giám Sát</h4>
+                        <p class="text-muted small mb-0">Quản lý danh sách đội ngũ trọng tài, cấp bậc chuyên môn và điều hành giải đấu.</p>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary px-3 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2 shadow-sm" onclick="openCreateModal()">
+                        <i class="fa-solid fa-plus"></i> Thêm Trọng Tài Mới
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bộ lọc tìm kiếm -->
+            <div class="p-3 bg-light rounded-3 mb-4 border">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-6">
+                        <div class="input-group bg-white rounded-3 border overflow-hidden">
+                            <span class="input-group-text bg-white border-0 text-muted ps-3">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" id="keyword" class="form-control border-0 shadow-none ps-2" placeholder="Tìm theo họ tên, mã trọng tài, số điện thoại...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="trangThaiFilter" class="form-select bg-white border rounded-3 shadow-none">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="true">Sẵn sàng điều hành</option>
+                            <option value="false">Tạm nghỉ / Khóa</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex gap-1">
+                        <button type="button" class="btn btn-dark flex-grow-1 rounded-3" onclick="loadData(1)">
+                            <i class="fa-solid fa-filter me-1"></i> Lọc
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary rounded-3" onclick="resetFilter()" title="Làm mới">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bảng dữ liệu Trọng tài -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tblTrongTai">
+                    <thead class="table-light text-uppercase fs-7 text-muted">
+                        <tr>
+                            <th class="ps-3" style="width: 50px;">STT</th>
+                            <th>Họ Và Tên Trọng Tài</th>
+                            <th>Cấp Bậc Chuyên Môn</th>
+                            <th>Giới Tính</th>
+                            <th>Số Điện Thoại</th>
+                            <th>Email</th>
+                            <th>Trạng Thái</th>
+                            <th class="text-end pe-3" style="width: 130px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblBody">
+                        <tr><td colspan="8" class="text-center py-5 text-muted">Đang tải danh sách trọng tài...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center py-3 mt-3 border-top">
+                <div class="text-muted small" id="paginationInfo">Hiển thị 0 trên 0 trọng tài</div>
+                <ul class="pagination pagination-sm mb-0" id="paginationList"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa Trọng Tài -->
+<div class="modal fade" id="modalTrongTai" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalTitle">
+                    <i class="fa-solid fa-user-shield text-primary"></i>
+                    <span>Thêm Trọng Tài Mới</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formTrongTai">
+                <input type="hidden" id="trongTaiId" value="">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold small">Họ và tên <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="hoTen" required placeholder="Vũ Trọng Tài">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Mã Trọng Tài</label>
+                            <input type="text" class="form-control text-uppercase" id="ma" placeholder="TT-01">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Cấp bậc chuyên môn</label>
+                            <select id="capBac" class="form-select">
+                                <option value="Cấp Quốc Gia">Cấp Quốc Gia</option>
+                                <option value="Cấp Tỉnh / TP">Cấp Tỉnh / TP</option>
+                                <option value="FIFA / Quốc Tế">FIFA / Quốc Tế</option>
+                                <option value="Cơ Sở / Phong Trào">Cơ Sở / Phong Trào</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Giới tính</label>
+                            <select id="gioiTinh" class="form-select">
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Số điện thoại</label>
+                            <input type="text" class="form-control" id="soDienThoai" placeholder="0912...">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Email</label>
+                            <input type="email" class="form-control" id="email" placeholder="referee@sport.vn">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Kinh nghiệm / Ghi chú</label>
+                            <textarea class="form-control" id="kinhNghiem" rows="3" placeholder="Các giải đấu đã từng tham gia điều hành..."></textarea>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="trangThai" checked>
+                                <label class="form-check-label fw-semibold small" for="trangThai">Sẵn sàng điều hành các giải đấu</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3 bg-light">
+                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4" id="btnSave">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu thông tin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+
+        $(document).ready(function () {
+            loadData(1);
+
+            $('#keyword').on('keypress', function (e) {
+                if (e.which === 13) loadData(1);
+            });
+
+            $('#trangThaiFilter').on('change', function () {
+                loadData(1);
+            });
+
+            $('#formTrongTai').on('submit', function (e) {
+                e.preventDefault();
+                saveData();
+            });
+        });
+
+        function loadData(page) {
+            currentPage = page;
+            const keyword = $('#keyword').val().trim();
+            const trangThai = $('#trangThaiFilter').val();
+
+            $.ajax({
+                url: '/Manager/TrongTai/GetPagedData',
+                type: 'GET',
+                data: {
+                    pageIndex: page,
+                    pageSize: pageSize,
+                    keyword: keyword || undefined,
+                    trangThai: trangThai !== '' ? (trangThai === 'true') : undefined
+                },
+                success: function (res) {
+                    if (res.success && res.data) {
+                        renderTable(res.data);
+                    }
+                }
+            });
+        }
+
+        function renderTable(data) {
+            const items = data.items || [];
+            if (items.length === 0) {
+                $('#tblBody').html('<tr><td colspan="8" class="text-center py-5 text-muted">Chưa có trọng tài nào.</td></tr>');
+                $('#paginationInfo').text('Hiển thị 0 trên 0 trọng tài');
+                $('#paginationList').empty();
+                return;
+            }
+
+            let html = '';
+            const start = (data.pageIndex - 1) * data.pageSize;
+
+            $.each(items, function (i, item) {
+                const stt = start + i + 1;
+                html += `
+                    <tr>
+                        <td class="ps-3 fw-bold text-muted">${stt}</td>
+                        <td>
+                            <div class="fw-bold text-dark">${escapeHtml(item.hoTen)}</div>
+                            <small class="text-muted"><span class="badge bg-light text-secondary border font-monospace">Mã: ${escapeHtml(item.ma)}</span></small>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary border">
+                                <i class="fa-solid fa-award me-1"></i>${escapeHtml(item.capBac || 'Trọng tài')}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge ${item.gioiTinh === 'Nữ' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'} border">
+                                ${escapeHtml(item.gioiTinh || 'Nam')}
+                            </span>
+                        </td>
+                        <td><small><i class="fa-solid fa-phone me-1 text-muted"></i>${escapeHtml(item.soDienThoai || '-')}</small></td>
+                        <td><small class="text-muted">${escapeHtml(item.email || '-')}</small></td>
+                        <td>
+                            <span class="badge ${item.trangThai ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'} px-2.5 py-1 rounded-pill">
+                                ${item.trangThai ? 'Sẵn sàng' : 'Tạm nghỉ'}
+                            </span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-light border" title="Sửa" onclick="openEditModal(${item.id})">
+                                    <i class="fa-solid fa-pen-to-square text-success"></i>
+                                </button>
+                                <button type="button" class="btn btn-light border" title="Xóa" onclick="deleteItem(${item.id}, '${escapeHtml(item.hoTen)}')">
+                                    <i class="fa-solid fa-trash text-danger"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#tblBody').html(html);
+
+            const total = data.totalCount || 0;
+            const from = total === 0 ? 0 : start + 1;
+            const to = Math.min(start + data.pageSize, total);
+            $('#paginationInfo').text(`Hiển thị ${from} - ${to} trên tổng số ${total} trọng tài`);
+
+            renderPagination(data.pageIndex, data.totalPages);
+        }
+
+        function renderPagination(current, totalPages) {
+            if (totalPages <= 1) {
+                $('#paginationList').empty();
+                return;
+            }
+
+            let pagHtml = '';
+            pagHtml += `<li class="page-item ${current === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadData(${current - 1})">&laquo;</a>
+            </li>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= current - 2 && i <= current + 2)) {
+                    pagHtml += `<li class="page-item ${i === current ? 'active' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadData(${i})">${i}</a>
+                    </li>`;
+                }
+            }
+
+            pagHtml += `<li class="page-item ${current === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="loadData(${current + 1})">&raquo;</a>
+            </li>`;
+
+            $('#paginationList').html(pagHtml);
+        }
+
+        function openCreateModal() {
+            $('#modalTitle span').text('Thêm Trọng Tài Mới');
+            $('#trongTaiId').val('');
+            $('#hoTen').val('');
+            $('#ma').val('');
+            $('#capBac').val('Cấp Quốc Gia');
+            $('#gioiTinh').val('Nam');
+            $('#soDienThoai').val('');
+            $('#email').val('');
+            $('#kinhNghiem').val('');
+            $('#trangThai').prop('checked', true);
+            $('#modalTrongTai').modal('show');
+        }
+
+        function openEditModal(id) {
+            $.get('/Manager/TrongTai/GetById', { id: id }, function (res) {
+                if (res.success && res.data) {
+                    const item = res.data;
+                    $('#modalTitle span').text('Chỉnh Sửa Trọng Tài');
+                    $('#trongTaiId').val(item.id);
+                    $('#hoTen').val(item.hoTen);
+                    $('#ma').val(item.ma || '');
+                    $('#capBac').val(item.capBac || 'Cấp Quốc Gia');
+                    $('#gioiTinh').val(item.gioiTinh || 'Nam');
+                    $('#soDienThoai').val(item.soDienThoai || '');
+                    $('#email').val(item.email || '');
+                    $('#kinhNghiem').val(item.kinhNghiem || '');
+                    $('#trangThai').prop('checked', item.trangThai);
+                    $('#modalTrongTai').modal('show');
+                }
+            });
+        }
+
+        function saveData() {
+            const id = $('#trongTaiId').val();
+            const hoTen = $('#hoTen').val().trim();
+            if (!hoTen) {
+                Swal.fire('Lỗi', 'Vui lòng nhập họ tên trọng tài.', 'warning');
+                return;
+            }
+
+            const payload = {
+                hoTen: hoTen,
+                ma: $('#ma').val().trim() || 'TT-' + Date.now().toString().slice(-5),
+                capBac: $('#capBac').val(),
+                gioiTinh: $('#gioiTinh').val(),
+                soDienThoai: $('#soDienThoai').val().trim() || null,
+                email: $('#email').val().trim() || null,
+                kinhNghiem: $('#kinhNghiem').val().trim() || null,
+                trangThai: $('#trangThai').is(':checked')
+            };
+
+            const url = id ? `/Manager/TrongTai/Save?id=${id}` : '/Manager/TrongTai/Save';
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    if (res.success) {
+                        $('#modalTrongTai').modal('hide');
+                        SportApp.toast('success', res.message || 'Lưu trọng tài thành công!');
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu trọng tài.', 'error');
+                    }
+                }
+            });
+        }
+
+        function deleteItem(id, name) {
+            SportApp.confirm('Xóa Trọng Tài?', `Bạn có chắc muốn xóa trọng tài "${name}" không?`, function () {
+                $.post('/Manager/TrongTai/Delete', { id: id }, function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã xóa trọng tài!');
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể xóa.', 'error');
+                    }
+                });
+            });
+        }
+
+        function resetFilter() {
+            $('#keyword').val('');
+            $('#trangThaiFilter').val('');
+            loadData(1);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div>').text(text).html();
+        }
+    </script>
+}

@@ -1,0 +1,173 @@
+@model List<Dms.Application.DTOs.RefereeScheduleGroupDto>
+@{
+    ViewData["Title"] = "Lịch Làm Việc & Tiến Độ Trọng Tài";
+    var sportList = ViewBag.SportList as List<MonTheThao> ?? new();
+    var allReferees = ViewBag.AllReferees as List<Dms.Domain.Entities.TrongTai> ?? new();
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-calendar-days text-warning me-2"></i> Lịch Làm Việc & Tiến Độ Trọng Tài
+        </h4>
+        <p class="text-muted small mb-0">Theo dõi phân bổ khối lượng công việc, lịch trình ra sân và tiến độ hoàn thành nhiệm vụ của từng trọng tài</p>
+    </div>
+</div>
+
+<!-- Bộ lọc -->
+<div class="card card-custom mb-4 p-3">
+    <form method="get" class="row g-2 align-items-center">
+        <input type="hidden" name="giaiDauId" value="@ViewBag.SelectedGiaiDauId" />
+
+        <div class="col-md-3">
+            <select name="trongTaiId" class="form-select select2">
+                <option value="">-- Tất cả trọng tài --</option>
+                @foreach (var rf in allReferees)
+                {
+                    <option value="@rf.Id" selected="@(ViewBag.SelectedTrongTaiId == rf.Id)">@rf.HoTen (@rf.Ma)</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <select name="monTheThaoId" class="form-select">
+                <option value="">-- Tất cả môn thi đấu --</option>
+                @foreach (var sp in sportList)
+                {
+                    <option value="@sp.Id" selected="@(ViewBag.SelectedMonId == sp.Id)">@sp.Ten</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <input type="date" name="date" value="@ViewBag.SelectedDate" class="form-control" />
+        </div>
+
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-warning flex-fill fw-semibold">
+                <i class="fa-solid fa-filter me-1"></i> Lọc Lịch
+            </button>
+            <a href="/TruongBanTrongTai/LichLamViec" class="btn btn-light border"><i class="fa-solid fa-rotate-left"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- Danh sách trọng tài và các ca làm việc -->
+@if (Model != null && Model.Count > 0)
+{
+    <div class="row g-4">
+        @foreach (var item in Model)
+        {
+            <div class="col-12">
+                <div class="card card-custom">
+                    <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                                <i class="fa-solid fa-user-shield"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">
+                                    @item.HoTen
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary ms-2 small">@item.MaTrongTai</span>
+                                </h5>
+                                <small class="text-muted">
+                                    Cấp bậc: <span class="fw-medium text-dark">@(item.CapBac ?? "Chưa xếp")</span> &nbsp;|&nbsp;
+                                    SĐT: <span class="fw-medium text-dark">@(item.SoDienThoai ?? "--")</span>
+                                </small>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary px-3 py-2 rounded-pill fs-6">
+                                <i class="fa-solid fa-whistle me-1"></i> Tổng: @item.TongSoTran trận
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th style="width: 80px;">Trận</th>
+                                    <th>Môn Thi Đấu</th>
+                                    <th>Tên Trận</th>
+                                    <th>Thời Gian Thi Đấu</th>
+                                    <th>Sân Đấu</th>
+                                    <th>Vai Trò Phân Công</th>
+                                    <th class="text-center">Tiến Độ / Trạng Thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var task in item.Tasks)
+                                {
+                                    <tr>
+                                        <td class="fw-bold">#@task.SoTran</td>
+                                        <td>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold px-2 py-1">
+                                                @task.TenMon
+                                            </span>
+                                        </td>
+                                        <td class="fw-medium text-dark">@task.TenTran</td>
+                                        <td>
+                                            @if (task.ThoiGianDuKien != null)
+                                            {
+                                                <span class="fw-semibold text-dark">
+                                                    <i class="fa-regular fa-clock text-warning me-1"></i>
+                                                    @(((DateTime)task.ThoiGianDuKien).ToString("HH:mm - dd/MM/yyyy"))
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Chưa xếp giờ</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="text-muted"><i class="fa-solid fa-location-dot text-danger me-1"></i> @task.TenSan</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info bg-opacity-10 text-info fw-bold px-2 py-1">
+                                                @task.VaiTro
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (task.TrangThai == "KetThuc" || task.TrangThai == "DaDau")
+                                            {
+                                                <span class="badge bg-success bg-opacity-10 text-success fw-semibold px-2 py-1">
+                                                    <i class="fa-solid fa-check me-1"></i> Đã hoàn thành
+                                                </span>
+                                            }
+                                            else if (task.TrangThai == "DangDau")
+                                            {
+                                                <span class="badge bg-danger text-white fw-bold px-2 py-1">
+                                                    <i class="fa-solid fa-circle-play me-1"></i> Đang điều hành
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-muted border px-2 py-1">
+                                                    <i class="fa-regular fa-clock me-1"></i> Sắp diễn ra
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="card card-custom p-5 text-center text-muted">
+        <i class="fa-regular fa-calendar-xmark fs-1 text-secondary opacity-50 mb-3"></i>
+        <h5>Chưa có lịch làm việc nào được phân công</h5>
+        <p class="mb-3">Vui lòng vào mục "Phân Công Trọng Tài" để gán trọng tài cho các trận đấu.</p>
+        <div>
+            <a href="/TruongBanTrongTai/PhanCong" class="btn btn-primary fw-semibold px-4">
+                <i class="fa-solid fa-clipboard-user me-1"></i> Đến Trang Phân Công
+            </a>
+        </div>
+    </div>
+}

@@ -1,0 +1,1824 @@
+/* ============================================================
+   DATABASE: QUAN LY GIAI DAU THE THAO
+   SQL SERVER
+   ============================================================ */
+
+IF DB_ID(N'QuanLyGiaiDauTheThao') IS NULL
+BEGIN
+    CREATE DATABASE QuanLyGiaiDauTheThao;
+END
+GO
+
+USE QuanLyGiaiDauTheThao;
+GO
+
+/* ============================================================
+   1. KHOI
+   Ví dụ:
+   - Giáo dục
+   - Y tế
+   - Văn hóa
+   - Công an
+   - Quân đội
+   ============================================================ */
+
+IF OBJECT_ID('dbo.Khoi', 'U') IS NOT NULL
+    DROP TABLE dbo.Khoi;
+GO
+
+CREATE TABLE Khoi
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+    Ma              VARCHAR(50) NOT NULL,
+    Ten             NVARCHAR(200) NOT NULL,
+    MoTa            NVARCHAR(1000) NULL,
+
+    TrangThai       BIT NOT NULL DEFAULT 1,
+
+    NgayTao        DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat    DATETIME2 NULL,
+
+    CONSTRAINT UQ_Khoi_Ma UNIQUE (Ma)
+);
+GO
+
+
+/* ============================================================
+   2. DON VI
+   Có thể phân cấp:
+   
+   Khối Giáo dục
+      ├── Sở GD
+      ├── Trường A
+      └── Trường B
+
+   Đơn vị có thể có đơn vị cha.
+   ============================================================ */
+
+IF OBJECT_ID('dbo.DonVi', 'U') IS NOT NULL
+    DROP TABLE dbo.DonVi;
+GO
+
+CREATE TABLE DonVi
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    Ma              VARCHAR(50) NOT NULL,
+    Ten             NVARCHAR(300) NOT NULL,
+
+    KhoiId          BIGINT NULL,
+    DonViChaId      BIGINT NULL,
+
+    LoaiDonVi       VARCHAR(30) NULL,
+
+    DiaChi          NVARCHAR(500) NULL,
+    NguoiDaiDien    NVARCHAR(200) NULL,
+    SoDienThoai     VARCHAR(30) NULL,
+    Email           VARCHAR(200) NULL,
+
+    MoTa            NVARCHAR(1000) NULL,
+
+    TrangThai       BIT NOT NULL DEFAULT 1,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat     DATETIME2 NULL,
+
+    CONSTRAINT UQ_DonVi_Ma UNIQUE (Ma),
+
+    CONSTRAINT FK_DonVi_Khoi
+        FOREIGN KEY (KhoiId)
+        REFERENCES Khoi(Id),
+
+    CONSTRAINT FK_DonVi_DonViCha
+        FOREIGN KEY (DonViChaId)
+        REFERENCES DonVi(Id),
+
+    CONSTRAINT CK_DonVi_Loai
+        CHECK
+        (
+            LoaiDonVi IS NULL
+            OR LoaiDonVi IN
+            (
+                'So',
+                'Tinh',
+                'Huyen',
+                'Xa',
+                'Truong',
+                'BenhVien',
+                'DoanhNghiep',
+                'DonViTrucThuoc',
+                'Khac'
+            )
+        )
+);
+GO
+
+
+/* ============================================================
+   3. GIAI DAU
+   PhamVi:
+   - TatCa
+   - TheoKhoi
+
+   Nếu TheoKhoi thì sử dụng bảng GiaiDauKhoi.
+   ============================================================ */
+
+IF OBJECT_ID('dbo.GiaiDau', 'U') IS NOT NULL
+    DROP TABLE dbo.GiaiDau;
+GO
+
+CREATE TABLE GiaiDau
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    Ma              VARCHAR(50) NOT NULL,
+    Ten             NVARCHAR(300) NOT NULL,
+
+    MoTa            NVARCHAR(2000) NULL,
+
+    NgayBatDau      DATE NOT NULL,
+    NgayKetThuc     DATE NOT NULL,
+
+    DiaDiem         NVARCHAR(500) NULL,
+
+    PhamVi          VARCHAR(20) NOT NULL DEFAULT 'TatCa',
+
+    TrangThai       VARCHAR(30) NOT NULL DEFAULT 'Nhap',
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat     DATETIME2 NULL,
+
+    CONSTRAINT UQ_GiaiDau_Ma UNIQUE (Ma),
+
+    CONSTRAINT CK_GiaiDau_Ngay
+        CHECK (NgayKetThuc >= NgayBatDau),
+
+    CONSTRAINT CK_GiaiDau_PhamVi
+        CHECK (PhamVi IN ('TatCa', 'TheoKhoi')),
+
+    CONSTRAINT CK_GiaiDau_TrangThai
+        CHECK
+        (
+            TrangThai IN
+            (
+                'Nhap',
+                'SapDienRa',
+                'DangDienRa',
+                'KetThuc',
+                'Huy'
+            )
+        )
+);
+GO
+
+
+/* ============================================================
+   4. GIAI DAU - KHOI
+   Dùng khi giải chỉ dành cho một số khối.
+   ============================================================ */
+
+IF OBJECT_ID('dbo.GiaiDauKhoi', 'U') IS NOT NULL
+    DROP TABLE dbo.GiaiDauKhoi;
+GO
+
+CREATE TABLE GiaiDauKhoi
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    GiaiDauId       BIGINT NOT NULL,
+    KhoiId          BIGINT NOT NULL,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_GiaiDauKhoi_GiaiDau
+        FOREIGN KEY (GiaiDauId)
+        REFERENCES GiaiDau(Id),
+
+    CONSTRAINT FK_GiaiDauKhoi_Khoi
+        FOREIGN KEY (KhoiId)
+        REFERENCES Khoi(Id),
+
+    CONSTRAINT UQ_GiaiDauKhoi
+        UNIQUE (GiaiDauId, KhoiId)
+);
+GO
+
+
+/* ============================================================
+   5. DANH MUC MON THE THAO
+   Ví dụ:
+   - Bóng
+   - Điền kinh
+   - Bơi
+   - Võ thuật
+   ============================================================ */
+
+IF OBJECT_ID('dbo.DanhMucMonTheThao', 'U') IS NOT NULL
+    DROP TABLE dbo.DanhMucMonTheThao;
+GO
+
+CREATE TABLE DanhMucMonTheThao
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    Ma              VARCHAR(50) NOT NULL,
+    Ten             NVARCHAR(200) NOT NULL,
+
+    MoTa            NVARCHAR(1000) NULL,
+
+    TrangThai       BIT NOT NULL DEFAULT 1,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat     DATETIME2 NULL,
+
+    CONSTRAINT UQ_DanhMucMonTheThao_Ma UNIQUE (Ma)
+);
+GO
+
+
+/* ============================================================
+   6. MON THE THAO
+   Ví dụ:
+   - Bóng đá
+   - Bóng chuyền
+   - Cầu lông
+   - Điền kinh
+   ============================================================ */
+
+IF OBJECT_ID('dbo.MonTheThao', 'U') IS NOT NULL
+    DROP TABLE dbo.MonTheThao;
+GO
+
+CREATE TABLE MonTheThao
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    DanhMucId       BIGINT NOT NULL,
+
+    Ma              VARCHAR(50) NOT NULL,
+    Ten             NVARCHAR(200) NOT NULL,
+
+    MoTa            NVARCHAR(1000) NULL,
+
+    LaMonDongDoi    BIT NOT NULL DEFAULT 0,
+
+    TrangThai       BIT NOT NULL DEFAULT 1,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat     DATETIME2 NULL,
+
+    CONSTRAINT UQ_MonTheThao_Ma UNIQUE (Ma),
+
+    CONSTRAINT FK_MonTheThao_DanhMuc
+        FOREIGN KEY (DanhMucId)
+        REFERENCES DanhMucMonTheThao(Id)
+);
+GO
+
+
+/* ============================================================
+   7. GIAI DAU - MON THE THAO
+   Một giải có nhiều môn.
+   ============================================================ */
+
+IF OBJECT_ID('dbo.GiaiDauMonTheThao', 'U') IS NOT NULL
+    DROP TABLE dbo.GiaiDauMonTheThao;
+GO
+
+CREATE TABLE GiaiDauMonTheThao
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    GiaiDauId       BIGINT NOT NULL,
+    MonTheThaoId    BIGINT NOT NULL,
+
+    MoTa            NVARCHAR(1000) NULL,
+
+    TrangThai       BIT NOT NULL DEFAULT 1,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat     DATETIME2 NULL,
+
+    CONSTRAINT FK_GiaiDauMonTheThao_GiaiDau
+        FOREIGN KEY (GiaiDauId)
+        REFERENCES GiaiDau(Id),
+
+    CONSTRAINT FK_GiaiDauMonTheThao_Mon
+        FOREIGN KEY (MonTheThaoId)
+        REFERENCES MonTheThao(Id),
+
+    CONSTRAINT UQ_GiaiDauMonTheThao
+        UNIQUE (GiaiDauId, MonTheThaoId)
+);
+GO
+
+
+/* ============================================================
+   8. NOI DUNG THI DAU
+   Ví dụ:
+
+   Điền kinh
+      - 100m Nam
+      - 100m Nữ
+      - Nhảy xa Nam
+
+   Cầu lông
+      - Đơn nam
+      - Đơn nữ
+      - Đôi nam
+      - Đôi nữ
+
+   LoaiThiDau:
+      CaNhan
+      Doi
+      DongDoi
+   ============================================================ */
+
+IF OBJECT_ID('dbo.NoiDungThiDau', 'U') IS NOT NULL
+    DROP TABLE dbo.NoiDungThiDau;
+GO
+
+CREATE TABLE NoiDungThiDau
+(
+    Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    GiaiDauMonTheThaoId BIGINT NOT NULL,
+
+    Ma                  VARCHAR(50) NOT NULL,
+    Ten                 NVARCHAR(200) NOT NULL,
+
+    GioiTinh            VARCHAR(20) NOT NULL DEFAULT 'HonHop',
+
+    LoaiThiDau          VARCHAR(30) NOT NULL DEFAULT 'CaNhan',
+
+    SoLuongToiThieu     INT NULL,
+    SoLuongToiDa        INT NULL,
+
+    MoTa                NVARCHAR(1000) NULL,
+
+    TrangThai           BIT NOT NULL DEFAULT 1,
+
+    NgayTao             DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat         DATETIME2 NULL,
+
+    CONSTRAINT FK_NoiDungThiDau_GiaiDauMon
+        FOREIGN KEY (GiaiDauMonTheThaoId)
+        REFERENCES GiaiDauMonTheThao(Id),
+
+    CONSTRAINT UQ_NoiDungThiDau
+        UNIQUE (GiaiDauMonTheThaoId, Ma),
+
+    CONSTRAINT CK_NoiDung_GioiTinh
+        CHECK
+        (
+            GioiTinh IN
+            (
+                'Nam',
+                'Nu',
+                'HonHop'
+            )
+        ),
+
+    CONSTRAINT CK_NoiDung_LoaiThiDau
+        CHECK
+        (
+            LoaiThiDau IN
+            (
+                'CaNhan',
+                'Doi',
+                'DongDoi'
+            )
+        ),
+
+    CONSTRAINT CK_NoiDung_SoLuong
+        CHECK
+        (
+            SoLuongToiThieu IS NULL
+            OR SoLuongToiDa IS NULL
+            OR SoLuongToiDa >= SoLuongToiThieu
+        )
+);
+GO
+
+
+/* ============================================================
+   9. VAN DONG VIEN
+   Một VĐV có thể tham gia nhiều môn / nhiều nội dung.
+   ============================================================ */
+
+IF OBJECT_ID('dbo.VanDongVien', 'U') IS NOT NULL
+    DROP TABLE dbo.VanDongVien;
+GO
+
+CREATE TABLE VanDongVien
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    Ma              VARCHAR(50) NOT NULL,
+    HoTen           NVARCHAR(200) NOT NULL,
+
+    DonViId         BIGINT NULL,
+
+    NgaySinh        DATE NULL,
+
+    GioiTinh        VARCHAR(20) NOT NULL,
+
+    SoDienThoai     VARCHAR(30) NULL,
+    Email           VARCHAR(200) NULL,
+
+    SoCCCD          VARCHAR(50) NULL,
+
+    DiaChi          NVARCHAR(500) NULL,
+
+    TrangThai       BIT NOT NULL DEFAULT 1,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat     DATETIME2 NULL,
+
+    CONSTRAINT UQ_VanDongVien_Ma
+        UNIQUE (Ma),
+
+    CONSTRAINT FK_VanDongVien_DonVi
+        FOREIGN KEY (DonViId)
+        REFERENCES DonVi(Id),
+
+    CONSTRAINT CK_VanDongVien_GioiTinh
+        CHECK (GioiTinh IN ('Nam', 'Nu'))
+);
+GO
+
+
+/* ============================================================
+   10. DOI
+   Dùng cho:
+   - Bóng đá
+   - Bóng chuyền
+   - Cầu lông đôi
+   - Các nội dung đồng đội
+   ============================================================ */
+
+IF OBJECT_ID('dbo.Doi', 'U') IS NOT NULL
+    DROP TABLE dbo.Doi;
+GO
+
+CREATE TABLE Doi
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    Ma              VARCHAR(50) NOT NULL,
+    Ten             NVARCHAR(200) NOT NULL,
+
+    DonViId         BIGINT NULL,
+
+    NguoiQuanLy     NVARCHAR(200) NULL,
+    SoDienThoai     VARCHAR(30) NULL,
+    Email           VARCHAR(200) NULL,
+
+    MoTa            NVARCHAR(1000) NULL,
+
+    TrangThai       BIT NOT NULL DEFAULT 1,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat     DATETIME2 NULL,
+
+    CONSTRAINT UQ_Doi_Ma
+        UNIQUE (Ma),
+
+    CONSTRAINT FK_Doi_DonVi
+        FOREIGN KEY (DonViId)
+        REFERENCES DonVi(Id)
+);
+GO
+
+
+/* ============================================================
+   11. THANH VIEN DOI
+   ============================================================ */
+
+IF OBJECT_ID('dbo.ThanhVienDoi', 'U') IS NOT NULL
+    DROP TABLE dbo.ThanhVienDoi;
+GO
+
+CREATE TABLE ThanhVienDoi
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    DoiId           BIGINT NOT NULL,
+    VanDongVienId   BIGINT NOT NULL,
+
+    SoAo            VARCHAR(20) NULL,
+    ViTri           NVARCHAR(100) NULL,
+
+    LaDoiTruong     BIT NOT NULL DEFAULT 0,
+
+    NgayThamGia     DATE NULL,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_ThanhVienDoi_Doi
+        FOREIGN KEY (DoiId)
+        REFERENCES Doi(Id),
+
+    CONSTRAINT FK_ThanhVienDoi_VDV
+        FOREIGN KEY (VanDongVienId)
+        REFERENCES VanDongVien(Id),
+
+    CONSTRAINT UQ_ThanhVienDoi
+        UNIQUE (DoiId, VanDongVienId)
+);
+GO
+
+
+/* ============================================================
+   12. DANG KY THI DAU
+   Một đăng ký có thể là:
+
+   Cá nhân:
+       1 VĐV
+
+   Đôi:
+       2 VĐV
+
+   Đồng đội:
+       nhiều VĐV
+
+   Đội:
+       DoiId khác NULL
+   ============================================================ */
+
+IF OBJECT_ID('dbo.DangKyThiDau', 'U') IS NOT NULL
+    DROP TABLE dbo.DangKyThiDau;
+GO
+
+CREATE TABLE DangKyThiDau
+(
+    Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    NoiDungThiDauId    BIGINT NOT NULL,
+
+    DoiId               BIGINT NULL,
+
+    SoDangKy            VARCHAR(50) NOT NULL,
+
+    TenDangKy           NVARCHAR(300) NULL,
+
+    TrangThai           VARCHAR(30) NOT NULL DEFAULT 'ChoDuyet',
+
+    NgayDangKy          DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    GhiChu              NVARCHAR(1000) NULL,
+
+    CONSTRAINT FK_DangKyThiDau_NoiDung
+        FOREIGN KEY (NoiDungThiDauId)
+        REFERENCES NoiDungThiDau(Id),
+
+    CONSTRAINT FK_DangKyThiDau_Doi
+        FOREIGN KEY (DoiId)
+        REFERENCES Doi(Id),
+
+    CONSTRAINT UQ_DangKyThiDau
+        UNIQUE (NoiDungThiDauId, SoDangKy),
+
+    CONSTRAINT CK_DangKy_TrangThai
+        CHECK
+        (
+            TrangThai IN
+            (
+                'ChoDuyet',
+                'DaDuyet',
+                'TuChoi',
+                'Huy'
+            )
+        )
+);
+GO
+
+
+/* ============================================================
+   13. CHI TIET DANG KY
+   Đây là bảng rất quan trọng.
+
+   Ví dụ:
+
+   Đơn nam:
+       DangKy #1
+          └── VDV A
+
+   Đôi nam:
+       DangKy #2
+          ├── VDV A
+          └── VDV B
+
+   Đồng đội:
+       DangKy #3
+          ├── VDV A
+          ├── VDV B
+          ├── VDV C
+          └── VDV D
+   ============================================================ */
+
+IF OBJECT_ID('dbo.ChiTietDangKyThiDau', 'U') IS NOT NULL
+    DROP TABLE dbo.ChiTietDangKyThiDau;
+GO
+
+CREATE TABLE ChiTietDangKyThiDau
+(
+    Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    DangKyThiDauId      BIGINT NOT NULL,
+    VanDongVienId       BIGINT NOT NULL,
+
+    SoThuTu             INT NULL,
+    VaiTro              NVARCHAR(100) NULL,
+
+    NgayTao             DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_ChiTietDangKy_DangKy
+        FOREIGN KEY (DangKyThiDauId)
+        REFERENCES DangKyThiDau(Id),
+
+    CONSTRAINT FK_ChiTietDangKy_VDV
+        FOREIGN KEY (VanDongVienId)
+        REFERENCES VanDongVien(Id),
+
+    CONSTRAINT UQ_ChiTietDangKy
+        UNIQUE (DangKyThiDauId, VanDongVienId)
+);
+GO
+
+
+/* ============================================================
+   14. BANG DAU
+   Không bắt buộc.
+
+   Bóng đá:
+      Bảng A
+      Bảng B
+      Bảng C
+
+   Điền kinh:
+      Có thể không dùng.
+   ============================================================ */
+
+IF OBJECT_ID('dbo.BangDau', 'U') IS NOT NULL
+    DROP TABLE dbo.BangDau;
+GO
+
+CREATE TABLE BangDau
+(
+    Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    NoiDungThiDauId    BIGINT NOT NULL,
+
+    Ma                  VARCHAR(50) NOT NULL,
+    Ten                 NVARCHAR(200) NOT NULL,
+
+    ThuTu               INT NOT NULL DEFAULT 1,
+
+    NgayTao             DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_BangDau_NoiDung
+        FOREIGN KEY (NoiDungThiDauId)
+        REFERENCES NoiDungThiDau(Id),
+
+    CONSTRAINT UQ_BangDau
+        UNIQUE (NoiDungThiDauId, Ma)
+);
+GO
+
+
+/* ============================================================
+   15. THANH VIEN BANG
+   ============================================================ */
+
+IF OBJECT_ID('dbo.ThanhVienBang', 'U') IS NOT NULL
+    DROP TABLE dbo.ThanhVienBang;
+GO
+
+CREATE TABLE ThanhVienBang
+(
+    Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    BangDauId           BIGINT NOT NULL,
+    DangKyThiDauId      BIGINT NOT NULL,
+
+    HatGiong            INT NULL,
+
+    SoTran              INT NOT NULL DEFAULT 0,
+    SoThang             INT NOT NULL DEFAULT 0,
+    SoHoa               INT NOT NULL DEFAULT 0,
+    SoThua              INT NOT NULL DEFAULT 0,
+
+    DiemGhiDuoc         DECIMAL(18,3) NOT NULL DEFAULT 0,
+    DiemBiGhi           DECIMAL(18,3) NOT NULL DEFAULT 0,
+
+    Diem                DECIMAL(18,3) NOT NULL DEFAULT 0,
+
+    XepHang             INT NULL,
+
+    CONSTRAINT FK_ThanhVienBang_Bang
+        FOREIGN KEY (BangDauId)
+        REFERENCES BangDau(Id),
+
+    CONSTRAINT FK_ThanhVienBang_DangKy
+        FOREIGN KEY (DangKyThiDauId)
+        REFERENCES DangKyThiDau(Id),
+
+    CONSTRAINT UQ_ThanhVienBang
+        UNIQUE (BangDauId, DangKyThiDauId)
+);
+GO
+
+
+/* ============================================================
+   16. VONG DAU
+
+   Ví dụ:
+   - Vòng bảng
+   - Vòng loại
+   - Vòng 16
+   - Tứ kết
+   - Bán kết
+   - Tranh hạng 3
+   - Chung kết
+   ============================================================ */
+
+IF OBJECT_ID('dbo.VongDau', 'U') IS NOT NULL
+    DROP TABLE dbo.VongDau;
+GO
+
+CREATE TABLE VongDau
+(
+    Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    NoiDungThiDauId    BIGINT NOT NULL,
+
+    Ten                 NVARCHAR(200) NOT NULL,
+
+    LoaiVong            VARCHAR(30) NOT NULL,
+
+    ThuTu               INT NOT NULL,
+
+    MoTa                NVARCHAR(1000) NULL,
+
+    NgayTao             DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_VongDau_NoiDung
+        FOREIGN KEY (NoiDungThiDauId)
+        REFERENCES NoiDungThiDau(Id),
+
+    CONSTRAINT UQ_VongDau
+        UNIQUE (NoiDungThiDauId, ThuTu),
+
+    CONSTRAINT CK_VongDau_Loai
+        CHECK
+        (
+            LoaiVong IN
+            (
+                'VongBang',
+                'VongLoai',
+                'Vong16',
+                'TuKet',
+                'BanKet',
+                'TranhHangBa',
+                'ChungKet'
+            )
+        )
+);
+GO
+
+
+/* ============================================================
+   17. CUM SAN
+   Ví dụ:
+      Nhà thi đấu A
+      ├── Sân 1
+      ├── Sân 2
+      └── Sân 3
+
+      Khu liên hợp B
+      ├── Sân bóng đá
+      ├── Sân tennis
+      └── Hồ bơi
+   ============================================================ */
+
+IF OBJECT_ID('dbo.CumSan', 'U') IS NOT NULL
+    DROP TABLE dbo.CumSan;
+GO
+
+CREATE TABLE CumSan
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    Ma              VARCHAR(50) NOT NULL,
+    Ten             NVARCHAR(300) NOT NULL,
+
+    DiaChi          NVARCHAR(500) NULL,
+
+    SoLuongSan      INT NULL,
+
+    MoTa            NVARCHAR(1000) NULL,
+
+    TrangThai       BIT NOT NULL DEFAULT 1,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat     DATETIME2 NULL,
+
+    CONSTRAINT UQ_CumSan_Ma
+        UNIQUE (Ma)
+);
+GO
+
+
+/* ============================================================
+   18. SAN DAU
+   ============================================================ */
+
+IF OBJECT_ID('dbo.SanDau', 'U') IS NOT NULL
+    DROP TABLE dbo.SanDau;
+GO
+
+CREATE TABLE SanDau
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    CumSanId        BIGINT NOT NULL,
+
+    Ma              VARCHAR(50) NOT NULL,
+    Ten             NVARCHAR(200) NOT NULL,
+
+    LoaiSan         NVARCHAR(100) NULL,
+
+    SoSan           INT NULL,
+
+    SucChua         INT NULL,
+
+    MoTa            NVARCHAR(1000) NULL,
+
+    TrangThai       BIT NOT NULL DEFAULT 1,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat     DATETIME2 NULL,
+
+    CONSTRAINT UQ_SanDau_Ma
+        UNIQUE (Ma),
+
+    CONSTRAINT FK_SanDau_CumSan
+        FOREIGN KEY (CumSanId)
+        REFERENCES CumSan(Id),
+
+    CONSTRAINT UQ_SanDau_CumSan_SoSan
+        UNIQUE (CumSanId, SoSan)
+);
+GO
+
+
+/* ============================================================
+   19. TRONG TAI
+   ============================================================ */
+
+IF OBJECT_ID('dbo.TrongTai', 'U') IS NOT NULL
+    DROP TABLE dbo.TrongTai;
+GO
+
+CREATE TABLE TrongTai
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    Ma              VARCHAR(50) NOT NULL,
+    HoTen           NVARCHAR(200) NOT NULL,
+
+    GioiTinh        VARCHAR(20) NULL,
+
+    SoDienThoai     VARCHAR(30) NULL,
+    Email           VARCHAR(200) NULL,
+
+    CapBac          NVARCHAR(100) NULL,
+
+    TrangThai       BIT NOT NULL DEFAULT 1,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT UQ_TrongTai_Ma
+        UNIQUE (Ma)
+);
+GO
+
+
+/* ============================================================
+   20. TRAN DAU
+   Không lưu Doi1 / Doi2.
+
+   Vì:
+   - Bóng đá: 2 đội
+   - Điền kinh: 8 VĐV
+   - Bơi: nhiều VĐV
+   - Nhảy xa: nhiều VĐV
+   - Các môn khác có thể có N người.
+
+   Thành phần trận đấu nằm ở ThanhPhanTranDau.
+   ============================================================ */
+
+IF OBJECT_ID('dbo.TranDau', 'U') IS NOT NULL
+    DROP TABLE dbo.TranDau;
+GO
+
+CREATE TABLE TranDau
+(
+    Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    NoiDungThiDauId    BIGINT NOT NULL,
+    VongDauId          BIGINT NOT NULL,
+
+    BangDauId           BIGINT NULL,
+
+    SanDauId            BIGINT NULL,
+
+    SoTran              INT NOT NULL,
+
+    TenTran             NVARCHAR(300) NULL,
+
+    ThoiGianDuKien      DATETIME2 NULL,
+
+    ThoiGianBatDau      DATETIME2 NULL,
+    ThoiGianKetThuc     DATETIME2 NULL,
+
+    TrangThai           VARCHAR(30) NOT NULL DEFAULT 'ChuaDau',
+
+    GhiChu              NVARCHAR(1000) NULL,
+
+    NgayTao             DATETIME2 NOT NULL DEFAULT GETDATE(),
+    NgayCapNhat         DATETIME2 NULL,
+
+    CONSTRAINT FK_TranDau_NoiDung
+        FOREIGN KEY (NoiDungThiDauId)
+        REFERENCES NoiDungThiDau(Id),
+
+    CONSTRAINT FK_TranDau_Vong
+        FOREIGN KEY (VongDauId)
+        REFERENCES VongDau(Id),
+
+    CONSTRAINT FK_TranDau_Bang
+        FOREIGN KEY (BangDauId)
+        REFERENCES BangDau(Id),
+
+    CONSTRAINT FK_TranDau_San
+        FOREIGN KEY (SanDauId)
+        REFERENCES SanDau(Id),
+
+    CONSTRAINT UQ_TranDau
+        UNIQUE (NoiDungThiDauId, SoTran),
+
+    CONSTRAINT CK_TranDau_TrangThai
+        CHECK
+        (
+            TrangThai IN
+            (
+                'ChuaDau',
+                'DangDau',
+                'DaDau',
+                'Hoan',
+                'Huy'
+            )
+        )
+);
+GO
+
+
+/* ============================================================
+   21. THANH PHAN TRAN DAU
+   Đây là bảng giúp TranDau hỗ trợ N người / N đội.
+
+   Ví dụ 100m:
+      Tran 1
+      ├── VDV A - Lane 1
+      ├── VDV B - Lane 2
+      ├── VDV C - Lane 3
+      └── VDV D - Lane 4
+
+   Bóng đá:
+      Tran 1
+      ├── Đội A
+      └── Đội B
+   ============================================================ */
+
+IF OBJECT_ID('dbo.ThanhPhanTranDau', 'U') IS NOT NULL
+    DROP TABLE dbo.ThanhPhanTranDau;
+GO
+
+CREATE TABLE ThanhPhanTranDau
+(
+    Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    TranDauId           BIGINT NOT NULL,
+    DangKyThiDauId      BIGINT NOT NULL,
+
+    SoLane              INT NULL,
+
+    ThuTuThiDau         INT NULL,
+
+    ViTri               INT NULL,
+
+    TrangThai           VARCHAR(30) NOT NULL DEFAULT 'ThamGia',
+
+    GhiChu              NVARCHAR(500) NULL,
+
+    NgayTao             DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_ThanhPhanTranDau_Tran
+        FOREIGN KEY (TranDauId)
+        REFERENCES TranDau(Id),
+
+    CONSTRAINT FK_ThanhPhanTranDau_DangKy
+        FOREIGN KEY (DangKyThiDauId)
+        REFERENCES DangKyThiDau(Id),
+
+    CONSTRAINT UQ_ThanhPhanTranDau
+        UNIQUE (TranDauId, DangKyThiDauId),
+
+    CONSTRAINT CK_ThanhPhanTranDau_TrangThai
+        CHECK
+        (
+            TrangThai IN
+            (
+                'ThamGia',
+                'KhongThamGia',
+                'BoCuoc',
+                'BiLoai',
+                'HoanThanh'
+            )
+        )
+);
+GO
+
+
+/* ============================================================
+   22. HIEP DAU
+   Dùng cho:
+   - Cầu lông
+   - Bóng chuyền
+   - Tennis
+   - Các môn có set/hiệp
+   ============================================================ */
+
+IF OBJECT_ID('dbo.HiepDau', 'U') IS NOT NULL
+    DROP TABLE dbo.HiepDau;
+GO
+
+CREATE TABLE HiepDau
+(
+    Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    TranDauId           BIGINT NOT NULL,
+
+    SoHiep              INT NOT NULL,
+
+    ThoiGianBatDau      DATETIME2 NULL,
+    ThoiGianKetThuc     DATETIME2 NULL,
+
+    TrangThai           VARCHAR(30) NOT NULL DEFAULT 'ChuaDau',
+
+    GhiChu              NVARCHAR(500) NULL,
+
+    CONSTRAINT FK_HiepDau_Tran
+        FOREIGN KEY (TranDauId)
+        REFERENCES TranDau(Id),
+
+    CONSTRAINT UQ_HiepDau
+        UNIQUE (TranDauId, SoHiep)
+);
+GO
+
+
+/* ============================================================
+   23. KET QUA HIEP DAU
+   ============================================================ */
+
+IF OBJECT_ID('dbo.KetQuaHiepDau', 'U') IS NOT NULL
+    DROP TABLE dbo.KetQuaHiepDau;
+GO
+
+CREATE TABLE KetQuaHiepDau
+(
+    Id                      BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    HiepDauId               BIGINT NOT NULL,
+
+    ThanhPhanTranDauId      BIGINT NOT NULL,
+
+    Diem                    DECIMAL(18,3) NULL,
+
+    GhiChu                  NVARCHAR(500) NULL,
+
+    CONSTRAINT FK_KetQuaHiepDau_Hiep
+        FOREIGN KEY (HiepDauId)
+        REFERENCES HiepDau(Id),
+
+    CONSTRAINT FK_KetQuaHiepDau_ThanhPhan
+        FOREIGN KEY (ThanhPhanTranDauId)
+        REFERENCES ThanhPhanTranDau(Id),
+
+    CONSTRAINT UQ_KetQuaHiepDau
+        UNIQUE (HiepDauId, ThanhPhanTranDauId)
+);
+GO
+
+
+/* ============================================================
+   24. KET QUA TRAN DAU
+   Hỗ trợ nhiều kiểu kết quả:
+
+   Diem
+   ThoiGian
+   CuLy
+   BanThang
+   ThanhTich
+   Khac
+
+   Ví dụ:
+
+   100m:
+      10.52 giây
+
+   Nhảy xa:
+      7.32 mét
+
+   Bóng đá:
+      3 bàn thắng
+   ============================================================ */
+
+IF OBJECT_ID('dbo.KetQuaTranDau', 'U') IS NOT NULL
+    DROP TABLE dbo.KetQuaTranDau;
+GO
+
+CREATE TABLE KetQuaTranDau
+(
+    Id                      BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    ThanhPhanTranDauId      BIGINT NOT NULL,
+
+    LoaiKetQua              VARCHAR(30) NOT NULL,
+
+    GiaTri                  DECIMAL(18,4) NULL,
+
+    DonVi                   VARCHAR(30) NULL,
+
+    Diem                    DECIMAL(18,3) NULL,
+
+    XepHang                 INT NULL,
+
+    KyLuc                   BIT NOT NULL DEFAULT 0,
+
+    KetQuaText              NVARCHAR(500) NULL,
+
+    GhiChu                  NVARCHAR(1000) NULL,
+
+    NgayTao                 DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_KetQuaTranDau_ThanhPhan
+        FOREIGN KEY (ThanhPhanTranDauId)
+        REFERENCES ThanhPhanTranDau(Id),
+
+    CONSTRAINT CK_KetQuaTranDau_Loai
+        CHECK
+        (
+            LoaiKetQua IN
+            (
+                'Diem',
+                'ThoiGian',
+                'CuLy',
+                'BanThang',
+                'ThanhTich',
+                'Khac'
+            )
+        )
+);
+GO
+
+
+/* ============================================================
+   25. PHAN CONG TRONG TAI
+   Một trận có thể có nhiều trọng tài.
+   ============================================================ */
+
+IF OBJECT_ID('dbo.PhanCongTrongTai', 'U') IS NOT NULL
+    DROP TABLE dbo.PhanCongTrongTai;
+GO
+
+CREATE TABLE PhanCongTrongTai
+(
+    Id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    TranDauId       BIGINT NOT NULL,
+    TrongTaiId      BIGINT NOT NULL,
+
+    VaiTro          NVARCHAR(100) NULL,
+
+    GhiChu          NVARCHAR(500) NULL,
+
+    NgayTao         DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_PhanCongTrongTai_Tran
+        FOREIGN KEY (TranDauId)
+        REFERENCES TranDau(Id),
+
+    CONSTRAINT FK_PhanCongTrongTai_TrongTai
+        FOREIGN KEY (TrongTaiId)
+        REFERENCES TrongTai(Id),
+
+    CONSTRAINT UQ_PhanCongTrongTai
+        UNIQUE (TranDauId, TrongTaiId)
+);
+GO
+
+
+/* ============================================================
+   26. LOAI HUY CHUONG
+   ============================================================ */
+
+IF OBJECT_ID('dbo.LoaiHuyChuong', 'U') IS NOT NULL
+    DROP TABLE dbo.LoaiHuyChuong;
+GO
+
+CREATE TABLE LoaiHuyChuong
+(
+    Id              INT IDENTITY(1,1) PRIMARY KEY,
+
+    Ma              VARCHAR(30) NOT NULL,
+    Ten             NVARCHAR(100) NOT NULL,
+
+    ThuTu           INT NOT NULL,
+
+    CONSTRAINT UQ_LoaiHuyChuong_Ma
+        UNIQUE (Ma)
+);
+GO
+
+
+/* ============================================================
+   27. HUY CHUONG
+   Huy chương gắn với ĐĂNG KÝ THI ĐẤU.
+
+   Vì vậy hỗ trợ:
+
+   Cá nhân:
+       VĐV A -> Vàng
+
+   Đôi:
+       VĐV A + VĐV B -> Vàng
+
+   Đồng đội:
+       Đội A -> Vàng
+   ============================================================ */
+
+IF OBJECT_ID('dbo.HuyChuong', 'U') IS NOT NULL
+    DROP TABLE dbo.HuyChuong;
+GO
+
+CREATE TABLE HuyChuong
+(
+    Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+    GiaiDauId           BIGINT NOT NULL,
+
+    NoiDungThiDauId    BIGINT NOT NULL,
+
+    DangKyThiDauId      BIGINT NOT NULL,
+
+    LoaiHuyChuongId     INT NOT NULL,
+
+    XepHang             INT NOT NULL,
+
+    NgayTrao            DATETIME2 NULL,
+
+    GhiChu              NVARCHAR(1000) NULL,
+
+    NgayTao             DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_HuyChuong_GiaiDau
+        FOREIGN KEY (GiaiDauId)
+        REFERENCES GiaiDau(Id),
+
+    CONSTRAINT FK_HuyChuong_NoiDung
+        FOREIGN KEY (NoiDungThiDauId)
+        REFERENCES NoiDungThiDau(Id),
+
+    CONSTRAINT FK_HuyChuong_DangKy
+        FOREIGN KEY (DangKyThiDauId)
+        REFERENCES DangKyThiDau(Id),
+
+    CONSTRAINT FK_HuyChuong_Loai
+        FOREIGN KEY (LoaiHuyChuongId)
+        REFERENCES LoaiHuyChuong(Id),
+
+    CONSTRAINT UQ_HuyChuong_DangKy
+        UNIQUE (DangKyThiDauId),
+
+    CONSTRAINT CK_HuyChuong_XepHang
+        CHECK (XepHang > 0)
+);
+GO
+
+
+/* ============================================================
+   28. INDEX
+   ============================================================ */
+
+CREATE INDEX IX_DonVi_KhoiId
+ON DonVi(KhoiId);
+GO
+
+CREATE INDEX IX_DonVi_DonViChaId
+ON DonVi(DonViChaId);
+GO
+
+CREATE INDEX IX_GiaiDauKhoi_GiaiDauId
+ON GiaiDauKhoi(GiaiDauId);
+GO
+
+CREATE INDEX IX_GiaiDauKhoi_KhoiId
+ON GiaiDauKhoi(KhoiId);
+GO
+
+CREATE INDEX IX_GiaiDauMonTheThao_GiaiDauId
+ON GiaiDauMonTheThao(GiaiDauId);
+GO
+
+CREATE INDEX IX_GiaiDauMonTheThao_MonTheThaoId
+ON GiaiDauMonTheThao(MonTheThaoId);
+GO
+
+CREATE INDEX IX_NoiDungThiDau_GiaiDauMonTheThaoId
+ON NoiDungThiDau(GiaiDauMonTheThaoId);
+GO
+
+CREATE INDEX IX_VanDongVien_DonViId
+ON VanDongVien(DonViId);
+GO
+
+CREATE INDEX IX_Doi_DonViId
+ON Doi(DonViId);
+GO
+
+CREATE INDEX IX_ThanhVienDoi_DoiId
+ON ThanhVienDoi(DoiId);
+GO
+
+CREATE INDEX IX_ThanhVienDoi_VanDongVienId
+ON ThanhVienDoi(VanDongVienId);
+GO
+
+CREATE INDEX IX_DangKyThiDau_NoiDungThiDauId
+ON DangKyThiDau(NoiDungThiDauId);
+GO
+
+CREATE INDEX IX_DangKyThiDau_DoiId
+ON DangKyThiDau(DoiId);
+GO
+
+CREATE INDEX IX_ChiTietDangKy_DangKyThiDauId
+ON ChiTietDangKyThiDau(DangKyThiDauId);
+GO
+
+CREATE INDEX IX_ChiTietDangKy_VanDongVienId
+ON ChiTietDangKyThiDau(VanDongVienId);
+GO
+
+CREATE INDEX IX_BangDau_NoiDungThiDauId
+ON BangDau(NoiDungThiDauId);
+GO
+
+CREATE INDEX IX_ThanhVienBang_DangKyThiDauId
+ON ThanhVienBang(DangKyThiDauId);
+GO
+
+CREATE INDEX IX_VongDau_NoiDungThiDauId
+ON VongDau(NoiDungThiDauId);
+GO
+
+CREATE INDEX IX_SanDau_CumSanId
+ON SanDau(CumSanId);
+GO
+
+CREATE INDEX IX_TranDau_NoiDungThiDauId
+ON TranDau(NoiDungThiDauId);
+GO
+
+CREATE INDEX IX_TranDau_VongDauId
+ON TranDau(VongDauId);
+GO
+
+CREATE INDEX IX_TranDau_SanDauId
+ON TranDau(SanDauId);
+GO
+
+CREATE INDEX IX_ThanhPhanTranDau_TranDauId
+ON ThanhPhanTranDau(TranDauId);
+GO
+
+CREATE INDEX IX_ThanhPhanTranDau_DangKyThiDauId
+ON ThanhPhanTranDau(DangKyThiDauId);
+GO
+
+CREATE INDEX IX_HiepDau_TranDauId
+ON HiepDau(TranDauId);
+GO
+
+CREATE INDEX IX_KetQuaHiepDau_ThanhPhanTranDauId
+ON KetQuaHiepDau(ThanhPhanTranDauId);
+GO
+
+CREATE INDEX IX_KetQuaTranDau_ThanhPhanTranDauId
+ON KetQuaTranDau(ThanhPhanTranDauId);
+GO
+
+CREATE INDEX IX_PhanCongTrongTai_TrongTaiId
+ON PhanCongTrongTai(TrongTaiId);
+GO
+
+CREATE INDEX IX_HuyChuong_GiaiDauId
+ON HuyChuong(GiaiDauId);
+GO
+
+CREATE INDEX IX_HuyChuong_NoiDungThiDauId
+ON HuyChuong(NoiDungThiDauId);
+GO
+
+CREATE INDEX IX_HuyChuong_LoaiHuyChuongId
+ON HuyChuong(LoaiHuyChuongId);
+GO
+
+
+/* ============================================================
+   29. DỮ LIỆU LOẠI HUY CHƯƠNG
+   ============================================================ */
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM LoaiHuyChuong
+    WHERE Ma = 'VANG'
+)
+BEGIN
+    INSERT INTO LoaiHuyChuong
+    (
+        Ma,
+        Ten,
+        ThuTu
+    )
+    VALUES
+    (
+        'VANG',
+        N'Huy chương Vàng',
+        1
+    );
+END
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM LoaiHuyChuong
+    WHERE Ma = 'BAC'
+)
+BEGIN
+    INSERT INTO LoaiHuyChuong
+    (
+        Ma,
+        Ten,
+        ThuTu
+    )
+    VALUES
+    (
+        'BAC',
+        N'Huy chương Bạc',
+        2
+    );
+END
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM LoaiHuyChuong
+    WHERE Ma = 'DONG'
+)
+BEGIN
+    INSERT INTO LoaiHuyChuong
+    (
+        Ma,
+        Ten,
+        ThuTu
+    )
+    VALUES
+    (
+        'DONG',
+        N'Huy chương Đồng',
+        3
+    );
+END
+GO
+
+
+/* ============================================================
+   30. DỮ LIỆU KHỐI MẪU
+   ============================================================ */
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM Khoi
+    WHERE Ma = 'GIAO_DUC'
+)
+BEGIN
+    INSERT INTO Khoi
+    (
+        Ma,
+        Ten
+    )
+    VALUES
+    (
+        'GIAO_DUC',
+        N'Khối Giáo dục'
+    );
+END
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM Khoi
+    WHERE Ma = 'Y_TE'
+)
+BEGIN
+    INSERT INTO Khoi
+    (
+        Ma,
+        Ten
+    )
+    VALUES
+    (
+        'Y_TE',
+        N'Khối Y tế'
+    );
+END
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM Khoi
+    WHERE Ma = 'VAN_HOA'
+)
+BEGIN
+    INSERT INTO Khoi
+    (
+        Ma,
+        Ten
+    )
+    VALUES
+    (
+        'VAN_HOA',
+        N'Khối Văn hóa'
+    );
+END
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM Khoi
+    WHERE Ma = 'CONG_AN'
+)
+BEGIN
+    INSERT INTO Khoi
+    (
+        Ma,
+        Ten
+    )
+    VALUES
+    (
+        'CONG_AN',
+        N'Khối Công an'
+    );
+END
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM Khoi
+    WHERE Ma = 'QUAN_DOI'
+)
+BEGIN
+    INSERT INTO Khoi
+    (
+        Ma,
+        Ten
+    )
+    VALUES
+    (
+        'QUAN_DOI',
+        N'Khối Quân đội'
+    );
+END
+GO
+
+
+/* ============================================================
+   31. DỮ LIỆU DANH MỤC MÔN THỂ THAO
+   ============================================================ */
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM DanhMucMonTheThao
+    WHERE Ma = 'MON_BONG'
+)
+BEGIN
+    INSERT INTO DanhMucMonTheThao
+    (
+        Ma,
+        Ten
+    )
+    VALUES
+    (
+        'MON_BONG',
+        N'Môn bóng'
+    );
+END
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM DanhMucMonTheThao
+    WHERE Ma = 'DIEN_KINH'
+)
+BEGIN
+    INSERT INTO DanhMucMonTheThao
+    (
+        Ma,
+        Ten
+    )
+    VALUES
+    (
+        'DIEN_KINH',
+        N'Điền kinh'
+    );
+END
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM DanhMucMonTheThao
+    WHERE Ma = 'DUOI_NUOC'
+)
+BEGIN
+    INSERT INTO DanhMucMonTheThao
+    (
+        Ma,
+        Ten
+    )
+    VALUES
+    (
+        'DUOI_NUOC',
+        N'Môn dưới nước'
+    );
+END
+GO
+
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM DanhMucMonTheThao
+    WHERE Ma = 'VO_THUAT'
+)
+BEGIN
+    INSERT INTO DanhMucMonTheThao
+    (
+        Ma,
+        Ten
+    )
+    VALUES
+    (
+        'VO_THUAT',
+        N'Võ thuật'
+    );
+END
+GO
+
+
+/* ============================================================
+   32. KIỂM TRA CẤU TRÚC
+   ============================================================ */
+
+SELECT
+    TABLE_NAME
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE'
+ORDER BY TABLE_NAME;
+GO
+
+
+
+
+
+Tôi đã cập nhật thuật toán xếp lịch tự động cho thể thức "Kết hợp vòng bảng & loại trực tiếp" (KetHopVongBangVaLoaiTrucTiep) trong 
+
+TranDauService.cs
+ và đồng bộ giao diện 
+
+lich-thi-dau/page.tsx
+.
+
+Chi tiết các cải tiến đã thực hiện:
+1. Tự động sinh nhánh đấu loại trực tiếp nối tiếp Vòng bảng
+Sau khi sinh lịch thi đấu vòng tròn cho các bảng đấu (Round-Robin), hệ thống sẽ tự động tạo tiếp các vòng knockout tương ứng theo quy mô số bảng:
+
+Trường hợp từ 4 bảng trở lên (Bảng A, B, C, D...):
+
+Vòng Tứ kết (4 trận):
+Tứ kết 1: Nhất Bảng A vs Nhì Bảng B
+Tứ kết 2: Nhất Bảng C vs Nhì Bảng D
+Tứ kết 3: Nhất Bảng B vs Nhì Bảng A
+Tứ kết 4: Nhất Bảng D vs Nhì Bảng C
+Vòng Bán kết (2 trận):
+Bán kết 1: Thắng Tứ kết 1 vs Thắng Tứ kết 2
+Bán kết 2: Thắng Tứ kết 3 vs Thắng Tứ kết 4
+Trận Tranh hạng 3 - 4 (1 trận):
+Thua Bán kết 1 vs Thua Bán kết 2
+Trận Chung kết (1 trận):
+Thắng Bán kết 1 vs Thắng Bán kết 2
+Trường hợp 2 hoặc 3 bảng:
+
+Vòng Bán kết (2 trận):
+Với 2 bảng: Nhất Bảng A vs Nhì Bảng B, Nhất Bảng B vs Nhì Bảng A.
+Với 3 bảng: Nhất Bảng A vs Nhì bảng có thành tích tốt nhất, Nhất Bảng B vs Nhất Bảng C.
+Trận Tranh hạng 3 - 4 (1 trận): Thua Bán kết 1 vs Thua Bán kết 2.
+Trận Chung kết (1 trận): Thắng Bán kết 1 vs Thắng Bán kết 2.
+Trường hợp 1 bảng:
+
+Nếu có từ 4 đội trở lên: Bán kết (Nhất vs Hạng 4, Nhì vs Hạng 3) $\rightarrow$ Tranh hạng 3 - 4 $\rightarrow$ Chung kết.
+Nếu dưới 4 đội: Trận Chung kết (Nhất vs Nhì).
+2. Ràng buộc thời gian & phân bổ sân bãi (CSP Engine)
+Thứ tự vòng đấu (Round Precedence): Các trận Tứ kết bắt buộc bắt đầu sau khi Vòng bảng đã hoàn tất; Bán kết bắt đầu sau khi Tứ kết hoàn tất; Tranh 3-4 và Chung kết diễn ra sau Bán kết.
+Ngày thi đấu: Nếu bật Ưu tiên Chung kết ngày bế mạc hoặc Mỗi vòng một ngày, các vòng đấu sẽ trải đều theo ngày giải đấu, trận Tranh hạng 3-4 và trận Chung kết sẽ diễn ra vào ngày bế mạc (trận Tranh 3-4 diễn ra trước trận Chung kết).
+Phân bổ Sân đấu & Trọng tài: Các trận vòng knockout vẫn được xếp sân và phân công trọng tài tự động, đảm bảo không trùng sân và cân bằng tải trọng tài.
+3. Hiển thị thông minh trên giao diện
+Huy hiệu Nhánh đấu: Các trận knockout chưa có kết quả thực tế sẽ hiển thị định danh rõ ràng như Nhất Bảng A [Nhánh đấu] vs Nhì Bảng B [Nhánh đấu], hoặc Thắng Bán kết 1 [Nhánh đấu] vs Thắng Bán kết 2 [Nhánh đấu].
+Bộ lọc vòng đấu: Người dùng có thể lọc theo từng vòng cụ thể: Vòng bảng (Lượt 1, 2...), Tứ kết, Bán kết, Tranh hạng 3 - 4, Chung kết.
+Khi kết thúc vòng bảng, ban tổ chức có thể nhấn Sửa trận đấu để cập nhật đội tuyển thực tế đã giành quyền đi tiếp vào trận đấu.
+
+
+
+
+
+Trong hệ thống xếp lịch tự động thi đấu, khi bạn chọn thể thức Vòng bảng + Loại trực tiếp, các vị trí này xuất hiện do cơ chế tính toán số đội đi tiếp để ghép vào cây thi đấu Knock-out:
+
+1. Ý nghĩa của từng vị trí
+Đội thứ 3 tốt nhất (1) và (2):
+
+Đây là 2 đội xếp hạng 3 ở các bảng đấu có thành tích cao nhất (so sánh lần lượt theo: Điểm số $\rightarrow$ Hiệu số bàn thắng/thua $\rightarrow$ Số bàn thắng ghi được giữa các đội đứng thứ 3 với nhau).
+Vé vớt 1 và Vé vớt 2:
+
+Đây là 2 suất vé vớt bổ sung (Wildcard / Play-in). Nó xuất hiện khi giải đấu của bạn chỉ có 2 bảng đấu, nhưng vòng Knock-out lại được cấu hình là vòng Tứ kết (cần đúng 8 đội).
+2. Tại sao lại xuất hiện cả hai cùng lúc?
+Để tổ chức vòng Tứ kết, bắt buộc phải có đủ 8 đội (để chia thành 4 trận đấu).
+
+Tuy nhiên, nếu giải của bạn chỉ có 2 bảng đấu (Bảng A & Bảng B):
+
+2 đội Nhất (Nhất A, Nhất B) + 2 đội Nhì (Nhì A, Nhì B) = 4 đội.
+Lấy thêm 2 đội hạng 3 (Hạng 3 bảng A, Hạng 3 bảng B) = 6 đội.
+Vẫn thiếu 2 đội nữa mới đủ 8 đội cho 4 cặp Tứ kết!
+Do đó, thuật toán tự động sinh thêm 2 suất giữ chỗ mang tên "Vé vớt 1" và "Vé vớt 2" (thực tế sẽ là 2 đội hạng 4 có thành tích tốt nhất, hoặc 2 đội thắng trận play-off tranh vé vớt) để ghép đủ 4 cặp đấu Tứ kết:
+
+Tứ kết 1: Nhất A vs Nhì B
+Tứ kết 2: Nhất B vs Đội thứ 3 tốt nhất (1)
+Tứ kết 3: Vé vớt 1 vs Đội thứ 3 tốt nhất (2)
+Tứ kết 4: Vé vớt 2 vs Nhì A
+3. Gợi ý thiết lập hợp lý nhất cho giải đấu
+Tùy vào quy mô giải mà bạn có thể áp dụng:
+
+Nếu giải chỉ có 2 bảng:
+
+Chuẩn và đẹp nhất là không lấy vé vớt/đội thứ 3, chỉ lấy 4 đội (Nhất A, Nhì A, Nhất B, Nhì B) vào thẳng Bán kết:
+Bán kết 1: Nhất A vs Nhì B
+Bán kết 2: Nhất B vs Nhì A
+Hai đội thắng vào Chung kết, hai đội thua đá Tranh 3 - 4.
+Khi đó sơ đồ sẽ vừa khít, không bao giờ xuất hiện chữ "Vé vớt".
+Nếu muốn đá Tứ kết (8 đội):
+
+Bạn nên chia giải thành 3 hoặc 4 bảng:
+4 bảng (A, B, C, D): Lấy Nhất & Nhì mỗi bảng = đúng 8 đội vào Tứ kết.
+3 bảng (A, B, C): Lấy 3 Nhất + 3 Nhì = 6 đội, cộng thêm đúng 2 đội thứ 3 tốt nhất (1 & 2) là tròn 8 đội Tứ kết (không bị dư ra Vé vớt 1, 2).
