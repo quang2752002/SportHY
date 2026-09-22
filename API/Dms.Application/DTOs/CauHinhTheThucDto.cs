@@ -12,6 +12,7 @@ namespace Dms.Application.DTOs
         public string? TenMonTheThao { get; set; }
         public int? GiaiDauMonTheThaoId { get; set; }
         public string? TenGiaiDau { get; set; }
+        public string? HinhThucThiDau { get; set; }
 
         public string LoaiTheThuc { get; set; } = "SetDiem"; // "SetDiem", "ThoiGianHiep", "TinhDiemXepHang"
 
@@ -58,6 +59,7 @@ namespace Dms.Application.DTOs
     {
         public int MonTheThaoId { get; set; }
         public int? GiaiDauMonTheThaoId { get; set; }
+        public string? HinhThucThiDau { get; set; }
         public string LoaiTheThuc { get; set; } = "SetDiem";
 
         public int SoHiepToiDa { get; set; } = 3;

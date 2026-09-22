@@ -112,11 +112,28 @@ namespace Dms.Application.Interfaces
         Task<ThuKyBaoCaoTongHopDto> GetBaoCaoTongHopAsync(int? giaiDauId);
 
         /// <summary>
-        /// Lấy bảng tổng sắp huy chương toàn đoàn (Huy chương Vàng, Bạc, Đồng, Tổng điểm và Xếp hạng).
+        /// Lấy bảng tổng sắp huy chương toàn đoàn (Huy chương Vàng, Bạc, Đồng, Tổng điểm và Xếp hạng) có hỗ trợ lọc theo danh mục hoặc môn thể thao cụ thể.
         /// </summary>
-        /// <param name="giaiDauId">ID giải đấu.</param>
-        /// <returns>Bảng tổng sắp huy chương theo đơn vị/đoàn tham gia.</returns>
-        Task<BangTongSapHuyChuongDto> GetBangTongSapHuyChuongAsync(int? giaiDauId);
+        /// <param name="giaiDauId">ID giải đấu (tùy chọn; null hoặc 0 để tổng hợp toàn giải).</param>
+        /// <param name="danhMucMonTheThaoId">ID danh mục môn thể thao cần lọc (tùy chọn).</param>
+        /// <param name="monTheThaoId">ID môn thể thao cần lọc (tùy chọn).</param>
+        /// <returns>Bảng tổng sắp huy chương theo đơn vị/đoàn tham gia theo tiêu chí lọc.</returns>
+        Task<BangTongSapHuyChuongDto> GetBangTongSapHuyChuongAsync(int? giaiDauId, int? danhMucMonTheThaoId = null, int? monTheThaoId = null);
+
+        /// <summary>
+        /// Lấy danh sách bảng xếp hạng huy chương phân loại theo từng Danh mục môn thể thao.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu (tùy chọn; null hoặc 0 để tính toàn bộ).</param>
+        /// <returns>Danh sách các bảng xếp hạng huy chương gom nhóm theo từng Danh mục môn thể thao.</returns>
+        Task<List<BangXepHangTheoDanhMucDto>> GetBangXepHangTheoDanhMucAsync(int? giaiDauId);
+
+        /// <summary>
+        /// Lấy danh sách bảng xếp hạng huy chương phân loại theo từng Môn thể thao cụ thể.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu (tùy chọn; null hoặc 0 để tính toàn bộ).</param>
+        /// <param name="danhMucMonTheThaoId">ID danh mục môn thể thao (tùy chọn để lọc môn thuộc danh mục).</param>
+        /// <returns>Danh sách các bảng xếp hạng huy chương gom nhóm theo từng Môn thể thao.</returns>
+        Task<List<BangXepHangTheoMonDto>> GetBangXepHangTheoMonAsync(int? giaiDauId, int? danhMucMonTheThaoId = null);
 
         /// <summary>
         /// Tra cứu thông minh đa đối tượng trong giải đấu (Vận động viên, Đơn vị/Đoàn thể thao, Trận đấu & Biên bản).

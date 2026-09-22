@@ -15,6 +15,7 @@ namespace API.Controllers
     {
         private readonly IGiaiDauService _giaiDauService;
         private readonly IMonTheThaoService _monTheThaoService;
+        private readonly IDanhMucMonTheThaoService _danhMucMonTheThaoService;
         private readonly ISanDauService _sanDauService;
         private readonly ITranDauService _tranDauService;
         private readonly IBangDauService _bangDauService;
@@ -24,6 +25,7 @@ namespace API.Controllers
         public HomeController(
             IGiaiDauService giaiDauService,
             IMonTheThaoService monTheThaoService,
+            IDanhMucMonTheThaoService danhMucMonTheThaoService,
             ISanDauService sanDauService,
             ITranDauService tranDauService,
             IBangDauService bangDauService,
@@ -32,6 +34,7 @@ namespace API.Controllers
         {
             _giaiDauService = giaiDauService;
             _monTheThaoService = monTheThaoService;
+            _danhMucMonTheThaoService = danhMucMonTheThaoService;
             _sanDauService = sanDauService;
             _tranDauService = tranDauService;
             _bangDauService = bangDauService;
@@ -66,24 +69,110 @@ namespace API.Controllers
         [HttpGet]
         [Route("BangXepHang")]
         [Route("Home/BangXepHang")]
-        public async Task<IActionResult> BangXepHang(int? giaiDauId = null)
+        public async Task<IActionResult> BangXepHang(int? giaiDauId = null, int? danhMucId = null, int? monTheThaoId = null)
         {
             var tournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var categories = (await _danhMucMonTheThaoService.GetAllAsync())?.ToList() ?? new();
             ViewBag.Tournaments = tournaments;
+            ViewBag.Categories = categories;
             ViewBag.SelectedGiaiDauId = giaiDauId ?? 0;
+            ViewBag.SelectedDanhMucId = danhMucId ?? 0;
+            ViewBag.SelectedMonTheThaoId = monTheThaoId ?? 0;
             return View();
         }
 
         /// <summary>
-        /// Lấy bảng tổng sắp huy chương các đơn vị theo giải đấu hoặc toàn bộ giải đấu
+        /// Lấy bảng tổng sắp huy chương các đơn vị theo giải đấu hoặc theo danh mục môn / môn thi đấu cụ thể
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetMedalRankings(int? giaiDauId = null)
+        public async Task<IActionResult> GetMedalRankings(int? giaiDauId = null, int? danhMucId = null, int? monTheThaoId = null)
         {
             try
             {
-                var result = await _thuKyGiaiService.GetBangTongSapHuyChuongAsync(giaiDauId);
+                var result = await _thuKyGiaiService.GetBangTongSapHuyChuongAsync(giaiDauId, danhMucId, monTheThaoId);
                 return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách bảng xếp hạng huy chương gom nhóm theo từng danh mục môn thể thao
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetRankingsByDanhMuc(int? giaiDauId = null)
+        {
+            try
+            {
+                var result = await _thuKyGiaiService.GetBangXepHangTheoDanhMucAsync(giaiDauId);
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách bảng xếp hạng huy chương gom nhóm theo từng môn thể thao cụ thể
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetRankingsByMonTheThao(int? giaiDauId = null, int? danhMucId = null)
+        {
+            try
+            {
+                var result = await _thuKyGiaiService.GetBangXepHangTheoMonAsync(giaiDauId, danhMucId);
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh mục môn thể thao cho select filter
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetDanhMucList()
+        {
+            try
+            {
+                var result = await _danhMucMonTheThaoService.GetAllAsync();
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách môn thể thao theo danh mục hoặc giải đấu cho select filter
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetMonList(int? danhMucId = null, int? giaiDauId = null)
+        {
+            try
+            {
+                if (giaiDauId.HasValue && giaiDauId.Value > 0)
+                {
+                    var gdmList = await _giaiDauService.GetByIdAsync(giaiDauId.Value);
+                    var sports = gdmList?.MonTheThaos?.AsEnumerable() ?? Enumerable.Empty<GiaiDauMonTheThaoDto>();
+                    if (danhMucId.HasValue && danhMucId.Value > 0)
+                    {
+                        var allMons = (await _monTheThaoService.GetAllAsync(danhMucId.Value)).ToDictionary(m => m.Id);
+                        sports = sports.Where(s => allMons.ContainsKey(s.MonTheThaoId));
+                    }
+                    return Json(new { success = true, data = sports.Select(s => new { id = s.MonTheThaoId, ten = s.Ten }) });
+                }
+                else
+                {
+                    var mons = await _monTheThaoService.GetAllAsync(danhMucId);
+                    return Json(new { success = true, data = mons.Select(m => new { id = m.Id, ten = m.Ten }) });
+                }
             }
             catch (Exception ex)
             {

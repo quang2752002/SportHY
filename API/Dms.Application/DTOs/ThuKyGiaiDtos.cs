@@ -214,12 +214,49 @@ namespace Dms.Application.DTOs
     {
         public int GiaiDauId { get; set; }
         public string TenGiaiDau { get; set; } = string.Empty;
+        public int? DanhMucMonTheThaoId { get; set; }
+        public string? TenDanhMucMonTheThao { get; set; }
+        public int? MonTheThaoId { get; set; }
+        public string? TenMonTheThao { get; set; }
         public int TongSoHuyChuongVang { get; set; }
         public int TongSoHuyChuongBac { get; set; }
         public int TongSoHuyChuongDong { get; set; }
         public int TongSoHuyChuongDaTrao => TongSoHuyChuongVang + TongSoHuyChuongBac + TongSoHuyChuongDong;
         public List<HuyChuongDoanDto> BangXepHang { get; set; } = new();
         public DateTime NgayXuatBaoCao { get; set; } = DateTime.Now;
+    }
+
+    /// <summary>
+    /// Bảng xếp hạng huy chương theo một danh mục môn thể thao
+    /// </summary>
+    public class BangXepHangTheoDanhMucDto
+    {
+        public int DanhMucId { get; set; }
+        public string MaDanhMuc { get; set; } = string.Empty;
+        public string TenDanhMuc { get; set; } = string.Empty;
+        public int TongSoMon { get; set; }
+        public int TongHuyChuongVang { get; set; }
+        public int TongHuyChuongBac { get; set; }
+        public int TongHuyChuongDong { get; set; }
+        public int TongHuyChuong => TongHuyChuongVang + TongHuyChuongBac + TongHuyChuongDong;
+        public List<HuyChuongDoanDto> BangXepHang { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Bảng xếp hạng huy chương theo một môn thể thao cụ thể
+    /// </summary>
+    public class BangXepHangTheoMonDto
+    {
+        public int MonTheThaoId { get; set; }
+        public string MaMon { get; set; } = string.Empty;
+        public string TenMon { get; set; } = string.Empty;
+        public int DanhMucId { get; set; }
+        public string TenDanhMuc { get; set; } = string.Empty;
+        public int TongHuyChuongVang { get; set; }
+        public int TongHuyChuongBac { get; set; }
+        public int TongHuyChuongDong { get; set; }
+        public int TongHuyChuong => TongHuyChuongVang + TongHuyChuongBac + TongHuyChuongDong;
+        public List<HuyChuongDoanDto> BangXepHang { get; set; } = new();
     }
 
     public class ThuKyBaoCaoTongHopDto

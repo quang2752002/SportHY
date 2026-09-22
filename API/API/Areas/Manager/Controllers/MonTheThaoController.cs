@@ -34,9 +34,11 @@ namespace API.Areas.Manager.Controllers
             string? keyword = null,
             int? danhMucId = null,
             bool? trangThai = null,
-            string? gioiTinh = null)
+            string? gioiTinh = null,
+            string? hinhThucThiDau = null,
+            string? loaiThiDau = null)
         {
-            var result = await _monTheThaoService.GetPagedAsync(pageIndex, pageSize, keyword, danhMucId, trangThai, gioiTinh);
+            var result = await _monTheThaoService.GetPagedAsync(pageIndex, pageSize, keyword, danhMucId, trangThai, gioiTinh, hinhThucThiDau, loaiThiDau);
             return Json(new { success = true, data = result });
         }
 

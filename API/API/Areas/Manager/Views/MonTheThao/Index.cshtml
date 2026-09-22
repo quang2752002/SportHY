@@ -29,17 +29,17 @@
             <!-- Bộ lọc tìm kiếm -->
             <div class="p-3 bg-light rounded-3 mb-4 border">
                 <div class="row g-2 align-items-center">
-                    <div class="col-md-5">
+                    <div class="col-md-3">
                         <div class="input-group bg-white rounded-3 border overflow-hidden">
                             <span class="input-group-text bg-white border-0 text-muted ps-3">
                                 <i class="fa-solid fa-magnifying-glass"></i>
                             </span>
-                            <input type="text" id="keyword" class="form-control border-0 shadow-none ps-2" placeholder="Tìm theo tên môn, mã môn...">
+                            <input type="text" id="keyword" class="form-control border-0 shadow-none ps-2" placeholder="Tìm tên, mã môn...">
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <select id="danhMucFilter" class="form-select bg-white border rounded-3 shadow-none">
-                            <option value="">-- Tất cả danh mục --</option>
+                            <option value="">-- Danh mục --</option>
                             @foreach (var dm in danhMucs)
                             {
                                 <option value="@dm.Id">@dm.Ten</option>
@@ -47,11 +47,29 @@
                         </select>
                     </div>
                     <div class="col-md-2">
+                        <select id="hinhThucFilter" class="form-select bg-white border rounded-3 shadow-none">
+                            <option value="">-- Sơ đồ thi đấu --</option>
+                            <option value="LoaiTrucTiep">Loại trực tiếp (Knockout)</option>
+                            <option value="VongBang">Vòng tròn / Vòng bảng</option>
+                            <option value="KetHopVongBangVaLoaiTrucTiep">Bảng + Knockout</option>
+                            <option value="NhanhThangNhanhThua">Nhánh thắng - thua</option>
+                            <option value="HeThuySi">Hệ Thụy Sĩ</option>
+                            <option value="TinhDiemXepHang">Đo thành tích</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="quyMoFilter" class="form-select bg-white border rounded-3 shadow-none">
+                            <option value="">-- Quy mô --</option>
+                            <option value="DongDoi">Đồng đội</option>
+                            <option value="CaNhan">Cá nhân</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
                         <select id="gioiTinhFilter" class="form-select bg-white border rounded-3 shadow-none">
-                            <option value="">-- Giới tính --</option>
+                            <option value="">-- Phái --</option>
                             <option value="Nam">Nam</option>
                             <option value="Nu">Nữ</option>
-                            <option value="HonHop">Hỗn hợp (Nam/Nữ)</option>
+                            <option value="HonHop">Hỗn hợp</option>
                         </select>
                     </div>
                     <div class="col-md-2 d-flex gap-1">
@@ -73,7 +91,8 @@
                             <th class="ps-3" style="width: 50px;">STT</th>
                             <th>Tên Môn Thể Thao</th>
                             <th>Nhóm Danh Mục</th>
-                            <th>Thể Thức</th>
+                            <th>Quy Mô</th>
+                            <th>Sơ Đồ Thi Đấu</th>
                             <th>Giới Tính</th>
                             <th>Số VĐV / Đội</th>
                             <th>Trạng Thái</th>
@@ -81,7 +100,7 @@
                         </tr>
                     </thead>
                     <tbody id="tblBody">
-                        <tr><td colspan="8" class="text-center py-5 text-muted">Đang tải danh sách môn thể thao...</td></tr>
+                        <tr><td colspan="9" class="text-center py-5 text-muted">Đang tải danh sách môn thể thao...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -129,11 +148,10 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label fw-semibold small">Thể thức thi đấu</label>
+                            <label class="form-label fw-semibold small">Quy mô tham gia</label>
                             <select id="loaiThiDau" class="form-select">
                                 <option value="DongDoi">Đồng đội</option>
                                 <option value="CaNhan">Cá nhân</option>
-                                <option value="DoiKhang">Đối kháng</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -146,11 +164,23 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold small">Số VĐV tối thiểu trong đội</label>
+                            <label class="form-label fw-semibold small">Hình thức / Sơ đồ thi đấu</label>
+                            <select id="hinhThucThiDau" class="form-select">
+                                <option value="LoaiTrucTiep">Loại trực tiếp (Knockout)</option>
+                                <option value="VongBang">Vòng tròn tính điểm / Vòng bảng (Round Robin)</option>
+                                <option value="KetHopVongBangVaLoaiTrucTiep">Kết hợp vòng bảng và loại trực tiếp</option>
+                                <option value="NhanhThangNhanhThua">Nhánh thắng - Nhánh thua (Double Elimination)</option>
+                                <option value="HeThuySi">Hệ Thụy Sĩ (Swiss System - Cờ vua)</option>
+                                <option value="TinhDiemXepHang">Đo thành tích / Tính điểm xếp hạng (Điền kinh, Bơi lội)</option>
+                                <option value="Khac">Khác</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold small">Số VĐV tối thiểu / đội</label>
                             <input type="number" class="form-control" id="soLuongVdvToiThieu" value="1" min="1">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold small">Số VĐV tối đa trong đội</label>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold small">Số VĐV tối đa / đội</label>
                             <input type="number" class="form-control" id="soLuongVdvToiDa" value="1" min="1">
                         </div>
 
@@ -228,20 +258,39 @@
                     </div>
 
                     <!-- Main Format Configuration -->
-                    <div class="row g-3">
+                    <div class="row g-3 align-items-center">
                         <div class="col-md-4">
-                            <label class="form-label fw-bold small text-secondary">Hạng mục thể thức cốt lõi <span class="text-danger">*</span></label>
-                            <select id="fmtLoaiTheThuc" class="form-select fw-semibold border-primary" onchange="onFormatTypeChange()">
-                                <option value="SetDiem">🎯 Đấu Set / Hiệp tính điểm (Cầu lông, Bóng chuyền, Bóng bàn, Tennis...)</option>
+                            <label class="form-label fw-bold small text-secondary">
+                                <i class="fa-solid fa-sitemap text-primary me-1"></i> Sơ đồ thi đấu của môn
+                            </label>
+                            <select id="fmtHinhThucThiDau" class="form-select fw-semibold border-primary-subtle" onchange="onBracketFormatChange()">
+                                <option value="LoaiTrucTiep">Loại trực tiếp (Knockout)</option>
+                                <option value="VongBang">Vòng tròn tính điểm / Bảng</option>
+                                <option value="KetHopVongBangVaLoaiTrucTiep">Bảng + Knockout</option>
+                                <option value="NhanhThangNhanhThua">Nhánh thắng - thua (Double Elim)</option>
+                                <option value="HeThuySi">Hệ Thụy Sĩ (Swiss System - Cờ vua)</option>
+                                <option value="TinhDiemXepHang">Đo thành tích / Chạy làn</option>
+                                <option value="Khac">Khác</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-secondary">
+                                <i class="fa-solid fa-stopwatch text-success me-1"></i> Cơ chế tính điểm trận (Scoring) <span class="text-danger">*</span>
+                            </label>
+                            <select id="fmtLoaiTheThuc" class="form-select fw-semibold border-success-subtle" onchange="onFormatTypeChange()">
+                                <option value="SetDiem">🎯 Đấu Set / Hiệp tính điểm (Cầu lông, Bóng chuyền, Bóng bàn...)</option>
                                 <option value="ThoiGianHiep">⏱️ Tính thời gian hiệp (Bóng đá, Futsal, Bóng rổ...)</option>
                                 <option value="TinhDiemXepHang">🏅 Đo thành tích / Chạy làn (Điền kinh, Bơi lội...)</option>
                             </select>
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-4">
                             <div class="alert alert-info border-0 rounded-3 py-2 px-3 mb-0 small" id="fmtTypeNote">
                                 <i class="fa-solid fa-circle-info me-1"></i>
-                                Hệ thống sẽ tự động hiển thị giao diện chấm điểm và vận hành bracket tương ứng cho môn này.
+                                Hệ thống tự động áp dụng giao diện chấm điểm và bảng xếp hạng tương ứng cho môn này.
                             </div>
+                        </div>
+                        <div class="col-12" id="fmtBracketTipContainer">
+                            <!-- Chú thích tương thích thông minh -->
                         </div>
                     </div>
 
@@ -427,13 +476,62 @@
                 if (e.which === 13) loadData(1);
             });
 
-            $('#danhMucFilter, #gioiTinhFilter').on('change', function () {
+            $('#danhMucFilter, #gioiTinhFilter, #hinhThucFilter, #quyMoFilter').on('change', function () {
                 loadData(1);
             });
 
             $('#formMon').on('submit', function (e) {
                 e.preventDefault();
                 saveData();
+            });
+
+            // Gợi ý thông minh khi gõ tên môn thể thao mới
+            $('#ten').on('input', function () {
+                if ($('#monId').val()) return; // Chỉ áp dụng khi thêm mới
+                const val = $(this).val().toLowerCase().trim();
+                if (!val) return;
+
+                if (val.includes('bóng đá') || val.includes('futsal')) {
+                    $('#loaiThiDau').val('DongDoi');
+                    $('#hinhThucThiDau').val('KetHopVongBangVaLoaiTrucTiep');
+                    $('#soLuongVdvToiThieu').val(7);
+                    $('#soLuongVdvToiDa').val(14);
+                } else if (val.includes('bóng chuyền')) {
+                    $('#loaiThiDau').val('DongDoi');
+                    $('#hinhThucThiDau').val('KetHopVongBangVaLoaiTrucTiep');
+                    $('#soLuongVdvToiThieu').val(6);
+                    $('#soLuongVdvToiDa').val(12);
+                } else if (val.includes('bóng rổ')) {
+                    $('#loaiThiDau').val('DongDoi');
+                    $('#hinhThucThiDau').val('LoaiTrucTiep');
+                    $('#soLuongVdvToiThieu').val(3);
+                    $('#soLuongVdvToiDa').val(5);
+                } else if (val.includes('cầu lông')) {
+                    $('#loaiThiDau').val('CaNhan');
+                    $('#hinhThucThiDau').val('LoaiTrucTiep');
+                    $('#soLuongVdvToiThieu').val(1);
+                    $('#soLuongVdvToiDa').val(2);
+                } else if (val.includes('bóng bàn')) {
+                    $('#loaiThiDau').val('CaNhan');
+                    $('#hinhThucThiDau').val('VongBang');
+                    $('#soLuongVdvToiThieu').val(1);
+                    $('#soLuongVdvToiDa').val(2);
+                } else if (val.includes('tennis') || val.includes('quần vợt') || val.includes('pickleball')) {
+                    $('#loaiThiDau').val('CaNhan');
+                    $('#hinhThucThiDau').val('LoaiTrucTiep');
+                    $('#soLuongVdvToiThieu').val(1);
+                    $('#soLuongVdvToiDa').val(2);
+                } else if (val.includes('chạy') || val.includes('điền kinh') || val.includes('bơi')) {
+                    $('#loaiThiDau').val('CaNhan');
+                    $('#hinhThucThiDau').val('TinhDiemXepHang');
+                    $('#soLuongVdvToiThieu').val(1);
+                    $('#soLuongVdvToiDa').val(1);
+                } else if (val.includes('cờ vua') || val.includes('cờ tướng')) {
+                    $('#loaiThiDau').val('CaNhan');
+                    $('#hinhThucThiDau').val('HeThuySi');
+                    $('#soLuongVdvToiThieu').val(1);
+                    $('#soLuongVdvToiDa').val(1);
+                }
             });
         });
 
@@ -442,6 +540,8 @@
             const keyword = $('#keyword').val().trim();
             const danhMucId = $('#danhMucFilter').val();
             const gioiTinh = $('#gioiTinhFilter').val();
+            const hinhThucThiDau = $('#hinhThucFilter').val();
+            const loaiThiDau = $('#quyMoFilter').val();
 
             $.ajax({
                 url: '/Manager/MonTheThao/GetPagedData',
@@ -451,7 +551,9 @@
                     pageSize: pageSize,
                     keyword: keyword || undefined,
                     danhMucId: danhMucId ? parseInt(danhMucId) : undefined,
-                    gioiTinh: gioiTinh || undefined
+                    gioiTinh: gioiTinh || undefined,
+                    hinhThucThiDau: hinhThucThiDau || undefined,
+                    loaiThiDau: loaiThiDau || undefined
                 },
                 success: function (res) {
                     if (res.success && res.data) {
@@ -464,7 +566,7 @@
         function renderTable(data) {
             const items = data.items || [];
             if (items.length === 0) {
-                $('#tblBody').html('<tr><td colspan="8" class="text-center py-5 text-muted">Chưa có môn thể thao nào.</td></tr>');
+                $('#tblBody').html('<tr><td colspan="9" class="text-center py-5 text-muted">Chưa có môn thể thao nào.</td></tr>');
                 $('#paginationInfo').text('Hiển thị 0 trên 0 môn thể thao');
                 $('#paginationList').empty();
                 return;
@@ -479,8 +581,32 @@
                 let loaiBadge = '<span class="badge bg-primary-subtle text-primary border fw-semibold"><i class="fa-solid fa-users me-1"></i>Đồng đội</span>';
                 if (loaiVal === 'CaNhan') {
                     loaiBadge = '<span class="badge bg-info-subtle text-info border fw-semibold"><i class="fa-solid fa-user me-1"></i>Cá nhân</span>';
-                } else if (loaiVal === 'DoiKhang') {
-                    loaiBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border fw-semibold"><i class="fa-solid fa-hand-fist me-1"></i>Đối kháng</span>';
+                }
+
+                // Sơ đồ / Hình thức thi đấu badge
+                let hinhThucBadge = '';
+                switch (item.hinhThucThiDau) {
+                    case 'LoaiTrucTiep':
+                        hinhThucBadge = '<span class="badge bg-danger-subtle text-danger border fw-semibold"><i class="fa-solid fa-sitemap me-1"></i>Loại trực tiếp</span>';
+                        break;
+                    case 'VongBang':
+                        hinhThucBadge = '<span class="badge bg-success-subtle text-success border fw-semibold"><i class="fa-solid fa-table-cells me-1"></i>Vòng tròn / Bảng</span>';
+                        break;
+                    case 'KetHopVongBangVaLoaiTrucTiep':
+                        hinhThucBadge = '<span class="badge bg-primary-subtle text-primary border fw-semibold"><i class="fa-solid fa-diagram-project me-1"></i>Bảng + Knockout</span>';
+                        break;
+                    case 'NhanhThangNhanhThua':
+                        hinhThucBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border fw-semibold"><i class="fa-solid fa-code-branch me-1"></i>Nhánh thắng - thua</span>';
+                        break;
+                    case 'HeThuySi':
+                        hinhThucBadge = '<span class="badge border fw-semibold" style="background-color: #f3e8ff; color: #7e22ce; border-color: #e9d5ff !important;"><i class="fa-solid fa-chess me-1"></i>Hệ Thụy Sĩ</span>';
+                        break;
+                    case 'TinhDiemXepHang':
+                        hinhThucBadge = '<span class="badge bg-info-subtle text-info border fw-semibold"><i class="fa-solid fa-stopwatch me-1"></i>Đo thành tích</span>';
+                        break;
+                    default:
+                        hinhThucBadge = `<span class="badge bg-secondary-subtle text-secondary border fw-semibold">${escapeHtml(item.hinhThucThiDau || 'Mặc định')}</span>`;
+                        break;
                 }
 
                 const gt = item.gioiTinh === 'Nu' ? 'Nữ' : (item.gioiTinh === 'HonHop' ? 'Hỗn hợp' : 'Nam');
@@ -514,6 +640,7 @@
                             </span>
                         </td>
                         <td>${loaiBadge}</td>
+                        <td>${hinhThucBadge}</td>
                         <td>
                             <span class="badge ${item.gioiTinh === 'Nu' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'} border">
                                 ${gt}
@@ -527,7 +654,7 @@
                         </td>
                         <td class="text-end pe-3">
                             <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-light border text-primary" title="Cấu hình thể thức & luật thi đấu" onclick="openFormatModal(${item.id}, '${escapeHtml(item.ten)}')">
+                                <button type="button" class="btn btn-light border text-primary" title="Cấu hình thể thức & luật thi đấu" onclick="openFormatModal(${item.id}, '${escapeHtml(item.ten)}', '${escapeHtml(item.hinhThucThiDau || 'LoaiTrucTiep')}')">
                                     <i class="fa-solid fa-sliders"></i>
                                 </button>
                                 <button type="button" class="btn btn-light border" title="Sửa" onclick="openEditModal(${item.id})">
@@ -585,6 +712,7 @@
             $('#ma').val('');
             $('#danhMucId').val('');
             $('#loaiThiDau').val('DongDoi');
+            $('#hinhThucThiDau').val('LoaiTrucTiep');
             $('#gioiTinh').val('Nam');
             $('#soLuongVdvToiThieu').val('1');
             $('#soLuongVdvToiDa').val('1');
@@ -603,7 +731,8 @@
                     $('#ma').val(item.ma || '');
                     $('#danhMucId').val(item.danhMucId || '');
                     const loaiVal = item.loaiThiDau || (item.laMonDongDoi ? 'DongDoi' : 'CaNhan');
-                    $('#loaiThiDau').val(loaiVal);
+                    $('#loaiThiDau').val(loaiVal === 'CaNhan' ? 'CaNhan' : 'DongDoi');
+                    $('#hinhThucThiDau').val(item.hinhThucThiDau || 'LoaiTrucTiep');
                     $('#gioiTinh').val(item.gioiTinh || 'Nam');
                     const vMin = item.soLuongVanDongVienToiThieu ?? item.soLuongVdvToiThieu ?? 1;
                     const vMax = item.soLuongVanDongVienToiDa ?? item.soLuongVdvToiDa ?? 1;
@@ -625,6 +754,7 @@
             }
 
             const loaiVal = $('#loaiThiDau').val();
+            const hinhThucVal = $('#hinhThucThiDau').val() || 'LoaiTrucTiep';
             const minVdv = parseInt($('#soLuongVdvToiThieu').val()) || 1;
             const maxVdv = parseInt($('#soLuongVdvToiDa').val()) || 1;
 
@@ -634,6 +764,7 @@
                 danhMucId: $('#danhMucId').val() ? parseInt($('#danhMucId').val()) : null,
                 loaiThiDau: loaiVal,
                 laMonDongDoi: (loaiVal === 'DongDoi'),
+                hinhThucThiDau: hinhThucVal,
                 gioiTinh: $('#gioiTinh').val(),
                 soLuongVanDongVienToiThieu: minVdv,
                 soLuongVanDongVienToiDa: maxVdv,
@@ -679,6 +810,8 @@
             $('#keyword').val('');
             $('#danhMucFilter').val('');
             $('#gioiTinhFilter').val('');
+            $('#hinhThucFilter').val('');
+            $('#quyMoFilter').val('');
             loadData(1);
         }
 
@@ -695,21 +828,53 @@
             $('#panelTinhDiemXepHang').toggleClass('d-none', loai !== 'TinhDiemXepHang');
 
             if (loai === 'SetDiem') {
-                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Thể thức Set điểm:</strong> Trọng tài nhập điểm từng hiệp, áp dụng luật Deuce cách biệt 2 điểm và trần điểm.');
+                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Set điểm:</strong> Nhập điểm từng hiệp, áp dụng Deuce 2đ & trần điểm.');
             } else if (loai === 'ThoiGianHiep') {
-                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Thể thức Thời gian:</strong> Trọng tài tính tỉ số theo thời gian hiệp, áp dụng hiệp phụ và sút luân lưu (Penalty) ở vòng Knockout.');
+                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Thời gian:</strong> Tính tỉ số phút, hiệp phụ & luân lưu Penalty.');
             } else {
-                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Thể thức Đo thành tích:</strong> Xếp hạng VĐV theo làn chạy/bơi, kiểm tra phá kỷ lục và tự động xếp hạt giống vào đợt Chung kết.');
+                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Đo thành tích:</strong> Xếp hạng theo làn chạy/bơi, kiểm tra kỷ lục & vé Chung kết.');
             }
+            onBracketFormatChange();
         }
 
-        function openFormatModal(monId, monTen) {
+        function onBracketFormatChange() {
+            const hinhThuc = $('#fmtHinhThucThiDau').val();
+            const loaiTheThuc = $('#fmtLoaiTheThuc').val();
+            let tipHtml = '';
+
+            if (hinhThuc === 'LoaiTrucTiep') {
+                tipHtml = `
+                    <div class="alert alert-light border border-info-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-info fs-6"></i>
+                        <span>Sơ đồ <strong>Loại trực tiếp (Knockout)</strong>: Các mục điểm số vòng bảng (Thắng 3/Hòa 1/Thua 0) sẽ được lưu dự phòng nếu giải đấu chuyển sang đá vòng tròn.</span>
+                    </div>`;
+            } else if (hinhThuc === 'TinhDiemXepHang' && loaiTheThuc !== 'TinhDiemXepHang') {
+                tipHtml = `
+                    <div class="alert alert-warning border border-warning-subtle text-warning-emphasis rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-warning fs-6"></i>
+                        <span>Sơ đồ <strong>Đo thành tích</strong>: Khuyên dùng cơ chế tính điểm <strong>🏅 Đo thành tích / Chạy làn</strong> để hệ thống bấm giờ và chia làn thi đấu chuẩn xác.</span>
+                    </div>`;
+            } else if (hinhThuc === 'VongBang' || hinhThuc === 'KetHopVongBangVaLoaiTrucTiep') {
+                tipHtml = `
+                    <div class="alert alert-light border border-success-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-success fs-6"></i>
+                        <span>Môn có <strong>Vòng bảng</strong>: Điểm số Thắng/Hòa/Thua và tiêu chí hiệu số sẽ được dùng để tự động tính Bảng Xếp Hạng.</span>
+                    </div>`;
+            }
+
+            $('#fmtBracketTipContainer').html(tipHtml);
+        }
+
+        function openFormatModal(monId, monTen, hinhThucThiDau) {
             $('#fmtMonId').val(monId);
             $('#formatModalTitle').text(`Cấu Hình Thể Thức & Luật Thi Đấu - ${monTen}`);
-            $('#formatModalSubtitle').text(`Mã môn #${monId}: ${monTen} • Tùy chỉnh luật và bracket engine`);
+            $('#formatModalSubtitle').html(`Mã môn #${monId}: <strong>${monTen}</strong> • Tùy chỉnh luật và bracket engine`);
 
             // Mặc định ban đầu
             resetFormatForm();
+            if (hinhThucThiDau) {
+                $('#fmtHinhThucThiDau').val(hinhThucThiDau);
+            }
 
             // Lấy cấu hình từ server
             $.get('/Manager/CauHinhTheThuc/GetConfig', { monTheThaoId: monId }, function (res) {
@@ -726,6 +891,7 @@
         }
 
         function resetFormatForm() {
+            $('#fmtHinhThucThiDau').val('LoaiTrucTiep');
             $('#fmtLoaiTheThuc').val('SetDiem');
             $('#fmtSoHiepToiDa').val(3);
             $('#fmtSoHiepThang').val(2);
@@ -756,6 +922,9 @@
         }
 
         function populateFormatForm(data) {
+            if (data.hinhThucThiDau) {
+                $('#fmtHinhThucThiDau').val(data.hinhThucThiDau);
+            }
             $('#fmtLoaiTheThuc').val(data.loaiTheThuc || 'SetDiem');
             $('#fmtSoHiepToiDa').val(data.soHiepToiDa || 3);
             $('#fmtSoHiepThang').val(data.soHiepThangDeThangTran || 2);
@@ -807,6 +976,7 @@
 
         function applyPreset(preset) {
             if (preset === 'badminton') {
+                $('#fmtHinhThucThiDau').val('LoaiTrucTiep');
                 $('#fmtLoaiTheThuc').val('SetDiem');
                 $('#fmtSoHiepToiDa').val(3);
                 $('#fmtSoHiepThang').val(2);
@@ -816,6 +986,7 @@
                 $('#fmtDiemToiDa').val(30);
                 $('#fmtCachTinhDiemTheoSet').prop('checked', false);
             } else if (preset === 'volleyball') {
+                $('#fmtHinhThucThiDau').val('KetHopVongBangVaLoaiTrucTiep');
                 $('#fmtLoaiTheThuc').val('SetDiem');
                 $('#fmtSoHiepToiDa').val(5);
                 $('#fmtSoHiepThang').val(3);
@@ -825,6 +996,7 @@
                 $('#fmtDiemToiDa').val('');
                 $('#fmtCachTinhDiemTheoSet').prop('checked', true);
             } else if (preset === 'football') {
+                $('#fmtHinhThucThiDau').val('KetHopVongBangVaLoaiTrucTiep');
                 $('#fmtLoaiTheThuc').val('ThoiGianHiep');
                 $('#fmtThoiGianChinh').val(45);
                 $('#fmtDiemThang').val(3);
@@ -837,6 +1009,7 @@
                 $('#fmtCoPenalty').prop('checked', true);
                 $('#fmtSoLuotPen').val(5);
             } else if (preset === 'tabletennis') {
+                $('#fmtHinhThucThiDau').val('VongBang');
                 $('#fmtLoaiTheThuc').val('SetDiem');
                 $('#fmtSoHiepToiDa').val(5);
                 $('#fmtSoHiepThang').val(3);
@@ -846,6 +1019,7 @@
                 $('#fmtDiemToiDa').val('');
                 $('#fmtCachTinhDiemTheoSet').prop('checked', false);
             } else if (preset === 'athletics') {
+                $('#fmtHinhThucThiDau').val('TinhDiemXepHang');
                 $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
                 $('#fmtLoaiDo').val('ThoiGian');
                 $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
@@ -854,6 +1028,7 @@
                 $('#fmtSoVdvVaoCk').val(8);
                 $('#fmtKyLuc').val(9.58);
             } else if (preset === 'swimming') {
+                $('#fmtHinhThucThiDau').val('TinhDiemXepHang');
                 $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
                 $('#fmtLoaiDo').val('ThoiGian');
                 $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
@@ -878,6 +1053,7 @@
             const loaiTheThuc = $('#fmtLoaiTheThuc').val();
             const payload = {
                 monTheThaoId: monId,
+                hinhThucThiDau: $('#fmtHinhThucThiDau').val() || undefined,
                 loaiTheThuc: loaiTheThuc,
                 soHiepToiDa: parseInt($('#fmtSoHiepToiDa').val()) || 3,
                 soHiepThangDeThangTran: parseInt($('#fmtSoHiepThang').val()) || 2,
@@ -919,6 +1095,7 @@
                     if (res && res.success) {
                         $('#modalTheThuc').modal('hide');
                         SportApp.toast('success', res.message || 'Đã lưu cấu hình thể thức thành công!');
+                        loadData(currentPage);
                     } else {
                         Swal.fire('Lỗi', res.message || 'Không thể lưu cấu hình thể thức.', 'error');
                     }
