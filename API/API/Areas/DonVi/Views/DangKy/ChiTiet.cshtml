@@ -3,6 +3,7 @@
     ViewData["Title"] = $"Đăng Ký - {Model.Ten}";
     var currentUnit = ViewBag.CurrentDonVi as DonViDto;
     var athletes = ViewBag.Athletes as List<VanDongVienDto> ?? new();
+    var categories = ViewBag.Categories as List<DanhMucMonTheThaoDto> ?? new();
     var sports = Model.MonTheThaos ?? new();
     bool isExpired = Model.HanDangKy.HasValue && Model.HanDangKy.Value < DateTime.Now;
 }
@@ -99,7 +100,20 @@
 
                         <!-- Bước 1: Chọn môn thi -->
                         <div class="row g-3 mb-4">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-dark">
+                                    Danh mục môn thể thao
+                                </label>
+                                <select id="selectCategory" class="form-select" onchange="onCategoryChanged()">
+                                    <option value="">-- Tất cả danh mục --</option>
+                                    @foreach (var cat in categories)
+                                    {
+                                        <option value="@cat.Id">@cat.Ten</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
                                 <label class="form-label small fw-bold text-dark">
                                     1. Chọn Môn Thi Đấu Trong Giải <span class="text-danger">*</span>
                                 </label>
@@ -108,6 +122,7 @@
                                     @foreach (var s in sports)
                                     {
                                         <option value="@s.Id"
+                                                data-catid="@(s.DanhMucId ?? 0)"
                                                 data-name="@s.Ten"
                                                 data-team="@(s.LaMonDongDoi ? "true" : "false")"
                                                 data-gender="@(s.GioiTinh ?? "TatCa")"
@@ -119,7 +134,7 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label small fw-bold text-dark">
                                     Thông tin môn thi đã chọn
                                 </label>
@@ -139,19 +154,25 @@
                         </div>
 
                         <!-- Bước 3: Chọn VĐV từ đoàn -->
-                        <div class="mb-4">
+                        <div class="mb-4" id="athleteSection">
                             <div class="d-flex flex-column flex-sm-row sm-align-items-center justify-content-between gap-2 mb-2">
                                 <label class="form-label small fw-bold text-dark mb-0">
                                     3. Chọn Vận Động Viên Tham Gia <span class="text-danger">*</span>
                                     <span class="badge bg-success-subtle text-success border border-success-subtle ms-2" id="selectedCountBadge">Đã chọn: 0 VĐV</span>
                                 </label>
                                 <div class="d-flex align-items-center gap-2">
-                                    <input type="text" id="athleteSearch" class="form-control form-control-sm" placeholder="Lọc tên VĐV..." style="max-width: 180px;" oninput="filterAthletes()" />
+                                    <input type="text" id="athleteSearch" class="form-control form-control-sm" placeholder="Lọc tên VĐV..." style="max-width: 180px;" oninput="filterAthletes()" disabled />
                                     <div class="form-check form-switch small mb-0">
-                                        <input class="form-check-input" type="checkbox" id="checkFilterGender" checked onchange="filterAthletes()" />
+                                        <input class="form-check-input" type="checkbox" id="checkFilterGender" checked onchange="filterAthletes()" disabled />
                                         <label class="form-check-label text-muted" for="checkFilterGender">Lọc theo giới tính môn</label>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Alert nhắc chọn môn -->
+                            <div id="athleteSelectHint" class="alert alert-warning py-2 px-3 small mb-2 d-flex align-items-center gap-2 rounded-3 border-0 bg-warning bg-opacity-10 text-warning-emphasis">
+                                <i class="fa-solid fa-circle-exclamation text-warning fs-6"></i>
+                                <span>Vui lòng chọn <strong>Môn thi đấu trong giải</strong> ở bước 1 để mở danh sách chọn vận động viên.</span>
                             </div>
 
                             @if (athletes.Count == 0)
@@ -166,7 +187,7 @@
                             }
                             else
                             {
-                                <div class="border rounded-3 p-3 bg-light" style="max-height: 320px; overflow-y: auto;" id="athleteListContainer">
+                                <div class="border rounded-3 p-3 bg-light" style="max-height: 320px; overflow-y: auto; opacity: 0.45; pointer-events: none; transition: all 0.3s;" id="athleteListContainer">
                                     <div class="row g-2" id="athleteGrid">
                                         @foreach (var a in athletes)
                                         {
@@ -289,16 +310,60 @@
             });
         });
 
+        function onCategoryChanged() {
+            const catId = $('#selectCategory').val();
+            const $sportSelect = $('#selectSport');
+            const currentSportVal = $sportSelect.val();
+            let hasCurrent = false;
+
+            $sportSelect.find('option').each(function () {
+                const optCatId = $(this).data('catid');
+                const val = $(this).val();
+
+                if (!val) {
+                    $(this).show();
+                    return;
+                }
+
+                if (!catId || optCatId == catId) {
+                    $(this).show();
+                    if (val == currentSportVal) hasCurrent = true;
+                } else {
+                    $(this).hide();
+                }
+            });
+
+            if (currentSportVal && !hasCurrent) {
+                $sportSelect.val('');
+                onSportChanged();
+            }
+        }
+
         function onSportChanged() {
             const select = document.getElementById('selectSport');
             const selectedOption = select.options[select.selectedIndex];
 
             if (!selectedOption || !selectedOption.value) {
                 $('#sportInfoBox').html('Chưa chọn môn thi đấu.');
-                $('#teamNameSection').hide();
+                $('#teamNameSection').slideUp();
                 currentSportIsTeam = false;
+
+                // Khóa chọn VĐV
+                $('#athleteSelectHint').slideDown();
+                $('#athleteListContainer').css({ 'opacity': '0.45', 'pointer-events': 'none' });
+                $('#athleteSearch').prop('disabled', true);
+                $('#checkFilterGender').prop('disabled', true);
+
+                selectedAthletes = [];
+                updateAthleteCheckboxes();
                 return;
             }
+
+            // Mở khóa chọn VĐV
+            $('#athleteSelectHint').slideUp();
+            $('#athleteListContainer').css({ 'opacity': '1', 'pointer-events': 'auto' });
+            $('#athleteSearch').prop('disabled', false);
+            $('#checkFilterGender').prop('disabled', false);
 
             const name = selectedOption.getAttribute('data-name');
             const isTeam = selectedOption.getAttribute('data-team') === 'true';
@@ -306,12 +371,13 @@
             const format = selectedOption.getAttribute('data-format');
             currentSportIsTeam = isTeam;
 
+            let genderText = gender === 'Nam' ? 'Nam' : (gender === 'Nu' ? 'Nữ' : 'Nam & Nữ (Hỗn hợp)');
             let infoHtml = `
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex flex-wrap align-items-center gap-2">
                     <span class="badge ${isTeam ? 'bg-info-subtle text-info border border-info-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'}">
                         ${isTeam ? 'Đồng đội' : 'Cá nhân'}
                     </span>
-                    <span class="badge bg-light text-dark border">Giới tính: ${gender}</span>
+                    <span class="badge bg-light text-dark border">Giới tính: ${genderText}</span>
                     ${format ? `<span class="badge bg-light text-dark border">Thể thức: ${format}</span>` : ''}
                 </div>
             `;
@@ -324,14 +390,33 @@
                 }
             } else {
                 $('#teamNameSection').slideUp();
-                // Với môn cá nhân, nếu đang chọn nhiều VĐV thì chỉ giữ lại 1 VĐV đầu tiên
                 if (selectedAthletes.length > 1) {
                     selectedAthletes = [selectedAthletes[0]];
                     updateAthleteCheckboxes();
                 }
             }
 
+            // Tự động bỏ chọn các VĐV không đúng giới tính nếu trước đó có chọn
+            cleanInvalidGenderAthletes(gender);
             filterAthletes();
+        }
+
+        function cleanInvalidGenderAthletes(sportGender) {
+            if (!sportGender || sportGender === 'HonHop' || sportGender === 'TatCa') return;
+
+            const validIds = [];
+            selectedAthletes.forEach(id => {
+                const athleteGender = $(`[data-id="${id}"]`).data('gender');
+                if (athleteGender === sportGender) {
+                    validIds.push(id);
+                }
+            });
+
+            if (validIds.length !== selectedAthletes.length) {
+                selectedAthletes = validIds;
+                updateAthleteCheckboxes();
+                SportApp.toast('warning', `Đã tự động bỏ chọn các VĐV không đúng giới tính quy định (${sportGender === 'Nam' ? 'Nam' : 'Nữ'}).`);
+            }
         }
 
         function filterAthletes() {
@@ -363,19 +448,37 @@
 
         function toggleAthleteSelection(id) {
             const select = document.getElementById('selectSport');
-            if (!select.value) {
-                Swal.fire('Thông báo', 'Vui lòng chọn môn thi đấu trước khi chọn vận động viên.', 'info');
+            if (!select || !select.value) {
+                Swal.fire('Thông báo', 'Vui lòng chọn môn thi đấu ở Bước 1 trước khi chọn vận động viên.', 'info');
                 return;
             }
+
+            const selectedOption = select.options[select.selectedIndex];
+            const sportGender = selectedOption ? selectedOption.getAttribute('data-gender') : null;
+            const athleteItem = $(`[data-id="${id}"]`);
+            const athleteGender = athleteItem.data('gender') || '';
 
             const index = selectedAthletes.indexOf(id);
             if (index > -1) {
                 // Deselect
                 selectedAthletes.splice(index, 1);
             } else {
-                // Select
+                // Select: Kiểm tra nghiêm ngặt giới tính
+                if (sportGender && sportGender !== 'HonHop' && sportGender !== 'TatCa') {
+                    if (sportGender !== athleteGender) {
+                        const requiredText = sportGender === 'Nam' ? 'Nam' : 'Nữ';
+                        const athleteText = athleteGender === 'Nam' ? 'Nam' : 'Nữ';
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Không đúng giới tính quy định',
+                            text: `Môn này quy định chỉ dành riêng cho vận động viên ${requiredText}. Không thể chọn vận động viên ${athleteText}.`,
+                            confirmButtonColor: '#059669'
+                        });
+                        return;
+                    }
+                }
+
                 if (!currentSportIsTeam) {
-                    // Môn cá nhân: chỉ chọn 1 người duy nhất
                     selectedAthletes = [id];
                 } else {
                     selectedAthletes.push(id);
@@ -401,7 +504,8 @@
         }
 
         function submitRegistrationForm() {
-            const gdmId = parseInt($('#selectSport').val());
+            const select = document.getElementById('selectSport');
+            const gdmId = parseInt(select ? select.value : 0);
             if (!gdmId) {
                 Swal.fire('Lỗi', 'Vui lòng chọn môn thi đấu', 'warning');
                 return;
@@ -415,6 +519,20 @@
             if (!currentSportIsTeam && selectedAthletes.length > 1) {
                 Swal.fire('Lỗi', 'Môn cá nhân chỉ được chọn đúng 1 vận động viên', 'warning');
                 return;
+            }
+
+            // Kiểm tra giới tính toàn bộ VĐV đã chọn trước khi gửi
+            const selectedOption = select.options[select.selectedIndex];
+            const sportGender = selectedOption ? selectedOption.getAttribute('data-gender') : null;
+            if (sportGender && sportGender !== 'HonHop' && sportGender !== 'TatCa') {
+                for (let id of selectedAthletes) {
+                    const athleteGender = $(`[data-id="${id}"]`).data('gender');
+                    if (athleteGender !== sportGender) {
+                        const expectedStr = sportGender === 'Nam' ? 'Nam' : 'Nữ';
+                        Swal.fire('Lỗi giới tính', `Môn thi đấu này chỉ dành cho VĐV ${expectedStr}. Vui lòng bỏ chọn các VĐV không đúng giới tính quy định.`, 'error');
+                        return;
+                    }
+                }
             }
 
             let tenDoi = $('#inputTenDoi').val().trim();

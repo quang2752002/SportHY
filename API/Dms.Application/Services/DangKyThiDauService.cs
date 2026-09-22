@@ -145,6 +145,23 @@ namespace Dms.Application.Services
                 }
             }
 
+            // Kiểm tra giới tính VĐV so với quy định của môn thi đấu
+            if (monTheThao != null && !string.IsNullOrWhiteSpace(monTheThao.GioiTinh) &&
+                !monTheThao.GioiTinh.Equals("HonHop", StringComparison.OrdinalIgnoreCase) &&
+                !monTheThao.GioiTinh.Equals("TatCa", StringComparison.OrdinalIgnoreCase))
+            {
+                var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id))).ToList();
+                var invalidGenderVdvs = vdvs.Where(v => !string.IsNullOrEmpty(v.GioiTinh) &&
+                    !string.Equals(v.GioiTinh, monTheThao.GioiTinh, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                if (invalidGenderVdvs.Any())
+                {
+                    var genderLabel = monTheThao.GioiTinh.Equals("Nam", StringComparison.OrdinalIgnoreCase) ? "Nam" : "Nữ";
+                    var invalidNames = string.Join(", ", invalidGenderVdvs.Select(v => $"{v.HoTen} ({v.GioiTinh})"));
+                    throw new InvalidOperationException($"Môn thi đấu '{monTheThao.Ten}' chỉ dành cho vận động viên {genderLabel}. Các vận động viên sau không đúng giới tính quy định: {invalidNames}.");
+                }
+            }
+
             // Kiểm tra trùng VĐV đã đăng ký trong môn thi đấu này của giải đấu
             var activeRegistrations = (await _unitOfWork.DangKyThiDaus.FindAsync(
                 d => d.GiaiDauMonTheThaoId == dto.GiaiDauMonTheThaoId &&

@@ -1,0 +1,763 @@
+@using Dms.Application.DTOs
+@{
+    ViewData["Title"] = "Lịch Thi Đấu & Bảng Đấu";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var tournaments = ViewBag.Tournaments as List<GiaiDauDto> ?? new();
+    int selectedGiaiDauId = ViewBag.SelectedGiaiDauId ?? 0;
+    var sports = ViewBag.Sports as List<GiaiDauMonTheThaoDto> ?? new();
+    int selectedGmtId = ViewBag.SelectedGmtId ?? 0;
+}
+
+@section Styles {
+    <style>
+        .schedule-header-card {
+            background: #ffffff;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            margin-bottom: 1.5rem;
+        }
+
+        /* View Mode Switcher */
+        .view-mode-pill {
+            background: #f1f5f9;
+            border-radius: 9999px;
+            padding: 4px;
+            display: inline-flex;
+            gap: 4px;
+        }
+        .view-mode-btn {
+            border-radius: 9999px;
+            padding: 6px 18px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .view-mode-btn.active {
+            background: #ea580c;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);
+        }
+
+        /* Sport Selection Pills */
+        .sport-pill-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+        .sport-pill-bar::-webkit-scrollbar {
+            display: none;
+        }
+        .sport-pill-item {
+            border-radius: 9999px;
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #475569;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sport-pill-item:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+        .sport-pill-item.active {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #0284c7;
+            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+        }
+
+        /* Match Card */
+        .match-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            overflow: hidden;
+        }
+        .match-card:hover {
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            transform: translateY(-2px);
+        }
+        .match-header-row {
+            background: #f8fafc;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 8px 16px;
+            font-size: 0.78rem;
+            color: #64748b;
+        }
+        .team-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+        .team-logo-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #ffffff;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .score-box {
+            min-width: 110px;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 0.75rem;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+        }
+        .score-num {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+        }
+        .score-vs {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #94a3b8;
+        }
+
+        /* Live Indicator */
+        .badge-live-pulse {
+            background-color: #dc2626;
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            animation: pulse-red 1.5s infinite;
+        }
+        @@keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+
+        /* Group Card */
+        .group-card {
+            background: #ffffff;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            overflow: hidden;
+            height: 100%;
+        }
+        .group-header {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .date-section-header {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 1.5rem 0 0.75rem 0;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+    </style>
+}
+
+<div class="py-3 py-md-4">
+    <div class="container-fluid px-lg-4">
+        <!-- 1. Header & Bộ Chọn Giải Đấu + Chế Độ Xem -->
+        <div class="schedule-header-card">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="portal-logo-badge" style="width: 40px; height: 40px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                            <i class="bi bi-calendar3 text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0 text-dark">LỊCH THI ĐẤU & BẢNG ĐẤU</h4>
+                            <div class="text-muted small">Cổng tra cứu lịch thi đấu, tỷ số trực tiếp và bảng đấu các giải</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <!-- Dropdown Giải Đấu -->
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="small fw-bold text-muted text-nowrap d-none d-sm-block">Giải đấu:</label>
+                        <select id="selectTournament" class="form-select rounded-3 shadow-none border-secondary-subtle" style="min-width: 260px; font-weight: 600;" onchange="onTournamentChange(this.value)">
+                            @foreach (var t in tournaments)
+                            {
+                                if (t.Id == selectedGiaiDauId)
+                                {
+                                    <option value="@t.Id" selected>@t.Ten</option>
+                                }
+                                else
+                                {
+                                    <option value="@t.Id">@t.Ten</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Switcher Mode: Lịch đấu / Bảng đấu -->
+                    <div class="view-mode-pill ms-lg-2">
+                        <button type="button" class="view-mode-btn active" id="btnModeSchedule" onclick="switchViewMode('schedule')">
+                            <i class="bi bi-calendar4-week"></i>
+                            <span>Lịch thi đấu</span>
+                        </button>
+                        <button type="button" class="view-mode-btn" id="btnModeBrackets" onclick="switchViewMode('brackets')">
+                            <i class="bi bi-diagram-3"></i>
+                            <span>Bảng đấu</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thanh chọn Môn Thi Đấu Trong Giải -->
+            <div class="mt-3 pt-3 border-top">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small fw-bold text-uppercase text-muted" style="letter-spacing: 0.5px;">Môn thi đấu trong giải:</span>
+                    <span class="small text-muted" id="sportCountBadge">Đang nạp môn...</span>
+                </div>
+                <div class="sport-pill-bar" id="sportPillsContainer">
+                    <!-- Dynamic Pills -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Thanh lọc bổ sung (Bộ lọc trạng thái, tìm kiếm nhanh) -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4 p-3 bg-white" id="filterToolbar">
+            <div class="row g-2 align-items-center justify-content-between">
+                <div class="col-md-6 col-lg-5">
+                    <div class="search-input-group">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="searchKeyword" placeholder="Tìm đội, VĐV, sân, vòng đấu..." oninput="handleFilterChange()">
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-6 d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+                    <select id="statusFilter" class="form-select form-select-sm rounded-3 w-auto" style="min-width: 150px; height: 38px;" onchange="handleFilterChange()">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="DangDau">🔴 Đang trực tiếp</option>
+                        <option value="ChuaDau">⏳ Sắp diễn ra (Chưa đấu)</option>
+                        <option value="KetThuc">✓ Đã kết thúc</option>
+                    </select>
+
+                    <input type="date" id="dateFilter" class="form-control form-control-sm rounded-3 w-auto" style="height: 38px;" onchange="handleFilterChange()" title="Lọc theo ngày">
+
+                    <button type="button" class="btn btn-outline-secondary btn-sm border d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; border-radius: 0.5rem;" onclick="resetFilters()" title="Đặt lại bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Loading Indicator -->
+        <div class="text-center py-5" id="mainLoadingState">
+            <div class="spinner-border text-primary" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Đang tải...</span>
+            </div>
+            <p class="text-muted mt-2 small">Đang tải lịch thi đấu và bảng đấu...</p>
+        </div>
+
+        <!-- 4. Chế độ Xem 1: LỊCH THI ĐẤU & KẾT QUẢ -->
+        <div id="scheduleViewArea" class="d-none">
+            <div id="matchesListContainer">
+                <!-- Matches grouped by date -->
+            </div>
+        </div>
+
+        <!-- 5. Chế độ Xem 2: BẢNG ĐẤU & BẢNG XẾP HẠNG -->
+        <div id="bracketsViewArea" class="d-none">
+            <div class="row g-4" id="groupsListContainer">
+                <!-- Group cards with standings table -->
+            </div>
+        </div>
+
+        <!-- 6. Empty State -->
+        <div class="bg-white rounded-4 border p-5 text-center shadow-sm d-none" id="mainEmptyState">
+            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+            <h5 class="fw-bold mt-3 text-secondary" id="emptyTitle">Chưa có dữ liệu</h5>
+            <p class="text-muted small" id="emptyDesc">Chưa có trận đấu hoặc bảng đấu nào cho tiêu chí đang chọn.</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentTournamentId = @selectedGiaiDauId;
+        let currentGmtId = @selectedGmtId;
+        let currentViewMode = 'schedule'; // 'schedule' hoặc 'brackets'
+        let currentSports = [];
+        let allMatches = [];
+        let allGroups = [];
+
+        $(document).ready(function () {
+            // Đọc query param từ URL nếu có
+            const urlParams = new URLSearchParams(window.location.search);
+            const qGId = urlParams.get('giaiDauId');
+            const qGmtId = urlParams.get('gmtId');
+            const qMode = urlParams.get('mode');
+
+            if (qGId && parseInt(qGId) > 0) {
+                currentTournamentId = parseInt(qGId);
+                $('#selectTournament').val(currentTournamentId);
+            }
+            if (qGmtId && parseInt(qGmtId) > 0) {
+                currentGmtId = parseInt(qGmtId);
+            }
+            if (qMode === 'brackets') {
+                currentViewMode = 'brackets';
+            }
+
+            switchViewMode(currentViewMode);
+            loadSportsAndData(currentTournamentId, currentGmtId);
+        });
+
+        function switchViewMode(mode) {
+            currentViewMode = mode;
+            if (mode === 'schedule') {
+                $('#btnModeSchedule').addClass('active');
+                $('#btnModeBrackets').removeClass('active');
+                $('#filterToolbar').removeClass('d-none');
+                $('#bracketsViewArea').addClass('d-none');
+                renderMatches();
+            } else {
+                $('#btnModeBrackets').addClass('active');
+                $('#btnModeSchedule').removeClass('active');
+                $('#filterToolbar').addClass('d-none');
+                $('#scheduleViewArea').addClass('d-none');
+                renderGroups();
+            }
+        }
+
+        function onTournamentChange(gId) {
+            currentTournamentId = parseInt(gId) || 0;
+            currentGmtId = 0; // Đặt lại môn
+            loadSportsAndData(currentTournamentId, 0);
+        }
+
+        function selectSport(gmtId) {
+            currentGmtId = parseInt(gmtId) || 0;
+            $('.sport-pill-item').removeClass('active');
+            $(`.sport-pill-item[data-gmt-id="${currentGmtId}"]`).addClass('active');
+            loadScheduleAndBrackets();
+        }
+
+        function loadSportsAndData(giaiDauId, targetGmtId) {
+            if (!giaiDauId || giaiDauId <= 0) return;
+
+            $.get(`/Home/GetSportsByTournament?giaiDauId=${giaiDauId}`, function (res) {
+                if (res && res.success && Array.isArray(res.data)) {
+                    currentSports = res.data;
+                    renderSportPills(currentSports, targetGmtId);
+                } else {
+                    currentSports = [];
+                    renderSportPills([], 0);
+                }
+                loadScheduleAndBrackets();
+            }).fail(function () {
+                currentSports = [];
+                renderSportPills([], 0);
+                loadScheduleAndBrackets();
+            });
+        }
+
+        function renderSportPills(sports, selectedId) {
+            let html = `
+                <button type="button" class="sport-pill-item ${selectedId === 0 ? 'active' : ''}" data-gmt-id="0" onclick="selectSport(0)">
+                    <i class="bi bi-grid-fill"></i>
+                    <span>Tất cả môn (${sports.length})</span>
+                </button>
+            `;
+
+            if (sports && sports.length > 0) {
+                $('#sportCountBadge').text(`${sports.length} môn thi đấu`);
+                sports.forEach(s => {
+                    const isAct = s.id === selectedId;
+                    html += `
+                        <button type="button" class="sport-pill-item ${isAct ? 'active' : ''}" data-gmt-id="${s.id}" onclick="selectSport(${s.id})">
+                            <i class="bi bi-activity"></i>
+                            <span>${escapeHtml(s.ten)}</span>
+                            ${s.laMonDongDoi ? '<span class="badge rounded-pill bg-light text-secondary border px-1.5 py-0.5 ms-1" style="font-size:0.65rem;">Đồng đội</span>' : ''}
+                        </button>
+                    `;
+                });
+            } else {
+                $('#sportCountBadge').text('Chưa có môn thi đấu');
+            }
+
+            $('#sportPillsContainer').html(html);
+        }
+
+        function loadScheduleAndBrackets() {
+            $('#mainLoadingState').removeClass('d-none');
+            $('#mainEmptyState').addClass('d-none');
+            $('#scheduleViewArea').addClass('d-none');
+            $('#bracketsViewArea').addClass('d-none');
+
+            const params = {
+                giaiDauId: currentTournamentId,
+                giaiDauMonTheThaoId: currentGmtId > 0 ? currentGmtId : undefined,
+                keyword: $('#searchKeyword').val(),
+                trangThai: $('#statusFilter').val(),
+                ngay: $('#dateFilter').val() || undefined
+            };
+
+            $.get('/Home/GetScheduleAndBrackets', params, function (res) {
+                $('#mainLoadingState').addClass('d-none');
+                if (res && res.success) {
+                    allMatches = res.matches || [];
+                    allGroups = res.groups || [];
+
+                    if (currentViewMode === 'schedule') {
+                        renderMatches();
+                    } else {
+                        renderGroups();
+                    }
+                } else {
+                    allMatches = [];
+                    allGroups = [];
+                    showEmpty('Không thể tải dữ liệu', res?.message || 'Có lỗi xảy ra.');
+                }
+            }).fail(function () {
+                $('#mainLoadingState').addClass('d-none');
+                allMatches = [];
+                allGroups = [];
+                showEmpty('Lỗi kết nối', 'Không thể nạp dữ liệu từ máy chủ.');
+            });
+        }
+
+        function handleFilterChange() {
+            loadScheduleAndBrackets();
+        }
+
+        function resetFilters() {
+            $('#searchKeyword').val('');
+            $('#statusFilter').val('');
+            $('#dateFilter').val('');
+            loadScheduleAndBrackets();
+        }
+
+        // ==================== HIỂN THỊ LỊCH THI ĐẤU ====================
+        function renderMatches() {
+            if (!allMatches || allMatches.length === 0) {
+                showEmpty('Chưa có lịch thi đấu', 'Chưa có trận đấu nào được lên lịch cho môn/giải này.');
+                return;
+            }
+
+            $('#mainEmptyState').addClass('d-none');
+            $('#scheduleViewArea').removeClass('d-none');
+
+            // Nhóm trận đấu theo ngày
+            const grouped = {};
+            allMatches.forEach(m => {
+                const dateKey = m.thoiGianDuKien ? m.thoiGianDuKien.split('T')[0] : 'Chưa xếp ngày';
+                if (!grouped[dateKey]) grouped[dateKey] = [];
+                grouped[dateKey].push(m);
+            });
+
+            let html = '';
+            for (const [dateStr, matches] of Object.entries(grouped)) {
+                const displayDate = dateStr !== 'Chưa xếp ngày' ? formatDisplayDate(dateStr) : 'Chưa xếp ngày thi đấu';
+
+                html += `
+                    <div class="mb-4">
+                        <div class="date-section-header">
+                            <i class="bi bi-calendar-event text-primary"></i>
+                            <span>${displayDate}</span>
+                            <span class="badge rounded-pill bg-light text-secondary border fw-normal" style="font-size: 0.75rem;">${matches.length} trận</span>
+                        </div>
+                        <div class="row g-3">
+                `;
+
+                matches.forEach(m => {
+                    html += `
+                        <div class="col-lg-6">
+                            ${renderMatchCard(m)}
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            $('#matchesListContainer').html(html);
+        }
+
+        function renderMatchCard(m) {
+            const timeStr = m.thoiGianDuKien ? formatTimeOnly(m.thoiGianDuKien) : '--:--';
+            const statusBadge = getMatchStatusBadge(m.trangThai);
+            const team1Name = m.tenDoi1 || 'Đội 1 (Chờ bốc thăm)';
+            const team2Name = m.tenDoi2 || 'Đội 2 (Chờ bốc thăm)';
+            const unit1 = m.donViDoi1 || '';
+            const unit2 = m.donViDoi2 || '';
+
+            const isFinished = m.trangThai === 'KetThuc' || m.trangThai === 'DaDau';
+            const isLive = m.trangThai === 'DangDau';
+
+            let centerScoreHtml = '';
+            if (isFinished || isLive) {
+                const s1 = m.tySoDoi1 ?? 0;
+                const s2 = m.tySoDoi2 ?? 0;
+                centerScoreHtml = `
+                    <div class="score-box">
+                        <div class="score-num ${s1 > s2 ? 'text-primary' : (s1 < s2 ? 'text-muted' : 'text-dark')}">
+                            ${s1} <span class="text-secondary opacity-50 px-1">-</span> ${s2}
+                        </div>
+                        ${m.diemPenaltyDoi1 != null ? `<div class="small text-muted" style="font-size: 0.7rem;">(Pen: ${m.diemPenaltyDoi1} - ${m.diemPenaltyDoi2})</div>` : ''}
+                    </div>
+                `;
+            } else {
+                centerScoreHtml = `
+                    <div class="score-box">
+                        <div class="fw-bold text-dark" style="font-size: 1.15rem;">${timeStr}</div>
+                        <span class="score-vs">VS</span>
+                    </div>
+                `;
+            }
+
+            const initial1 = team1Name.substring(0, 1).toUpperCase();
+            const initial2 = team2Name.substring(0, 1).toUpperCase();
+
+            return `
+                <div class="match-card">
+                    <!-- Header -->
+                    <div class="match-header-row d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-1.5 text-truncate">
+                            <span class="badge bg-light text-dark border">Trận #${m.soTran || m.id}</span>
+                            <span class="fw-bold text-dark">${escapeHtml(m.tenMonTheThao || '')}</span>
+                            ${m.tenVongDau ? `<span class="text-muted">• ${escapeHtml(m.tenVongDau)}</span>` : ''}
+                            ${m.tenBangDau ? `<span class="badge bg-primary-subtle text-primary border">${escapeHtml(m.tenBangDau)}</span>` : ''}
+                        </div>
+                        <div>
+                            ${statusBadge}
+                        </div>
+                    </div>
+
+                    <!-- Body: 2 Đội & Tỷ số -->
+                    <div class="p-3 p-sm-3.5 d-flex align-items-center justify-content-between gap-2">
+                        <!-- Đội 1 -->
+                        <div class="team-box justify-content-end text-end" style="flex: 1;">
+                            <div class="text-truncate">
+                                <div class="fw-bold text-dark text-truncate" style="font-size: 0.95rem;">${escapeHtml(team1Name)}</div>
+                                ${unit1 ? `<div class="small text-muted text-truncate" style="font-size: 0.75rem;"><i class="fa-solid fa-building-columns me-1"></i>${escapeHtml(unit1)}</div>` : ''}
+                            </div>
+                            <div class="team-logo-circle" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                                ${initial1}
+                            </div>
+                        </div>
+
+                        <!-- Tỷ số ở giữa -->
+                        <div class="px-1 flex-shrink-0">
+                            ${centerScoreHtml}
+                        </div>
+
+                        <!-- Đội 2 -->
+                        <div class="team-box justify-content-start text-start" style="flex: 1;">
+                            <div class="team-logo-circle" style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);">
+                                ${initial2}
+                            </div>
+                            <div class="text-truncate">
+                                <div class="fw-bold text-dark text-truncate" style="font-size: 0.95rem;">${escapeHtml(team2Name)}</div>
+                                ${unit2 ? `<div class="small text-muted text-truncate" style="font-size: 0.75rem;"><i class="fa-solid fa-building-columns me-1"></i>${escapeHtml(unit2)}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer: Địa điểm sân đấu -->
+                    <div class="px-3 py-2 bg-light border-top d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.76rem;">
+                        <div class="d-flex align-items-center gap-1 text-truncate">
+                            <i class="bi bi-geo-alt-fill text-danger"></i>
+                            <span>${escapeHtml(m.tenSanDau || 'Sân thi đấu chính')} ${m.tenCumSan ? `(${escapeHtml(m.tenCumSan)})` : ''}</span>
+                        </div>
+                        <div class="text-secondary fw-semibold">
+                            ${m.tenTran ? escapeHtml(m.tenTran) : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getMatchStatusBadge(st) {
+            if (st === 'DangDau') {
+                return '<span class="badge-live-pulse"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> TRỰC TIẾP</span>';
+            }
+            if (st === 'KetThuc' || st === 'DaDau') {
+                return '<span class="badge rounded-pill bg-success-subtle text-success border px-2 py-0.5 fw-semibold" style="font-size:0.72rem;">✓ KẾT THÚC</span>';
+            }
+            if (st === 'Hoan' || st === 'Huy') {
+                return '<span class="badge rounded-pill bg-danger-subtle text-danger border px-2 py-0.5 fw-semibold" style="font-size:0.72rem;">TẠM HOÃN</span>';
+            }
+            return '<span class="badge rounded-pill bg-light text-secondary border px-2 py-0.5 fw-semibold" style="font-size:0.72rem;">⏳ CHƯA ĐẤU</span>';
+        }
+
+        // ==================== HIỂN THỊ BẢNG ĐẤU ====================
+        function renderGroups() {
+            if (!allGroups || allGroups.length === 0) {
+                showEmpty('Chưa có bảng đấu', 'Chưa có bảng đấu hoặc sơ đồ thi đấu nào được thiết lập cho môn/giải này.');
+                return;
+            }
+
+            $('#mainEmptyState').addClass('d-none');
+            $('#bracketsViewArea').removeClass('d-none');
+
+            let html = '';
+            allGroups.forEach(g => {
+                const members = g.thanhViens || [];
+                let rowsHtml = '';
+
+                if (members.length === 0) {
+                    rowsHtml = `
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted small">
+                                Chưa có đội nào được phân vào bảng đấu này.
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    members.forEach((m, idx) => {
+                        const rank = m.xepHang || (idx + 1);
+                        const isQualify = rank <= 2;
+                        const rankBadge = isQualify 
+                            ? `<span class="badge rounded-circle bg-success text-white" style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;">${rank}</span>`
+                            : `<span class="badge rounded-circle bg-light text-secondary border" style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;">${rank}</span>`;
+
+                        const teamName = m.tenDoi || m.tenDangKy || 'Đội tuyển';
+                        const unitName = m.tenDonVi || '';
+                        const hieuSo = (m.diemGhiDuoc ?? 0) - (m.diemBiGhi ?? 0);
+                        const hieuSoStr = hieuSo > 0 ? `+${hieuSo}` : `${hieuSo}`;
+
+                        rowsHtml += `
+                            <tr class="${isQualify ? 'table-success-subtle' : ''}">
+                                <td class="text-center fw-bold">${rankBadge}</td>
+                                <td>
+                                    <div class="fw-bold text-dark">${escapeHtml(teamName)}</div>
+                                    ${unitName ? `<div class="text-muted small" style="font-size: 0.72rem;">${escapeHtml(unitName)}</div>` : ''}
+                                </td>
+                                <td class="text-center">${m.soTran ?? 0}</td>
+                                <td class="text-center text-success fw-semibold">${m.soThang ?? 0}</td>
+                                <td class="text-center text-muted">${m.soHoa ?? 0}</td>
+                                <td class="text-center text-danger">${m.soThua ?? 0}</td>
+                                <td class="text-center small">${hieuSoStr}</td>
+                                <td class="text-center fw-bold text-primary fs-6">${m.diem ?? 0}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                html += `
+                    <div class="col-lg-6">
+                        <div class="group-card">
+                            <div class="group-header">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-white text-primary fw-bold rounded-pill px-2.5">${escapeHtml(g.ma || 'BẢNG')}</span>
+                                    <h6 class="fw-bold mb-0 text-white">${escapeHtml(g.ten)}</h6>
+                                </div>
+                                <span class="badge rounded-pill bg-white bg-opacity-25 text-white small">${members.length} Đội</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                                    <thead class="table-light text-uppercase small text-muted">
+                                        <tr>
+                                            <th class="text-center" style="width: 45px;">#</th>
+                                            <th>Đội / VĐV</th>
+                                            <th class="text-center" style="width: 40px;" title="Số trận đã đấu">Tr</th>
+                                            <th class="text-center" style="width: 40px;" title="Thắng">T</th>
+                                            <th class="text-center" style="width: 40px;" title="Hòa">H</th>
+                                            <th class="text-center" style="width: 40px;" title="Thua">B</th>
+                                            <th class="text-center" style="width: 50px;" title="Hiệu số">+/-</th>
+                                            <th class="text-center" style="width: 50px;" title="Điểm">Điểm</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${rowsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer bg-white border-top p-2 text-muted small d-flex justify-content-between align-items-center" style="font-size: 0.72rem;">
+                                <span><i class="fa-solid fa-circle-info me-1 text-primary"></i>Top 2 đội đầu bảng giành quyền vào vòng tiếp theo</span>
+                                <span class="fw-semibold text-dark">${escapeHtml(g.tenMonTheThao || '')}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            $('#groupsListContainer').html(html);
+        }
+
+        function showEmpty(title, desc) {
+            $('#emptyTitle').text(title);
+            $('#emptyDesc').text(desc);
+            $('#mainEmptyState').removeClass('d-none');
+        }
+
+        // ==================== ĐỊNH DẠNG ====================
+        function formatDisplayDate(dateStr) {
+            try {
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+                    const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+                    const dayName = days[d.getDay()];
+                    return `${dayName}, ngày ${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return dateStr;
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function formatTimeOnly(dateStr) {
+            try {
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return '--:--';
+                const h = String(d.getHours()).padStart(2, '0');
+                const m = String(d.getMinutes()).padStart(2, '0');
+                return `${h}:${m}`;
+            } catch {
+                return '--:--';
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div>').text(text).html();
+        }
+    </script>
+}

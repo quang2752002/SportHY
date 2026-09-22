@@ -475,8 +475,31 @@
 
             $.each(items, function (i, item) {
                 const stt = start + i + 1;
-                const loai = item.loaiThiDau === 'DongDoi' ? 'Đồng đội' : (item.loaiThiDau === 'CaNhan' ? 'Cá nhân' : 'Đối kháng');
+                const loaiVal = item.loaiThiDau || (item.laMonDongDoi ? 'DongDoi' : 'CaNhan');
+                let loaiBadge = '<span class="badge bg-primary-subtle text-primary border fw-semibold"><i class="fa-solid fa-users me-1"></i>Đồng đội</span>';
+                if (loaiVal === 'CaNhan') {
+                    loaiBadge = '<span class="badge bg-info-subtle text-info border fw-semibold"><i class="fa-solid fa-user me-1"></i>Cá nhân</span>';
+                } else if (loaiVal === 'DoiKhang') {
+                    loaiBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border fw-semibold"><i class="fa-solid fa-hand-fist me-1"></i>Đối kháng</span>';
+                }
+
                 const gt = item.gioiTinh === 'Nu' ? 'Nữ' : (item.gioiTinh === 'HonHop' ? 'Hỗn hợp' : 'Nam');
+
+                // Lấy số VĐV chính xác
+                const vdvMin = item.soLuongVanDongVienToiThieu ?? item.soLuongVdvToiThieu;
+                const vdvMax = item.soLuongVanDongVienToiDa ?? item.soLuongVdvToiDa;
+                let vdvDisplay = '<span class="text-muted small">Chưa quy định</span>';
+                if (vdvMin != null && vdvMax != null) {
+                    if (vdvMin === vdvMax) {
+                        vdvDisplay = `<span class="badge bg-light text-dark border px-2 py-1">${vdvMin} người</span>`;
+                    } else {
+                        vdvDisplay = `<span class="badge bg-light text-dark border px-2 py-1">${vdvMin} - ${vdvMax} người</span>`;
+                    }
+                } else if (vdvMin != null) {
+                    vdvDisplay = `<span class="badge bg-light text-dark border px-2 py-1">Tối thiểu ${vdvMin} người</span>`;
+                } else if (vdvMax != null) {
+                    vdvDisplay = `<span class="badge bg-light text-dark border px-2 py-1">Tối đa ${vdvMax} người</span>`;
+                }
 
                 html += `
                     <tr>
@@ -490,17 +513,13 @@
                                 <i class="fa-solid fa-tags me-1"></i>${escapeHtml(item.tenDanhMuc || 'Khác')}
                             </span>
                         </td>
-                        <td><span class="badge bg-light text-dark border">${loai}</span></td>
+                        <td>${loaiBadge}</td>
                         <td>
                             <span class="badge ${item.gioiTinh === 'Nu' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'} border">
                                 ${gt}
                             </span>
                         </td>
-                        <td>
-                            <span class="small fw-semibold text-muted">
-                                ${item.soLuongVdvToiThieu} - ${item.soLuongVdvToiDa} người
-                            </span>
-                        </td>
+                        <td>${vdvDisplay}</td>
                         <td>
                             <span class="badge ${item.trangThai ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'} px-2.5 py-1 rounded-pill">
                                 ${item.trangThai ? 'Hoạt động' : 'Tạm dừng'}
@@ -583,10 +602,13 @@
                     $('#ten').val(item.ten);
                     $('#ma').val(item.ma || '');
                     $('#danhMucId').val(item.danhMucId || '');
-                    $('#loaiThiDau').val(item.loaiThiDau || 'DongDoi');
+                    const loaiVal = item.loaiThiDau || (item.laMonDongDoi ? 'DongDoi' : 'CaNhan');
+                    $('#loaiThiDau').val(loaiVal);
                     $('#gioiTinh').val(item.gioiTinh || 'Nam');
-                    $('#soLuongVdvToiThieu').val(item.soLuongVdvToiThieu || 1);
-                    $('#soLuongVdvToiDa').val(item.soLuongVdvToiDa || 1);
+                    const vMin = item.soLuongVanDongVienToiThieu ?? item.soLuongVdvToiThieu ?? 1;
+                    const vMax = item.soLuongVanDongVienToiDa ?? item.soLuongVdvToiDa ?? 1;
+                    $('#soLuongVdvToiThieu').val(vMin);
+                    $('#soLuongVdvToiDa').val(vMax);
                     $('#moTa').val(item.moTa || '');
                     $('#trangThai').prop('checked', item.trangThai);
                     $('#modalMon').modal('show');
@@ -602,14 +624,21 @@
                 return;
             }
 
+            const loaiVal = $('#loaiThiDau').val();
+            const minVdv = parseInt($('#soLuongVdvToiThieu').val()) || 1;
+            const maxVdv = parseInt($('#soLuongVdvToiDa').val()) || 1;
+
             const payload = {
                 ten: ten,
                 ma: $('#ma').val().trim() || 'MON-' + Date.now().toString().slice(-5),
                 danhMucId: $('#danhMucId').val() ? parseInt($('#danhMucId').val()) : null,
-                loaiThiDau: $('#loaiThiDau').val(),
+                loaiThiDau: loaiVal,
+                laMonDongDoi: (loaiVal === 'DongDoi'),
                 gioiTinh: $('#gioiTinh').val(),
-                soLuongVdvToiThieu: parseInt($('#soLuongVdvToiThieu').val()) || 1,
-                soLuongVdvToiDa: parseInt($('#soLuongVdvToiDa').val()) || 1,
+                soLuongVanDongVienToiThieu: minVdv,
+                soLuongVanDongVienToiDa: maxVdv,
+                soLuongVdvToiThieu: minVdv,
+                soLuongVdvToiDa: maxVdv,
                 moTa: $('#moTa').val().trim() || null,
                 trangThai: $('#trangThai').is(':checked')
             };

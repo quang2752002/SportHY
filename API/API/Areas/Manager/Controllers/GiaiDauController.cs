@@ -87,9 +87,15 @@ namespace API.Areas.Manager.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Save([FromBody] CreateUpdateGiaiDauDto dto, [FromQuery] int? id = null)
+        public async Task<IActionResult> Save([FromBody] CreateUpdateGiaiDauDto? dto, [FromQuery] int? id = null)
         {
-            if (dto == null || string.IsNullOrWhiteSpace(dto.Ten))
+            if (dto == null)
+            {
+                var errors = string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return Json(new { success = false, message = string.IsNullOrEmpty(errors) ? "Dữ liệu gửi lên không đúng định dạng hoặc thiếu thông tin." : errors });
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Ten))
             {
                 return Json(new { success = false, message = "Tên giải đấu không được để trống." });
             }

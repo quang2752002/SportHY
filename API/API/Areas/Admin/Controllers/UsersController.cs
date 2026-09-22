@@ -21,6 +21,10 @@ namespace API.Areas.Admin.Controllers
         public string? PhoneNumber { get; set; }
         public string? Role { get; set; }
         public string? TenDonVi { get; set; }
+        public int? TrongTaiId { get; set; }
+        public string? TenTrongTai { get; set; }
+        public int? ThuKyId { get; set; }
+        public string? TenThuKy { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
@@ -32,6 +36,8 @@ namespace API.Areas.Admin.Controllers
         public string? Password { get; set; }
         public string Role { get; set; } = AppRoles.Admin;
         public int? DonViId { get; set; }
+        public int? TrongTaiId { get; set; }
+        public int? ThuKyId { get; set; }
     }
 
     [Authorize(Roles = AppRoles.Admin)]
@@ -40,15 +46,21 @@ namespace API.Areas.Admin.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole<int>> _roleManager;
         private readonly IDonViService _donViService;
+        private readonly ITrongTaiService _trongTaiService;
+        private readonly IThuKyService _thuKyService;
 
         public UsersController(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole<int>> roleManager,
-            IDonViService donViService)
+            IDonViService donViService,
+            ITrongTaiService trongTaiService,
+            IThuKyService thuKyService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _donViService = donViService;
+            _trongTaiService = trongTaiService;
+            _thuKyService = thuKyService;
         }
 
         [HttpGet]
@@ -56,6 +68,8 @@ namespace API.Areas.Admin.Controllers
         {
             ViewBag.Roles = AppRoles.AllRoles;
             ViewBag.DonVis = await _donViService.GetAllAsync();
+            ViewBag.TrongTais = await _trongTaiService.GetAllAsync();
+            ViewBag.ThuKys = await _thuKyService.GetAllAsync();
             return View();
         }
 
@@ -68,6 +82,8 @@ namespace API.Areas.Admin.Controllers
         {
             var query = _userManager.Users
                 .Include(u => u.DonVi)
+                .Include(u => u.TrongTai)
+                .Include(u => u.ThuKy)
                 .AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -106,6 +122,10 @@ namespace API.Areas.Admin.Controllers
                     PhoneNumber = u.PhoneNumber,
                     Role = userRole,
                     TenDonVi = u.DonVi?.Ten,
+                    TrongTaiId = u.TrongTaiId,
+                    TenTrongTai = u.TrongTai?.HoTen,
+                    ThuKyId = u.ThuKyId,
+                    TenThuKy = u.ThuKy?.HoTen,
                     CreatedAt = u.CreatedAt
                 });
             }
@@ -143,6 +163,8 @@ namespace API.Areas.Admin.Controllers
                     fullName = user.FullName,
                     email = user.Email,
                     donViId = user.DonViId,
+                    trongTaiId = user.TrongTaiId,
+                    thuKyId = user.ThuKyId,
                     role = roles.FirstOrDefault() ?? AppRoles.Admin
                 }
             });
@@ -151,6 +173,10 @@ namespace API.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> Save([FromBody] CreateUpdateUserDto dto, [FromQuery] int? id = null)
         {
+            bool isRefereeRole = dto.Role == AppRoles.Referee || dto.Role == AppRoles.HeadReferee;
+            bool isSecretaryRole = dto.Role == AppRoles.Secretary;
+            bool isDelegationRole = dto.Role == AppRoles.Delegation;
+
             if (id.HasValue && id.Value > 0)
             {
                 // Cập nhật người dùng hiện có
@@ -159,7 +185,9 @@ namespace API.Areas.Admin.Controllers
 
                 user.FullName = dto.FullName;
                 user.Email = dto.Email;
-                user.DonViId = dto.Role == AppRoles.Delegation ? dto.DonViId : null;
+                user.DonViId = isDelegationRole ? dto.DonViId : null;
+                user.TrongTaiId = isRefereeRole ? dto.TrongTaiId : null;
+                user.ThuKyId = isSecretaryRole ? dto.ThuKyId : null;
 
                 var updateResult = await _userManager.UpdateAsync(user);
                 if (!updateResult.Succeeded)
@@ -187,10 +215,12 @@ namespace API.Areas.Admin.Controllers
             else
             {
                 // Thêm mới người dùng
-                if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+                if (string.IsNullOrWhiteSpace(dto.Username))
                 {
-                    return Json(new { success = false, message = "Tên đăng nhập và mật khẩu là bắt buộc." });
+                    return Json(new { success = false, message = "Tên đăng nhập là bắt buộc." });
                 }
+
+                var password = string.IsNullOrWhiteSpace(dto.Password) ? "123" : dto.Password;
 
                 var existingUser = await _userManager.FindByNameAsync(dto.Username);
                 if (existingUser != null)
@@ -205,10 +235,12 @@ namespace API.Areas.Admin.Controllers
                     Email = dto.Email.Trim(),
                     EmailConfirmed = true,
                     CreatedAt = DateTime.UtcNow,
-                    DonViId = dto.Role == AppRoles.Delegation ? dto.DonViId : null
+                    DonViId = isDelegationRole ? dto.DonViId : null,
+                    TrongTaiId = isRefereeRole ? dto.TrongTaiId : null,
+                    ThuKyId = isSecretaryRole ? dto.ThuKyId : null
                 };
 
-                var createResult = await _userManager.CreateAsync(user, dto.Password);
+                var createResult = await _userManager.CreateAsync(user, password);
                 if (!createResult.Succeeded)
                 {
                     return Json(new { success = false, message = string.Join("; ", createResult.Errors.Select(e => e.Description)) });

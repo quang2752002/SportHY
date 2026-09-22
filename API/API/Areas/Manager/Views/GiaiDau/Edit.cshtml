@@ -193,19 +193,19 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Trạng thái giải</label>
                         <select class="form-select" id="trangThai">
-                            <option value="Nhap" selected="@(Model.TrangThai == TrangThaiGiaiDau.Nhap)">Bản nháp</option>
-                            <option value="SapDienRa" selected="@(Model.TrangThai == TrangThaiGiaiDau.SapDienRa)">Sắp diễn ra</option>
-                            <option value="DangDienRa" selected="@(Model.TrangThai == TrangThaiGiaiDau.DangDienRa)">Đang diễn ra</option>
-                            <option value="KetThuc" selected="@(Model.TrangThai == TrangThaiGiaiDau.KetThuc)">Đã kết thúc</option>
-                            <option value="Huy" selected="@(Model.TrangThai == TrangThaiGiaiDau.Huy)">Đã hủy</option>
+                            <option value="Nhap" selected="@(Model.TrangThai == TrangThaiGiaiDau.Nhap ? "selected" : null)">Bản nháp</option>
+                            <option value="SapDienRa" selected="@(Model.TrangThai == TrangThaiGiaiDau.SapDienRa ? "selected" : null)">Sắp diễn ra</option>
+                            <option value="DangDienRa" selected="@(Model.TrangThai == TrangThaiGiaiDau.DangDienRa ? "selected" : null)">Đang diễn ra</option>
+                            <option value="KetThuc" selected="@(Model.TrangThai == TrangThaiGiaiDau.KetThuc ? "selected" : null)">Đã kết thúc</option>
+                            <option value="Huy" selected="@(Model.TrangThai == TrangThaiGiaiDau.Huy ? "selected" : null)">Đã hủy</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Phạm vi tổ chức</label>
                         <select class="form-select" id="phamVi">
-                            <option value="TatCa" selected="@(Model.PhamVi == PhamViGiaiDau.TatCa)">Tất cả đơn vị</option>
-                            <option value="TheoKhoi" selected="@(Model.PhamVi == PhamViGiaiDau.TheoKhoi)">Theo khối ngành / đơn vị</option>
+                            <option value="TatCa" selected="@(Model.PhamVi == PhamViGiaiDau.TatCa ? "selected" : null)">Tất cả đơn vị</option>
+                            <option value="TheoKhoi" selected="@(Model.PhamVi == PhamViGiaiDau.TheoKhoi ? "selected" : null)">Theo khối ngành / đơn vị</option>
                         </select>
                     </div>
                 </div>

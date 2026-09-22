@@ -41,7 +41,9 @@ namespace Dms.Application.DTOs
         public string? DiaDiem { get; set; }
 
         // Giá trị Enum
+        [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
         public PhamViGiaiDau PhamVi { get; set; } = PhamViGiaiDau.TatCa;
+        [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
         public TrangThaiGiaiDau TrangThai { get; set; } = TrangThaiGiaiDau.Nhap;
 
         // Chuỗi tiếng Việt hiển thị ra ngoài

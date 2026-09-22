@@ -26,7 +26,9 @@ namespace Dms.Application.Services
                 if (referee != null) return referee;
             }
 
-            var byMa = (await _unitOfWork.TrongTais.FindAsync(t => (t.Ma == userName || t.Email == email) && t.IsDeleted != true)).FirstOrDefault();
+            // Tim theo Ma, Email cua TrongTai
+            var byMa = (await _unitOfWork.TrongTais.FindAsync(t =>
+                (t.Ma == userName || t.Email == email || t.Ma == email) && t.IsDeleted != true)).FirstOrDefault();
             return byMa;
         }
 

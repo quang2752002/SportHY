@@ -12,6 +12,9 @@ namespace Dms.Application.DTOs
         public string? MoTa { get; set; }
         public bool LaMonDongDoi { get; set; } = false;
         public string GioiTinh { get; set; } = "HonHop";
+        public string? LoaiThiDau { get; set; } = "DongDoi";
+        public int? SoLuongVdvToiThieu => SoLuongVanDongVienToiThieu;
+        public int? SoLuongVdvToiDa => SoLuongVanDongVienToiDa;
         public string HinhThucThiDau { get; set; } = "LoaiTrucTiep";
         public int? SoLuongVanDongVienToiThieu { get; set; }
         public int? SoLuongVanDongVienToiDa { get; set; }
@@ -29,9 +32,12 @@ namespace Dms.Application.DTOs
         public string? MoTa { get; set; }
         public bool LaMonDongDoi { get; set; } = false;
         public string? GioiTinh { get; set; } = "HonHop";
+        public string? LoaiThiDau { get; set; } = "DongDoi";
         public string? HinhThucThiDau { get; set; }
         public int? SoLuongVanDongVienToiThieu { get; set; }
         public int? SoLuongVanDongVienToiDa { get; set; }
+        public int? SoLuongVdvToiThieu { get; set; }
+        public int? SoLuongVdvToiDa { get; set; }
         public int? SoDoiToiDa { get; set; }
         public bool TrangThai { get; set; } = true;
     }

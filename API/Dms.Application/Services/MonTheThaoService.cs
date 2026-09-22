@@ -67,6 +67,24 @@ namespace Dms.Application.Services
 
         public async Task<MonTheThaoDto> CreateAsync(CreateUpdateMonTheThaoDto dto, string? createdBy = null)
         {
+            if (string.IsNullOrEmpty(dto.LoaiThiDau) && dto.LaMonDongDoi)
+            {
+                dto.LoaiThiDau = "DongDoi";
+            }
+            else if (!string.IsNullOrEmpty(dto.LoaiThiDau))
+            {
+                dto.LaMonDongDoi = (dto.LoaiThiDau == "DongDoi");
+            }
+
+            if (!dto.SoLuongVanDongVienToiThieu.HasValue && dto.SoLuongVdvToiThieu.HasValue)
+            {
+                dto.SoLuongVanDongVienToiThieu = dto.SoLuongVdvToiThieu;
+            }
+            if (!dto.SoLuongVanDongVienToiDa.HasValue && dto.SoLuongVdvToiDa.HasValue)
+            {
+                dto.SoLuongVanDongVienToiDa = dto.SoLuongVdvToiDa;
+            }
+
             var entity = _mapper.Map<MonTheThao>(dto);
             entity.Created = DateTime.UtcNow;
             entity.CreatedBy = createdBy;
@@ -83,6 +101,24 @@ namespace Dms.Application.Services
             var entity = await _unitOfWork.MonTheThaos.GetByIdAsync(id);
             if (entity == null || entity.IsDeleted == true)
                 return null;
+
+            if (string.IsNullOrEmpty(dto.LoaiThiDau) && dto.LaMonDongDoi)
+            {
+                dto.LoaiThiDau = "DongDoi";
+            }
+            else if (!string.IsNullOrEmpty(dto.LoaiThiDau))
+            {
+                dto.LaMonDongDoi = (dto.LoaiThiDau == "DongDoi");
+            }
+
+            if (!dto.SoLuongVanDongVienToiThieu.HasValue && dto.SoLuongVdvToiThieu.HasValue)
+            {
+                dto.SoLuongVanDongVienToiThieu = dto.SoLuongVdvToiThieu;
+            }
+            if (!dto.SoLuongVanDongVienToiDa.HasValue && dto.SoLuongVdvToiDa.HasValue)
+            {
+                dto.SoLuongVanDongVienToiDa = dto.SoLuongVdvToiDa;
+            }
 
             _mapper.Map(dto, entity);
             entity.LastModified = DateTime.UtcNow;

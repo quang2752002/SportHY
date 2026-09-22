@@ -30,6 +30,9 @@ namespace Dms.Domain.Entities
         [MaxLength(20)]
         public string GioiTinh { get; set; } = "HonHop";
 
+        [MaxLength(30)]
+        public string? LoaiThiDau { get; set; } = "DongDoi";
+
         public HinhThucThiDau HinhThucThiDau { get; set; } = HinhThucThiDau.LoaiTrucTiep;
 
         public int? SoLuongVanDongVienToiThieu { get; set; }

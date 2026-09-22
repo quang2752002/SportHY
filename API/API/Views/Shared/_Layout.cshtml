@@ -137,100 +137,102 @@
             pointer-events: none;
         }
 
-        /* Status tabs */
-        .status-pill-btn {
-            border-radius: 9999px;
-            padding: 0.45rem 1.1rem;
-            font-size: 0.85rem;
+        /* Custom Nav Links (Desktop) */
+        .nav-link-custom {
             font-weight: 600;
-            border: 1px solid transparent;
+            font-size: 0.88rem;
+            color: #475569;
+            padding: 7px 13px;
+            border-radius: 8px;
+            text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 0.45rem;
+            gap: 6px;
             transition: all 0.2s ease;
-            background: transparent;
-            color: #64748b;
-            cursor: pointer;
         }
-        .status-pill-btn:hover {
-            background-color: #f1f5f9;
-            color: #334155;
+        .nav-link-custom:hover {
+            color: #ea580c;
+            background: #fff7ed;
         }
-        .status-pill-btn.active-orange {
-            background-color: #ea580c !important;
-            color: #ffffff !important;
-            box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25);
-        }
-        .status-pill-btn .badge-pill-count {
-            border-radius: 9999px;
-            padding: 0.15rem 0.55rem;
-            font-size: 0.72rem;
+        .nav-link-custom.active {
+            color: #ea580c;
+            background: #fff7ed;
             font-weight: 700;
         }
-        .status-pill-btn.active-orange .badge-pill-count {
-            background-color: rgba(255, 255, 255, 0.25);
-            color: #ffffff;
-        }
-        .status-pill-btn:not(.active-orange) .badge-pill-count {
-            background-color: #e2e8f0;
-            color: #475569;
+        .nav-link-custom i {
+            font-size: 1rem;
         }
 
-        /* Tournament Card */
-        .tournament-card {
-            border-radius: 1rem;
-            border: 1px solid #edf2f7;
-            background-color: #ffffff;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .tournament-card:hover {
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-        }
-        .tournament-banner-container {
-            position: relative;
-            width: 100%;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            background: #0f172a;
-        }
-        .banner-click-hover {
-            transition: opacity 0.2s ease;
-        }
-        .banner-click-hover:hover {
-            opacity: 0.95;
-        }
-
-        /* Event categories inside tournament */
-        .category-item {
-            border-radius: 0.75rem;
-            padding: 0.75rem 0.9rem;
-            background-color: #f8fafc;
-            border: 1px solid #f1f5f9;
-            transition: all 0.15s ease;
-        }
-        .category-item:hover {
-            background-color: #ffffff;
-            border-color: #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-        }
-        .category-index-badge {
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            background-color: #e2e8f0;
-            color: #64748b;
-            font-size: 0.75rem;
-            font-weight: 700;
+        /* Mobile Bottom Navigation Bar */
+        .mobile-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
             display: flex;
             align-items: center;
+            justify-content: space-around;
+            z-index: 1040;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+        .mobile-bottom-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
+            flex: 1;
+            height: 100%;
+            text-decoration: none;
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 600;
+            gap: 3px;
+            transition: all 0.15s ease;
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+        }
+        .mobile-bottom-item i {
+            font-size: 1.25rem;
+            line-height: 1;
+            transition: transform 0.15s ease, color 0.15s ease;
+        }
+        .mobile-bottom-item:hover,
+        .mobile-bottom-item.active {
+            color: #ea580c;
+        }
+        .mobile-bottom-item.active i {
+            transform: scale(1.08);
+            color: #ea580c;
+        }
+
+        /* Mobile adjustments */
+        @@media (max-width: 767.98px) {
+            body {
+                padding-bottom: 70px;
+            }
+            .portal-footer {
+                margin-bottom: 64px;
+            }
         }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <!-- Top Navbar (Đồng bộ phong cách PublicHeader bên React) -->
+    @{
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+        var currentPath = Context.Request.Path.Value ?? "";
+        bool isLichThiDau = currentAction.Equals("LichThiDau", StringComparison.OrdinalIgnoreCase) || currentPath.Contains("LichThiDau");
+        bool isBangXepHang = currentAction.Equals("BangXepHang", StringComparison.OrdinalIgnoreCase) || currentPath.Contains("BangXepHang");
+        bool isHomeIndex = currentAction.Equals("Index", StringComparison.OrdinalIgnoreCase) && !isLichThiDau && !isBangXepHang;
+    }
+
+    <!-- Top Navbar -->
     <nav class="portal-navbar shadow-sm py-2">
         <div class="container-fluid px-lg-4 d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
@@ -249,17 +251,29 @@
 
                 <!-- Desktop Menu Navigation Links -->
                 <nav class="d-none d-md-flex align-items-center gap-1 ms-2">
-                    <a href="/" class="nav-link-custom active">
+                    <a href="/" class="nav-link-custom @(isHomeIndex ? "active" : "")">
                         <i class="bi bi-trophy"></i>
                         <span>Giải đấu</span>
                     </a>
-                    <a href="/Manager/BangDau" class="nav-link-custom">
-                        <i class="bi bi-activity"></i>
-                        <span>Bảng đấu</span>
+                    <a href="/BangXepHang" class="nav-link-custom @(isBangXepHang ? "active" : "")">
+                        <i class="bi bi-award-fill text-warning"></i>
+                        <span>BXH Huy chương</span>
                     </a>
-                    <a href="/Manager/CumSan" class="nav-link-custom">
-                        <i class="bi bi-geo-alt"></i>
-                        <span>Sân bãi</span>
+                    <a href="/LichThiDau" class="nav-link-custom @(isLichThiDau ? "active" : "")">
+                        <i class="bi bi-calendar3"></i>
+                        <span>Lịch & Bảng đấu</span>
+                    </a>
+                    <a href="/Home#diem-trinh" class="nav-link-custom">
+                        <i class="bi bi-people"></i>
+                        <span>Điểm trình</span>
+                    </a>
+                    <a href="/Home#clb" class="nav-link-custom">
+                        <i class="bi bi-buildings"></i>
+                        <span>Câu lạc bộ</span>
+                    </a>
+                    <a href="/Home#livestream" class="nav-link-custom">
+                        <i class="bi bi-broadcast"></i>
+                        <span>Xem trực tiếp</span>
                     </a>
                 </nav>
             </div>
@@ -287,23 +301,7 @@
                             <li class="px-3 py-2 border-bottom">
                                 <div class="small text-muted">Đang đăng nhập:</div>
                                 <div class="fw-bold text-dark">@User.Identity.Name</div>
-                                @if (isHeadReferee)
-                                {
-                                    <span class="badge bg-warning text-dark mt-1">Trưởng Ban Trọng Tài</span>
-                                }
-                                else if (isSportCoordinator)
-                                {
-                                    <span class="badge bg-info text-dark mt-1">Điều Hành Môn</span>
-                                }
-                                else if (isSecretary)
-                                {
-                                    <span class="badge bg-primary text-white mt-1">Thư Ký Giải</span>
-                                }
-                                else if (isReferee)
-                                {
-                                    <span class="badge bg-warning text-dark mt-1">Trọng Tài</span>
-                                }
-                                else if (isDelegation)
+                                @if (isDelegation)
                                 {
                                     <span class="badge bg-success text-white mt-1">Đoàn Thi Đấu</span>
                                 }
@@ -348,7 +346,7 @@
                             {
                                 <li>
                                     <a class="dropdown-item py-2" href="/TrongTai/Home">
-                                        <i class="fa-solid fa-flag text-warning me-2"></i> Cổng Điều Hành Trọng Tài
+                                        <i class="fa-solid fa-flag text-warning me-2"></i> Cổng Trọng Tài
                                     </a>
                                 </li>
                             }
@@ -412,9 +410,13 @@
                 }
                 else
                 {
-                    <a href="/Account/Login" class="btn btn-sm rounded-3 px-3 py-1.5 fw-semibold text-white d-flex align-items-center gap-1 shadow-sm" style="background-color: #ea580c; border-color: #ea580c; font-size: 0.88rem;">
+                    <a href="/Account/Register" class="btn btn-sm btn-outline-secondary rounded-3 px-2.5 py-1.5 fw-semibold d-flex align-items-center gap-1 shadow-sm text-dark bg-white" style="font-size: 0.85rem; border-color: #d1d5db;">
+                        <i class="bi bi-person-plus"></i>
+                        <span>Đăng ký</span>
+                    </a>
+                    <a href="/Account/Login" class="btn btn-sm rounded-3 px-3 py-1.5 fw-semibold text-white d-flex align-items-center gap-1 shadow-sm" style="background-color: #ea580c; border-color: #ea580c; font-size: 0.85rem;">
                         <i class="bi bi-box-arrow-in-right"></i>
-                        <span>Đăng Nhập</span>
+                        <span>Đăng nhập</span>
                     </a>
                 }
             </div>
@@ -425,6 +427,89 @@
     <main role="main">
         @RenderBody()
     </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav d-md-none">
+        <a href="/" class="mobile-bottom-item @(isHomeIndex ? "active" : "")">
+            <i class="bi bi-trophy"></i>
+            <span>Giải đấu</span>
+        </a>
+        <a href="/BangXepHang" class="mobile-bottom-item @(isBangXepHang ? "active" : "")">
+            <i class="bi bi-award"></i>
+            <span>BXH</span>
+        </a>
+        <a href="/LichThiDau" class="mobile-bottom-item @(isLichThiDau ? "active" : "")">
+            <i class="bi bi-calendar3"></i>
+            <span>Lịch & Bảng</span>
+        </a>
+        <button type="button" class="mobile-bottom-item" data-bs-toggle="offcanvas" data-bs-target="#mobileMoreMenu" aria-controls="mobileMoreMenu">
+            <i class="bi bi-three-dots"></i>
+            <span>Thêm</span>
+        </button>
+    </nav>
+
+    <!-- Offcanvas Thêm (Khi bấm nút 'Thêm' trên mobile) -->
+    <div class="offcanvas offcanvas-bottom rounded-top-4" tabindex="-1" id="mobileMoreMenu" style="height: auto; max-height: 80vh;">
+        <div class="offcanvas-header border-bottom py-3">
+            <h6 class="offcanvas-title fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-grid-fill text-warning" style="color: #ea580c !important;"></i>
+                <span>Menu chức năng</span>
+            </h6>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-3">
+            <div class="row g-2 text-center">
+                <div class="col-4">
+                    <a href="/BangXepHang" class="d-flex flex-column align-items-center p-2.5 rounded-3 text-decoration-none text-dark bg-light border">
+                        <div class="rounded-circle bg-warning bg-opacity-10 text-warning p-2 mb-1" style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-award fs-5" style="color: #f59e0b !important;"></i>
+                        </div>
+                        <span class="small fw-semibold">BXH Huy chương</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="/LichThiDau" class="d-flex flex-column align-items-center p-2.5 rounded-3 text-decoration-none text-dark bg-light border">
+                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2 mb-1" style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-calendar3 fs-5"></i>
+                        </div>
+                        <span class="small fw-semibold">Lịch & Bảng đấu</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="/Home#livestream" class="d-flex flex-column align-items-center p-2.5 rounded-3 text-decoration-none text-dark bg-light border">
+                        <div class="rounded-circle bg-danger bg-opacity-10 text-danger p-2 mb-1" style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-broadcast fs-5"></i>
+                        </div>
+                        <span class="small fw-semibold">Xem trực tiếp</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="/Manager/BangDau" class="d-flex flex-column align-items-center p-2.5 rounded-3 text-decoration-none text-dark bg-light border">
+                        <div class="rounded-circle bg-info bg-opacity-10 text-info p-2 mb-1" style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-diagram-3 fs-5"></i>
+                        </div>
+                        <span class="small fw-semibold">Bảng đấu</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="/Account/Login" class="d-flex flex-column align-items-center p-2.5 rounded-3 text-decoration-none text-dark bg-light border">
+                        <div class="rounded-circle bg-warning bg-opacity-10 text-warning p-2 mb-1" style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-box-arrow-in-right fs-5" style="color: #ea580c !important;"></i>
+                        </div>
+                        <span class="small fw-semibold">Đăng nhập</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="/Account/Register" class="d-flex flex-column align-items-center p-2.5 rounded-3 text-decoration-none text-dark bg-light border">
+                        <div class="rounded-circle bg-success bg-opacity-10 text-success p-2 mb-1" style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-person-plus fs-5"></i>
+                        </div>
+                        <span class="small fw-semibold">Đăng ký</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Public Footer -->
     <footer class="portal-footer py-5">
@@ -449,9 +534,9 @@
                 <div class="col-sm-6 col-lg-3">
                     <h6 class="text-white fw-bold mb-3">Liên Kết Nhanh</h6>
                     <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
-                        <li><a href="/#giai-dau"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Danh Sách Giải Đấu</a></li>
-                        <li><a href="/#mon-the-thao"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Các Môn Thi Đấu</a></li>
-                        <li><a href="/#san-dau"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Địa Điểm & Sân Đấu</a></li>
+                        <li><a href="/"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Danh Sách Giải Đấu</a></li>
+                        <li><a href="/BangXepHang"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Bảng Xếp Hạng Huy Chương</a></li>
+                        <li><a href="/LichThiDau"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Lịch Thi Đấu & Bảng Đấu</a></li>
                         <li><a href="/Account/Login"><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.7rem;"></i> Đăng Nhập Ban Tổ Chức</a></li>
                     </ul>
                 </div>

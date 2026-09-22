@@ -3,62 +3,319 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+@section Styles {
+    <style>
+        /* Card header & search bar container */
+        .filter-header-card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Responsive search input */
+        .search-input-group {
+            position: relative;
+            flex-grow: 1;
+        }
+        .search-input-group i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.95rem;
+            pointer-events: none;
+        }
+        .search-input-group input {
+            padding-left: 2.5rem;
+            border-radius: 0.65rem;
+            border: 1px solid #e2e8f0;
+            height: 42px;
+            font-size: 0.9rem;
+            width: 100%;
+            background-color: #ffffff;
+        }
+        .search-input-group input:focus {
+            border-color: #ea580c;
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
+            outline: none;
+        }
+
+        /* Status filter buttons */
+        .status-pill-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 2px;
+        }
+        .status-pill-wrap::-webkit-scrollbar {
+            display: none;
+        }
+        .status-tab-btn {
+            border-radius: 9999px;
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+            background: #f1f5f9;
+            color: #475569;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .status-tab-btn:hover {
+            background-color: #e2e8f0;
+            color: #1e293b;
+        }
+        .status-tab-btn.active-tab {
+            background-color: #ea580c !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+        }
+        .status-tab-btn .badge-count {
+            border-radius: 9999px;
+            padding: 0.1rem 0.5rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+        .status-tab-btn.active-tab .badge-count {
+            background-color: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+        }
+        .status-tab-btn:not(.active-tab) .badge-count {
+            background-color: #cbd5e1;
+            color: #334155;
+        }
+
+        /* Tournament Main Card */
+        .tournament-item-card {
+            background: #ffffff;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .tournament-item-card:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+        }
+
+        /* Poster Banner */
+        .poster-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 280px;
+            max-height: 480px;
+            overflow: hidden;
+            background-color: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .poster-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        /* Categories / Sub-events list */
+        .event-sub-item {
+            background: #ffffff;
+            border: 1px solid #f1f5f9;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            transition: all 0.15s ease;
+        }
+        .event-sub-item:hover {
+            border-color: #e2e8f0;
+            background: #fafafa;
+        }
+        .sub-index-badge {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-register-sub {
+            background: transparent;
+            color: #ea580c;
+            border: 1px solid #fed7aa;
+            border-radius: 0.5rem;
+            padding: 0.35rem 0.85rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+        .btn-register-sub:hover {
+            background: #ea580c;
+            color: #ffffff;
+            border-color: #ea580c;
+        }
+
+        .btn-register-main {
+            background: #ea580c;
+            color: #ffffff;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.45rem 1.25rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+        .btn-register-main:hover {
+            background: #c2410c;
+            color: #ffffff;
+        }
+
+        .btn-schedule-main {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+            border-radius: 0.5rem;
+            padding: 0.45rem 1.15rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+        .btn-schedule-main:hover {
+            background: #16a34a;
+            color: #ffffff;
+            border-color: #16a34a;
+        }
+
+
+        /* Mobile adjustments */
+        @@media (max-width: 767.98px) {
+            .poster-wrapper {
+                min-height: 220px;
+                max-height: 320px;
+            }
+            .filter-header-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+}
+
 <div class="py-3 py-md-4">
     <div class="container-fluid px-lg-4">
-        <!-- 1. Box Header: Thanh Điều Hướng & Tìm kiếm (Đồng bộ theo bản React) -->
-        <div class="bg-white rounded-4 border p-3 p-md-4 shadow-sm mb-4">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                <!-- Tiêu đề & Bộ Tab trạng thái -->
-                <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-3">
-                    <h4 class="fw-bold mb-0 text-dark me-2">Giải đấu</h4>
-
-                    <div class="d-flex align-items-center gap-2 flex-wrap" id="statusPillsGroup">
-                        <!-- Tab Tất cả -->
-                        <button type="button" class="status-pill-btn active-orange" data-tab="tatCa" onclick="switchTab('tatCa')">
-                            <i class="bi bi-grid"></i>
-                            <span>Tất cả</span>
-                            <span class="badge-pill-count" id="countTatCa">0</span>
-                        </button>
-
-                        <!-- Tab Sắp diễn ra -->
-                        <button type="button" class="status-pill-btn" data-tab="sapDienRa" onclick="switchTab('sapDienRa')">
-                            <i class="bi bi-calendar-event"></i>
-                            <span>Sắp diễn ra</span>
-                            <span class="badge-pill-count" id="countSapDienRa">0</span>
-                        </button>
-
-                        <!-- Tab Đang diễn ra -->
-                        <button type="button" class="status-pill-btn" data-tab="dangDienRa" onclick="switchTab('dangDienRa')">
-                            <i class="bi bi-trophy"></i>
-                            <span>Đang diễn ra</span>
-                            <span class="badge-pill-count" id="countDangDienRa">0</span>
-                        </button>
-
-                        <!-- Tab Đã kết thúc -->
-                        <button type="button" class="status-pill-btn" data-tab="daKetThuc" onclick="switchTab('daKetThuc')">
-                            <i class="bi bi-check2-circle"></i>
-                            <span>Đã kết thúc</span>
-                            <span class="badge-pill-count" id="countDaKetThuc">0</span>
-                        </button>
+        <!-- 1. Thanh tiêu đề & Tìm kiếm & Tab lọc Giải Đấu -->
+        <div class="filter-header-card" id="giai-dau">
+            <!-- Desktop Layout -->
+            <div class="d-none d-md-flex justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="portal-logo-badge" style="width: 38px; height: 38px; background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);">
+                        <i class="bi bi-trophy text-white"></i>
                     </div>
+                    <h4 class="fw-bold mb-0 text-dark">Giải Đấu Thể Thao</h4>
                 </div>
 
-                <!-- Ô Tìm Kiếm & Nút Tải lại -->
+                <!-- Tabs ở giữa -->
+                <div class="status-pill-wrap" id="statusPillsGroupDesktop">
+                    <button type="button" class="status-tab-btn active-tab" data-tab="sapDienRa" onclick="switchTab('sapDienRa')">
+                        <i class="bi bi-calendar-event"></i>
+                        <span>Sắp diễn ra</span>
+                        <span class="badge-count" id="countSapDienRaDesktop">0</span>
+                    </button>
+                    <button type="button" class="status-tab-btn" data-tab="dangDienRa" onclick="switchTab('dangDienRa')">
+                        <i class="bi bi-trophy"></i>
+                        <span>Đang diễn ra</span>
+                        <span class="badge-count" id="countDangDienRaDesktop">0</span>
+                    </button>
+                    <button type="button" class="status-tab-btn" data-tab="daKetThuc" onclick="switchTab('daKetThuc')">
+                        <i class="bi bi-check2-circle"></i>
+                        <span>Đã kết thúc</span>
+                        <span class="badge-count" id="countDaKetThucDesktop">0</span>
+                    </button>
+                </div>
+
+                <!-- Ô tìm kiếm & Nút Tải lại -->
                 <div class="d-flex align-items-center gap-2">
-                    <div class="search-box-wrap flex-grow-1 flex-md-grow-0" style="min-width: 220px;">
-                        <i class="bi bi-search search-icon-pos"></i>
+                    <div class="search-input-group" style="width: 240px;">
+                        <i class="bi bi-search"></i>
                         <input type="text"
-                               class="form-control search-box-input"
                                placeholder="Tìm giải đấu..."
-                               id="searchBoxInput"
+                               id="searchBoxInputDesktop"
                                oninput="handleSearchInput(this.value)">
                     </div>
                     <button type="button"
                             class="btn btn-outline-secondary border d-flex align-items-center justify-content-center"
-                            style="width: 40px; height: 40px; border-radius: 0.6rem;"
+                            style="width: 42px; height: 42px; border-radius: 0.65rem;"
                             onclick="loadTournaments()"
                             title="Tải lại danh sách">
                         <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Layout -->
+            <div class="d-md-none d-flex flex-column gap-3">
+                <!-- Hàng 1: Ô tìm kiếm + Nút Tải lại -->
+                <div class="d-flex align-items-center gap-2">
+                    <div class="search-input-group">
+                        <i class="bi bi-search"></i>
+                        <input type="text"
+                               placeholder="Tìm giải đấu..."
+                               id="searchBoxInputMobile"
+                               oninput="handleSearchInput(this.value)">
+                    </div>
+                    <button type="button"
+                            class="btn btn-outline-secondary border d-flex align-items-center justify-content-center flex-shrink-0"
+                            style="width: 42px; height: 42px; border-radius: 0.65rem;"
+                            onclick="loadTournaments()"
+                            title="Tải lại">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+
+                <!-- Hàng 2: Bộ Tabs trạng thái cuộn ngang -->
+                <div class="status-pill-wrap" id="statusPillsGroupMobile">
+                    <button type="button" class="status-tab-btn active-tab" data-tab="sapDienRa" onclick="switchTab('sapDienRa')">
+                        <i class="bi bi-calendar-event"></i>
+                        <span>Sắp diễn ra</span>
+                        <span class="badge-count" id="countSapDienRaMobile">0</span>
+                    </button>
+                    <button type="button" class="status-tab-btn" data-tab="dangDienRa" onclick="switchTab('dangDienRa')">
+                        <i class="bi bi-trophy"></i>
+                        <span>Đang diễn ra</span>
+                        <span class="badge-count" id="countDangDienRaMobile">0</span>
+                    </button>
+                    <button type="button" class="status-tab-btn" data-tab="daKetThuc" onclick="switchTab('daKetThuc')">
+                        <i class="bi bi-check2-circle"></i>
+                        <span>Đã kết thúc</span>
+                        <span class="badge-count" id="countDaKetThucMobile">0</span>
                     </button>
                 </div>
             </div>
@@ -66,13 +323,13 @@
 
         <!-- 2. Loading State -->
         <div class="text-center py-5" id="loadingState">
-            <div class="spinner-border text-warning" role="status" style="color: #ea580c !important;">
+            <div class="spinner-border text-warning" role="status" style="width: 2.5rem; height: 2.5rem; color: #ea580c !important;">
                 <span class="visually-hidden">Đang tải...</span>
             </div>
             <p class="text-muted mt-2 small">Đang tải danh sách giải đấu...</p>
         </div>
 
-        <!-- 3. Empty State (Không có giải đấu phù hợp) -->
+        <!-- 3. Empty State -->
         <div class="bg-white rounded-4 border p-5 text-center shadow-sm d-none" id="emptyState">
             <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
             <h5 class="fw-bold mt-3 text-secondary">Không có giải đấu nào phù hợp</h5>
@@ -86,25 +343,27 @@
         </div>
 
         <!-- 4. Danh sách Tournament Cards -->
-        <div class="d-flex flex-column gap-4" id="tournamentContainer">
-            <!-- Render động bằng AJAX Javascript tương tự Component TournamentCard của React -->
+        <div class="d-flex flex-column gap-4 mb-5" id="tournamentContainer">
+            <!-- Render động bằng AJAX Javascript -->
         </div>
+
+        
     </div>
 </div>
 
 @section Scripts {
     <script>
-        // State management tương tự React Home Component
         let allTournaments = [];
-        let activeTab = 'tatCa'; // 'tatCa' | 'sapDienRa' | 'dangDienRa' | 'daKetThuc'
+        let activeTab = 'sapDienRa';
         let searchQuery = '';
-        const sportPageMap = {}; // Lưu trang môn thi đấu theo từng tournament id
+
+        // Dữ liệu bảng huy chương
 
         $(document).ready(function () {
             loadTournaments();
         });
 
-        // Tải danh sách giải đấu từ API
+        // ==================== QUẢN LÝ GIẢI ĐẤU ====================
         function loadTournaments() {
             $('#loadingState').removeClass('d-none');
             $('#emptyState').addClass('d-none');
@@ -128,7 +387,7 @@
                 },
                 error: function (xhr, status, error) {
                     $('#loadingState').addClass('d-none');
-                    console.warn('Không thể tải dữ liệu giải đấu từ API:', error);
+                    console.warn('Lỗi khi tải dữ liệu giải đấu:', error);
                     allTournaments = [];
                     updateCounts();
                     renderList();
@@ -136,305 +395,197 @@
             });
         }
 
-        // Tính số lượng badge cho từng tab
-        function updateCounts() {
-            let sapDienRaCount = 0;
-            let dangDienRaCount = 0;
-            let daKetThucCount = 0;
-
-            allTournaments.forEach(function (t) {
-                const tt = (t.trangThai || '').toString();
-                const ttText = (t.trangThaiText || '').toLowerCase();
-
-                if (tt === 'DangDienRa' || tt === '3' || ttText.includes('đang')) {
-                    dangDienRaCount++;
-                } else if (tt === 'KetThuc' || tt === '4' || ttText.includes('kết thúc')) {
-                    daKetThucCount++;
-                } else {
-                    sapDienRaCount++; // Bao gồm SapDienRa=2, Nhap=1
-                }
-            });
-
-            $('#countTatCa').text(allTournaments.length);
-            $('#countSapDienRa').text(sapDienRaCount);
-            $('#countDangDienRa').text(dangDienRaCount);
-            $('#countDaKetThuc').text(daKetThucCount);
-        }
-
-        // Chuyển tab trạng thái
-        function switchTab(tab) {
-            activeTab = tab;
-            $('#statusPillsGroup .status-pill-btn').removeClass('active-orange');
-            $(`#statusPillsGroup .status-pill-btn[data-tab="${tab}"]`).addClass('active-orange');
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            $('.status-tab-btn').removeClass('active-tab');
+            $(`.status-tab-btn[data-tab="${tabKey}"]`).addClass('active-tab');
             renderList();
         }
 
-        // Tìm kiếm theo từ khóa
         function handleSearchInput(val) {
             searchQuery = (val || '').trim().toLowerCase();
+            $('#searchBoxInputDesktop').val(val);
+            $('#searchBoxInputMobile').val(val);
             renderList();
         }
 
-        // Reset bộ lọc
         function resetSearchAndTab() {
             searchQuery = '';
-            $('#searchBoxInput').val('');
-            switchTab('tatCa');
+            $('#searchBoxInputDesktop').val('');
+            $('#searchBoxInputMobile').val('');
+            switchTab('sapDienRa');
         }
 
-        // Lọc giải đấu theo tab và từ khóa
-        function getFilteredTournaments() {
-            return allTournaments.filter(function (t) {
-                const tt = (t.trangThai || '').toString();
-                const ttText = (t.trangThaiText || '').toLowerCase();
+        function updateCounts() {
+            const countSapDienRa = allTournaments.filter(t => isMatchStatus(t, 'SapDienRa')).length;
+            const countDangDienRa = allTournaments.filter(t => isMatchStatus(t, 'DangDienRa')).length;
+            const countDaKetThuc = allTournaments.filter(t => isMatchStatus(t, 'KetThuc')).length;
 
-                // 1. Lọc trạng thái
-                let matchStatus = true;
-                if (activeTab === 'sapDienRa') {
-                    matchStatus = (tt === 'SapDienRa' || tt === '2' || tt === 'Nhap' || tt === '1' || ttText.includes('sắp') || ttText.includes('nháp'));
-                } else if (activeTab === 'dangDienRa') {
-                    matchStatus = (tt === 'DangDienRa' || tt === '3' || ttText.includes('đang'));
-                } else if (activeTab === 'daKetThuc') {
-                    matchStatus = (tt === 'KetThuc' || tt === '4' || ttText.includes('kết thúc'));
-                }
+            $('#countSapDienRaDesktop').text(countSapDienRa);
+            $('#countDangDienRaDesktop').text(countDangDienRa);
+            $('#countDaKetThucDesktop').text(countDaKetThuc);
 
-                // 2. Lọc keyword
-                const ten = (t.ten || '').toLowerCase();
-                const diaDiem = (t.diaDiem || '').toLowerCase();
-                const ma = (t.ma || '').toLowerCase();
-                const matchKeyword = !searchQuery ||
-                    ten.includes(searchQuery) ||
-                    diaDiem.includes(searchQuery) ||
-                    ma.includes(searchQuery);
-
-                return matchStatus && matchKeyword;
-            });
+            $('#countSapDienRaMobile').text(countSapDienRa);
+            $('#countDangDienRaMobile').text(countDangDienRa);
+            $('#countDaKetThucMobile').text(countDaKetThuc);
         }
 
-        // Hiển thị danh sách giải đấu
+        function isMatchStatus(item, tab) {
+            const st = (item.trangThai || '').toString();
+            if (tab === 'sapDienRa') {
+                return st === 'SapDienRa' || st === '2' || st === 'Nhap' || st === '1';
+            }
+            if (tab === 'dangDienRa') {
+                return st === 'DangDienRa' || st === '3';
+            }
+            if (tab === 'daKetThuc') {
+                return st === 'KetThuc' || st === '4';
+            }
+            return true;
+        }
+
         function renderList() {
-            const list = getFilteredTournaments();
-            const $container = $('#tournamentContainer');
-            $container.empty();
+            let filtered = allTournaments.filter(t => isMatchStatus(t, activeTab));
 
-            if (list.length === 0) {
+            if (searchQuery) {
+                filtered = filtered.filter(t => {
+                    const name = (t.ten || '').toLowerCase();
+                    const place = (t.diaDiem || '').toLowerCase();
+                    return name.includes(searchQuery) || place.includes(searchQuery);
+                });
+            }
+
+            if (filtered.length === 0) {
                 $('#emptyState').removeClass('d-none');
+                $('#tournamentContainer').empty();
                 return;
             }
 
             $('#emptyState').addClass('d-none');
-
-            list.forEach(function (t) {
-                const cardHtml = buildTournamentCardHtml(t);
-                $container.append(cardHtml);
+            let html = '';
+            filtered.forEach(t => {
+                html += renderCard(t);
             });
+            $('#tournamentContainer').html(html);
         }
 
-        // Đổi trang danh sách môn thi đấu trong một giải (4 môn / trang)
-        function changeSportPage(tournamentId, newPage) {
-            sportPageMap[tournamentId] = newPage;
-            // Chỉ cập nhật lại card tương ứng
-            const t = allTournaments.find(x => x.id === tournamentId);
-            if (t) {
-                const $oldCard = $(`#tournament-card-${tournamentId}`);
-                if ($oldCard.length) {
-                    const newCardHtml = buildTournamentCardHtml(t);
-                    $oldCard.replaceWith(newCardHtml);
-                }
-            }
-        }
-
-        // Dựng HTML cho từng TournamentCard đồng bộ chính xác với bản React
-        function buildTournamentCardHtml(t) {
-            const sports = t.monTheThaos || [];
-            const pageSize = 4;
-            const curPage = sportPageMap[t.id] || 1;
-            const totalPages = Math.ceil(sports.length / pageSize) || 1;
-            const safePage = Math.min(Math.max(curPage, 1), totalPages);
-            sportPageMap[t.id] = safePage;
-
-            const startIndex = (safePage - 1) * pageSize;
-            const currentSports = sports.slice(startIndex, startIndex + pageSize);
-
-            const hasImage = !!t.hinhAnh;
-            const bannerUrl = hasImage ? t.hinhAnh : '';
-            const bannerBg = hasImage ? '#0f172a' : 'linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)';
-
-            const statusText = t.trangThaiText || getStatusText(t.trangThai);
-            const statusClass = getStatusBadgeClass(t.trangThai);
+        function renderCard(t) {
+            const bannerUrl = t.hinhAnh || '/banner/120de374d96946f6875e8faa54034fc8.png';
+            const registerUrl = `/DonVi/DangKy/DangKyGiai/${t.id}`;
+            const scheduleUrl = `/LichThiDau?giaiDauId=${t.id}`;
             const linkUrl = `/Home/Details/${t.id}`;
+            const statusText = getStatusText(t.trangThai);
+            const sports = t.monTheThaos || [];
 
-            // HTML danh sách môn
             let sportsHtml = '';
             if (sports.length === 0) {
                 sportsHtml = `
-                    <div class="text-muted small py-3 px-3 bg-light rounded-3 text-center border">
-                        Chưa có môn thi đấu nào được gán cho giải đấu này.
+                    <div class="p-3 text-center text-muted small bg-light rounded-3 border border-dashed">
+                        Chưa có nội dung thi đấu nào được gán cho giải đấu này.
                     </div>
                 `;
             } else {
                 sportsHtml += `<div class="d-flex flex-column gap-2">`;
-                currentSports.forEach(function (mon, idx) {
-                    const num = startIndex + idx + 1;
+                sports.forEach(function (mon, idx) {
+                    const num = idx + 1;
                     sportsHtml += `
-                        <div class="category-item d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 py-2 px-3">
-                            <div class="d-flex align-items-center gap-2.5 flex-grow-1 min-w-0">
-                                <div class="category-index-badge flex-shrink-0 me-2">${num}</div>
-                                <div class="text-truncate">
-                                    <span class="fw-bold text-dark d-block text-truncate" style="font-size: 0.95rem;">${escapeHtml(mon.ten)}</span>
-                                    ${mon.moTa ? `<span class="text-muted small d-block text-truncate" style="font-size: 0.78rem;">${escapeHtml(mon.moTa)}</span>` : ''}
+                        <div class="event-sub-item d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                            <div class="d-flex align-items-start gap-2.5">
+                                <div class="sub-index-badge flex-shrink-0 mt-0.5">${num}</div>
+                                <div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">${escapeHtml(mon.ten)}</div>
+                                    <div class="d-flex flex-wrap align-items-center gap-1.5 mt-1">
+                                        <span class="badge rounded-pill px-2 py-1 fw-medium" style="background-color: #eff6ff; color: #1d4ed8; font-size: 0.72rem;">
+                                            <i class="bi bi-people me-1"></i>${mon.laMonDongDoi ? 'Môn đồng đội' : 'Môn cá nhân'}
+                                        </span>
+                                        ${mon.gioiTinh ? `<span class="badge rounded-pill px-2 py-1 fw-medium" style="background-color: #f1f5f9; color: #475569; font-size: 0.72rem;">${escapeHtml(mon.gioiTinh)}</span>` : ''}
+                                    </div>
                                 </div>
                             </div>
-                            <div class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
-                                ${mon.tenDanhMuc ? `
-                                    <span class="badge rounded-pill px-2.5 py-1.5 fw-medium d-flex align-items-center gap-1" style="background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;">
-                                        <i class="bi bi-tag text-muted"></i>
-                                        <span>${escapeHtml(mon.tenDanhMuc)}</span>
-                                    </span>
-                                ` : ''}
-                                <span class="badge rounded-pill px-2.5 py-1.5 fw-medium d-flex align-items-center gap-1" style="background-color: ${mon.laMonDongDoi ? '#eff6ff' : '#f5f3ff'}; color: ${mon.laMonDongDoi ? '#1d4ed8' : '#6d28d9'};">
-                                    <i class="${mon.laMonDongDoi ? 'bi bi-people-fill' : 'bi bi-person-fill'}"></i>
-                                    <span>${mon.laMonDongDoi ? 'Đồng đội' : 'Cá nhân'}</span>
-                                </span>
+                            <div class="d-flex align-items-center gap-1.5 justify-content-end">
+                                <a href="/LichThiDau?giaiDauId=${t.id}&gmtId=${mon.id}" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1" style="font-size: 0.78rem;">
+                                    <i class="bi bi-calendar3 me-1"></i>Lịch
+                                </a>
+                                <a href="${registerUrl}" class="btn-register-sub">
+                                    <i class="bi bi-person-plus"></i>
+                                    <span>Đăng ký</span>
+                                </a>
                             </div>
                         </div>
                     `;
                 });
                 sportsHtml += `</div>`;
-
-                // Phân trang môn thi đấu (4 môn / trang)
-                if (totalPages > 1) {
-                    sportsHtml += `
-                        <div class="d-flex justify-content-between align-items-center pt-3 mt-3 border-top border-light-subtle">
-                            <span class="small text-muted" style="font-size: 0.78rem;">
-                                Hiển thị ${startIndex + 1} - ${Math.min(startIndex + pageSize, sports.length)} trong tổng số ${sports.length} môn
-                            </span>
-                            <div class="d-flex align-items-center gap-1">
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center rounded-circle"
-                                        style="width: 26px; height: 26px; font-size: 0.75rem;"
-                                        ${safePage === 1 ? 'disabled' : ''}
-                                        onclick="changeSportPage(${t.id}, ${safePage - 1})"
-                                        title="Trang trước">
-                                    <i class="bi bi-chevron-left"></i>
-                                </button>
-                    `;
-
-                    for (let p = 1; p <= totalPages; p++) {
-                        const isActive = (p === safePage);
-                        sportsHtml += `
-                            <button type="button"
-                                    class="btn btn-sm rounded-circle p-0 d-inline-flex align-items-center justify-content-center ${isActive ? 'btn-warning text-white fw-bold' : 'btn-light border text-secondary'}"
-                                    style="width: 26px; height: 26px; font-size: 0.75rem; ${isActive ? 'background-color: #ea580c; border-color: #ea580c;' : ''}"
-                                    onclick="changeSportPage(${t.id}, ${p})">
-                                ${p}
-                            </button>
-                        `;
-                    }
-
-                    sportsHtml += `
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center rounded-circle"
-                                        style="width: 26px; height: 26px; font-size: 0.75rem;"
-                                        ${safePage === totalPages ? 'disabled' : ''}
-                                        onclick="changeSportPage(${t.id}, ${safePage + 1})"
-                                        title="Trang sau">
-                                    <i class="bi bi-chevron-right"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }
             }
 
             return `
-                <div class="tournament-card overflow-hidden" id="tournament-card-${t.id}">
+                <div class="tournament-item-card" id="tournament-card-${t.id}">
                     <div class="row g-0">
-                        <!-- Cột Trái: Banner Poster Giải Đấu -->
-                        <div class="col-lg-4 p-3 p-md-4">
-                            <a href="${linkUrl}" class="d-block text-decoration-none h-100 banner-click-hover" title="Xem chi tiết giải đấu ${escapeHtml(t.ten)}">
-                                <div class="tournament-banner-container h-100 rounded-4 overflow-hidden position-relative shadow-sm d-flex flex-column justify-content-between"
-                                     style="min-height: 340px; background: ${bannerBg}; cursor: pointer;">
-                                    ${hasImage ? `
-                                        <img src="${bannerUrl}"
-                                             alt="${escapeHtml(t.ten)}"
-                                             class="w-100 h-100 position-absolute top-0 start-0"
-                                             style="object-fit: cover; object-position: center;" />
-                                    ` : ''}
-                                    <div class="position-absolute top-0 start-0 w-100 h-100"
-                                         style="background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.85) 100%);">
-                                    </div>
-
-                                    <!-- Top Badges -->
-                                    <div class="position-relative z-1 p-3 d-flex justify-content-between align-items-center">
-                                        <span class="badge bg-warning text-dark fw-bold px-2.5 py-1.5 shadow-sm">${escapeHtml(t.ma || 'GIẢI ĐẤU')}</span>
-                                        <span class="badge ${statusClass} px-2.5 py-1.5 shadow-sm">${escapeHtml(statusText)}</span>
-                                    </div>
-
-                                    <!-- Bottom Info -->
-                                    <div class="position-relative z-1 p-3 text-white mt-auto">
-                                        <div class="badge bg-primary bg-opacity-75 text-white mb-2 small">${escapeHtml(t.phamViText || 'Giải Đấu Thể Thao')}</div>
-                                        <div class="pt-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center small text-light text-opacity-75">
-                                            <div>
-                                                <i class="bi bi-clock me-1 text-warning"></i>
-                                                ${formatDate(t.ngayBatDau)}
-                                            </div>
-                                            <div class="text-warning fw-semibold">
-                                                ${t.ngayKetThuc ? `Đến ${formatDate(t.ngayKetThuc)}` : ''}
-                                            </div>
-                                        </div>
-                                    </div>
+                        <!-- Cột Trái: Banner Poster -->
+                        <div class="col-lg-4 col-md-5">
+                            <a href="${linkUrl}" class="d-block text-decoration-none h-100" title="${escapeHtml(t.ten)}">
+                                <div class="poster-wrapper">
+                                    <img src="${bannerUrl}" alt="${escapeHtml(t.ten)}" onerror="this.src='/banner/120de374d96946f6875e8faa54034fc8.png'" />
                                 </div>
                             </a>
                         </div>
 
-                        <!-- Cột Phải: Thông tin chi tiết & Danh sách Môn thi đấu -->
-                        <div class="col-lg-8 p-3 p-md-4 d-flex flex-column justify-content-between">
+                        <!-- Cột Phải: Nội dung chi tiết -->
+                        <div class="col-lg-8 col-md-7 p-3 p-md-4 d-flex flex-column justify-content-between">
                             <div>
-                                <!-- Tiêu đề giải & Trạng thái -->
+                                <!-- Header tên giải & Trạng thái -->
                                 <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
-                                    <h4 class="fw-bold text-dark mb-0 text-uppercase flex-grow-1" style="font-size: 1.25rem;">
-                                        ${escapeHtml(t.ten)}
-                                    </h4>
-                                    <span class="badge rounded-pill px-3 py-1.5 fw-semibold" style="background-color: #e0f2fe; color: #0369a1; font-size: 0.78rem;">
+                                    <a href="${linkUrl}" class="text-decoration-none text-dark flex-grow-1">
+                                        <h5 class="fw-bold mb-0 text-uppercase" style="font-size: 1.15rem; line-height: 1.4;">
+                                            ${escapeHtml(t.ten)}
+                                        </h5>
+                                    </a>
+                                    <span class="badge rounded-pill px-3 py-1.5 fw-semibold" style="background-color: #e0f2fe; color: #0284c7; font-size: 0.75rem;">
                                         ${escapeHtml(statusText)}
                                     </span>
                                 </div>
 
                                 <!-- Địa điểm, Thời gian, Hạn ĐK -->
-                                <div class="d-flex flex-wrap align-items-center gap-3 text-secondary small mb-3">
-                                    <div class="d-flex align-items-center gap-1 text-primary">
-                                        <i class="bi bi-geo-alt"></i>
-                                        <span>${escapeHtml(t.diaDiem || 'Địa điểm đang cập nhật')}</span>
+                                <div class="d-flex flex-column gap-1.5 text-secondary small mb-3">
+                                    <div class="d-flex align-items-center gap-1.5 text-primary">
+                                        <i class="bi bi-geo-alt-fill text-primary"></i>
+                                        <span>${escapeHtml(t.diaDiem || 'Trung tâm thể thao đa năng')}</span>
                                     </div>
-                                    <div class="d-flex align-items-center gap-1 text-success">
-                                        <i class="bi bi-calendar-check"></i>
-                                        <span>${formatDate(t.ngayBatDau)} - ${formatDate(t.ngayKetThuc)}</span>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-1 text-danger fw-medium">
-                                        <i class="bi bi-clock-history"></i>
-                                        <span>Hạn ĐK: ${formatDate(t.hanDangKy || t.ngayBatDau)}</span>
-                                    </div>
-                                </div>
-
-                                <!-- Danh sách Môn / Nội Dung Thi Đấu -->
-                                <div class="mt-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div class="fw-bold text-secondary text-uppercase small" style="letter-spacing: 0.5px;">
-                                            MÔN THI ĐẤU (${sports.length})
+                                    <div class="d-flex flex-wrap align-items-center gap-3">
+                                        <div class="d-flex align-items-center gap-1 text-success fw-medium">
+                                            <i class="bi bi-calendar4-week"></i>
+                                            <span>${formatDate(t.ngayBatDau)} - ${formatDate(t.ngayKetThuc)}</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-1 fw-bold" style="color: #ea580c;">
+                                            <i class="bi bi-calendar-x"></i>
+                                            <span>Hạn ĐK: ${formatDate(t.hanDangKy || t.ngayBatDau)}</span>
                                         </div>
                                     </div>
-                                    ${sportsHtml}
                                 </div>
+
+                                <!-- Tiêu đề Nội Dung -->
+                                <div class="fw-bold text-muted text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                    CÁC MÔN THI ĐẤU (${sports.length})
+                                </div>
+
+                                <!-- Danh sách Sub-items -->
+                                ${sportsHtml}
                             </div>
 
-                            <!-- Footer Card: Xem chi tiết điều lệ giải đấu -->
-                            <div class="mt-3 pt-3 border-top d-flex align-items-center justify-content-end">
-                                <a href="${linkUrl}"
-                                   class="btn btn-outline-warning rounded-3 px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 text-decoration-none shadow-sm"
-                                   style="border-color: #ea580c; color: #ea580c; font-size: 0.88rem;">
-                                    <span>Xem chi tiết điều lệ giải đấu</span>
-                                    <i class="bi bi-arrow-right"></i>
+                            <!-- Footer nút chức năng bên dưới -->
+                            <div class="mt-3 pt-3 border-top d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <div class="d-flex gap-2">
+                                    <a href="${scheduleUrl}" class="btn-schedule-main">
+                                        <i class="bi bi-calendar3"></i>
+                                        <span>Lịch & Bảng Đấu</span>
+                                    </a>
+                                    <a href="/BangXepHang?giaiDauId=${t.id}" class="btn btn-outline-warning border rounded-3 px-3 py-1.5 fw-semibold text-dark small d-inline-flex align-items-center gap-1">
+                                        <i class="fa-solid fa-medal text-warning"></i>
+                                        <span>BXH Huy Chương</span>
+                                    </a>
+                                </div>
+                                <a href="${registerUrl}" class="btn-register-main">
+                                    <i class="bi bi-person-plus-fill"></i>
+                                    <span>Đăng ký tham gia</span>
                                 </a>
                             </div>
                         </div>
@@ -443,7 +594,7 @@
             `;
         }
 
-        // Định dạng ngày hiển thị dd/MM/yyyy
+        // ==================== TIỆN ÍCH DÙNG CHUNG ====================
         function formatDate(dateStr) {
             if (!dateStr) return '';
             try {
@@ -465,14 +616,6 @@
             if (str === 'KetThuc' || str === '4') return 'Đã kết thúc';
             if (str === 'Nhap' || str === '1') return 'Bản nháp';
             return 'Đang mở đăng ký';
-        }
-
-        function getStatusBadgeClass(val) {
-            const str = (val || '').toString();
-            if (str === 'DangDienRa' || str === '3') return 'bg-danger';
-            if (str === 'SapDienRa' || str === '2') return 'bg-primary';
-            if (str === 'KetThuc' || str === '4') return 'bg-secondary';
-            return 'bg-warning text-dark';
         }
 
         function escapeHtml(text) {

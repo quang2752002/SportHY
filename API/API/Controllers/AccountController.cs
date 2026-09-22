@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
@@ -74,6 +75,9 @@ namespace API.Controllers
 
             if (result.Succeeded)
             {
+                // Xóa cookie lưu đơn vị cũ nếu có để tránh ảnh hưởng tài khoản đăng nhập mới
+                Response.Cookies.Delete("DonVi_SelectedId");
+
                 var user = await _userManager.FindByNameAsync(model.Username);
                 if (user != null)
                 {
@@ -137,6 +141,7 @@ namespace API.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
+            Response.Cookies.Delete("DonVi_SelectedId");
             return RedirectToAction(nameof(Login));
         }
 

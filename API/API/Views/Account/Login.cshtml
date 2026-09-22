@@ -97,7 +97,22 @@
                     </div>
 
                     <!-- Các đơn vị khác -->
-                    <div class="d-flex gap-1">
+                                        <!-- Trong tai -->
+                    <small class="text-muted d-block mb-1" style="font-size: 0.75rem;">
+                        <i class="fa-solid fa-whistle text-warning me-1"></i> Tai khoan Trong Tai:
+                    </small>
+                    <div class="d-flex gap-1 mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-warning flex-fill text-truncate py-1 px-2 fw-semibold" onclick="fillAccount('hanh', '123')" title="Trong tai: hanh / 123">
+                            <i class="fa-solid fa-whistle me-1"></i> hanh
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning flex-fill text-truncate py-1 px-2 fw-semibold" onclick="fillAccount('trong', '123')" title="Trong tai: trong / 123">
+                            <i class="fa-solid fa-whistle me-1"></i> trong
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning flex-fill text-truncate py-1 px-2 fw-semibold" onclick="fillAccount('trongtai', '123')" title="Trong tai: trongtai / 123">
+                            <i class="fa-solid fa-whistle me-1"></i> trongtai
+                        </button>
+                    </div>
+<div class="d-flex gap-1">
                         <button type="button" class="btn btn-sm btn-outline-dark flex-fill text-truncate py-1 px-1" onclick="fillAccount('donvi_sphn', 'Delegation@123')" title="ĐH Sư Phạm Hà Nội (donvi_sphn / Delegation@123)" style="font-size: 0.75rem;">
                             <i class="fa-solid fa-book-open-reader me-1 text-purple"></i> ĐH Sư Phạm
                         </button>

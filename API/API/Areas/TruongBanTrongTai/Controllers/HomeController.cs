@@ -13,8 +13,16 @@ namespace API.Areas.TruongBanTrongTai.Controllers
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index(int? giaiDauId)
         {
+            var managedTournaments = await GetManagedTournamentsAsync();
+            var currentReferee = await GetCurrentRefereeAsync();
+            var selectedGiaiDauId = GetSelectedTournamentId(giaiDauId, managedTournaments);
+
+            ViewBag.ManagedTournaments = managedTournaments;
+            ViewBag.CurrentReferee = currentReferee;
+            ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
+
             return View();
         }
 

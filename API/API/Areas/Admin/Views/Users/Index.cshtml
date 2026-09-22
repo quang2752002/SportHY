@@ -2,6 +2,8 @@
     ViewData["Title"] = "Quản lý Tài Khoản & Vai Trò";
     var roles = ViewBag.Roles as string[] ?? Array.Empty<string>();
     var donVis = ViewBag.DonVis as IEnumerable<DonViDto> ?? Enumerable.Empty<DonViDto>();
+    var trongTais = ViewBag.TrongTais as IEnumerable<TrongTaiDto> ?? Enumerable.Empty<TrongTaiDto>();
+    var thuKys = ViewBag.ThuKys as IEnumerable<ThuKyDto> ?? Enumerable.Empty<ThuKyDto>();
 }
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
@@ -9,7 +11,7 @@
         <h4 class="fw-bold mb-1 text-dark">
             <i class="fa-solid fa-users-gear text-primary me-2"></i>Quản lý Tài Khoản & Phân Quyền Theo Vai Trò
         </h4>
-        <p class="text-muted small mb-0">Cấp phát tài khoản người dùng theo phân vùng vai trò (Admin, Trọng tài, Đơn vị/Đoàn) - Tự động bảo vệ theo Area.</p>
+        <p class="text-muted small mb-0">Cấp phát tài khoản người dùng theo phân vùng vai trò (Admin, Trọng tài, Thư ký, Đơn vị/Đoàn) - Tự động bảo vệ theo Area.</p>
     </div>
     <div class="d-flex gap-2">
         <button type="button" class="btn btn-primary shadow-sm" onclick="openCreateModal()">
@@ -59,7 +61,7 @@
                         <th>Email</th>
                         <th>Vai Trò (Role)</th>
                         <th>Phân Vùng Area Được Cấp</th>
-                        <th>Đơn Vị Liên Kết</th>
+                        <th>Hồ Sơ / Đơn Vị Liên Kết</th>
                         <th class="text-end pe-3" style="width: 130px;">Thao Tác</th>
                     </tr>
                 </thead>
@@ -86,6 +88,60 @@
             <form id="formUser">
                 <input type="hidden" id="userId" value="">
                 <div class="modal-body p-4">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Vai trò phân quyền (Role) <span class="text-danger">*</span></label>
+                        <select class="form-select" id="role" required>
+                            @* <option value="Admin">Admin (Quản trị viên toàn quyền)</option> *@
+                            <option value="Manager">Manager (Quản lý giải đấu)</option>
+                            <option value="Delegation">Delegation (Đoàn thể thao / Đơn vị nộp hồ sơ)</option>
+                            <option value="HeadReferee">HeadReferee (Trưởng ban trọng tài)</option>
+                            <option value="Referee">Referee (Trọng tài điều hành)</option>
+                            <option value="Secretary">Secretary (Thư ký bàn)</option>
+                        </select>
+                        <div class="form-text text-primary small">
+                            <i class="fa-solid fa-circle-check me-1"></i>
+                            Tài khoản sẽ tự động được cấp quyền truy cập vào đúng phân vùng Area tương ứng với vai trò này.
+                        </div>
+                    </div>
+
+                    <!-- Dropdown chọn đơn vị nếu là Delegation -->
+                    <div class="mb-3 d-none" id="donViGroup">
+                        <label class="form-label fw-semibold">Đơn vị / Đoàn thể thao quản lý <span class="text-danger">*</span></label>
+                        <select class="form-select" id="donViId">
+                            <option value="">-- Chọn đơn vị trực thuộc --</option>
+                            @foreach (var dv in donVis)
+                            {
+                                <option value="@dv.Id" data-name="@(string.IsNullOrEmpty(dv.NguoiDaiDien) ? dv.Ten : dv.NguoiDaiDien)" data-email="@(dv.Email ?? "")">@dv.Ten</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Dropdown chọn trọng tài nếu là Referee hoặc HeadReferee -->
+                    <div class="mb-3 d-none" id="trongTaiGroup">
+                        <label class="form-label fw-semibold">Hồ sơ Trọng tài liên kết <span class="text-danger">*</span></label>
+                        <select class="form-select" id="trongTaiId">
+                            <option value="">-- Chọn hồ sơ trọng tài --</option>
+                            @foreach (var tt in trongTais)
+                            {
+                                <option value="@tt.Id" data-name="@tt.HoTen" data-email="@(tt.Email ?? "")">@(string.IsNullOrEmpty(tt.Ma) ? tt.HoTen : $"{tt.Ma} - {tt.HoTen}")@(string.IsNullOrEmpty(tt.CapBac) ? "" : $" ({tt.CapBac})")</option>
+                            }
+                        </select>
+                        <small class="text-muted">Chọn hồ sơ trọng tài để tự động điền họ tên, email và phân quyền.</small>
+                    </div>
+
+                    <!-- Dropdown chọn thư ký nếu là Secretary -->
+                    <div class="mb-3 d-none" id="thuKyGroup">
+                        <label class="form-label fw-semibold">Hồ sơ Thư ký liên kết <span class="text-danger">*</span></label>
+                        <select class="form-select" id="thuKyId">
+                            <option value="">-- Chọn hồ sơ thư ký --</option>
+                            @foreach (var tk in thuKys)
+                            {
+                                <option value="@tk.Id" data-name="@tk.HoTen" data-email="@(tk.Email ?? "")">@(string.IsNullOrEmpty(tk.Ma) ? tk.HoTen : $"{tk.Ma} - {tk.HoTen}")@(string.IsNullOrEmpty(tk.ChucVu) ? "" : $" ({tk.ChucVu})")</option>
+                            }
+                        </select>
+                        <small class="text-muted">Chọn hồ sơ thư ký để tự động điền họ tên, email và phân quyền.</small>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Tên đăng nhập (Username) <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="username" required placeholder="Ví dụ: referee_an">
@@ -107,33 +163,7 @@
                         <small class="text-muted" id="pwdHelp" style="display: none;">Để trống nếu không muốn đổi mật khẩu.</small>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Vai trò phân quyền (Role) <span class="text-danger">*</span></label>
-                        <select class="form-select" id="role" required>
-                            <option value="Admin">Admin (Quản trị viên toàn quyền)</option>
-                            <option value="Manager">Manager (Quản lý giải đấu)</option>
-                            <option value="Delegation">Delegation (Đoàn thể thao / Đơn vị nộp hồ sơ)</option>
-                            <option value="HeadReferee">HeadReferee (Trưởng ban trọng tài)</option>
-                            <option value="Referee">Referee (Trọng tài điều hành)</option>
-                            <option value="Secretary">Secretary (Thư ký bàn)</option>
-                        </select>
-                        <div class="form-text text-primary small">
-                            <i class="fa-solid fa-circle-check me-1"></i>
-                            Tài khoản sẽ tự động được cấp quyền truy cập vào đúng phân vùng Area tương ứng với vai trò này.
-                        </div>
-                    </div>
-
-                    <!-- Dropdown chọn đơn vị nếu là Delegation -->
-                    <div class="mb-3 d-none" id="donViGroup">
-                        <label class="form-label fw-semibold">Đơn vị / Đoàn thể thao quản lý <span class="text-danger">*</span></label>
-                        <select class="form-select" id="donViId">
-                            <option value="">-- Chọn đơn vị trực thuộc --</option>
-                            @foreach (var dv in donVis)
-                            {
-                                <option value="@dv.Id">@dv.Ten</option>
-                            }
-                        </select>
-                    </div>
+                   
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
@@ -163,11 +193,34 @@
             });
 
             $('#role').on('change', function () {
-                if ($(this).val() === 'Delegation') {
-                    $('#donViGroup').removeClass('d-none');
-                } else {
-                    $('#donViGroup').addClass('d-none');
-                }
+                toggleRoleLinkedGroups($(this).val());
+            });
+
+            // Khi chọn Đơn vị / Đoàn: tự động điền Họ tên và Email
+            $('#donViId').on('change', function () {
+                const opt = $(this).find('option:selected');
+                const name = opt.data('name');
+                const email = opt.data('email');
+                if (name) $('#fullName').val(name);
+                if (email) $('#email').val(email);
+            });
+
+            // Khi chọn Trọng tài: tự động điền Họ tên và Email
+            $('#trongTaiId').on('change', function () {
+                const opt = $(this).find('option:selected');
+                const name = opt.data('name');
+                const email = opt.data('email');
+                if (name) $('#fullName').val(name);
+                if (email) $('#email').val(email);
+            });
+
+            // Khi chọn Thư ký: tự động điền Họ tên và Email
+            $('#thuKyId').on('change', function () {
+                const opt = $(this).find('option:selected');
+                const name = opt.data('name');
+                const email = opt.data('email');
+                if (name) $('#fullName').val(name);
+                if (email) $('#email').val(email);
             });
 
             $('#formUser').on('submit', function (e) {
@@ -175,6 +228,20 @@
                 saveData();
             });
         });
+
+        function toggleRoleLinkedGroups(role) {
+            $('#donViGroup').addClass('d-none');
+            $('#trongTaiGroup').addClass('d-none');
+            $('#thuKyGroup').addClass('d-none');
+
+            if (role === 'Delegation') {
+                $('#donViGroup').removeClass('d-none');
+            } else if (role === 'Referee' || role === 'HeadReferee') {
+                $('#trongTaiGroup').removeClass('d-none');
+            } else if (role === 'Secretary') {
+                $('#thuKyGroup').removeClass('d-none');
+            }
+        }
 
         function loadData(page) {
             currentPage = page;
@@ -215,6 +282,16 @@
                 const roleBadge = renderRoleBadge(item.role);
                 const areaBadge = renderAreaBadge(item.role);
 
+                // Render linked entity (Đoàn, Trọng tài, Thư ký)
+                let linkedHtml = '<span class="text-muted small">-</span>';
+                if (item.tenDonVi) {
+                    linkedHtml = `<span class="badge bg-light text-dark border" title="Đơn vị / Đoàn thể thao"><i class="fa-solid fa-building-columns me-1 text-info"></i>${escapeHtml(item.tenDonVi)}</span>`;
+                } else if (item.tenTrongTai) {
+                    linkedHtml = `<span class="badge bg-light text-dark border" title="Hồ sơ Trọng tài"><i class="fa-solid fa-whistle me-1 text-primary"></i>${escapeHtml(item.tenTrongTai)}</span>`;
+                } else if (item.tenThuKy) {
+                    linkedHtml = `<span class="badge bg-light text-dark border" title="Hồ sơ Thư ký"><i class="fa-solid fa-clipboard-user me-1 text-secondary"></i>${escapeHtml(item.tenThuKy)}</span>`;
+                }
+
                 html += `
                     <tr>
                         <td class="ps-3 fw-bold text-muted">${stt}</td>
@@ -228,7 +305,7 @@
                         <td>${roleBadge}</td>
                         <td>${areaBadge}</td>
                         <td>
-                            ${item.tenDonVi ? `<span class="badge bg-light text-dark border"><i class="fa-solid fa-building-columns me-1 text-info"></i>${escapeHtml(item.tenDonVi)}</span>` : '<span class="text-muted small">-</span>'}
+                            ${linkedHtml}
                         </td>
                         <td class="text-end pe-3">
                             <div class="btn-group btn-group-sm">
@@ -309,12 +386,14 @@
             $('#username').val('').prop('readonly', false);
             $('#fullName').val('');
             $('#email').val('');
-            $('#password').val('').prop('required', true);
-            $('#lblPassword').html('Mật khẩu khởi tạo <span class="text-danger">*</span>');
+            $('#password').val('123').prop('required', false);
+            $('#lblPassword').html('Mật khẩu khởi tạo (Mặc định: 123)');
             $('#pwdHelp').hide();
-            $('#role').val('Admin');
+            $('#role').val('Delegation');
             $('#donViId').val('');
-            $('#donViGroup').addClass('d-none');
+            $('#trongTaiId').val('');
+            $('#thuKyId').val('');
+            toggleRoleLinkedGroups('Delegation');
             $('#modalUser').modal('show');
         }
 
@@ -332,11 +411,9 @@
                     $('#pwdHelp').show();
                     $('#role').val(item.role);
                     $('#donViId').val(item.donViId || '');
-                    if (item.role === 'Delegation') {
-                        $('#donViGroup').removeClass('d-none');
-                    } else {
-                        $('#donViGroup').addClass('d-none');
-                    }
+                    $('#trongTaiId').val(item.trongTaiId || '');
+                    $('#thuKyId').val(item.thuKyId || '');
+                    toggleRoleLinkedGroups(item.role);
                     $('#modalUser').modal('show');
                 }
             });
@@ -350,6 +427,8 @@
             const password = $('#password').val();
             const role = $('#role').val();
             const donViId = $('#donViId').val();
+            const trongTaiId = $('#trongTaiId').val();
+            const thuKyId = $('#thuKyId').val();
 
             if (!username || !fullName || !email) {
                 Swal.fire('Lỗi', 'Vui lòng điền đầy đủ Tên đăng nhập, Họ tên và Email.', 'warning');
@@ -361,13 +440,30 @@
                 return;
             }
 
+            if (role === 'Delegation' && !donViId) {
+                Swal.fire('Lưu ý', 'Vui lòng chọn Đơn vị / Đoàn thể thao quản lý.', 'warning');
+                return;
+            }
+
+            if ((role === 'Referee' || role === 'HeadReferee') && !trongTaiId) {
+                Swal.fire('Lưu ý', 'Vui lòng chọn Hồ sơ Trọng tài liên kết.', 'warning');
+                return;
+            }
+
+            if (role === 'Secretary' && !thuKyId) {
+                Swal.fire('Lưu ý', 'Vui lòng chọn Hồ sơ Thư ký liên kết.', 'warning');
+                return;
+            }
+
             const payload = {
                 username: username,
                 fullName: fullName,
                 email: email,
                 password: password || null,
                 role: role,
-                donViId: role === 'Delegation' && donViId ? parseInt(donViId) : null
+                donViId: role === 'Delegation' && donViId ? parseInt(donViId) : null,
+                trongTaiId: (role === 'Referee' || role === 'HeadReferee') && trongTaiId ? parseInt(trongTaiId) : null,
+                thuKyId: role === 'Secretary' && thuKyId ? parseInt(thuKyId) : null
             };
 
             const url = id ? `/Admin/Users/Save?id=${id}` : '/Admin/Users/Save';

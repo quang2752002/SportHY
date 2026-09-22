@@ -11,6 +11,25 @@ namespace Dms.Infrastructure.Persistence
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole<int>> roleManager)
         {
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync(@"
+IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME = 'MonTheThao' AND COLUMN_NAME = 'LoaiThiDau'
+)
+BEGIN
+    ALTER TABLE MonTheThao ADD LoaiThiDau NVARCHAR(30) NULL;
+END
+");
+                await context.Database.ExecuteSqlRawAsync(@"
+UPDATE MonTheThao 
+SET LoaiThiDau = CASE WHEN LaMonDongDoi = 1 THEN 'DongDoi' ELSE 'CaNhan' END 
+WHERE LoaiThiDau IS NULL OR LoaiThiDau = '';
+");
+            }
+            catch { }
+
             // Đảm bảo Database đã được tạo hoặc được migrate
             await context.Database.MigrateAsync();
 

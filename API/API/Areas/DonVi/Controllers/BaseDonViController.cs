@@ -37,26 +37,18 @@ namespace API.Areas.DonVi.Controllers
             bool canSwitch = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager);
             ViewBag.CanSwitchUnit = canSwitch;
 
+            // 1. Lấy thông tin user hiện tại đang đăng nhập
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null && !string.IsNullOrEmpty(User.Identity?.Name))
+            {
+                user = await _userManager.FindByNameAsync(User.Identity.Name);
+            }
+
             int? targetId = null;
 
-            if (canSwitch && overrideDonViId.HasValue)
+            // 2. Nếu là tài khoản Đoàn/Đơn vị (không có quyền switch), ưu tiên tuyệt đối DonViId của tài khoản
+            if (!canSwitch)
             {
-                targetId = overrideDonViId.Value;
-                Response.Cookies.Append("DonVi_SelectedId", targetId.Value.ToString(), new CookieOptions
-                {
-                    Expires = DateTimeOffset.UtcNow.AddDays(7),
-                    HttpOnly = true,
-                    IsEssential = true
-                });
-            }
-            else if (canSwitch && Request.Cookies.TryGetValue("DonVi_SelectedId", out string? cookieVal) && int.TryParse(cookieVal, out int cId))
-            {
-                targetId = cId;
-            }
-
-            if (!targetId.HasValue)
-            {
-                var user = await _userManager.GetUserAsync(User);
                 if (user?.DonViId.HasValue == true)
                 {
                     targetId = user.DonViId.Value;
@@ -73,15 +65,42 @@ namespace API.Areas.DonVi.Controllers
                     }
                 }
             }
+            else
+            {
+                // Với Admin / Manager: cho phép chuyển đơn vị thông qua tham số hoặc Cookie
+                if (overrideDonViId.HasValue)
+                {
+                    targetId = overrideDonViId.Value;
+                    Response.Cookies.Append("DonVi_SelectedId", targetId.Value.ToString(), new CookieOptions
+                    {
+                        Expires = DateTimeOffset.UtcNow.AddDays(7),
+                        HttpOnly = true,
+                        IsEssential = true
+                    });
+                }
+                else if (Request.Cookies.TryGetValue("DonVi_SelectedId", out string? cookieVal) && int.TryParse(cookieVal, out int cId))
+                {
+                    targetId = cId;
+                }
+                else if (user?.DonViId.HasValue == true)
+                {
+                    targetId = user.DonViId.Value;
+                }
+            }
 
-            // Fallback nếu không xác định được
+            // 3. Tìm đơn vị trong danh sách
             DonViDto? current = null;
             if (targetId.HasValue)
             {
                 current = allDonVis.FirstOrDefault(d => d.Id == targetId.Value);
+                if (current == null)
+                {
+                    current = await _donViService.GetByIdAsync(targetId.Value);
+                }
             }
 
-            if (current == null && allDonVis.Count > 0)
+            // Fallback chỉ dành cho Admin/Manager khi chưa có đơn vị nào được chọn
+            if (current == null && canSwitch && allDonVis.Count > 0)
             {
                 current = allDonVis[0];
             }
