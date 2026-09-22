@@ -877,16 +877,33 @@ namespace Dms.Application.Services
 
         /// <summary>
         /// Lấy bảng tổng sắp huy chương toàn đoàn (Huy chương Vàng, Bạc, Đồng, Tổng điểm và Xếp hạng).
+        /// <summary>
+        /// Lấy bảng tổng sắp huy chương (Vàng, Bạc, Đồng) theo giải đấu cụ thể hoặc tổng hợp toàn bộ các giải đấu nếu giaiDauId null hoặc 0
         /// </summary>
+        /// <param name="giaiDauId">Mã giải đấu (tùy chọn; nếu null hoặc 0 sẽ tổng hợp toàn bộ các giải đấu trong hệ thống)</param>
+        /// <returns>Đối tượng DTO bảng tổng sắp huy chương toàn đoàn</returns>
         public async Task<BangTongSapHuyChuongDto> GetBangTongSapHuyChuongAsync(int? giaiDauId)
         {
-            var giaiDau = await GetEffectiveTournamentAsync(giaiDauId);
-            if (giaiDau == null) return new BangTongSapHuyChuongDto();
-
-            int gId = giaiDau.Id;
+            var isAllTournaments = !giaiDauId.HasValue || giaiDauId.Value <= 0;
+            GiaiDau? giaiDau = null;
+            if (!isAllTournaments)
+            {
+                giaiDau = await _unitOfWork.GiaiDaus.GetByIdAsync(giaiDauId!.Value);
+                if (giaiDau == null || giaiDau.IsDeleted == true)
+                {
+                    return new BangTongSapHuyChuongDto
+                    {
+                        GiaiDauId = 0,
+                        TenGiaiDau = "Không tìm thấy giải đấu",
+                        NgayXuatBaoCao = DateTime.Now
+                    };
+                }
+            }
 
             var donVis = (await _unitOfWork.DonVis.FindAsync(d => d.IsDeleted != true)).ToList();
-            var huyChuongs = (await _unitOfWork.HuyChuongs.FindAsync(h => h.GiaiDauId == gId && h.IsDeleted != true)).ToList();
+            var huyChuongs = (await _unitOfWork.HuyChuongs.FindAsync(h =>
+                (isAllTournaments || h.GiaiDauId == giaiDauId!.Value) && h.IsDeleted != true
+            )).ToList();
             var loaiHcs = (await _unitOfWork.LoaiHuyChuongs.FindAsync(l => l.IsDeleted != true)).ToDictionary(l => l.Id);
             var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
             var dois = (await _unitOfWork.Dois.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
@@ -971,6 +988,7 @@ namespace Dms.Application.Services
             var sorted = list.OrderByDescending(x => x.SoHuyChuongVang)
                              .ThenByDescending(x => x.SoHuyChuongBac)
                              .ThenByDescending(x => x.SoHuyChuongDong)
+                             .ThenByDescending(x => x.TongSoHuyChuong)
                              .ThenBy(x => x.TenDonVi)
                              .ToList();
 
@@ -981,8 +999,8 @@ namespace Dms.Application.Services
 
             return new BangTongSapHuyChuongDto
             {
-                GiaiDauId = gId,
-                TenGiaiDau = giaiDau.Ten,
+                GiaiDauId = isAllTournaments ? 0 : giaiDau!.Id,
+                TenGiaiDau = isAllTournaments ? "Tất cả các giải đấu (Tổng hợp toàn đoàn)" : giaiDau!.Ten,
                 TongSoHuyChuongVang = vangTotal,
                 TongSoHuyChuongBac = bacTotal,
                 TongSoHuyChuongDong = dongTotal,

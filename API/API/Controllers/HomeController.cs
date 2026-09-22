@@ -82,84 +82,8 @@ namespace API.Controllers
         {
             try
             {
-                if (giaiDauId.HasValue && giaiDauId.Value > 0)
-                {
-                    var result = await _thuKyGiaiService.GetBangTongSapHuyChuongAsync(giaiDauId.Value);
-                    return Json(new { success = true, data = result });
-                }
-
-                // Tổng hợp toàn bộ các giải đấu
-                var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
-                var allDonVis = (await _donViService.GetAllAsync())?.ToList() ?? new();
-                var donViMap = allDonVis.ToDictionary(d => d.Id);
-                var tally = new Dictionary<int, (int vang, int bac, int dong)>();
-
-                foreach (var dv in allDonVis)
-                {
-                    tally[dv.Id] = (0, 0, 0);
-                }
-
-                int vangTotal = 0, bacTotal = 0, dongTotal = 0;
-
-                foreach (var t in allTournaments)
-                {
-                    var bts = await _thuKyGiaiService.GetBangTongSapHuyChuongAsync(t.Id);
-                    if (bts?.BangXepHang != null)
-                    {
-                        foreach (var item in bts.BangXepHang)
-                        {
-                            if (!tally.ContainsKey(item.DonViId))
-                            {
-                                tally[item.DonViId] = (0, 0, 0);
-                            }
-                            var cur = tally[item.DonViId];
-                            tally[item.DonViId] = (cur.vang + item.SoHuyChuongVang, cur.bac + item.SoHuyChuongBac, cur.dong + item.SoHuyChuongDong);
-                        }
-                        vangTotal += bts.TongSoHuyChuongVang;
-                        bacTotal += bts.TongSoHuyChuongBac;
-                        dongTotal += bts.TongSoHuyChuongDong;
-                    }
-                }
-
-                var list = new List<HuyChuongDoanDto>();
-                foreach (var kvp in tally)
-                {
-                    donViMap.TryGetValue(kvp.Key, out var dv);
-                    list.Add(new HuyChuongDoanDto
-                    {
-                        DonViId = kvp.Key,
-                        MaDonVi = dv?.Ma ?? "",
-                        TenDonVi = dv?.Ten ?? "Đơn vị",
-                        SoHuyChuongVang = kvp.Value.vang,
-                        SoHuyChuongBac = kvp.Value.bac,
-                        SoHuyChuongDong = kvp.Value.dong
-                    });
-                }
-
-                var sorted = list.OrderByDescending(x => x.SoHuyChuongVang)
-                                 .ThenByDescending(x => x.SoHuyChuongBac)
-                                 .ThenByDescending(x => x.SoHuyChuongDong)
-                                 .ThenByDescending(x => x.TongSoHuyChuong)
-                                 .ThenBy(x => x.TenDonVi)
-                                 .ToList();
-
-                for (int i = 0; i < sorted.Count; i++)
-                {
-                    sorted[i].XepHang = i + 1;
-                }
-
-                var consolidated = new BangTongSapHuyChuongDto
-                {
-                    GiaiDauId = 0,
-                    TenGiaiDau = "Tất cả các giải đấu",
-                    TongSoHuyChuongVang = vangTotal,
-                    TongSoHuyChuongBac = bacTotal,
-                    TongSoHuyChuongDong = dongTotal,
-                    BangXepHang = sorted,
-                    NgayXuatBaoCao = DateTime.Now
-                };
-
-                return Json(new { success = true, data = consolidated });
+                var result = await _thuKyGiaiService.GetBangTongSapHuyChuongAsync(giaiDauId);
+                return Json(new { success = true, data = result });
             }
             catch (Exception ex)
             {

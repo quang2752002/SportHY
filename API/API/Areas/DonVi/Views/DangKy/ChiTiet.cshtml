@@ -339,6 +339,29 @@
             }
         }
 
+        // Tiện ích chuẩn hóa và so khớp giới tính linh hoạt (Nam, Nu, Nữ, HonHop, TatCa...)
+        function normalizeGender(val) {
+            if (!val) return '';
+            const s = val.toString().trim().toLowerCase();
+            if (s === 'nam' || s === 'male' || s === '1') return 'Nam';
+            if (s === 'nu' || s === 'nữ' || s === 'female' || s === '0') return 'Nu';
+            return 'HonHop';
+        }
+
+        function isGenderMatch(sportGender, athleteGender) {
+            const s = normalizeGender(sportGender);
+            const a = normalizeGender(athleteGender);
+            if (!s || s === 'HonHop' || s === 'TatCa') return true;
+            return s === a;
+        }
+
+        function getGenderLabel(genderVal) {
+            const norm = normalizeGender(genderVal);
+            if (norm === 'Nam') return 'Nam';
+            if (norm === 'Nu') return 'Nữ';
+            return 'Nam & Nữ (Hỗn hợp)';
+        }
+
         function onSportChanged() {
             const select = document.getElementById('selectSport');
             const selectedOption = select.options[select.selectedIndex];
@@ -371,7 +394,7 @@
             const format = selectedOption.getAttribute('data-format');
             currentSportIsTeam = isTeam;
 
-            let genderText = gender === 'Nam' ? 'Nam' : (gender === 'Nu' ? 'Nữ' : 'Nam & Nữ (Hỗn hợp)');
+            let genderText = getGenderLabel(gender);
             let infoHtml = `
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     <span class="badge ${isTeam ? 'bg-info-subtle text-info border border-info-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'}">
@@ -402,12 +425,14 @@
         }
 
         function cleanInvalidGenderAthletes(sportGender) {
-            if (!sportGender || sportGender === 'HonHop' || sportGender === 'TatCa') return;
+            if (!sportGender) return;
+            const normSport = normalizeGender(sportGender);
+            if (normSport === 'HonHop' || sportGender === 'TatCa') return;
 
             const validIds = [];
             selectedAthletes.forEach(id => {
                 const athleteGender = $(`[data-id="${id}"]`).data('gender');
-                if (athleteGender === sportGender) {
+                if (isGenderMatch(sportGender, athleteGender)) {
                     validIds.push(id);
                 }
             });
@@ -415,7 +440,7 @@
             if (validIds.length !== selectedAthletes.length) {
                 selectedAthletes = validIds;
                 updateAthleteCheckboxes();
-                SportApp.toast('warning', `Đã tự động bỏ chọn các VĐV không đúng giới tính quy định (${sportGender === 'Nam' ? 'Nam' : 'Nữ'}).`);
+                SportApp.toast('warning', `Đã tự động bỏ chọn các VĐV không đúng giới tính quy định (${getGenderLabel(sportGender)}).`);
             }
         }
 
@@ -433,7 +458,7 @@
 
                 let matchGender = true;
                 if (filterGender && sportGender && sportGender !== 'TatCa') {
-                    matchGender = (gender === sportGender);
+                    matchGender = isGenderMatch(sportGender, gender);
                 }
 
                 let matchText = !keyword || name.includes(keyword);
@@ -464,10 +489,11 @@
                 selectedAthletes.splice(index, 1);
             } else {
                 // Select: Kiểm tra nghiêm ngặt giới tính
-                if (sportGender && sportGender !== 'HonHop' && sportGender !== 'TatCa') {
-                    if (sportGender !== athleteGender) {
-                        const requiredText = sportGender === 'Nam' ? 'Nam' : 'Nữ';
-                        const athleteText = athleteGender === 'Nam' ? 'Nam' : 'Nữ';
+                const normSport = normalizeGender(sportGender);
+                if (normSport !== 'HonHop' && sportGender !== 'TatCa') {
+                    if (!isGenderMatch(sportGender, athleteGender)) {
+                        const requiredText = getGenderLabel(sportGender);
+                        const athleteText = getGenderLabel(athleteGender);
                         Swal.fire({
                             icon: 'warning',
                             title: 'Không đúng giới tính quy định',
@@ -524,11 +550,12 @@
             // Kiểm tra giới tính toàn bộ VĐV đã chọn trước khi gửi
             const selectedOption = select.options[select.selectedIndex];
             const sportGender = selectedOption ? selectedOption.getAttribute('data-gender') : null;
-            if (sportGender && sportGender !== 'HonHop' && sportGender !== 'TatCa') {
+            const normSport = normalizeGender(sportGender);
+            if (normSport !== 'HonHop' && sportGender !== 'TatCa') {
                 for (let id of selectedAthletes) {
                     const athleteGender = $(`[data-id="${id}"]`).data('gender');
-                    if (athleteGender !== sportGender) {
-                        const expectedStr = sportGender === 'Nam' ? 'Nam' : 'Nữ';
+                    if (!isGenderMatch(sportGender, athleteGender)) {
+                        const expectedStr = getGenderLabel(sportGender);
                         Swal.fire('Lỗi giới tính', `Môn thi đấu này chỉ dành cho VĐV ${expectedStr}. Vui lòng bỏ chọn các VĐV không đúng giới tính quy định.`, 'error');
                         return;
                     }

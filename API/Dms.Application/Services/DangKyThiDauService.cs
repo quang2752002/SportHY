@@ -146,19 +146,21 @@ namespace Dms.Application.Services
             }
 
             // Kiểm tra giới tính VĐV so với quy định của môn thi đấu
-            if (monTheThao != null && !string.IsNullOrWhiteSpace(monTheThao.GioiTinh) &&
-                !monTheThao.GioiTinh.Equals("HonHop", StringComparison.OrdinalIgnoreCase) &&
-                !monTheThao.GioiTinh.Equals("TatCa", StringComparison.OrdinalIgnoreCase))
+            if (monTheThao != null && !string.IsNullOrWhiteSpace(monTheThao.GioiTinh))
             {
-                var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id))).ToList();
-                var invalidGenderVdvs = vdvs.Where(v => !string.IsNullOrEmpty(v.GioiTinh) &&
-                    !string.Equals(v.GioiTinh, monTheThao.GioiTinh, StringComparison.OrdinalIgnoreCase)).ToList();
-
-                if (invalidGenderVdvs.Any())
+                var normSportGender = NormalizeGender(monTheThao.GioiTinh);
+                if (normSportGender != "HonHop")
                 {
-                    var genderLabel = monTheThao.GioiTinh.Equals("Nam", StringComparison.OrdinalIgnoreCase) ? "Nam" : "Nữ";
-                    var invalidNames = string.Join(", ", invalidGenderVdvs.Select(v => $"{v.HoTen} ({v.GioiTinh})"));
-                    throw new InvalidOperationException($"Môn thi đấu '{monTheThao.Ten}' chỉ dành cho vận động viên {genderLabel}. Các vận động viên sau không đúng giới tính quy định: {invalidNames}.");
+                    var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id))).ToList();
+                    var invalidGenderVdvs = vdvs.Where(v => !string.IsNullOrEmpty(v.GioiTinh) &&
+                        NormalizeGender(v.GioiTinh) != normSportGender).ToList();
+
+                    if (invalidGenderVdvs.Any())
+                    {
+                        var genderLabel = normSportGender == "Nam" ? "Nam" : "Nữ";
+                        var invalidNames = string.Join(", ", invalidGenderVdvs.Select(v => $"{v.HoTen} ({v.GioiTinh})"));
+                        throw new InvalidOperationException($"Môn thi đấu '{monTheThao.Ten}' chỉ dành cho vận động viên {genderLabel}. Các vận động viên sau không đúng giới tính quy định: {invalidNames}.");
+                    }
                 }
             }
 
@@ -545,6 +547,20 @@ namespace Dms.Application.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Chuẩn hóa chuỗi giới tính để so sánh chính xác giữa môn thể thao và vận động viên (Nam, Nu, HonHop)
+        /// </summary>
+        /// <param name="gioiTinh">Chuỗi giới tính đầu vào (Nam, Nu, Nữ, Male, Female...)</param>
+        /// <returns>Chuỗi giới tính chuẩn hóa: "Nam", "Nu", hoặc "HonHop"</returns>
+        private static string NormalizeGender(string? gioiTinh)
+        {
+            if (string.IsNullOrWhiteSpace(gioiTinh)) return "HonHop";
+            var g = gioiTinh.Trim().ToLowerInvariant();
+            if (g == "nam" || g == "male" || g == "1") return "Nam";
+            if (g == "nu" || g == "nữ" || g == "female" || g == "0") return "Nu";
+            return "HonHop";
         }
     }
 }

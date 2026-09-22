@@ -528,6 +528,9 @@ namespace Dms.Application.DTOs
         public string? TenMonTheThao { get; set; }
         public int DangKyThiDauId { get; set; }
         public string? TenDangKy { get; set; }
+        public string? TenDonVi { get; set; }
+        public string? TenVanDongVien { get; set; }
+        public string? TenDoi { get; set; }
         public int LoaiHuyChuongId { get; set; }
         public string? TenLoaiHuyChuong { get; set; }
         public int XepHang { get; set; }
