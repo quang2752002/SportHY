@@ -242,6 +242,105 @@ namespace Dms.Application.Services
             return result;
         }
 
+        /// <summary>
+        /// Returns only matches assigned to the specified referee unless the caller has tournament-wide access.
+        /// </summary>
+        /// <param name="giaiDauId">Optional tournament ID used to filter the match list.</param>
+        /// <param name="trongTaiId">The referee ID whose active assignments define the accessible matches.</param>
+        /// <param name="allowAllMatches">Whether the caller may see every match in the tournament.</param>
+        /// <returns>Matches within the caller's authorized scope.</returns>
+        public async Task<IEnumerable<TranDauDto>> GetAccessibleMatchesAsync(int? giaiDauId, int? trongTaiId, bool allowAllMatches)
+        {
+            var matches = await GetAllAsync(giaiDauId: giaiDauId);
+            if (allowAllMatches) return matches;
+            if (!trongTaiId.HasValue) return Enumerable.Empty<TranDauDto>();
+
+            return matches.Where(match => match.DanhSachTrongTai.Any(assignment => assignment.TrongTaiId == trongTaiId.Value)).ToList();
+        }
+
+        /// <summary>
+        /// Verifies match access using the user's elevated tournament permission or an explicit referee assignment.
+        /// </summary>
+        /// <param name="tranDauId">The match ID to check.</param>
+        /// <param name="trongTaiId">The signed-in referee ID, if the account is linked to one.</param>
+        /// <param name="allowAllMatches">Whether the caller may access all tournament matches.</param>
+        /// <returns>True when access is allowed; otherwise false.</returns>
+        public async Task<bool> CanAccessMatchAsync(int tranDauId, int? trongTaiId, bool allowAllMatches)
+        {
+            if (allowAllMatches) return true;
+            if (!trongTaiId.HasValue) return false;
+
+            var match = await GetByIdAsync(tranDauId);
+            return match?.DanhSachTrongTai.Any(assignment => assignment.TrongTaiId == trongTaiId.Value) == true;
+        }
+
+        /// <summary>
+        /// Updates a match's score and progress fields without rewriting its teams or referee assignments.
+        /// </summary>
+        /// <param name="id">The match ID to update.</param>
+        /// <param name="dto">The score, status, notes, and outcome to persist.</param>
+        /// <param name="updatedBy">The account performing the update.</param>
+        /// <returns>True when the match was updated; false when it does not exist.</returns>
+        public async Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null)
+        {
+            var entity = await _unitOfWork.TranDaus.GetByIdAsync(id);
+            if (entity == null || entity.IsDeleted == true) return false;
+            if (dto.Score1 < 0 || dto.Score2 < 0 || !new[] { "ChuaDau", "DangDau", "KetThuc" }.Contains(dto.TrangThai))
+            {
+                throw new ArgumentException("Tỷ số hoặc trạng thái trận đấu không hợp lệ.");
+            }
+
+            var nowUtc = DateTime.UtcNow;
+            var wasInProgress = string.Equals(entity.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase);
+            if ((dto.TrangThai == "DangDau" && !wasInProgress) ||
+                (dto.TrangThai == "KetThuc" && !wasInProgress && entity.TrangThai != "KetThuc"))
+            {
+                entity.ThoiGianBatDau = nowUtc;
+            }
+            if (dto.TrangThai == "KetThuc")
+            {
+                entity.ThoiGianKetThuc ??= nowUtc;
+            }
+            else
+            {
+                entity.ThoiGianKetThuc = null;
+            }
+
+            entity.TySoDoi1 = dto.Score1;
+            entity.TySoDoi2 = dto.Score2;
+            entity.TrangThai = dto.TrangThai;
+            entity.GhiChu = dto.GhiChu;
+            entity.IsHoa = dto.TrangThai == "KetThuc" && dto.IsHoa;
+            entity.DoiThangDangKyId = dto.TrangThai == "KetThuc" ? dto.DoiThangDangKyId : null;
+            entity.DoiThuaDangKyId = dto.TrangThai == "KetThuc" ? dto.DoiThuaDangKyId : null;
+            entity.LastModified = nowUtc;
+            entity.LastModifiedBy = updatedBy;
+
+            _unitOfWork.TranDaus.Update(entity);
+            await _unitOfWork.CompleteAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// Saves report content without changing match timing, result values, teams, or referee assignments.
+        /// </summary>
+        /// <param name="id">The match ID whose report should be updated.</param>
+        /// <param name="ghiChu">The serialized report content.</param>
+        /// <param name="updatedBy">The account performing the update.</param>
+        /// <returns>True when the report was updated; false when the match does not exist.</returns>
+        public async Task<bool> UpdateMatchReportAsync(int id, string ghiChu, string? updatedBy = null)
+        {
+            var entity = await _unitOfWork.TranDaus.GetByIdAsync(id);
+            if (entity == null || entity.IsDeleted == true) return false;
+
+            entity.GhiChu = ghiChu;
+            entity.LastModified = DateTime.UtcNow;
+            entity.LastModifiedBy = updatedBy;
+            _unitOfWork.TranDaus.Update(entity);
+            await _unitOfWork.CompleteAsync();
+            return true;
+        }
+
         public async Task<TranDauDto?> GetByIdAsync(int id)
         {
             var paged = await _unitOfWork.TranDaus.GetPagedAsync(
@@ -3225,6 +3324,12 @@ namespace Dms.Application.Services
                 loserDangKyId = team1 != null ? team1.DangKyThiDauId : 0;
             }
 
+            // Chỉ ghi giờ bắt đầu thực tế khi trận được bắt đầu; giờ dự kiến được lưu riêng ở ThoiGianDuKien.
+            if (match.TrangThai == "ChuaDau" || !match.ThoiGianBatDau.HasValue)
+            {
+                match.ThoiGianBatDau = DateTime.UtcNow;
+            }
+
             // Cập nhật tỷ số trận đấu
             match.TySoDoi1 = evaluation.FinalScore1;
             match.TySoDoi2 = evaluation.FinalScore2;
@@ -3249,7 +3354,7 @@ namespace Dms.Application.Services
                 setScores = request.SetScores ?? new List<SetScoreDto>(),
                 events = request.Events ?? new List<MatchEventItemDto>(),
                 updatedBy = username,
-                updatedAt = DateTime.Now
+                updatedAt = DateTime.UtcNow
             };
             match.GhiChu = System.Text.Json.JsonSerializer.Serialize(scoreData);
             match.LastModified = DateTime.UtcNow;

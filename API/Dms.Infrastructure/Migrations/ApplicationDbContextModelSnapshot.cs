@@ -292,6 +292,9 @@ namespace Dms.Infrastructure.Migrations
                     b.Property<bool>("CoTieBreak")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("CoThePhat")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("Created")
                         .HasColumnType("datetime2");
 

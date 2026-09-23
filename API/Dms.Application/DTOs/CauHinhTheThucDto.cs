@@ -33,6 +33,7 @@ namespace Dms.Application.DTOs
         public bool CoPenalty { get; set; } = false;
         public int? SoLuotPenaltyMoiDoi { get; set; } = 5;
         public bool CoTieBreak { get; set; } = false;
+        public bool CoThePhat { get; set; } = false;
 
         public decimal DiemThang { get; set; } = 3;
         public decimal DiemHoa { get; set; } = 1;
@@ -78,6 +79,7 @@ namespace Dms.Application.DTOs
         public bool CoPenalty { get; set; } = false;
         public int? SoLuotPenaltyMoiDoi { get; set; } = 5;
         public bool CoTieBreak { get; set; } = false;
+        public bool CoThePhat { get; set; } = false;
 
         public decimal DiemThang { get; set; } = 3;
         public decimal DiemHoa { get; set; } = 1;

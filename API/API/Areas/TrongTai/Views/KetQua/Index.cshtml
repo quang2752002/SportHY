@@ -19,6 +19,13 @@
     bool isSetSport = matchFormat?.LoaiTheThuc == "SetDiem";
     bool isTimeSport = matchFormat?.LoaiTheThuc == "ThoiGianHiep" || (!isHeatMatch && !isSetSport);
     bool isKnockout = Model != null && (Model.BangDauId == null || !string.IsNullOrEmpty(Model.MaTranBracket));
+    bool hasPenaltyCards = matchFormat?.CoThePhat == true;
+    string? matchStatus = Model?.TrangThai;
+    DateTime? actualStartTime = Model?.ThoiGianBatDau;
+    DateTime? actualEndTime = Model?.ThoiGianKetThuc;
+    int elapsedSeconds = (matchStatus == "DangDau" || matchStatus == "KetThuc") && actualStartTime.HasValue
+        ? Math.Max(0, (int)(((actualEndTime ?? DateTime.UtcNow) - actualStartTime.Value).TotalSeconds))
+        : 0;
 }
 
 <div class="d-flex flex-column gap-4">
@@ -192,6 +199,24 @@
                     </div>
                 }
             </div>
+        </div>
+
+        <div class="card-custom px-3 py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-stopwatch text-primary"></i>
+                <span class="small fw-semibold text-muted">Thời gian trận đấu</span>
+                <span id="matchElapsedClock" class="font-monospace fw-bold fs-5 text-dark">00:00:00</span>
+            </div>
+            <small class="text-muted">
+                @if ((matchStatus == "DangDau" || matchStatus == "KetThuc") && actualStartTime.HasValue)
+                {
+                    <span>Bắt đầu: @actualStartTime.Value.ToString("HH:mm:ss dd/MM/yyyy")</span>
+                }
+                else
+                {
+                    <span>Đồng hồ bắt đầu khi chuyển trận sang trạng thái đang thi đấu.</span>
+                }
+            </small>
         </div>
 
         @if (isHeatMatch)
@@ -536,8 +561,11 @@
                             <label class="form-label small fw-semibold">Loại sự kiện</label>
                             <select id="evType" class="form-select form-select-sm">
                                 <option value="goal">⚽ Bàn thắng / Điểm</option>
-                                <option value="yellow_card">🟨 Thẻ vàng</option>
-                                <option value="red_card">🟥 Thẻ đỏ</option>
+                                @if (hasPenaltyCards)
+                                {
+                                    <option value="yellow_card">🟨 Thẻ vàng</option>
+                                    <option value="red_card">🟥 Thẻ đỏ</option>
+                                }
                                 <option value="foul">⚠️ Lỗi kỹ thuật / Phạm quy</option>
                                 <option value="sub">🔄 Thay người</option>
                             </select>
@@ -580,6 +608,11 @@
         const isSetSport = @(isSetSport ? "true" : "false");
         const isTimeSport = @(isTimeSport ? "true" : "false");
         const isKnockout = @(isKnockout ? "true" : "false");
+        const hasPenaltyCards = @(hasPenaltyCards ? "true" : "false");
+        const matchWasInProgress = @(matchStatus == "DangDau" ? "true" : "false");
+        let elapsedMatchSeconds = @elapsedSeconds;
+        let matchClockStartedAt = matchWasInProgress ? Date.now() : null;
+        let matchClockHasStarted = matchWasInProgress;
 
         const sportConfig = @Html.Raw(matchFormat != null ? System.Text.Json.JsonSerializer.Serialize(matchFormat) : "null");
 
@@ -589,6 +622,8 @@
 
         $(document).ready(function () {
             eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+            renderMatchClock();
+            setInterval(renderMatchClock, 1000);
 
             if (!isHeatMatch) {
                 if (setScoresList.length === 0 && isSetSport) {
@@ -784,6 +819,14 @@
 
         function onStatusChanged() {
             const st = $('input[name="statusOption"]:checked').val();
+            if (st === 'DangDau' && matchClockStartedAt === null) {
+                if (!matchClockHasStarted) elapsedMatchSeconds = 0;
+                matchClockStartedAt = Date.now();
+                matchClockHasStarted = true;
+            } else if (st !== 'DangDau' && matchClockStartedAt !== null) {
+                elapsedMatchSeconds += Math.floor((Date.now() - matchClockStartedAt) / 1000);
+                matchClockStartedAt = null;
+            }
             let badgeHtml = '';
             if (st === 'DangDau') {
                 badgeHtml = '<span class="badge bg-danger rounded-pill px-3 py-1.5"><i class="fa-solid fa-circle-play me-1"></i>Đang diễn ra</span>';
@@ -800,6 +843,20 @@
                 badgeHtml = '<span class="badge bg-secondary rounded-pill px-3 py-1.5"><i class="fa-solid fa-clock me-1"></i>Chưa đấu</span>';
             }
             $('#badgeMatchStatus').html(badgeHtml);
+        }
+
+        function renderMatchClock() {
+            let displayedSeconds = elapsedMatchSeconds;
+            if (matchClockStartedAt !== null) {
+                displayedSeconds += Math.floor((Date.now() - matchClockStartedAt) / 1000);
+            }
+            const hours = Math.floor(displayedSeconds / 3600);
+            const minutes = Math.floor((displayedSeconds % 3600) / 60);
+            const seconds = displayedSeconds % 60;
+            $('#matchElapsedClock').text(
+                String(hours).padStart(2, '0') + ':' +
+                String(minutes).padStart(2, '0') + ':' +
+                String(seconds).padStart(2, '0'));
         }
 
         // ====================================================================
@@ -907,10 +964,15 @@
         }
 
         function addEvent() {
+            const eventType = $('#evType').val();
+            if (!hasPenaltyCards && (eventType === 'yellow_card' || eventType === 'red_card')) {
+                Swal.fire('Không áp dụng thẻ', 'Môn thi đấu này không được cấu hình thẻ phạt.', 'warning');
+                return;
+            }
             const ev = {
                 id: Date.now(),
                 minute: parseInt($('#evMinute').val()) || 1,
-                type: $('#evType').val(),
+                type: eventType,
                 team: parseInt($('#evTeam').val()) || 1,
                 player: $('#evPlayer').val().trim(),
                 notes: $('#evNotes').val().trim()

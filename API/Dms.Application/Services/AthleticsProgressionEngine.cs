@@ -138,6 +138,10 @@ namespace Dms.Application.Services
                 }
             }
 
+            if (currentMatch.TrangThai == "ChuaDau" || !currentMatch.ThoiGianBatDau.HasValue)
+            {
+                currentMatch.ThoiGianBatDau = DateTime.UtcNow;
+            }
             currentMatch.TrangThai = "KetThuc";
             currentMatch.ThoiGianKetThuc = DateTime.UtcNow;
             currentMatch.LastModified = DateTime.UtcNow;

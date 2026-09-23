@@ -27,7 +27,6 @@ namespace API.Areas.TrongTai.Controllers
 
     public class KetQuaController : BaseTrongTaiController
     {
-        private readonly ITranDauService _tranDauService;
         private readonly IGiaiDauService _giaiDauService;
         private readonly ICauHinhTheThucService _cauHinhTheThucService;
 
@@ -37,9 +36,8 @@ namespace API.Areas.TrongTai.Controllers
             ITranDauService tranDauService,
             IGiaiDauService giaiDauService,
             ICauHinhTheThucService cauHinhTheThucService)
-            : base(userManager, trongTaiService)
+            : base(userManager, trongTaiService, tranDauService)
         {
-            _tranDauService = tranDauService;
             _giaiDauService = giaiDauService;
             _cauHinhTheThucService = cauHinhTheThucService;
         }
@@ -47,7 +45,7 @@ namespace API.Areas.TrongTai.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null)
         {
-            await GetCurrentRefereeAsync();
+            var currentReferee = await GetCurrentRefereeAsync();
             var tournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
             ViewBag.Tournaments = tournaments;
 
@@ -58,13 +56,14 @@ namespace API.Areas.TrongTai.Controllers
             }
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
 
-            var matches = (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new();
+            var matches = (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentReferee?.Id, CanBrowseAllMatches()))?.ToList() ?? new();
             ViewBag.Matches = matches;
 
             TranDauDto? currentMatch = null;
             if (tranDauId.HasValue)
             {
-                currentMatch = matches.FirstOrDefault(m => m.Id == tranDauId.Value) ?? await _tranDauService.GetByIdAsync(tranDauId.Value);
+                currentMatch = matches.FirstOrDefault(m => m.Id == tranDauId.Value);
+                if (currentMatch == null) return Forbid();
             }
             else if (matches.Count > 0)
             {
@@ -147,6 +146,10 @@ namespace API.Areas.TrongTai.Controllers
             {
                 return Json(new { success = false, message = "Dữ liệu không hợp lệ." });
             }
+            if (dto.Score1 < 0 || dto.Score2 < 0 || !new[] { "ChuaDau", "DangDau", "KetThuc" }.Contains(dto.TrangThai))
+            {
+                return BadRequest(new { success = false, message = "Tỷ số hoặc trạng thái trận đấu không hợp lệ." });
+            }
 
             var match = await _tranDauService.GetByIdAsync(dto.TranDauId);
             if (match == null)
@@ -154,8 +157,16 @@ namespace API.Areas.TrongTai.Controllers
                 return Json(new { success = false, message = "Không tìm thấy trận đấu." });
             }
 
-            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
+            if (!await CanAccessMatchAsync(match)) return Forbid();
 
+            var matchFormat = await _cauHinhTheThucService.GetConfigByTranDauIdAsync(match.Id);
+            if (matchFormat?.CoThePhat != true && dto.Events?.Any(IsPenaltyCardEvent) == true)
+            {
+                return BadRequest(new { success = false, message = "Môn thi đấu này không áp dụng thẻ phạt theo cấu hình." });
+            }
+
+            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
+            var nowUtc = DateTime.UtcNow;
             try
             {
                 var scoreData = new
@@ -168,35 +179,30 @@ namespace API.Areas.TrongTai.Controllers
                     setScores = dto.SetScores ?? new List<SetScoreDto>(),
                     events = dto.Events ?? new List<MatchEventItemDto>(),
                     updatedBy = username,
-                    updatedAt = DateTime.Now
+                    updatedAt = nowUtc
                 };
 
                 string scoreJson = JsonSerializer.Serialize(scoreData);
 
-                var updateDto = new CreateUpdateTranDauDto
+                var isDraw = dto.TrangThai == "KetThuc" && dto.Winner == "draw";
+                var winnerId = dto.TrangThai == "KetThuc" && dto.Winner == "1" ? match.Doi1DangKyId
+                    : dto.TrangThai == "KetThuc" && dto.Winner == "2" ? match.Doi2DangKyId
+                    : null;
+                var loserId = dto.TrangThai == "KetThuc" && dto.Winner == "1" ? match.Doi2DangKyId
+                    : dto.TrangThai == "KetThuc" && dto.Winner == "2" ? match.Doi1DangKyId
+                    : null;
+                var updateDto = new UpdateMatchProgressDto
                 {
-                    GiaiDauMonTheThaoId = match.GiaiDauMonTheThaoId,
-                    VongDauId = match.VongDauId,
-                    BangDauId = match.BangDauId,
-                    SanDauId = match.SanDauId,
-                    SoTran = match.SoTran,
-                    TenTran = match.TenTran,
-                    ThoiGianDuKien = match.ThoiGianDuKien,
-                    ThoiGianBatDau = match.ThoiGianBatDau ?? (dto.TrangThai == "DangDau" ? DateTime.Now : null),
-                    ThoiGianKetThuc = dto.TrangThai == "KetThuc" ? (match.ThoiGianKetThuc ?? DateTime.Now) : null,
+                    Score1 = dto.Score1,
+                    Score2 = dto.Score2,
                     TrangThai = dto.TrangThai,
                     GhiChu = scoreJson,
-                    Doi1DangKyId = match.Doi1DangKyId,
-                    Doi2DangKyId = match.Doi2DangKyId,
-                    DanhSachTrongTai = match.DanhSachTrongTai.Select(t => new AssignTrongTaiDto
-                    {
-                        TrongTaiId = t.TrongTaiId,
-                        VaiTro = t.VaiTro,
-                        GhiChu = t.GhiChu
-                    }).ToList()
+                    IsHoa = isDraw,
+                    DoiThangDangKyId = winnerId,
+                    DoiThuaDangKyId = loserId
                 };
 
-                await _tranDauService.UpdateAsync(dto.TranDauId, updateDto, username);
+                await _tranDauService.UpdateMatchProgressAsync(dto.TranDauId, updateDto, username);
                 return Json(new { success = true, message = "Đã lưu kết quả, điểm số và diễn biến trận đấu thành công!" });
             }
             catch (Exception ex)
@@ -210,6 +216,10 @@ namespace API.Areas.TrongTai.Controllers
         {
             try
             {
+                var match = await _tranDauService.GetByIdAsync(tranDauId);
+                if (match == null) return NotFound(new { success = false, message = "Không tìm thấy trận đấu." });
+                if (!await CanAccessMatchAsync(match)) return Forbid();
+
                 var config = await _cauHinhTheThucService.GetConfigByTranDauIdAsync(tranDauId);
                 return Json(new { success = true, data = config });
             }
@@ -229,6 +239,16 @@ namespace API.Areas.TrongTai.Controllers
 
             try
             {
+                var match = await _tranDauService.GetByIdAsync(dto.TranDauId);
+                if (match == null) return NotFound(new { success = false, message = "Không tìm thấy trận đấu." });
+                if (!await CanAccessMatchAsync(match)) return Forbid();
+
+                var matchFormat = await _cauHinhTheThucService.GetConfigByTranDauIdAsync(match.Id);
+                if (matchFormat?.CoThePhat != true && dto.Events?.Any(IsPenaltyCardEvent) == true)
+                {
+                    return BadRequest(new { success = false, message = "Môn thi đấu này không áp dụng thẻ phạt theo cấu hình." });
+                }
+
                 var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
                 var response = await _tranDauService.CompleteMatchResultAsync(dto, username);
                 return Json(response);
@@ -237,6 +257,12 @@ namespace API.Areas.TrongTai.Controllers
             {
                 return Json(new { success = false, message = ex.Message });
             }
+        }
+
+        private static bool IsPenaltyCardEvent(MatchEventItemDto matchEvent)
+        {
+            return string.Equals(matchEvent.Type, "yellow_card", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(matchEvent.Type, "red_card", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

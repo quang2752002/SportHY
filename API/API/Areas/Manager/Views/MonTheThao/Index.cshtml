@@ -292,6 +292,15 @@
                         <div class="col-12" id="fmtBracketTipContainer">
                             <!-- Chú thích tương thích thông minh -->
                         </div>
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="fmtCoThePhat">
+                                    <label class="form-check-label fw-bold small" for="fmtCoThePhat">Môn này áp dụng thẻ phạt (thẻ vàng/thẻ đỏ)</label>
+                                    <div class="form-text">Khi tắt, giao diện và máy chủ sẽ từ chối cập nhật sự kiện thẻ cho môn này.</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Panel: Đấu Set Điểm -->
@@ -911,6 +920,7 @@
             $('#fmtThoiGianPhu').val(15);
             $('#fmtCoPenalty').prop('checked', true);
             $('#fmtSoLuotPen').val(5);
+            $('#fmtCoThePhat').prop('checked', false);
 
             $('#fmtLoaiDo').val('ThoiGian');
             $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
@@ -944,6 +954,7 @@
             $('#fmtThoiGianPhu').val(data.thoiGianHiepPhuPhut || 15);
             $('#fmtCoPenalty').prop('checked', data.coPenalty !== false);
             $('#fmtSoLuotPen').val(data.soLuotPenaltyMoiDoi || 5);
+            $('#fmtCoThePhat').prop('checked', data.coThePhat === true);
 
             $('#fmtLoaiDo').val(data.loaiDoThanhTich || 'ThoiGian');
             $('#fmtTieuChiThanhTich').val(data.tieuChiXepHangThanhTich || 'CangNhoCangTot');
@@ -1008,6 +1019,7 @@
                 $('#fmtThoiGianPhu').val(15);
                 $('#fmtCoPenalty').prop('checked', true);
                 $('#fmtSoLuotPen').val(5);
+                $('#fmtCoThePhat').prop('checked', true);
             } else if (preset === 'tabletennis') {
                 $('#fmtHinhThucThiDau').val('VongBang');
                 $('#fmtLoaiTheThuc').val('SetDiem');
@@ -1073,6 +1085,7 @@
                 thoiGianHiepPhuPhut: parseInt($('#fmtThoiGianPhu').val()) || 15,
                 coPenalty: $('#fmtCoPenalty').is(':checked'),
                 soLuotPenaltyMoiDoi: parseInt($('#fmtSoLuotPen').val()) || 5,
+                coThePhat: $('#fmtCoThePhat').is(':checked'),
 
                 loaiDoThanhTich: $('#fmtLoaiDo').val(),
                 tieuChiXepHangThanhTich: $('#fmtTieuChiThanhTich').val(),
