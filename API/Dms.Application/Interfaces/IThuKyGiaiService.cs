@@ -173,11 +173,11 @@ namespace Dms.Application.Interfaces
         Task<List<BangXepHangTheoDanhMucDto>> GetBangXepHangTheoDanhMucAsync(int? giaiDauId);
 
         /// <summary>
-        /// Lấy danh sách bảng xếp hạng huy chương phân loại theo từng Môn thể thao cụ thể.
+        /// Lấy kết quả trao huy chương riêng cho từng MonTheThao trong từng giải đấu.
         /// </summary>
-        /// <param name="giaiDauId">ID giải đấu (tùy chọn; null hoặc 0 để tính toàn bộ).</param>
+        /// <param name="giaiDauId">ID giải đấu; null hoặc 0 để lấy kết quả từng môn của mọi giải, không gộp các giải với nhau.</param>
         /// <param name="danhMucMonTheThaoId">ID danh mục môn thể thao (tùy chọn để lọc môn thuộc danh mục).</param>
-        /// <returns>Danh sách các bảng xếp hạng huy chương gom nhóm theo từng Môn thể thao.</returns>
+        /// <returns>Danh sách bảng kết quả theo từng giải và MonTheThao, giữ riêng người hoặc đội nhận từng huy chương.</returns>
         Task<List<BangXepHangTheoMonDto>> GetBangXepHangTheoMonAsync(int? giaiDauId, int? danhMucMonTheThaoId = null);
 
         /// <summary>
