@@ -1,0 +1,391 @@
+@{
+    ViewData["Title"] = "Cấu hình Hệ thống & Chân trang";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="fa-solid fa-sliders text-primary me-2"></i>Cấu hình Hệ thống & Chân trang (Footer)
+        </h4>
+        <p class="text-muted small mb-0">Tùy biến màu sắc giao diện chân trang và các thông tin liên hệ, hotline, cơ quan chủ quản của đại hội thể thao.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" onclick="loadFooterSettings()">
+            <i class="fa-solid fa-arrows-rotate me-1"></i> Khôi phục dữ liệu
+        </button>
+        <button type="button" class="btn btn-primary shadow-sm px-4" id="btnSaveFooter" onclick="saveFooterSettings()">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Cột bên trái: Form cấu hình -->
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <span class="fw-bold text-dark"><i class="fa-solid fa-palette text-primary me-2"></i>Tùy chỉnh Thông tin & Giao diện</span>
+                <span class="badge bg-primary-subtle text-primary border">Bảng SystemSetting</span>
+            </div>
+            <div class="card-body p-4">
+                <form id="footerSettingForm">
+                    <!-- Phần Màu sắc -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark small mb-2">
+                            <i class="fa-solid fa-fill-drip me-1 text-primary"></i> Màu Nền Chân Trang (Footer Background Color)
+                        </label>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <input type="color" id="footerBgColorPicker" class="form-control form-control-color" style="width: 50px; height: 42px;" value="#0f172a" title="Chọn màu tùy ý">
+                            <input type="text" id="footerBgColorInput" class="form-control font-monospace" placeholder="#0f172a" maxlength="20" value="#0f172a">
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 pt-1" id="presetColorChips">
+                            <button type="button" class="btn btn-xs rounded-pill px-3 text-white border-0 shadow-2xs" style="background-color: #0f172a;" onclick="setPresetColor('#0f172a')">Dark Slate (Mặc định)</button>
+                            <button type="button" class="btn btn-xs rounded-pill px-3 text-white border-0 shadow-2xs" style="background-color: #091e3a;" onclick="setPresetColor('#091e3a')">Deep Navy</button>
+                            <button type="button" class="btn btn-xs rounded-pill px-3 text-white border-0 shadow-2xs" style="background-color: #111827;" onclick="setPresetColor('#111827')">Midnight Gray</button>
+                            <button type="button" class="btn btn-xs rounded-pill px-3 text-white border-0 shadow-2xs" style="background-color: #064e3b;" onclick="setPresetColor('#064e3b')">Deep Emerald</button>
+                            <button type="button" class="btn btn-xs rounded-pill px-3 text-white border-0 shadow-2xs" style="background-color: #1e1b4b;" onclick="setPresetColor('#1e1b4b')">Royal Indigo</button>
+                            <button type="button" class="btn btn-xs rounded-pill px-3 text-white border-0 shadow-2xs" style="background-color: #18181b;" onclick="setPresetColor('#18181b')">Dark Charcoal</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark small mb-1">
+                            <i class="fa-solid fa-font me-1 text-primary"></i> Màu Chữ Chân Trang (Text Color)
+                        </label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="color" id="footerTextColorPicker" class="form-control form-control-color" style="width: 50px; height: 42px;" value="#94a3b8" title="Chọn màu chữ">
+                            <input type="text" id="footerTextColorInput" class="form-control font-monospace" placeholder="#94a3b8" maxlength="20" value="#94a3b8">
+                        </div>
+                    </div>
+
+                    <hr class="text-secondary opacity-25 my-4">
+
+                    <!-- Thông tin cơ quan chủ quản -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">
+                            <i class="fa-solid fa-building-columns text-primary me-1"></i> Tên Cơ Quan / Sở Chủ Quản (Footer_OrganizationName) <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="footerOrganizationName" placeholder="Ví dụ: Sở Văn Hóa & Thể Thao TP.HCM" required>
+                        <div class="form-text small">Hiển thị dòng đầu tiên trong mục Hỗ Trợ & Liên Hệ.</div>
+                    </div>
+
+                    <!-- Hotline -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">
+                            <i class="fa-solid fa-phone text-primary me-1"></i> Số Điện Thoại Hotline (Footer_Hotline) <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="footerHotline" placeholder="Ví dụ: (028) 3822 5588 - 0909 123 456" required>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">
+                            <i class="fa-solid fa-envelope text-primary me-1"></i> Email Liên Hệ / Hỗ Trợ (Footer_Email) <span class="text-danger">*</span>
+                        </label>
+                        <input type="email" class="form-control" id="footerEmail" placeholder="Ví dụ: btc.thethao@sportdms.vn" required>
+                    </div>
+
+                    <!-- Khung giờ hỗ trợ -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">
+                            <i class="fa-solid fa-clock text-primary me-1"></i> Thời Gian Hỗ Trợ Kỹ Thuật (Footer_SupportHours) <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="footerSupportHours" placeholder="Ví dụ: 08:00 - 20:00 hàng ngày" required>
+                    </div>
+
+                    <!-- Giới thiệu ngắn -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">
+                            <i class="fa-solid fa-circle-info text-primary me-1"></i> Giới Thiệu Ngắn (Footer_Description)
+                        </label>
+                        <textarea class="form-control" id="footerDescription" rows="2" placeholder="Đoạn văn ngắn mô tả hệ thống phần mềm..."></textarea>
+                    </div>
+
+                    <!-- Thông tin bản quyền -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">
+                            <i class="fa-solid fa-copyright text-primary me-1"></i> Thông Tin Bản Quyền (Footer_Copyright)
+                        </label>
+                        <input type="text" class="form-control" id="footerCopyright" placeholder="© 2026 SPORT DMS...">
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-light py-3 border-top d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="resetToSystemDefaults()">
+                    <i class="fa-solid fa-arrow-rotate-left me-1"></i> Đặt lại về mặc định
+                </button>
+                <button type="button" class="btn btn-primary px-4 shadow-sm" onclick="saveFooterSettings()">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cột bên phải: Xem trước trực tiếp (Live Preview) -->
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <span class="fw-bold text-dark"><i class="fa-solid fa-eye text-primary me-2"></i>Xem Trước Giao Diện Chân Trang (Live Preview)</span>
+                <span class="badge bg-success-subtle text-success border"><i class="fa-solid fa-bolt me-1"></i>Thời gian thực</span>
+            </div>
+            <div class="card-body p-4 bg-light d-flex flex-column justify-content-center">
+                <p class="text-muted small mb-3">Hình ảnh mô phỏng chân trang Footer phía cổng thông tin người dùng (Public Portal) khi áp dụng cấu hình này:</p>
+
+                <!-- Khung Preview chân trang Footer mô phỏng -->
+                <div class="rounded-3 shadow p-4 transition-all" id="liveFooterPreview" style="background-color: #0f172a; color: #94a3b8; transition: background-color 0.3s ease, color 0.3s ease;">
+                    <div class="row g-3">
+                        <div class="col-sm-5">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.8rem;">
+                                    <i class="fa-solid fa-trophy"></i>
+                                </div>
+                                <span class="text-white fw-bold fs-6">SPORT DMS</span>
+                            </div>
+                            <p class="small mb-2" id="previewDescription" style="font-size: 0.75rem; line-height: 1.4;">
+                                Hệ thống phần mềm quản lý, điều hành và tổ chức các đại hội thể thao, giải đấu thể dục thể thao chuyên nghiệp và phong trào toàn diện.
+                            </p>
+                            <div class="d-flex gap-2 text-white-50" style="font-size: 0.85rem;">
+                                <span><i class="fa-brands fa-facebook"></i></span>
+                                <span><i class="fa-brands fa-youtube"></i></span>
+                                <span><i class="fa-solid fa-globe"></i></span>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-3">
+                            <h6 class="text-white fw-bold mb-2" style="font-size: 0.82rem;">Liên Kết Nhanh</h6>
+                            <ul class="list-unstyled small d-flex flex-column gap-1 mb-0" style="font-size: 0.72rem; color: #cbd5e1;">
+                                <li><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.6rem;"></i> Giải Đấu</li>
+                                <li><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.6rem;"></i> Huy Chương</li>
+                                <li><i class="fa-solid fa-chevron-right me-1 text-primary" style="font-size: 0.6rem;"></i> Lịch Thi Đấu</li>
+                            </ul>
+                        </div>
+
+                        <div class="col-sm-4">
+                            <h6 class="text-white fw-bold mb-2" style="font-size: 0.82rem;">Hỗ Trợ & Liên Hệ</h6>
+                            <ul class="list-unstyled small d-flex flex-column gap-2 mb-0" style="font-size: 0.75rem;">
+                                <li>
+                                    <i class="fa-solid fa-location-dot me-1 text-primary"></i> 
+                                    <strong class="text-white" id="previewOrgName">Sở Văn Hóa & Thể Thao TP.HCM</strong>
+                                </li>
+                                <li>
+                                    <i class="fa-solid fa-phone me-1 text-primary"></i> 
+                                    <span id="previewHotline">Hotline: (028) 3822 5588 - 0909 123 456</span>
+                                </li>
+                                <li>
+                                    <i class="fa-solid fa-envelope me-1 text-primary"></i> 
+                                    <span id="previewEmail">Email: btc.thethao@sportdms.vn</span>
+                                </li>
+                                <li>
+                                    <i class="fa-solid fa-clock me-1 text-primary"></i> 
+                                    <span id="previewSupportHours">Hỗ trợ kỹ thuật: 08:00 - 20:00 hàng ngày</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="border-top border-secondary border-opacity-25 pt-3 mt-3 text-center small" style="font-size: 0.72rem;" id="previewCopyright">
+                        © 2026 SPORT DMS. Nền Tảng Điều Hành & Quản Lý Giải Đấu Thể Thao. Tất cả các quyền được bảo lưu.
+                    </div>
+                </div>
+
+                <div class="alert alert-info py-2 px-3 mt-4 mb-0 small border-0 shadow-2xs">
+                    <i class="fa-solid fa-lightbulb text-info me-2"></i>
+                    <strong>Gợi ý:</strong> Khi bạn nhấn <strong>"Lưu Cấu Hình"</strong>, toàn bộ các trang giao diện bên ngoài của người xem sẽ tự động cập nhật ngay lập tức theo bảng màu và thông tin mới.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Lắng nghe sự kiện đồng bộ color picker và input text
+            $('#footerBgColorPicker').on('input change', function () {
+                const color = $(this).val();
+                $('#footerBgColorInput').val(color);
+                updateLivePreview();
+            });
+
+            $('#footerBgColorInput').on('input change', function () {
+                const color = $(this).val().trim();
+                if (/^#[0-9A-F]{6}$/i.test(color) || /^#[0-9A-F]{3}$/i.test(color)) {
+                    $('#footerBgColorPicker').val(color);
+                }
+                updateLivePreview();
+            });
+
+            $('#footerTextColorPicker').on('input change', function () {
+                const color = $(this).val();
+                $('#footerTextColorInput').val(color);
+                updateLivePreview();
+            });
+
+            $('#footerTextColorInput').on('input change', function () {
+                const color = $(this).val().trim();
+                if (/^#[0-9A-F]{6}$/i.test(color) || /^#[0-9A-F]{3}$/i.test(color)) {
+                    $('#footerTextColorPicker').val(color);
+                }
+                updateLivePreview();
+            });
+
+            // Lắng nghe các input text để cập nhật Live Preview
+            $('#footerOrganizationName, #footerHotline, #footerEmail, #footerSupportHours, #footerDescription, #footerCopyright').on('input', function () {
+                updateLivePreview();
+            });
+
+            // Tải dữ liệu ban đầu từ DB
+            loadFooterSettings();
+        });
+
+        function setPresetColor(hex) {
+            $('#footerBgColorPicker').val(hex);
+            $('#footerBgColorInput').val(hex);
+            updateLivePreview();
+        }
+
+        function updateLivePreview() {
+            const bg = $('#footerBgColorInput').val().trim() || '#0f172a';
+            const text = $('#footerTextColorInput').val().trim() || '#94a3b8';
+            const org = $('#footerOrganizationName').val().trim() || 'Sở Văn Hóa & Thể Thao TP.HCM';
+            const hotline = $('#footerHotline').val().trim() || '(028) 3822 5588 - 0909 123 456';
+            const email = $('#footerEmail').val().trim() || 'btc.thethao@sportdms.vn';
+            const hours = $('#footerSupportHours').val().trim() || '08:00 - 20:00 hàng ngày';
+            const desc = $('#footerDescription').val().trim() || 'Hệ thống phần mềm quản lý, điều hành và tổ chức các đại hội thể thao...';
+            const copy = $('#footerCopyright').val().trim() || '© 2026 SPORT DMS. Nền Tảng Điều Hành & Quản Lý Giải Đấu Thể Thao. Tất cả các quyền được bảo lưu.';
+
+            $('#liveFooterPreview').css({
+                'background-color': bg,
+                'color': text
+            });
+
+            $('#previewOrgName').text(org);
+            $('#previewHotline').text('Hotline: ' + hotline);
+            $('#previewEmail').text('Email: ' + email);
+            $('#previewSupportHours').text('Hỗ trợ kỹ thuật: ' + hours);
+            $('#previewDescription').text(desc);
+            $('#previewCopyright').text(copy);
+        }
+
+        function loadFooterSettings() {
+            Swal.showLoading();
+            $.ajax({
+                url: '/Admin/SystemSetting/GetFooterSettings',
+                type: 'GET',
+                success: function (res) {
+                    Swal.close();
+                    if (res.success && res.data) {
+                        const d = res.data;
+                        $('#footerBgColorPicker').val(d.bgColor || '#0f172a');
+                        $('#footerBgColorInput').val(d.bgColor || '#0f172a');
+                        $('#footerTextColorPicker').val(d.textColor || '#94a3b8');
+                        $('#footerTextColorInput').val(d.textColor || '#94a3b8');
+
+                        $('#footerOrganizationName').val(d.organizationName || 'Sở Văn Hóa & Thể Thao TP.HCM');
+                        $('#footerHotline').val(d.hotline || '(028) 3822 5588 - 0909 123 456');
+                        $('#footerEmail').val(d.email || 'btc.thethao@sportdms.vn');
+                        $('#footerSupportHours').val(d.supportHours || '08:00 - 20:00 hàng ngày');
+                        $('#footerDescription').val(d.description || '');
+                        $('#footerCopyright').val(d.copyright || '');
+
+                        updateLivePreview();
+                    }
+                },
+                error: function (xhr) {
+                    Swal.close();
+                    console.error('Không thể tải cấu hình:', xhr);
+                    Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ để tải cấu hình hệ thống.', 'error');
+                }
+            });
+        }
+
+        function saveFooterSettings() {
+            const org = $('#footerOrganizationName').val().trim();
+            const hotline = $('#footerHotline').val().trim();
+            const email = $('#footerEmail').val().trim();
+            const hours = $('#footerSupportHours').val().trim();
+
+            if (!org) {
+                Swal.fire('Cảnh báo', 'Vui lòng nhập Tên Cơ Quan / Sở Chủ Quản.', 'warning');
+                return;
+            }
+            if (!hotline) {
+                Swal.fire('Cảnh báo', 'Vui lòng nhập Số điện thoại Hotline.', 'warning');
+                return;
+            }
+            if (!email) {
+                Swal.fire('Cảnh báo', 'Vui lòng nhập Email liên hệ.', 'warning');
+                return;
+            }
+            if (!hours) {
+                Swal.fire('Cảnh báo', 'Vui lòng nhập Thời gian hỗ trợ kỹ thuật.', 'warning');
+                return;
+            }
+
+            const payload = {
+                bgColor: $('#footerBgColorInput').val().trim() || '#0f172a',
+                textColor: $('#footerTextColorInput').val().trim() || '#94a3b8',
+                organizationName: org,
+                hotline: hotline,
+                email: email,
+                supportHours: hours,
+                description: $('#footerDescription').val().trim(),
+                copyright: $('#footerCopyright').val().trim()
+            };
+
+            const btn = $('#btnSaveFooter');
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Đang lưu...');
+
+            $.ajax({
+                url: '/Admin/SystemSetting/SaveFooterSettings',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình');
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: res.message || 'Cấu hình chân trang và hệ thống đã được cập nhật thành công!',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu cấu hình.', 'error');
+                    }
+                },
+                error: function (xhr) {
+                    btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình');
+                    Swal.fire('Lỗi', xhr.responseJSON?.message || 'Có lỗi xảy ra khi lưu cấu hình hệ thống.', 'error');
+                }
+            });
+        }
+
+        function resetToSystemDefaults() {
+            Swal.fire({
+                title: 'Khôi phục mặc định?',
+                text: 'Hệ thống sẽ đặt lại các giá trị tiêu chuẩn (Sở VH&TT TP.HCM, Hotline 028 3822 5588, màu Dark Slate #0f172a).',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Đồng ý',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    setPresetColor('#0f172a');
+                    $('#footerTextColorPicker').val('#94a3b8');
+                    $('#footerTextColorInput').val('#94a3b8');
+                    $('#footerOrganizationName').val('Sở Văn Hóa & Thể Thao TP.HCM');
+                    $('#footerHotline').val('(028) 3822 5588 - 0909 123 456');
+                    $('#footerEmail').val('btc.thethao@sportdms.vn');
+                    $('#footerSupportHours').val('08:00 - 20:00 hàng ngày');
+                    $('#footerDescription').val('Hệ thống phần mềm quản lý, điều hành và tổ chức các đại hội thể thao, giải đấu thể dục thể thao chuyên nghiệp và phong trào toàn diện.');
+                    $('#footerCopyright').val('© 2026 SPORT DMS. Nền Tảng Điều Hành & Quản Lý Giải Đấu Thể Thao. Tất cả các quyền được bảo lưu.');
+                    updateLivePreview();
+                }
+            });
+        }
+    </script>
+}

@@ -1,4 +1,5 @@
 @using Dms.Application.Common
+@inject Dms.Application.Interfaces.ISystemSettingService SystemSettingService
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -512,7 +513,12 @@
     </div>
 
     <!-- Public Footer -->
-    <footer class="portal-footer py-5">
+    @{
+        var footerConfig = await SystemSettingService.GetFooterSettingsAsync();
+        var footerBgColor = string.IsNullOrWhiteSpace(footerConfig.BgColor) ? "#0f172a" : footerConfig.BgColor;
+        var footerTextColor = string.IsNullOrWhiteSpace(footerConfig.TextColor) ? "#94a3b8" : footerConfig.TextColor;
+    }
+    <footer class="portal-footer py-5" style="background-color: @footerBgColor !important; color: @footerTextColor !important;">
         <div class="container">
             <div class="row g-4">
                 <div class="col-lg-5">
@@ -523,7 +529,9 @@
                         <span class="text-white fw-bold fs-5">SPORT DMS</span>
                     </div>
                     <p class="small text-muted mb-3" style="max-width: 400px;">
-                        Hệ thống phần mềm quản lý, điều hành và tổ chức các đại hội thể thao, giải đấu thể dục thể thao chuyên nghiệp và phong trào toàn diện.
+                        @(string.IsNullOrWhiteSpace(footerConfig.Description) 
+                            ? "Hệ thống phần mềm quản lý, điều hành và tổ chức các đại hội thể thao, giải đấu thể dục thể thao chuyên nghiệp và phong trào toàn diện." 
+                            : footerConfig.Description)
                     </p>
                     <div class="d-flex gap-3 text-white-50">
                         <a href="#" class="fs-5"><i class="fa-brands fa-facebook"></i></a>
@@ -543,15 +551,17 @@
                 <div class="col-sm-6 col-lg-4">
                     <h6 class="text-white fw-bold mb-3">Hỗ Trợ & Liên Hệ</h6>
                     <ul class="list-unstyled small d-flex flex-column gap-2 mb-0 text-muted">
-                        <li><i class="fa-solid fa-location-dot me-2 text-primary"></i> Sở Văn Hóa & Thể Thao TP.HCM</li>
-                        <li><i class="fa-solid fa-phone me-2 text-primary"></i> Hotline: (028) 3822 5588 - 0909 123 456</li>
-                        <li><i class="fa-solid fa-envelope me-2 text-primary"></i> Email: btc.thethao@sportdms.vn</li>
-                        <li><i class="fa-solid fa-clock me-2 text-primary"></i> Hỗ trợ kỹ thuật: 08:00 - 20:00 hàng ngày</li>
+                        <li><i class="fa-solid fa-location-dot me-2 text-primary"></i> @(string.IsNullOrWhiteSpace(footerConfig.OrganizationName) ? "Sở Văn Hóa & Thể Thao TP.HCM" : footerConfig.OrganizationName)</li>
+                        <li><i class="fa-solid fa-phone me-2 text-primary"></i> Hotline: @(string.IsNullOrWhiteSpace(footerConfig.Hotline) ? "(028) 3822 5588 - 0909 123 456" : footerConfig.Hotline)</li>
+                        <li><i class="fa-solid fa-envelope me-2 text-primary"></i> Email: @(string.IsNullOrWhiteSpace(footerConfig.Email) ? "btc.thethao@sportdms.vn" : footerConfig.Email)</li>
+                        <li><i class="fa-solid fa-clock me-2 text-primary"></i> Hỗ trợ kỹ thuật: @(string.IsNullOrWhiteSpace(footerConfig.SupportHours) ? "08:00 - 20:00 hàng ngày" : footerConfig.SupportHours)</li>
                     </ul>
                 </div>
             </div>
             <div class="border-top border-secondary border-opacity-25 pt-4 mt-4 text-center small text-muted">
-                © 2026 SPORT DMS. Nền Tảng Điều Hành & Quản Lý Giải Đấu Thể Thao. Tất cả các quyền được bảo lưu.
+                @(string.IsNullOrWhiteSpace(footerConfig.Copyright) 
+                    ? "© 2026 SPORT DMS. Nền Tảng Điều Hành & Quản Lý Giải Đấu Thể Thao. Tất cả các quyền được bảo lưu." 
+                    : footerConfig.Copyright)
             </div>
         </div>
     </footer>

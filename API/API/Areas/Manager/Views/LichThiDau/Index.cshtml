@@ -1293,10 +1293,11 @@
                 const tenSan = sanObj ? `${escapeHtml(sanObj.ten)}` : 'Chưa gán sân';
 
                 // Slot 1 Display (Chỉ xem)
+                const doi1Obj = pair.doi1 || (pair.danhSachVdv && pair.danhSachVdv.length > 0 ? pair.danhSachVdv[0] : null);
                 let slot1Html = '';
-                if (pair.doi1) {
-                    const d1Name = escapeHtml(getParticipantDisplayName(pair.doi1, false, `Đội #${pair.doi1.dangKyThiDauId}`));
-                    const d1Unit = pair.doi1.tenDonVi ? escapeHtml(pair.doi1.tenDonVi) : 'Tự do';
+                if (doi1Obj) {
+                    const d1Name = escapeHtml(getParticipantDisplayName(doi1Obj, false, `Đội #${doi1Obj.dangKyThiDauId}`));
+                    const d1Unit = doi1Obj.tenDonVi ? escapeHtml(doi1Obj.tenDonVi) : 'Tự do';
                     slot1Html = `
                         <div class="slot-team-view">
                             <div class="overflow-hidden">
@@ -1316,10 +1317,11 @@
                 }
 
                 // Slot 2 Display (Chỉ xem)
+                const doi2Obj = pair.doi2 || (pair.danhSachVdv && pair.danhSachVdv.length > 1 ? pair.danhSachVdv[1] : null);
                 let slot2Html = '';
-                if (pair.doi2) {
-                    const d2Name = escapeHtml(getParticipantDisplayName(pair.doi2, false, `Đội #${pair.doi2.dangKyThiDauId}`));
-                    const d2Unit = pair.doi2.tenDonVi ? escapeHtml(pair.doi2.tenDonVi) : 'Tự do';
+                if (doi2Obj) {
+                    const d2Name = escapeHtml(getParticipantDisplayName(doi2Obj, false, `Đội #${doi2Obj.dangKyThiDauId}`));
+                    const d2Unit = doi2Obj.tenDonVi ? escapeHtml(doi2Obj.tenDonVi) : 'Tự do';
                     slot2Html = `
                         <div class="slot-team-view">
                             <div class="overflow-hidden">
@@ -1352,8 +1354,10 @@
                     </button>
                 ` : '';
 
-                        let matchBodyHtml = '';
-                const isMultiParticipant = pair.isHeat || (pair.danhSachVdv && pair.danhSachVdv.length > 2) || (pair.tenTran && (pair.tenTran.includes('Lượt') || pair.tenTran.includes('Heat')));
+                let matchBodyHtml = '';
+                const isHeatSport = (mainViewData && (mainViewData.hinhThucThiDau === 'TinhDiemXepHang' || mainViewData.hinhThucThiDau == 6));
+                const hasMoreThanTwo = pair.danhSachVdv && pair.danhSachVdv.length > 2;
+                const isMultiParticipant = isHeatSport || hasMoreThanTwo;
 
                 if (isMultiParticipant) {
                     if (pair.danhSachVdv && pair.danhSachVdv.length > 0) {
@@ -1478,29 +1482,88 @@
             renderBracketBranches();
         }
 
-        function getRoundOrderAndLabel(pair) {
-            const t = (pair.tenTran || '').toLowerCase();
-            const v = (pair.tenVongDau || '').toLowerCase();
-            const m = (pair.maTranBracket || '').toUpperCase();
+        function isMatchFinal(pair) {
+            if (!pair) return false;
+            const m = (pair.maTranBracket || '').toUpperCase().trim();
+            if (m === 'CK' || m === 'FINAL') return true;
 
-            if (v.includes('chung kết') || t.includes('chung kết') || m === 'FINAL' || m === 'CK') {
-                if (v.includes('bán') || t.includes('bán')) return { order: 80, label: 'Bán Kết', isFinalCol: false };
-                if (v.includes('tứ') || t.includes('tứ')) return { order: 70, label: 'Tứ Kết', isFinalCol: false };
+            const v = (pair.tenVongDau || '').toLowerCase().trim();
+            if (v === 'chung kết' || (v.includes('chung kết') && !v.includes('bán') && !v.includes('tứ'))) return true;
+
+            const t = (pair.tenTran || '').toLowerCase().trim();
+            if (t.startsWith('chung kết')) return true;
+            if (t.includes('chung kết') && !t.startsWith('bán kết') && !t.startsWith('tứ kết') && !t.includes('tranh hạng') && !t.includes('hạng 3')) return true;
+
+            return false;
+        }
+
+        function isMatchBronze(pair) {
+            if (!pair) return false;
+            const m = (pair.maTranBracket || '').toUpperCase().trim();
+            if (m === 'T34' || m === '3RD' || m === 'TRANH3') return true;
+
+            const v = (pair.tenVongDau || '').toLowerCase().trim();
+            if (v.includes('hạng 3') || v.includes('tranh hạng') || v.includes('hạng ba')) return true;
+
+            const t = (pair.tenTran || '').toLowerCase().trim();
+            if (t.startsWith('tranh hạng') || t.startsWith('trận tranh hạng') || t.startsWith('hạng 3') || t.includes('hạng 3 - 4') || t.includes('tranh hạng 3')) return true;
+
+            return false;
+        }
+
+        function isMatchSemi(pair) {
+            if (!pair) return false;
+            if (isMatchFinal(pair) || isMatchBronze(pair)) return false;
+
+            const m = (pair.maTranBracket || '').toUpperCase().trim();
+            if (m.startsWith('BK') || m.startsWith('SF')) return true;
+
+            const v = (pair.tenVongDau || '').toLowerCase().trim();
+            if (v.includes('bán kết') || (v.includes('bán') && !v.includes('tứ') && !v.includes('chung'))) return true;
+
+            const t = (pair.tenTran || '').toLowerCase().trim();
+            if (t.startsWith('bán kết')) return true;
+            if (t.includes('bán kết') && !t.includes('thắng bán kết') && !t.includes('thua bán kết')) return true;
+
+            return false;
+        }
+
+        function isMatchQuarter(pair) {
+            if (!pair) return false;
+            if (isMatchFinal(pair) || isMatchBronze(pair) || isMatchSemi(pair)) return false;
+
+            const m = (pair.maTranBracket || '').toUpperCase().trim();
+            if (m.startsWith('TK') || m.startsWith('QF')) return true;
+
+            const v = (pair.tenVongDau || '').toLowerCase().trim();
+            if (v.includes('tứ kết') || (v.includes('tứ') && !v.includes('bán') && !v.includes('chung'))) return true;
+
+            const t = (pair.tenTran || '').toLowerCase().trim();
+            if (t.startsWith('tứ kết')) return true;
+            if (t.includes('tứ kết') && !t.includes('thắng tứ kết') && !t.includes('thua tứ kết')) return true;
+
+            return false;
+        }
+
+        function getRoundOrderAndLabel(pair) {
+            if (isMatchFinal(pair) || isMatchBronze(pair)) {
                 return { order: 90, label: 'Chung Kết & Tranh Hạng Ba', isFinalCol: true };
             }
-            if (v.includes('hạng 3') || t.includes('hạng 3') || v.includes('tranh hạng') || t.includes('tranh hạng') || m === '3RD') {
-                return { order: 90, label: 'Chung Kết & Tranh Hạng Ba', isFinalCol: true };
-            }
-            if (v.includes('bán kết') || t.includes('bán kết') || m.startsWith('BK') || m.startsWith('SF')) {
+            if (isMatchSemi(pair)) {
                 return { order: 80, label: 'Bán Kết', isFinalCol: false };
             }
-            if (v.includes('tứ kết') || t.includes('tứ kết') || m.startsWith('TK') || m.startsWith('QF')) {
+            if (isMatchQuarter(pair)) {
                 return { order: 70, label: 'Tứ Kết', isFinalCol: false };
             }
-            if (v.includes('1/8') || t.includes('1/8') || m.startsWith('R16')) {
+
+            const t = (pair.tenTran || '').toLowerCase().trim();
+            const v = (pair.tenVongDau || '').toLowerCase().trim();
+            const m = (pair.maTranBracket || '').toUpperCase().trim();
+
+            if (m.startsWith('V18') || m.startsWith('R16') || v.includes('1/8') || t.includes('1/8')) {
                 return { order: 60, label: 'Vòng 1/8 (Vòng 16)', isFinalCol: false };
             }
-            if (v.includes('1/16') || t.includes('1/16') || m.startsWith('R32')) {
+            if (m.startsWith('V32') || m.startsWith('R32') || v.includes('1/16') || t.includes('1/16')) {
                 return { order: 50, label: 'Vòng 1/16 (Vòng 32)', isFinalCol: false };
             }
             const thuTu = pair.vongThuTu || 1;
@@ -1561,8 +1624,8 @@
                     }
 
                     // Tùy biến kiểu Card
-                    const isFinalMatch = tenTran.toLowerCase().includes('chung kết') && !tenTran.toLowerCase().includes('bán') && !tenTran.toLowerCase().includes('tứ');
-                    const isBronzeMatch = tenTran.toLowerCase().includes('hạng 3') || tenTran.toLowerCase().includes('hạng ba');
+                    const isFinalMatch = isMatchFinal(pair);
+                    const isBronzeMatch = isMatchBronze(pair);
                     let extraCardClass = isFinalMatch ? 'card-final' : (isBronzeMatch ? 'card-bronze' : '');
 
                     // Điểm số & Penalty
@@ -1703,11 +1766,9 @@
             if (!mainViewData.pairs || mainViewData.pairs.length === 0) return;
 
             // Phân loại các trận đấu vào Bảng A (Nhánh trên), Bảng B (Nhánh dưới), và Vòng Quyết Định (Finals)
-            // Nhận diện vòng đầu tiên (thường là Tứ kết hoặc Vòng 1/8)
+            // Nhận diện vòng đầu tiên (thường là Tứ kết hoặc Vòng 1/8 hoặc Vòng loại)
             const openingMatches = mainViewData.pairs.filter(p => {
-                const t = (p.tenTran || '').toLowerCase();
-                const v = (p.tenVongDau || '').toLowerCase();
-                return !(t.includes('chung kết') || v.includes('chung kết') || t.includes('bán kết') || v.includes('bán kết') || t.includes('hạng 3') || v.includes('hạng 3'));
+                return !isMatchFinal(p) && !isMatchBronze(p) && !isMatchSemi(p);
             }).sort((a, b) => (a.soTran || 0) - (b.soTran || 0));
 
             let matchesHalf = Math.ceil(openingMatches.length / 2);
@@ -1720,21 +1781,13 @@
             }
 
             // Thêm các trận Bán kết tương ứng
-            const semiMatches = mainViewData.pairs.filter(p => {
-                const t = (p.tenTran || '').toLowerCase();
-                const v = (p.tenVongDau || '').toLowerCase();
-                return (t.includes('bán kết') || v.includes('bán kết'));
-            }).sort((a, b) => (a.soTran || 0) - (b.soTran || 0));
+            const semiMatches = mainViewData.pairs.filter(p => isMatchSemi(p)).sort((a, b) => (a.soTran || 0) - (b.soTran || 0));
 
             if (semiMatches.length >= 1) branchAMatches.push(semiMatches[0]);
             if (semiMatches.length >= 2) branchBMatches.push(semiMatches[1]);
 
             // Trận Chung kết và Hạng 3
-            const finalMatches = mainViewData.pairs.filter(p => {
-                const t = (p.tenTran || '').toLowerCase();
-                const v = (p.tenVongDau || '').toLowerCase();
-                return (t.includes('chung kết') && !t.includes('bán') && !t.includes('tứ')) || t.includes('hạng 3') || v.includes('hạng 3');
-            }).sort((a, b) => (a.soTran || 0) - (b.soTran || 0));
+            const finalMatches = mainViewData.pairs.filter(p => isMatchFinal(p) || isMatchBronze(p)).sort((a, b) => (a.soTran || 0) - (b.soTran || 0));
 
             // Lấy danh sách đội hạt giống cho Bảng A
             const teamsA = [];
@@ -1858,8 +1911,8 @@
             let thirdPlaceTeam = null;
 
             finalMatches.forEach(fm => {
-                const isFinal = fm.tenTran.toLowerCase().includes('chung kết') && !fm.tenTran.toLowerCase().includes('bán') && !fm.tenTran.toLowerCase().includes('tứ');
-                const isBronze = fm.tenTran.toLowerCase().includes('hạng 3') || fm.tenTran.toLowerCase().includes('hạng ba');
+                const isFinal = isMatchFinal(fm);
+                const isBronze = isMatchBronze(fm);
 
                 if (isFinal && (fm.doiThangDangKyId || (fm.diemDoi1 != null && fm.diemDoi2 != null))) {
                     const d1Won = fm.doiThangDangKyId ? (fm.doi1 && fm.doi1.dangKyThiDauId === fm.doiThangDangKyId) : (fm.diemDoi1 > fm.diemDoi2);
@@ -1968,7 +2021,7 @@
                         <div class="card-body p-3">
                             <div class="row g-3">
                                 ${finalMatches.map(m => {
-                                    const isFinal = m.tenTran.toLowerCase().includes('chung kết') && !m.tenTran.toLowerCase().includes('bán') && !m.tenTran.toLowerCase().includes('tứ');
+                                    const isFinal = isMatchFinal(m);
                                     const headerClass = isFinal ? 'bg-warning text-dark' : 'bg-secondary text-white';
                                     const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : 'Thắng Bán kết 1';
                                     const d2 = m.doi2 ? escapeHtml(m.doi2.tenDangKy || m.doi2.tenDoi || 'Đội 2') : 'Thắng Bán kết 2';
@@ -2820,8 +2873,8 @@
                 const score1 = item.diemDoi1 ?? '-';
                 const score2 = item.diemDoi2 ?? '-';
 
-                        let participantColHtml = '';
-                const isItemHeat = (item.thanhPhanTranDaus && item.thanhPhanTranDaus.length > 2) || (item.tenTran && (item.tenTran.includes('Lượt') || item.tenTran.includes('Heat')));
+                let participantColHtml = '';
+                const isItemHeat = (item.thanhPhanTranDaus && item.thanhPhanTranDaus.length > 2) || (item.tenTran && item.tenTran.includes('Heat'));
                 if (isItemHeat && item.thanhPhanTranDaus && item.thanhPhanTranDaus.length > 0) {
                     const lanesList = item.thanhPhanTranDaus.map(tp => `<span class="badge bg-light text-dark border me-1 mb-1" style="font-size: 0.72rem;">Làn ${tp.soLane || tp.viTri}: <strong>${escapeHtml(tp.tenDangKy || tp.tenDoi || 'VĐV')}</strong></span>`).join('');
                     participantColHtml = `
