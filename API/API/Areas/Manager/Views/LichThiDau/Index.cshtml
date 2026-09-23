@@ -334,13 +334,13 @@
             <div class="col-md-4 col-lg-2 d-flex align-items-end pt-3">
                 <div class="btn-group btn-group-sm w-100" role="group">
                     <button type="button" class="btn btn-outline-primary d-none" id="btnViewBracket" onclick="switchView('bracket')">
-                        <i class="fa-solid fa-diagram-project me-1"></i> Bảng / Nhánh
+                        <i class="fa-solid fa-diagram-project me-1"></i> Sơ Đồ Nhánh
                     </button>
                     <button type="button" class="btn btn-outline-primary active" id="btnViewLayout" onclick="switchView('layout')">
-                        <i class="fa-solid fa-sitemap me-1"></i> Cặp Đấu
+                        <i class="fa-solid fa-sitemap me-1"></i> Lịch Thi Đấu
                     </button>
                     <button type="button" class="btn btn-outline-primary" id="btnViewTable" onclick="switchView('table')">
-                        <i class="fa-solid fa-table-list me-1"></i> Bảng
+                        <i class="fa-solid fa-table-list me-1"></i> Danh Sách Trận
                     </button>
                 </div>
             </div>
@@ -439,22 +439,28 @@
 
     <!-- Khung chính 2 cột: Cột Trái (Đội chưa xếp - Chỉ xem) & Cột Phải (Layout các cặp đấu - Chỉ xem) -->
     <div id="layoutWorkspace" class="row g-3 d-none">
-        <!-- CỘT TRÁI: DANH SÁCH ĐỘI CHƯA XẾP CẶP (CHỈ XEM) -->
+        <!-- CỘT TRÁI: DANH SÁCH BẢNG ĐẤU & ĐỘI CHƯA XẾP CẶP (CHỈ XEM) -->
         <div class="col-lg-4 col-xl-3">
-            <div class="card border shadow-sm h-100">
+            <!-- Khung danh sách Bảng đấu & Bảng xếp hạng (cho môn có Bảng) -->
+            <div id="mainGroupsContainer" class="d-none mb-3">
+                <!-- Render các Bảng đấu (Bảng A, B...) và danh sách đội ở đây -->
+            </div>
+
+            <!-- Khung Đội chưa xếp cặp -->
+            <div id="mainUnpairedCard" class="card border shadow-sm">
                 <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
                     <span class="fw-bold text-dark small">
                         <i class="fa-solid fa-users text-primary me-1"></i>Đội Chưa Xếp Cặp
                     </span>
                     <span class="badge bg-secondary rounded-pill" id="mainUnpairedCountBadge">0</span>
                 </div>
-                <div class="p-2 border-bottom bg-white">
+                <div class="p-2 border-bottom bg-white" id="mainSearchUnpairedWrapper">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
                         <input type="text" id="mainSearchUnpairedTeam" class="form-control border-start-0" placeholder="Tìm tên đội, VĐV..." oninput="filterMainUnpairedTeams()">
                     </div>
                 </div>
-                <div class="card-body p-2" style="max-height: 68vh; overflow-y: auto; background-color: #fafbfc;">
+                <div class="card-body p-2" id="mainUnpairedBody" style="max-height: 48vh; overflow-y: auto; background-color: #fafbfc;">
                     <div id="mainUnpairedTeamsList" class="d-flex flex-column gap-2">
                         <!-- Danh sách thẻ đội chỉ xem -->
                     </div>
@@ -680,17 +686,51 @@
                     </div>
 
                     <div class="row g-3 mb-3">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold">Thời lượng trận (phút)</label>
                             <input type="number" class="form-control" id="autoThoiLuong" value="60">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold">Nghỉ giữa 2 trận (phút)</label>
                             <input type="number" class="form-control" id="autoNghiGiuaTran" value="15">
                         </div>
-                        <div class="col-md-4" id="groupAutoSoDoiMoiBang">
-                            <label class="form-label fw-semibold">Số đội mỗi bảng</label>
-                            <input type="number" class="form-control" id="autoSoDoiMoiBang" value="4">
+                    </div>
+
+                    <!-- Cấu hình Thể thức Vòng Bảng & Knockout (Bóng đá, Bóng chuyền, Cầu lông...) -->
+                    <div id="groupAutoGroupStageConfig" class="border rounded p-3 mb-3 bg-light">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fa-solid fa-table-cells-large text-primary me-2 fs-5"></i>
+                            <strong class="text-primary">Cấu hình Chia Bảng Đấu & Vòng Knockout</strong>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Số bảng đấu</label>
+                                <select class="form-select" id="autoSoBang">
+                                    <option value="0" selected>Tự động chia theo số đội</option>
+                                    <option value="1">1 bảng đấu (Vòng tròn 1 bảng)</option>
+                                    <option value="2">2 bảng đấu (Bảng A & Bảng B)</option>
+                                    <option value="3">3 bảng đấu (Bảng A, B, C)</option>
+                                    <option value="4">4 bảng đấu (Bảng A, B, C, D)</option>
+                                </select>
+                                <small class="text-muted">Chọn cụ thể hoặc để thuật toán tự tính</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Số đội mỗi bảng <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="autoSoDoiMoiBang" value="4" min="2" max="16">
+                                <small class="text-muted">Dùng khi chọn Tự động chia (mặc định 4)</small>
+                            </div>
+                            <div class="col-md-4" id="groupAutoSoDoiMoiBang">
+                                <label class="form-label fw-semibold">Đội vào Vòng Knockout</label>
+                                <select class="form-select" id="autoSoDoiMoiBangVaoVongTrong">
+                                    <option value="2" selected>Top 2 (Nhất & Nhì mỗi bảng)</option>
+                                    <option value="1">Chỉ Nhất bảng</option>
+                                </select>
+                                <small class="text-muted">Tiến vào Bán kết / Chung kết</small>
+                            </div>
+                        </div>
+                        <div class="alert alert-info py-2 px-3 small mt-3 mb-0" id="autoGroupStageHelpText">
+                            <i class="fa-solid fa-circle-info me-1"></i>
+                            <strong>Gợi ý:</strong> Với 4 đội: Nếu chọn <strong>1 bảng</strong>, 4 đội đá vòng tròn 3 lượt (6 trận) và Top 2 vào thẳng Chung kết. Nếu chọn <strong>2 bảng</strong> (mỗi bảng 2 đội), 2 đội Nhất & Nhì mỗi bảng sẽ đá Bán kết rồi vào Chung kết.
                         </div>
                     </div>
 
@@ -1130,13 +1170,17 @@
                         updateMainVongDauSelect(mainViewData.vongDaus, vongDauId);
                         updateMainBangDauSelect(mainViewData.bangDaus, bangDauId);
 
-                        // Kiểm tra hình thức thi đấu Loại trực tiếp (Knockout)
-                        const isKnockout = mainViewData.hinhThucThiDau === 'LoaiTrucTiep' || mainViewData.hinhThucThiDau == 1;
-                        if (isKnockout) {
+                        // Kiểm tra hình thức thi đấu Loại trực tiếp (Knockout) hoặc Hỗn hợp / có trận Knockout
+                        const isKnockoutOnly = mainViewData.hinhThucThiDau === 'LoaiTrucTiep' || mainViewData.hinhThucThiDau == 1;
+                        const isHybrid = mainViewData.hinhThucThiDau === 'KetHopVongBangVaLoaiTrucTiep' || mainViewData.hinhThucThiDau == 3;
+                        const hasKnockoutMatches = mainViewData.pairs && mainViewData.pairs.some(p => isMatchKnockout(p));
+                        const showBracket = isKnockoutOnly || isHybrid || hasKnockoutMatches;
+
+                        if (showBracket) {
                             $('#btnViewBracket').removeClass('d-none');
-                            if (currentView === 'bracket' || currentView === 'layout') {
+                            if (isKnockoutOnly && (currentView === 'bracket' || currentView === 'layout')) {
                                 switchView('bracket');
-                            } else {
+                            } else if (currentView === 'bracket') {
                                 renderBracketUI();
                             }
                         } else {
@@ -1148,7 +1192,7 @@
 
                         $('#layoutWorkspace').removeClass('d-none');
                         renderMainViewOnlyUI();
-                        if (isKnockout) {
+                        if (showBracket) {
                             renderBracketUI();
                         }
                     } else {
@@ -1203,10 +1247,204 @@
         }
 
         function renderMainViewOnlyUI() {
+            renderMainGroupsUI();
             renderMainUnpairedTeams();
             renderMainMatchesContainer();
             $('#mainUnpairedCountBadge').text(mainViewData.unpairedTeams.length);
             $('#mainPairCountBadge').text(`${mainViewData.pairs.length} cặp`);
+        }
+
+        function renderMainGroupsUI() {
+            const container = $('#mainGroupsContainer');
+            container.empty();
+
+            if (!mainViewData || !mainViewData.allTeams || mainViewData.allTeams.length === 0) {
+                container.addClass('d-none');
+                $('#mainUnpairedCard').removeClass('d-none');
+                return;
+            }
+
+            // Lấy danh sách các bảng đấu từ bangDaus hoặc allTeams
+            const groupMap = new Map();
+
+            if (mainViewData.bangDaus && mainViewData.bangDaus.length > 0) {
+                mainViewData.bangDaus.forEach(b => {
+                    groupMap.set(b.id, {
+                        id: b.id,
+                        ten: b.ten || `Bảng ${b.ma || b.thuTu}`,
+                        teams: []
+                    });
+                });
+            }
+
+            // Nạp các đội vào từng bảng
+            mainViewData.allTeams.forEach(t => {
+                if (t.bangDauId && groupMap.has(t.bangDauId)) {
+                    groupMap.get(t.bangDauId).teams.push(t);
+                } else if (t.bangDauId || t.tenBangDau) {
+                    const key = t.bangDauId || t.tenBangDau;
+                    if (!groupMap.has(key)) {
+                        groupMap.set(key, {
+                            id: t.bangDauId || 0,
+                            ten: t.tenBangDau || `Bảng #${t.bangDauId}`,
+                            teams: []
+                        });
+                    }
+                    groupMap.get(key).teams.push(t);
+                }
+            });
+
+            const activeGroups = Array.from(groupMap.values()).filter(g => g.teams.length > 0);
+            if (activeGroups.length === 0) {
+                container.addClass('d-none');
+                $('#mainUnpairedCard').removeClass('d-none');
+                return;
+            }
+
+            container.removeClass('d-none');
+
+            // Tính điểm và bảng xếp hạng cho từng bảng từ các trận đấu vòng bảng
+            activeGroups.forEach(group => {
+                const teamsStats = group.teams.map(t => {
+                    return {
+                        team: t,
+                        p: 0,   // Played
+                        w: 0,   // Won
+                        d: 0,   // Draw
+                        l: 0,   // Lost
+                        gf: 0,  // Goals For
+                        ga: 0,  // Goals Against
+                        gd: 0,  // Goal Difference
+                        pts: 0  // Points
+                    };
+                });
+
+                const statsMap = new Map();
+                teamsStats.forEach(ts => statsMap.set(ts.team.dangKyThiDauId, ts));
+
+                // Quét qua các trận vòng bảng thuộc bảng này
+                if (mainViewData.pairs && mainViewData.pairs.length > 0) {
+                    const groupMatches = mainViewData.pairs.filter(p => {
+                        if (isMatchKnockout(p)) return false;
+                        if (group.id > 0 && p.bangDauId === group.id) return true;
+                        if (p.tenBangDau && p.tenBangDau === group.ten) return true;
+                        if (!p.bangDauId && activeGroups.length === 1) return true;
+                        return false;
+                    });
+
+                    groupMatches.forEach(m => {
+                        if (m.diemDoi1 != null && m.diemDoi2 != null) {
+                            const d1Id = m.doi1 ? m.doi1.dangKyThiDauId : null;
+                            const d2Id = m.doi2 ? m.doi2.dangKyThiDauId : null;
+                            const s1 = statsMap.get(d1Id);
+                            const s2 = statsMap.get(d2Id);
+
+                            if (s1 && s2) {
+                                s1.p++;
+                                s2.p++;
+                                s1.gf += m.diemDoi1;
+                                s1.ga += m.diemDoi2;
+                                s2.gf += m.diemDoi2;
+                                s2.ga += m.diemDoi1;
+
+                                if (m.diemDoi1 > m.diemDoi2) {
+                                    s1.w++;
+                                    s1.pts += 3;
+                                    s2.l++;
+                                } else if (m.diemDoi2 > m.diemDoi1) {
+                                    s2.w++;
+                                    s2.pts += 3;
+                                    s1.l++;
+                                } else {
+                                    s1.d++;
+                                    s1.pts += 1;
+                                    s2.d++;
+                                    s2.pts += 1;
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Tính hiệu số & sắp xếp bảng xếp hạng
+                teamsStats.forEach(ts => ts.gd = ts.gf - ts.ga);
+                teamsStats.sort((a, b) => {
+                    if (b.pts !== a.pts) return b.pts - a.pts;
+                    if (b.gd !== a.gd) return b.gd - a.gd;
+                    return b.gf - a.gf;
+                });
+
+                // Render HTML bảng điểm của bảng này
+                let rowsHtml = '';
+                teamsStats.forEach((item, rIdx) => {
+                    const rank = rIdx + 1;
+                    const t = item.team;
+                    const name = escapeHtml(getParticipantDisplayName(t, false, `Đội #${t.dangKyThiDauId}`));
+                    const unit = t.tenDonVi ? escapeHtml(t.tenDonVi) : 'Tự do';
+                    
+                    const isAdvancing = rank <= 2;
+                    const rankBadge = isAdvancing 
+                        ? `<span class="badge bg-success text-white rounded-circle" style="width: 20px; height: 20px; font-size: 0.7rem; padding: 2px 0;">${rank}</span>`
+                        : `<span class="badge bg-light text-secondary border rounded-circle" style="width: 20px; height: 20px; font-size: 0.7rem; padding: 2px 0;">${rank}</span>`;
+
+                    const rowBg = isAdvancing ? 'style="background-color: #f0fdf4;"' : '';
+
+                    rowsHtml += `
+                        <tr ${rowBg}>
+                            <td class="text-center ps-2">${rankBadge}</td>
+                            <td>
+                                <strong class="d-block text-truncate text-dark" style="font-size: 0.8rem; max-width: 140px;" title="${name}">${name}</strong>
+                                <small class="text-muted d-block text-truncate" style="font-size: 0.7rem; max-width: 140px;">${unit}</small>
+                            </td>
+                            <td class="text-center small">${item.p}</td>
+                            <td class="text-center small text-success fw-semibold">${item.w}</td>
+                            <td class="text-center small text-secondary">${item.d}</td>
+                            <td class="text-center small text-danger">${item.l}</td>
+                            <td class="text-center small fw-semibold">${item.gd > 0 ? `+${item.gd}` : item.gd}</td>
+                            <td class="text-center pe-2"><strong class="badge bg-primary text-white" style="font-size: 0.75rem;">${item.pts}</strong></td>
+                        </tr>
+                    `;
+                });
+
+                const curGiaiDau = $('#mainGiaiDauSelect').val() || '';
+                const curMon = $('#mainMonSelect').val() || '';
+
+                const groupCardHtml = `
+                    <div class="card border shadow-sm mb-3">
+                        <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center border-bottom">
+                            <span class="fw-bold text-dark small">
+                                <i class="fa-solid fa-table-cells-large text-primary me-1"></i>${escapeHtml(group.ten)} (${group.teams.length} đội)
+                            </span>
+                            <a href="/Manager/BangDau?giaiDauId=${curGiaiDau}&monId=${curMon}" class="btn btn-2xs btn-outline-primary" title="Quản lý chia bảng đấu">
+                                <i class="fa-solid fa-pen-to-square me-1"></i>Chia bảng
+                            </a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.78rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-2 text-center" style="width: 24px;">#</th>
+                                        <th>Đội bóng</th>
+                                        <th class="text-center" title="Trận đã đấu">Tr</th>
+                                        <th class="text-center text-success" title="Thắng">T</th>
+                                        <th class="text-center" title="Hòa">H</th>
+                                        <th class="text-center text-danger" title="Bại">B</th>
+                                        <th class="text-center" title="Hiệu số">HS</th>
+                                        <th class="text-center pe-2" title="Điểm">Điểm</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer bg-light py-1 px-2 text-center">
+                            <small class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-trophy text-success me-1"></i>Top 2 dẫn đầu tiến vào vòng Knockout</small>
+                        </div>
+                    </div>
+                `;
+                container.append(groupCardHtml);
+            });
         }
 
         function renderMainUnpairedTeams() {
@@ -1266,6 +1504,188 @@
             });
         }
 
+        function renderPairCardHtml(pair, idx, isKnockoutMatch) {
+            const soTran = pair.soTran || (idx + 1);
+            const tenTran = pair.tenTran || `Trận ${soTran}`;
+            const timeStr = pair.thoiGianDuKien ? formatDate(pair.thoiGianDuKien, true) : 'Chưa xếp giờ';
+
+            const sanObj = mainViewData.sanDaus.find(s => s.id === pair.sanDauId);
+            const tenSan = sanObj ? `${escapeHtml(sanObj.ten)}` : 'Chưa gán sân';
+            const placeholders = getMatchPlaceholderTeams(pair);
+
+            // Slot 1 Display (Chỉ xem)
+            const doi1Obj = pair.doi1 || (pair.danhSachVdv && pair.danhSachVdv.length > 0 ? pair.danhSachVdv[0] : null);
+            let slot1Html = '';
+            if (doi1Obj) {
+                const d1Name = escapeHtml(getParticipantDisplayName(doi1Obj, false, `Đội #${doi1Obj.dangKyThiDauId}`));
+                const d1Unit = doi1Obj.tenDonVi ? escapeHtml(doi1Obj.tenDonVi) : 'Tự do';
+                slot1Html = `
+                    <div class="slot-team-view">
+                        <div class="overflow-hidden">
+                            <strong class="d-block text-truncate text-primary" style="font-size: 0.85rem;" title="${d1Name}">
+                                <i class="fa-solid fa-user-shield me-1"></i>${d1Name}
+                            </strong>
+                            <small class="text-muted"><i class="fa-solid fa-shield-halved me-1"></i>${d1Unit}</small>
+                        </div>
+                    </div>
+                `;
+            } else if (isKnockoutMatch) {
+                slot1Html = `
+                    <div class="slot-team-view" style="background: #fffbeb; border: 1px dashed #f59e0b;">
+                        <div class="overflow-hidden">
+                            <strong class="d-block text-truncate text-warning-emphasis" style="font-size: 0.85rem;" title="${escapeHtml(placeholders.t1)}">
+                                <i class="fa-solid fa-trophy text-warning me-1"></i>${escapeHtml(placeholders.t1)}
+                            </strong>
+                            <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>Chờ kết quả Vòng bảng</small>
+                        </div>
+                    </div>
+                `;
+            } else {
+                slot1Html = `
+                    <div class="slot-team-view empty-slot">
+                        <span class="small fst-italic">Chưa xếp Đội 1</span>
+                    </div>
+                `;
+            }
+
+            // Slot 2 Display (Chỉ xem)
+            const doi2Obj = pair.doi2 || (pair.danhSachVdv && pair.danhSachVdv.length > 1 ? pair.danhSachVdv[1] : null);
+            let slot2Html = '';
+            if (doi2Obj) {
+                const d2Name = escapeHtml(getParticipantDisplayName(doi2Obj, false, `Đội #${doi2Obj.dangKyThiDauId}`));
+                const d2Unit = doi2Obj.tenDonVi ? escapeHtml(doi2Obj.tenDonVi) : 'Tự do';
+                slot2Html = `
+                    <div class="slot-team-view">
+                        <div class="overflow-hidden">
+                            <strong class="d-block text-truncate text-primary" style="font-size: 0.85rem;" title="${d2Name}">
+                                <i class="fa-solid fa-user-shield me-1"></i>${d2Name}
+                            </strong>
+                            <small class="text-muted"><i class="fa-solid fa-shield-halved me-1"></i>${d2Unit}</small>
+                        </div>
+                    </div>
+                `;
+            } else if (isKnockoutMatch) {
+                slot2Html = `
+                    <div class="slot-team-view" style="background: #fffbeb; border: 1px dashed #f59e0b;">
+                        <div class="overflow-hidden">
+                            <strong class="d-block text-truncate text-warning-emphasis" style="font-size: 0.85rem;" title="${escapeHtml(placeholders.t2)}">
+                                <i class="fa-solid fa-trophy text-warning me-1"></i>${escapeHtml(placeholders.t2)}
+                            </strong>
+                            <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>Chờ kết quả Vòng bảng</small>
+                        </div>
+                    </div>
+                `;
+            } else {
+                slot2Html = `
+                    <div class="slot-team-view empty-slot">
+                        <span class="small fst-italic">Chưa xếp Đội 2</span>
+                    </div>
+                `;
+            }
+
+            let scoreText = '';
+            if (pair.diemDoi1 != null && pair.diemDoi2 != null) {
+                const penText = (pair.diemPenaltyDoi1 != null && pair.diemPenaltyDoi2 != null)
+                    ? ` <small class="text-warning fw-normal" style="font-size: 0.75rem;">(Pen ${pair.diemPenaltyDoi1}-${pair.diemPenaltyDoi2})</small>`
+                    : '';
+                scoreText = `<span class="badge bg-dark fs-6 px-2 py-1">${pair.diemDoi1} - ${pair.diemDoi2}${penText}</span>`;
+            }
+
+            const scoreBtnHtml = pair.tranDauId ? `
+                <button type="button" class="btn btn-sm btn-outline-primary" title="Cập nhật tỷ số" onclick="openScoreModal(${pair.tranDauId})">
+                    <i class="fa-solid fa-pen-to-square me-1"></i>Điểm
+                </button>
+            ` : '';
+
+            let matchBodyHtml = '';
+            const isHeatSport = (mainViewData && (mainViewData.hinhThucThiDau === 'TinhDiemXepHang' || mainViewData.hinhThucThiDau == 6));
+            const hasMoreThanTwo = pair.danhSachVdv && pair.danhSachVdv.length > 2;
+            const isMultiParticipant = isHeatSport || hasMoreThanTwo;
+
+            if (isMultiParticipant) {
+                if (pair.danhSachVdv && pair.danhSachVdv.length > 0) {
+                    let lanesHtml = '';
+                    pair.danhSachVdv.forEach(vdv => {
+                        const vdvName = escapeHtml(getParticipantDisplayName(vdv, false, 'VĐV'));
+                        const unitName = vdv.tenDonVi ? escapeHtml(vdv.tenDonVi) : 'Tự do';
+                        const laneNo = vdv.soLane || vdv.viTri || '-';
+                        lanesHtml += `
+                            <div class="col-md-3 col-sm-6">
+                                <div class="p-2 border rounded bg-light d-flex align-items-center gap-2 shadow-2xs">
+                                    <span class="badge bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; font-size: 0.8rem;">
+                                        ${laneNo}
+                                    </span>
+                                    <div class="overflow-hidden">
+                                        <strong class="d-block text-truncate text-dark" style="font-size: 0.82rem;" title="${vdvName}">${vdvName}</strong>
+                                        <small class="text-muted text-truncate d-block" style="font-size: 0.72rem;"><i class="fa-solid fa-shield-halved me-1 text-secondary"></i>${unitName}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    matchBodyHtml = `
+                        <div class="mb-2 d-flex align-items-center justify-content-between">
+                            <span class="badge bg-primary-subtle text-primary border"><i class="fa-solid fa-flag-checkered me-1"></i>Lượt thi: ${pair.danhSachVdv.length} làn VĐV</span>
+                            <small class="text-muted">Các VĐV thi đấu cùng lượt tính thời gian / thành tích</small>
+                        </div>
+                        <div class="row g-2">
+                            ${lanesHtml}
+                        </div>
+                    `;
+                } else {
+                    matchBodyHtml = `
+                        <div class="alert alert-warning py-3 text-center mb-0 border-0 shadow-2xs">
+                            <i class="fa-solid fa-trophy text-warning fa-2x mb-2 d-block"></i>
+                            <strong class="text-dark">Lượt Chung Kết (Chờ xếp hạt giống từ các lượt vòng loại)</strong>
+                            <div class="text-muted small mt-1">Khi các lượt vòng loại hoàn tất, hệ thống tự động bốc Top 8 VĐV có thành tích tốt nhất vào 8 làn trận chung kết theo tiêu chuẩn quốc tế.</div>
+                        </div>
+                    `;
+                }
+            } else {
+                matchBodyHtml = `
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-5">
+                            ${slot1Html}
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <div class="vs-divider my-1">
+                                <div class="vs-circle">VS</div>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            ${slot2Html}
+                        </div>
+                    </div>
+                `;
+            }
+
+            const cardBorderClass = isKnockoutMatch ? 'border-warning shadow-2xs' : 'shadow-xs';
+            const cardBadgeClass = isKnockoutMatch ? 'bg-warning text-dark' : 'bg-dark text-white';
+
+            return `
+                <div class="match-pair-view-card p-3 mb-3 ${cardBorderClass}">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 pb-2 border-bottom gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${cardBadgeClass} rounded-pill">#${soTran}</span>
+                            <strong class="text-dark small">${escapeHtml(tenTran)}</strong>
+                            ${isKnockoutMatch ? '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-trophy me-1"></i>Knockout</span>' : ''}
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-light text-secondary border">
+                                <i class="fa-solid fa-location-dot text-danger me-1"></i>${tenSan}
+                            </span>
+                            <span class="badge bg-light text-secondary border">
+                                <i class="fa-regular fa-clock text-primary me-1"></i>${timeStr}
+                            </span>
+                            ${scoreText}
+                            ${scoreBtnHtml}
+                        </div>
+                    </div>
+                    ${matchBodyHtml}
+                </div>
+            `;
+        }
+
         function renderMainMatchesContainer() {
             const container = $('#mainMatchesPairContainer');
             container.empty();
@@ -1284,161 +1704,61 @@
                 return;
             }
 
-            mainViewData.pairs.forEach((pair, idx) => {
-                const soTran = pair.soTran || (idx + 1);
-                const tenTran = pair.tenTran || `Trận ${soTran}`;
-                const timeStr = pair.thoiGianDuKien ? formatDate(pair.thoiGianDuKien, true) : 'Chưa xếp giờ';
+            const knockoutPairs = mainViewData.pairs.filter(p => isMatchKnockout(p));
+            const groupPairs = mainViewData.pairs.filter(p => !isMatchKnockout(p));
 
-                const sanObj = mainViewData.sanDaus.find(s => s.id === pair.sanDauId);
-                const tenSan = sanObj ? `${escapeHtml(sanObj.ten)}` : 'Chưa gán sân';
+            if (knockoutPairs.length > 0 && groupPairs.length > 0) {
+                // Thể thức Kết Hợp: Vòng Bảng + Knockout
 
-                // Slot 1 Display (Chỉ xem)
-                const doi1Obj = pair.doi1 || (pair.danhSachVdv && pair.danhSachVdv.length > 0 ? pair.danhSachVdv[0] : null);
-                let slot1Html = '';
-                if (doi1Obj) {
-                    const d1Name = escapeHtml(getParticipantDisplayName(doi1Obj, false, `Đội #${doi1Obj.dangKyThiDauId}`));
-                    const d1Unit = doi1Obj.tenDonVi ? escapeHtml(doi1Obj.tenDonVi) : 'Tự do';
-                    slot1Html = `
-                        <div class="slot-team-view">
-                            <div class="overflow-hidden">
-                                <strong class="d-block text-truncate text-primary" style="font-size: 0.85rem;" title="${d1Name}">
-                                    <i class="fa-solid fa-user-shield me-1"></i>${d1Name}
-                                </strong>
-                                <small class="text-muted"><i class="fa-solid fa-shield-halved me-1"></i>${d1Unit}</small>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    slot1Html = `
-                        <div class="slot-team-view empty-slot">
-                            <span class="small fst-italic">Chưa xếp Đội 1</span>
-                        </div>
-                    `;
-                }
-
-                // Slot 2 Display (Chỉ xem)
-                const doi2Obj = pair.doi2 || (pair.danhSachVdv && pair.danhSachVdv.length > 1 ? pair.danhSachVdv[1] : null);
-                let slot2Html = '';
-                if (doi2Obj) {
-                    const d2Name = escapeHtml(getParticipantDisplayName(doi2Obj, false, `Đội #${doi2Obj.dangKyThiDauId}`));
-                    const d2Unit = doi2Obj.tenDonVi ? escapeHtml(doi2Obj.tenDonVi) : 'Tự do';
-                    slot2Html = `
-                        <div class="slot-team-view">
-                            <div class="overflow-hidden">
-                                <strong class="d-block text-truncate text-primary" style="font-size: 0.85rem;" title="${d2Name}">
-                                    <i class="fa-solid fa-user-shield me-1"></i>${d2Name}
-                                </strong>
-                                <small class="text-muted"><i class="fa-solid fa-shield-halved me-1"></i>${d2Unit}</small>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    slot2Html = `
-                        <div class="slot-team-view empty-slot">
-                            <span class="small fst-italic">Chưa xếp Đội 2</span>
-                        </div>
-                    `;
-                }
-
-                let scoreText = '';
-                if (pair.diemDoi1 != null && pair.diemDoi2 != null) {
-                    const penText = (pair.diemPenaltyDoi1 != null && pair.diemPenaltyDoi2 != null)
-                        ? ` <small class="text-warning fw-normal" style="font-size: 0.75rem;">(Pen ${pair.diemPenaltyDoi1}-${pair.diemPenaltyDoi2})</small>`
-                        : '';
-                    scoreText = `<span class="badge bg-dark fs-6 px-2 py-1">${pair.diemDoi1} - ${pair.diemDoi2}${penText}</span>`;
-                }
-
-                const scoreBtnHtml = pair.tranDauId ? `
-                    <button type="button" class="btn btn-sm btn-outline-primary" title="Cập nhật tỷ số" onclick="openScoreModal(${pair.tranDauId})">
-                        <i class="fa-solid fa-pen-to-square me-1"></i>Điểm
-                    </button>
-                ` : '';
-
-                let matchBodyHtml = '';
-                const isHeatSport = (mainViewData && (mainViewData.hinhThucThiDau === 'TinhDiemXepHang' || mainViewData.hinhThucThiDau == 6));
-                const hasMoreThanTwo = pair.danhSachVdv && pair.danhSachVdv.length > 2;
-                const isMultiParticipant = isHeatSport || hasMoreThanTwo;
-
-                if (isMultiParticipant) {
-                    if (pair.danhSachVdv && pair.danhSachVdv.length > 0) {
-                        let lanesHtml = '';
-                        pair.danhSachVdv.forEach(vdv => {
-                            const vdvName = escapeHtml(getParticipantDisplayName(vdv, false, 'VĐV'));
-                            const unitName = vdv.tenDonVi ? escapeHtml(vdv.tenDonVi) : 'Tự do';
-                            const laneNo = vdv.soLane || vdv.viTri || '-';
-                            lanesHtml += `
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="p-2 border rounded bg-light d-flex align-items-center gap-2 shadow-2xs">
-                                        <span class="badge bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; font-size: 0.8rem;">
-                                            ${laneNo}
-                                        </span>
-                                        <div class="overflow-hidden">
-                                            <strong class="d-block text-truncate text-dark" style="font-size: 0.82rem;" title="${vdvName}">${vdvName}</strong>
-                                            <small class="text-muted text-truncate d-block" style="font-size: 0.72rem;"><i class="fa-solid fa-shield-halved me-1 text-secondary"></i>${unitName}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        matchBodyHtml = `
-                            <div class="mb-2 d-flex align-items-center justify-content-between">
-                                <span class="badge bg-primary-subtle text-primary border"><i class="fa-solid fa-flag-checkered me-1"></i>Lượt thi: ${pair.danhSachVdv.length} làn VĐV</span>
-                                <small class="text-muted">Các VĐV thi đấu cùng lượt tính thời gian / thành tích</small>
-                            </div>
-                            <div class="row g-2">
-                                ${lanesHtml}
-                            </div>
-                        `;
-                    } else {
-                        matchBodyHtml = `
-                            <div class="alert alert-warning py-3 text-center mb-0 border-0 shadow-2xs">
-                                <i class="fa-solid fa-trophy text-warning fa-2x mb-2 d-block"></i>
-                                <strong class="text-dark">Lượt Chung Kết (Chờ xếp hạt giống từ các lượt vòng loại)</strong>
-                                <div class="text-muted small mt-1">Khi các lượt vòng loại hoàn tất, hệ thống tự động bốc Top 8 VĐV có thành tích tốt nhất vào 8 làn trận chung kết theo tiêu chuẩn quốc tế.</div>
-                            </div>
-                        `;
-                    }
-                } else {
-                    matchBodyHtml = `
-                        <div class="row g-2 align-items-center">
-                            <div class="col-md-5">
-                                ${slot1Html}
-                            </div>
-                            <div class="col-md-2 text-center">
-                                <div class="vs-divider my-1">
-                                    <div class="vs-circle">VS</div>
+                // 1. Render Section VÒNG LOẠI TRỰC TIẾP (KNOCKOUT)
+                let koHtml = `
+                    <div class="card border border-warning shadow-xs mb-3" style="background: #fffdf7;">
+                        <div class="card-header bg-warning bg-opacity-25 py-2 px-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-trophy text-warning me-2 fs-5"></i>
+                                <div>
+                                    <strong class="text-dark small">VÒNG LOẠI TRỰC TIẾP (KNOCKOUT - ${knockoutPairs.length} trận)</strong>
+                                    <div class="text-muted" style="font-size: 0.72rem;">Các trận Chung kết, Bán kết quyết định ngôi vị vô địch</div>
                                 </div>
                             </div>
-                            <div class="col-md-5">
-                                ${slot2Html}
-                            </div>
+                            <button type="button" class="btn btn-2xs btn-outline-dark fw-semibold" onclick="switchView('bracket')">
+                                <i class="fa-solid fa-diagram-project me-1"></i>Xem Sơ Đồ Cây
+                            </button>
                         </div>
-                    `;
-                }
-
-                const card = `
-                    <div class="match-pair-view-card p-3 shadow-xs">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 pb-2 border-bottom gap-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-dark rounded-pill">#${soTran}</span>
-                                <strong class="text-dark small">${escapeHtml(tenTran)}</strong>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-light text-secondary border">
-                                    <i class="fa-solid fa-location-dot text-danger me-1"></i>${tenSan}
-                                </span>
-                                <span class="badge bg-light text-secondary border">
-                                    <i class="fa-regular fa-clock text-primary me-1"></i>${timeStr}
-                                </span>
-                                ${scoreText}
-                                ${scoreBtnHtml}
-                            </div>
-                        </div>
-                        ${matchBodyHtml}
-                    </div>
+                        <div class="card-body p-3">
                 `;
-                container.append(card);
-            });
+                knockoutPairs.forEach((pair, idx) => {
+                    koHtml += renderPairCardHtml(pair, idx, true);
+                });
+                koHtml += `</div></div>`;
+                container.append(koHtml);
+
+                // 2. Render Section VÒNG BẢNG (GROUP STAGE)
+                let grHtml = `
+                    <div class="card border shadow-xs mb-3">
+                        <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-table-cells-large text-primary me-2 fs-5"></i>
+                                <div>
+                                    <strong class="text-primary small">LỊCH THI ĐẤU VÒNG BẢNG (${groupPairs.length} trận)</strong>
+                                    <div class="text-muted" style="font-size: 0.72rem;">Thi đấu vòng tròn tính điểm theo bảng xếp hạng bên trái</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                `;
+                groupPairs.forEach((pair, idx) => {
+                    grHtml += renderPairCardHtml(pair, idx, false);
+                });
+                grHtml += `</div></div>`;
+                container.append(grHtml);
+            } else {
+                // Thuần Knockout hoặc Thuần Vòng Bảng
+                mainViewData.pairs.forEach((pair, idx) => {
+                    const isKO = isMatchKnockout(pair);
+                    container.append(renderPairCardHtml(pair, idx, isKO));
+                });
+            }
         }
 
         // ==================== KHÔNG GIAN 0: CHỨC NĂNG BẢNG ĐẤU & SƠ ĐỒ CÂY LOẠI TRỰC TIẾP (KNOCKOUT) ====================
@@ -1545,6 +1865,46 @@
             return false;
         }
 
+        function isMatchKnockout(pair) {
+            if (!pair) return false;
+            if (isMatchFinal(pair) || isMatchBronze(pair) || isMatchSemi(pair) || isMatchQuarter(pair)) return true;
+            const m = (pair.maTranBracket || '').toUpperCase().trim();
+            if (m.startsWith('CK') || m.startsWith('BK') || m.startsWith('TK') || m.startsWith('T34') || m.startsWith('V18') || m.startsWith('V32') || m.startsWith('R16') || m.startsWith('R32')) return true;
+            const v = (pair.tenVongDau || '').toLowerCase().trim();
+            if (v.includes('chung kết') || v.includes('bán kết') || v.includes('tứ kết') || v.includes('tranh hạng') || v.includes('hạng 3') || v.includes('1/8') || v.includes('1/16') || v.includes('loại trực tiếp') || v.includes('knockout')) return true;
+            const t = (pair.tenTran || '').toLowerCase().trim();
+            if (t.includes('chung kết') || t.includes('bán kết') || t.includes('tứ kết') || t.includes('tranh hạng') || t.includes('hạng 3') || t.includes('1/8') || t.includes('1/16')) return true;
+            if (!pair.bangDauId && (t.includes('nhất') || t.includes('nhì') || t.includes('thắng') || t.includes('thua'))) return true;
+            return false;
+        }
+
+        function getMatchPlaceholderTeams(pair) {
+            let t1 = 'Chờ xác định đội 1';
+            let t2 = 'Chờ xác định đội 2';
+            if (!pair) return { t1, t2 };
+
+            if (pair.tenDoi1Placeholder) t1 = pair.tenDoi1Placeholder;
+            if (pair.tenDoi2Placeholder) t2 = pair.tenDoi2Placeholder;
+
+            if (pair.ghiChu && pair.ghiChu.toLowerCase().startsWith('tbd:')) {
+                const parts = pair.ghiChu.substring(4).split(' vs ');
+                if (parts.length === 2) {
+                    t1 = parts[0].trim();
+                    t2 = parts[1].trim();
+                }
+            } else if (pair.tenTran && pair.tenTran.includes(':') && pair.tenTran.includes(' vs ')) {
+                const afterColon = pair.tenTran.split(':')[1];
+                if (afterColon) {
+                    const parts = afterColon.split(' vs ');
+                    if (parts.length === 2 && !pair.doi1 && !pair.doi2) {
+                        t1 = parts[0].trim();
+                        t2 = parts[1].trim();
+                    }
+                }
+            }
+            return { t1, t2 };
+        }
+
         function getRoundOrderAndLabel(pair) {
             if (isMatchFinal(pair) || isMatchBronze(pair)) {
                 return { order: 90, label: 'Chung Kết & Tranh Hạng Ba', isFinalCol: true };
@@ -1576,9 +1936,30 @@
 
             if (!mainViewData.pairs || mainViewData.pairs.length === 0) return;
 
+            const isHybrid = (mainViewData.hinhThucThiDau === 'KetHopVongBangVaLoaiTrucTiep' || mainViewData.hinhThucThiDau == 3);
+            const hasKnockout = mainViewData.pairs.some(p => isMatchKnockout(p));
+            const hasGroup = mainViewData.pairs.some(p => !isMatchKnockout(p));
+
+            let pairsToRender = mainViewData.pairs;
+            // Nếu là thể thức kết hợp hoặc có cả trận vòng bảng và knockout: chỉ vẽ các trận Knockout trong cây nhánh
+            if (isHybrid || (hasKnockout && hasGroup)) {
+                pairsToRender = mainViewData.pairs.filter(p => isMatchKnockout(p));
+            }
+
+            if (pairsToRender.length === 0) {
+                container.html(`
+                    <div class="col-12 text-center text-muted py-5">
+                        <i class="fa-solid fa-circle-info fa-3x mb-3 text-secondary"></i>
+                        <h6>Thể thức thi đấu vòng tròn tính điểm (Round Robin)</h6>
+                        <p class="small">Môn này thi đấu vòng bảng tính điểm, không có các vòng loại trực tiếp. Vui lòng xem bảng xếp hạng và lịch thi đấu ở chế độ <strong>Lịch Thi Đấu</strong> hoặc xem tab <strong>Bảng Đấu & Hạt Giống</strong>.</p>
+                    </div>
+                `);
+                return;
+            }
+
             // Nhóm trận đấu theo vòng
             const roundMap = new Map();
-            mainViewData.pairs.forEach(p => {
+            pairsToRender.forEach(p => {
                 const info = getRoundOrderAndLabel(p);
                 const key = info.label;
                 if (!roundMap.has(key)) {
@@ -1656,9 +2037,13 @@
                             </div>
                         `;
                     } else {
+                        const ph = getMatchPlaceholderTeams(pair);
                         team1Html = `
-                            <div class="bracket-slot-row text-muted fst-italic">
-                                <span style="font-size: 0.8rem;"><i class="fa-regular fa-circle-question me-1"></i>Chờ xác định đội 1</span>
+                            <div class="bracket-slot-row text-muted fst-italic" style="background: #fffdf5;">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1 me-2">
+                                    <span class="badge bg-warning-subtle text-warning rounded-circle px-2 py-1 flex-shrink-0" style="font-size: 0.72rem;"><i class="fa-solid fa-clock"></i></span>
+                                    <span style="font-size: 0.82rem;" class="text-warning-emphasis fw-semibold text-truncate" title="${escapeHtml(ph.t1)}">${escapeHtml(ph.t1)}</span>
+                                </div>
                                 <span class="text-muted fs-6">-</span>
                             </div>
                         `;
@@ -1683,9 +2068,13 @@
                             </div>
                         `;
                     } else {
+                        const ph = getMatchPlaceholderTeams(pair);
                         team2Html = `
-                            <div class="bracket-slot-row text-muted fst-italic">
-                                <span style="font-size: 0.8rem;"><i class="fa-regular fa-circle-question me-1"></i>Chờ xác định đội 2</span>
+                            <div class="bracket-slot-row text-muted fst-italic" style="background: #fffdf5;">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1 me-2">
+                                    <span class="badge bg-warning-subtle text-warning rounded-circle px-2 py-1 flex-shrink-0" style="font-size: 0.72rem;"><i class="fa-solid fa-clock"></i></span>
+                                    <span style="font-size: 0.82rem;" class="text-warning-emphasis fw-semibold text-truncate" title="${escapeHtml(ph.t2)}">${escapeHtml(ph.t2)}</span>
+                                </div>
                                 <span class="text-muted fs-6">-</span>
                             </div>
                         `;
@@ -1882,8 +2271,9 @@
                     const scoreText = (m.diemDoi1 != null && m.diemDoi2 != null)
                         ? `<span class="badge bg-dark px-2 py-1">${m.diemDoi1} - ${m.diemDoi2}</span>`
                         : `<span class="badge bg-light text-muted border">Chưa đấu</span>`;
-                    const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : 'Chờ xác định';
-                    const d2 = m.doi2 ? escapeHtml(m.doi2.tenDangKy || m.doi2.tenDoi || 'Đội 2') : 'Chờ xác định';
+                    const ph = getMatchPlaceholderTeams(m);
+                    const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : escapeHtml(ph.t1);
+                    const d2 = m.doi2 ? escapeHtml(m.doi2.tenDangKy || m.doi2.tenDoi || 'Đội 2') : escapeHtml(ph.t2);
 
                     items += `
                         <div class="p-2 border rounded bg-white shadow-2xs mb-2">
@@ -1967,7 +2357,146 @@
                 `;
             }
 
-            // Gắn hai cột Bảng A & Bảng B vào container
+            // Kiểm tra xem môn có bảng đấu thực tế không
+            const hasRealBangDaus = mainViewData.bangDaus && mainViewData.bangDaus.length > 0;
+            const hasAssignedTeams = mainViewData.allTeams && mainViewData.allTeams.some(t => t.bangDauId);
+
+            if (hasRealBangDaus || hasAssignedTeams) {
+                // Hiển thị các bảng đấu thực tế từ dữ liệu
+                let groupsHtml = '<div class="row g-3">';
+                const bangList = (mainViewData.bangDaus && mainViewData.bangDaus.length > 0)
+                    ? mainViewData.bangDaus
+                    : [{ id: null, ten: 'Bảng Đấu Mặc Định' }];
+
+                const badgeColors = ['primary', 'purple', 'success', 'warning', 'info', 'danger'];
+
+                bangList.forEach((b, bIdx) => {
+                    const color = badgeColors[bIdx % badgeColors.length];
+                    const bTeams = (mainViewData.allTeams || []).filter(t => b.id ? t.bangDauId === b.id : true);
+                    const bMatches = (mainViewData.pairs || []).filter(p => b.id ? p.bangDauId === b.id : !isMatchKnockout(p));
+
+                    let teamsRows = '';
+                    bTeams.forEach((t, tIdx) => {
+                        const name = escapeHtml(t.tenDangKy || t.tenDoi || `Đội #${t.dangKyThiDauId}`);
+                        const unit = t.tenDonVi ? escapeHtml(t.tenDonVi) : 'Tự do';
+                        const vdvNames = (t.vanDongVienNames && t.vanDongVienNames.length > 0)
+                            ? `<div class="text-muted small" style="font-size: 0.72rem;"><i class="fa-solid fa-user me-1 text-secondary"></i>${escapeHtml(t.vanDongVienNames.join(', '))}</div>`
+                            : '';
+                        teamsRows += `
+                            <tr>
+                                <td class="text-center fw-bold text-${color}" style="width: 45px;">
+                                    <span class="badge bg-${color}-subtle text-${color} border">${tIdx + 1}</span>
+                                </td>
+                                <td>
+                                    <strong class="d-block text-dark" style="font-size: 0.85rem;">${name}</strong>
+                                    ${vdvNames}
+                                </td>
+                                <td class="small text-muted">${unit}</td>
+                            </tr>
+                        `;
+                    });
+
+                    groupsHtml += `
+                        <div class="col-lg-6">
+                            <div class="card bracket-branch-card shadow-sm h-100">
+                                <div class="card-header py-2 px-3 text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #1d4ed8, #1e293b);">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-white text-dark fw-bold">${escapeHtml(b.ten || `Bảng ${bIdx + 1}`)}</span>
+                                        <strong class="small">VÒNG BẢNG</strong>
+                                    </div>
+                                    <span class="badge bg-white-subtle text-white small">${bTeams.length} đội</span>
+                                </div>
+                                <div class="card-body p-3">
+                                    <h6 class="fw-bold text-dark small mb-2"><i class="fa-solid fa-users-rectangle text-${color} me-1"></i> Danh Sách Đội Trong Bảng</h6>
+                                    <div class="table-responsive mb-3">
+                                        <table class="table table-sm table-hover align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="text-center" style="width: 45px;">#</th>
+                                                    <th>Đội Thi Đấu / VĐV</th>
+                                                    <th>Đơn Vị</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${teamsRows || '<tr><td colspan="3" class="text-center text-muted py-2 fst-italic">Chưa có đội trong bảng này</td></tr>'}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <h6 class="fw-bold text-dark small mt-2 mb-2"><i class="fa-solid fa-arrows-turn-to-dots text-${color} me-1"></i> Các Trận Đấu Bảng (${bMatches.length} trận)</h6>
+                                    ${buildBranchMatchesHtml(bMatches)}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                groupsHtml += '</div>';
+
+                // Nếu có trận Knockout (Chung kết, Bán kết...)
+                const koMatches = (mainViewData.pairs || []).filter(p => isMatchKnockout(p));
+                if (koMatches.length > 0) {
+                    groupsHtml += `
+                        <div class="col-12 mt-3">
+                            <div class="card border border-warning shadow-sm" style="background: #fffdf7;">
+                                <div class="card-header bg-warning bg-opacity-25 py-2 px-3 d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-dark small">
+                                        <i class="fa-solid fa-trophy text-warning me-1"></i> Vòng Loại Trực Tiếp (Knockout — ${koMatches.length} trận)
+                                    </span>
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Quyết Định Ngôi Vô Địch</span>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="row g-3">
+                                        ${koMatches.map(m => {
+                                            const isFinal = isMatchFinal(m);
+                                            const headerClass = isFinal ? 'bg-warning text-dark' : 'bg-secondary text-white';
+                                            const ph = getMatchPlaceholderTeams(m);
+                                            const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : escapeHtml(ph.t1);
+                                            const d2 = m.doi2 ? escapeHtml(m.doi2.tenDangKy || m.doi2.tenDoi || 'Đội 2') : escapeHtml(ph.t2);
+                                            const timeStr = m.thoiGianDuKien ? formatDate(m.thoiGianDuKien, true) : 'Chưa xếp giờ';
+                                            const scoreBadge = (m.diemDoi1 != null && m.diemDoi2 != null)
+                                                ? `<span class="badge bg-dark fs-6 px-3 py-1">${m.diemDoi1} - ${m.diemDoi2}</span>`
+                                                : `<span class="badge bg-light text-muted border">Chưa đấu</span>`;
+
+                                            return `
+                                                <div class="col-md-6">
+                                                    <div class="border rounded p-3 bg-white shadow-2xs h-100 ${isFinal ? 'border-warning' : ''}">
+                                                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                                                            <span class="badge ${headerClass} fw-bold">#${m.soTran || ''} • ${escapeHtml(m.tenTran)}</span>
+                                                            <div class="d-flex align-items-center gap-1">
+                                                                <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>${timeStr}</small>
+                                                                ${m.tranDauId ? `<button type="button" class="btn btn-2xs btn-outline-primary" onclick="openScoreModal(${m.tranDauId})" title="Cập nhật điểm"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
+                                                            </div>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between align-items-center my-2">
+                                                            <div class="text-truncate me-2" style="max-width: 40%;">
+                                                                <strong class="d-block text-dark ${m.doiThangDangKyId && m.doi1 && m.doi1.dangKyThiDauId === m.doiThangDangKyId ? 'text-success' : ''}">${d1}</strong>
+                                                                <small class="text-muted">${escapeHtml(m.doi1?.tenDonVi || '')}</small>
+                                                            </div>
+                                                            <div>${scoreBadge}</div>
+                                                            <div class="text-truncate text-end ms-2" style="max-width: 40%;">
+                                                                <strong class="d-block text-dark ${m.doiThangDangKyId && m.doi2 && m.doi2.dangKyThiDauId === m.doiThangDangKyId ? 'text-success' : ''}">${d2}</strong>
+                                                                <small class="text-muted">${escapeHtml(m.doi2?.tenDonVi || '')}</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                    ${podiumHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (podiumHtml) {
+                    groupsHtml += podiumHtml;
+                }
+
+                container.html(groupsHtml);
+                return;
+            }
+
+            // Gắn hai cột Bảng A & Bảng B vào container (cho giải thuần Knockout)
             const branchesHtml = `
                 <!-- BẢNG A (NHÁNH TRÊN) -->
                 <div class="col-lg-6">
@@ -2023,8 +2552,9 @@
                                 ${finalMatches.map(m => {
                                     const isFinal = isMatchFinal(m);
                                     const headerClass = isFinal ? 'bg-warning text-dark' : 'bg-secondary text-white';
-                                    const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : 'Thắng Bán kết 1';
-                                    const d2 = m.doi2 ? escapeHtml(m.doi2.tenDangKy || m.doi2.tenDoi || 'Đội 2') : 'Thắng Bán kết 2';
+                                    const ph = getMatchPlaceholderTeams(m);
+                                    const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : escapeHtml(ph.t1);
+                                    const d2 = m.doi2 ? escapeHtml(m.doi2.tenDangKy || m.doi2.tenDoi || 'Đội 2') : escapeHtml(ph.t2);
                                     const timeStr = m.thoiGianDuKien ? formatDate(m.thoiGianDuKien, true) : 'Chưa xếp giờ';
                                     const scoreBadge = (m.diemDoi1 != null && m.diemDoi2 != null)
                                         ? `<span class="badge bg-dark fs-6 px-3 py-1">${m.diemDoi1} - ${m.diemDoi2}</span>`
@@ -2034,7 +2564,7 @@
                                         <div class="col-md-6">
                                             <div class="border rounded p-3 bg-white shadow-2xs h-100 ${isFinal ? 'border-warning' : ''}">
                                                 <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                                                    <span class="badge ${headerClass} fw-bold">${escapeHtml(m.tenTran)}</span>
+                                                    <span class="badge ${headerClass} fw-bold">#${m.soTran || ''} • ${escapeHtml(m.tenTran)}</span>
                                                     <div class="d-flex align-items-center gap-1">
                                                         <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>${timeStr}</small>
                                                         ${m.tranDauId ? `<button type="button" class="btn btn-2xs btn-outline-primary" onclick="openScoreModal(${m.tranDauId})" title="Cập nhật điểm"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
@@ -3070,7 +3600,7 @@
         function onMonSelected(monId) {
             if (!monId) {
                 $('#autoCauHinhAlert').addClass('d-none');
-                $('#groupAutoSoDoiMoiBang').removeClass('d-none');
+                $('#groupAutoGroupStageConfig').removeClass('d-none');
                 $('#groupAutoHeatConfig').addClass('d-none');
                 return;
             }
@@ -3080,15 +3610,15 @@
             const hinhThuc = selectedOpt.data('hinhthuc') || '';
             const selectedMon = currentModalAvailableMons.find(m => m.id == monId);
             const optText = selectedOpt.text() || '';
-            const isLeaderboardSport = (hinhThuc === 'TinhDiemXepHang') 
-                || (selectedMon && selectedMon.hinhThucThiDau === 'TinhDiemXepHang')
+            const isLeaderboardSport = (hinhThuc === 'TinhDiemXepHang' || hinhThuc == 6) 
+                || (selectedMon && (selectedMon.hinhThucThiDau === 'TinhDiemXepHang' || selectedMon.hinhThucThiDau == 6))
                 || optText.includes('Điền kinh') || optText.includes('Bơi') || optText.includes('100m');
 
             if (isLeaderboardSport) {
-                $('#groupAutoSoDoiMoiBang').addClass('d-none');
+                $('#groupAutoGroupStageConfig').addClass('d-none');
                 $('#groupAutoHeatConfig').removeClass('d-none');
             } else {
-                $('#groupAutoSoDoiMoiBang').removeClass('d-none');
+                $('#groupAutoGroupStageConfig').removeClass('d-none');
                 $('#groupAutoHeatConfig').addClass('d-none');
             }
 
@@ -3174,6 +3704,8 @@
                 thoiLuongTranPhut: parseInt($('#autoThoiLuong').val()) || 60,
                 nghiGiuaTranPhut: parseInt($('#autoNghiGiuaTran').val()) || 15,
                 soDoiMoiBang: parseInt($('#autoSoDoiMoiBang').val()) || 4,
+                soBang: parseInt($('#autoSoBang').val()) || 0,
+                soDoiMoiBangVaoVongTrong: parseInt($('#autoSoDoiMoiBangVaoVongTrong').val()) || 2,
                 soVdvMoiLuotThi: parseInt($('#autoSoVdvMoiLuotThi').val()) || 8,
                 soVongThi: parseInt($('#autoSoVongThi').val()) || 1,
                 phuongThucPhanNhom: $('#autoPhuongThucPhanNhom').val() || 'random',
