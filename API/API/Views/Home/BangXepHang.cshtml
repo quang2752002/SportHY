@@ -19,19 +19,28 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.03);
             margin-bottom: 1.5rem;
         }
+        .mock-fallback-notice {
+            border: 1px solid #fcd34d;
+            background: linear-gradient(90deg, #fffbeb 0%, #fff7ed 100%);
+            color: #854d0e;
+        }
 
         /* View Mode Switcher */
         .view-mode-pill {
             background: #f1f5f9;
             border-radius: 9999px;
             padding: 4px;
-            display: inline-flex;
+            display: grid;
+            grid-template-columns: repeat(2, 44px);
+            width: max-content;
             gap: 4px;
-            flex-wrap: wrap;
         }
         .view-mode-btn {
             border-radius: 9999px;
-            padding: 7px 18px;
+            position: relative;
+            width: 44px;
+            height: 44px;
+            padding: 0;
             font-size: 0.88rem;
             font-weight: 600;
             border: none;
@@ -41,7 +50,36 @@
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            min-width: 0;
+        }
+        .view-mode-label,
+        .view-mode-count {
+            display: none;
+        }
+        .view-mode-btn::after {
+            content: attr(data-label);
+            position: absolute;
+            z-index: 20;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translate(-50%, -4px);
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            padding: 6px 9px;
+            border-radius: 0.5rem;
+            background: #0f172a;
+            color: #ffffff;
+            font-size: 0.76rem;
+            font-weight: 600;
+            box-shadow: 0 5px 14px rgba(15, 23, 42, 0.2);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .view-mode-btn:hover::after,
+        .view-mode-btn:focus-visible::after {
+            opacity: 1;
+            transform: translate(-50%, 0);
         }
         .view-mode-btn:hover {
             color: #ea580c;
@@ -113,6 +151,21 @@
             border: 2px solid #fdba74;
             box-shadow: 0 10px 30px rgba(217, 119, 6, 0.15);
         }
+        @@media (min-width: 768px) {
+            #podiumContainer {
+                padding-top: 48px;
+            }
+
+            .podium-card.podium-gold {
+                transform: translateY(-48px) scale(1.03);
+                z-index: 2;
+            }
+
+            .podium-card.podium-gold:hover {
+                transform: translateY(-53px) scale(1.03);
+            }
+        }
+
         .podium-rank-badge {
             width: 54px;
             height: 54px;
@@ -144,6 +197,24 @@
             border: 1px solid #e2e8f0;
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        #mainMedalTable tbody tr.rank-row-gold > *,
+        #mainMedalTable.table-hover > tbody > tr.rank-row-gold:hover > * {
+            --bs-table-bg: #fffdf3;
+            --bs-table-bg-type: #fffdf3;
+            --bs-table-bg-state: #fff8df;
+        }
+        #mainMedalTable tbody tr.rank-row-silver > *,
+        #mainMedalTable.table-hover > tbody > tr.rank-row-silver:hover > * {
+            --bs-table-bg: #f8fafc;
+            --bs-table-bg-type: #f8fafc;
+            --bs-table-bg-state: #f1f5f9;
+        }
+        #mainMedalTable tbody tr.rank-row-bronze > *,
+        #mainMedalTable.table-hover > tbody > tr.rank-row-bronze:hover > * {
+            --bs-table-bg: #fff8f1;
+            --bs-table-bg-type: #fff8f1;
+            --bs-table-bg-state: #fff0e2;
         }
         .unit-avatar-circle {
             width: 38px;
@@ -239,6 +310,39 @@
             border-bottom: 1px solid #f1f5f9;
             background: #fafafa;
         }
+        .category-ranking-footer {
+            min-height: 50px;
+            padding: 0.45rem 0.75rem;
+        }
+        .ranking-footer-action {
+            width: 36px;
+            height: 34px;
+            padding: 0 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+        }
+        .ranking-footer-action-label {
+            max-width: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-width 0.2s ease, opacity 0.15s ease, margin 0.2s ease;
+        }
+        .ranking-footer-action:hover,
+        .ranking-footer-action:focus-visible {
+            width: 174px;
+            padding-inline: 10px;
+        }
+        .ranking-footer-action:hover .ranking-footer-action-label,
+        .ranking-footer-action:focus-visible .ranking-footer-action-label {
+            max-width: 140px;
+            opacity: 1;
+            margin-right: 7px;
+        }
 
         /* Filter Toolbar Card (Bộ lọc đưa xuống dưới) */
         .filter-toolbar-card {
@@ -273,10 +377,40 @@
             background-color: #ffffff;
             color: #0f172a;
         }
+        .filter-toolbar-card .filter-select,
+        .filter-toolbar-card .active-filter-badge,
+        .filter-toolbar-card .filter-reload-btn {
+            height: 40px;
+            min-height: 40px;
+            box-sizing: border-box;
+        }
+        .filter-toolbar-card .active-filter-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 0.75rem;
+            border-radius: 0.65rem;
+            line-height: 1;
+        }
+        .filter-toolbar-card .filter-reload-btn {
+            border-radius: 0.65rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
         .filter-select:focus {
             border-color: #ea580c;
             box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
             outline: none;
+        }
+
+        /* Bộ chọn chỉ giữ icon, căn giữa và luôn nằm trên một hàng. */
+        @@media (max-width: 991.98px) {
+            .page-header-card > .d-flex {
+                align-items: center !important;
+            }
+
+            .view-mode-pill {
+                flex-shrink: 0;
+            }
         }
     </style>
 }
@@ -290,36 +424,39 @@
                     <i class="fa-solid fa-trophy fs-5 text-white"></i>
                 </div>
                 <div>
-                    <h4 class="fw-bold mb-0 text-dark">BẢNG XẾP HẠNG HUY CHƯƠNG THỂ THAO</h4>
-                    <div class="text-muted small">Cập nhật thành tích huy chương Vàng, Bạc, Đồng toàn đoàn, theo danh mục môn & từng môn thi đấu</div>
+                    <h4 class="fw-bold mb-0 text-dark">THỐNG KÊ BẢNG XẾP HẠNG HUY CHƯƠNG</h4>
+                    <div class="text-muted small">Xem thành tích huy chương theo danh mục môn hoặc từng môn thi đấu</div>
                 </div>
             </div>
 
-            <!-- Tabs Chế Độ Xem -->
-            <div class="view-mode-pill">
-                <button type="button" class="view-mode-btn active" id="tabBtnOverall" onclick="switchViewTab('overall')">
-                    <i class="fa-solid fa-trophy"></i>
-                    <span>Bảng Tổng Sắp</span>
-                </button>
-                <button type="button" class="view-mode-btn" id="tabBtnCategory" onclick="switchViewTab('category')">
-                    <i class="fa-solid fa-folder-tree"></i>
-                    <span>Theo Danh Mục Môn</span>
-                    <span class="badge rounded-pill bg-light text-secondary border ms-1" id="badgeCountCategories">0</span>
-                </button>
-                <button type="button" class="view-mode-btn" id="tabBtnSport" onclick="switchViewTab('sport')">
-                    <i class="fa-solid fa-medal"></i>
-                    <span>Theo Môn Thể Thao</span>
-                    <span class="badge rounded-pill bg-light text-secondary border ms-1" id="badgeCountSports">0</span>
-                </button>
+            <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                <!-- Tabs Chế Độ Xem -->
+                <div class="view-mode-pill">
+                    <button type="button" class="view-mode-btn active" id="tabBtnCategory" data-label="Thống kê theo danh mục môn" aria-label="Thống kê theo danh mục môn" onclick="switchViewTab('category')">
+                        <i class="fa-solid fa-folder-tree"></i>
+                        <span class="view-mode-label">Theo Danh Mục Môn</span>
+                        <span class="view-mode-count badge rounded-pill bg-light text-secondary border ms-1" id="badgeCountCategories">0</span>
+                    </button>
+                    <button type="button" class="view-mode-btn" id="tabBtnSport" data-label="Thống kê theo môn thi đấu" aria-label="Thống kê theo môn thi đấu" onclick="switchViewTab('sport')">
+                        <i class="fa-solid fa-medal"></i>
+                        <span class="view-mode-label">Theo Môn Thể Thao</span>
+                        <span class="view-mode-count badge rounded-pill bg-light text-secondary border ms-1" id="badgeCountSports">0</span>
+                    </button>
+                </div>
             </div>
         </div>
+    </div>
+
+    <div id="mockFallbackNotice" class="alert mock-fallback-notice d-none d-flex align-items-center gap-2 py-2 px-3 mb-3" role="status">
+        <i class="fa-solid fa-circle-info"></i>
+        <span class="small">API chưa có dữ liệu ở một số mục; dữ liệu mẫu minh họa được dùng tại các mục trống.</span>
     </div>
 
     <!-- 2. Khối Bộ Lọc Xuống Dưới (Filter Toolbar Card) -->
     <div class="filter-toolbar-card mb-4">
         <div class="row g-3 align-items-end">
             <!-- Cột 1: Lọc Giải Đấu -->
-            <div class="col-12 col-md-6 col-lg-3">
+            <div class="col-12 col-md-6 col-lg-4">
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fa-solid fa-trophy text-warning"></i>
@@ -343,7 +480,7 @@
             </div>
 
             <!-- Cột 2: Lọc Danh Mục Môn -->
-            <div class="col-12 col-md-6 col-lg-3">
+            <div id="categoryFilterGroup" class="col-12 col-md-6 col-lg-4">
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fa-solid fa-folder-tree text-primary"></i>
@@ -367,7 +504,7 @@
             </div>
 
             <!-- Cột 3: Lọc Môn Thể Thao -->
-            <div class="col-12 col-md-6 col-lg-3">
+            <div id="sportFilterGroup" class="col-12 col-md-6 col-lg-4 d-none">
                 <div class="filter-group">
                     <label class="filter-label">
                         <i class="fa-solid fa-medal" style="color: #ea580c;"></i>
@@ -380,12 +517,12 @@
             </div>
 
             <!-- Cột 4: Trạng thái lọc & Nút Tải Lại -->
-            <div class="col-12 col-md-6 col-lg-3">
+            <div class="col-12 col-md-6 col-lg-4">
                 <div class="d-flex align-items-center justify-content-between justify-content-lg-end gap-2">
                     <div class="text-truncate" style="max-width: 180px;">
-                        <span class="badge bg-light text-dark border px-2.5 py-2 text-truncate d-inline-block" style="max-width: 170px;" id="activeFilterBadge" title="Tất cả giải đấu">Tất cả giải đấu</span>
+                        <span class="badge bg-light text-dark border active-filter-badge text-truncate" style="max-width: 170px;" id="activeFilterBadge" title="Tất cả giải đấu">Tất cả giải đấu</span>
                     </div>
-                    <button type="button" class="btn btn-outline-secondary border d-inline-flex align-items-center gap-1.5 px-3 flex-shrink-0" style="height: 40px; border-radius: 0.65rem; font-size: 0.88rem; font-weight: 600;" onclick="reloadAll()" title="Tải lại toàn bộ dữ liệu">
+                    <button type="button" class="btn btn-outline-secondary border d-inline-flex align-items-center gap-1.5 px-3 flex-shrink-0 filter-reload-btn" onclick="reloadAll()" title="Tải lại toàn bộ dữ liệu">
                         <i class="bi bi-arrow-clockwise"></i>
                         <span>Tải lại</span>
                     </button>
@@ -394,115 +531,8 @@
         </div>
     </div>
 
-    <!-- ==================== TAB 1: BẢNG TỔNG SẮP TOÀN GIẢI ==================== -->
-    <div id="tabContentOverall">
-        <!-- Thẻ Thống Kê Tổng Số Huy Chương -->
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="stat-badge-card stat-gold">
-                    <div class="text-warning fs-3 mb-1">🥇</div>
-                    <div class="fw-bold text-dark fs-3 lh-1" id="statGold">0</div>
-                    <div class="text-muted small fw-semibold mt-1">Huy chương Vàng</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stat-badge-card stat-silver">
-                    <div class="text-secondary fs-3 mb-1">🥈</div>
-                    <div class="fw-bold text-dark fs-3 lh-1" id="statSilver">0</div>
-                    <div class="text-muted small fw-semibold mt-1">Huy chương Bạc</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stat-badge-card stat-bronze">
-                    <div class="fs-3 mb-1" style="color: #b45309;">🥉</div>
-                    <div class="fw-bold text-dark fs-3 lh-1" id="statBronze">0</div>
-                    <div class="text-muted small fw-semibold mt-1">Huy chương Đồng</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stat-badge-card stat-total">
-                    <div class="text-primary fs-3 mb-1">🏆</div>
-                    <div class="fw-bold text-dark fs-3 lh-1" id="statTotal">0</div>
-                    <div class="text-muted small fw-semibold mt-1">Tổng huy chương</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Top 3 Podium Vinh Quang -->
-        <div class="mb-4">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i class="fa-solid fa-crown text-warning"></i>
-                <h5 class="fw-bold mb-0 text-dark">Top 3 Đơn Vị Dẫn Đầu</h5>
-            </div>
-            <div id="podiumContainer" class="row g-3 justify-content-center">
-                <!-- Render bằng JS -->
-            </div>
-        </div>
-
-        <!-- Bảng Tổng Sắp Chi Tiết -->
-        <div class="medal-table-card mb-5">
-            <div class="p-3 border-bottom bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-ranking-star text-primary fs-5"></i>
-                    <h6 class="fw-bold mb-0 text-dark">Chi Tiết Bảng Xếp Hạng Đoàn Thể Thao</h6>
-                    <span class="badge rounded-pill bg-light text-secondary border ms-1" id="unitCountBadge">0 đơn vị</span>
-                </div>
-
-                <div class="d-flex align-items-center gap-2">
-                    <div class="search-input-group" style="min-width: 260px;">
-                        <i class="bi bi-search"></i>
-                        <input type="text" id="searchInput" placeholder="Tìm tên đơn vị hoặc mã đoàn..." oninput="handleSearch(this.value)">
-                    </div>
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="mainMedalTable">
-                    <thead class="table-light text-uppercase small text-muted">
-                        <tr>
-                            <th class="text-center py-3" style="width: 80px;">Hạng</th>
-                            <th class="py-3">Đơn vị / Đoàn thể thao</th>
-                            <th class="text-center py-3 text-warning" style="width: 120px;">
-                                <i class="fa-solid fa-medal"></i> Vàng
-                            </th>
-                            <th class="text-center py-3 text-secondary" style="width: 120px;">
-                                <i class="fa-solid fa-medal"></i> Bạc
-                            </th>
-                            <th class="text-center py-3" style="width: 120px; color: #b45309;">
-                                <i class="fa-solid fa-medal"></i> Đồng
-                            </th>
-                            <th class="text-center py-3 text-primary" style="width: 130px;">
-                                <i class="fa-solid fa-trophy"></i> Tổng số
-                            </th>
-                            <th class="text-center py-3 text-dark" style="width: 110px;" title="Điểm quy đổi: Vàng 3đ, Bạc 2đ, Đồng 1đ">
-                                Điểm
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody id="medalTbody">
-                        <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
-                                <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
-                                Đang tải bảng xếp hạng huy chương...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="p-3 bg-light border-top text-muted small d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div>
-                    <i class="fa-solid fa-circle-info text-primary me-1"></i>
-                    Quy tắc xếp hạng: Ưu tiên số HCV > HCB > HCĐ > Tổng số huy chương > Tên đơn vị.
-                </div>
-                <div class="fw-semibold text-dark" id="reportDateText">
-                    Cập nhật mới nhất
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== TAB 2: THEO DANH MỤC MÔN THỂ THAO ==================== -->
-    <div id="tabContentCategory" class="d-none mb-5">
+    <!-- ==================== TAB 1: THEO DANH MỤC MÔN THỂ THAO ==================== -->
+    <div id="tabContentCategory" class="mb-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h5 class="fw-bold mb-1 text-dark">Bảng Xếp Hạng Huy Chương Theo Danh Mục Môn Thể Thao</h5>
@@ -515,7 +545,7 @@
         </div>
     </div>
 
-    <!-- ==================== TAB 3: THEO MÔN THỂ THAO ==================== -->
+    <!-- ==================== TAB 2: THEO MÔN THỂ THAO ==================== -->
     <div id="tabContentSport" class="d-none mb-5">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
             <div>
@@ -535,18 +565,38 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/bang-xep-hang.mock.js" asp-append-version="true"></script>
     <script>
         let currentGiaiDauId = @selectedGiaiDauId;
         let currentDanhMucId = @selectedDanhMucId;
         let currentMonTheThaoId = @selectedMonTheThaoId;
 
-        let activeTab = 'overall'; // 'overall' | 'category' | 'sport'
+        let activeTab = 'category'; // 'category' | 'sport'
+        // Dùng riêng cho các hàm bảng tổng sắp cũ còn được giữ để tương thích nội bộ.
         let medalList = [];
         let searchKeyword = '';
 
         let categoryRankingsData = [];
         let sportRankingsData = [];
         let sportSearchKeyword = '';
+
+        function setMockFallbackNotice(isVisible) {
+            $('#mockFallbackNotice').toggleClass('d-none', !isVisible);
+        }
+
+        function renderMockOverall(data) {
+            medalList = data.bangXepHang || [];
+            $('#statGold').text(data.tongSoHuyChuongVang ?? 0);
+            $('#statSilver').text(data.tongSoHuyChuongBac ?? 0);
+            $('#statBronze').text(data.tongSoHuyChuongDong ?? 0);
+            $('#statTotal').text(data.tongSoHuyChuongDaTrao ?? 0);
+            $('#unitCountBadge').text(`${medalList.length} đơn vị • MẪU`);
+            $('#reportDateText').text('Dữ liệu mẫu do API chưa có');
+            $('#searchInput').val('');
+            searchKeyword = '';
+            renderPodium(medalList);
+            renderTable(medalList);
+        }
 
         $(document).ready(function () {
             // Đọc query parameters nếu có
@@ -563,21 +613,16 @@
             $('#selectTournament').val(currentGiaiDauId > 0 ? currentGiaiDauId : "");
             $('#selectCategory').val(currentDanhMucId > 0 ? currentDanhMucId : "");
 
-            // Nạp danh sách môn tương ứng và sau đó tải dữ liệu
-            loadSportsDropdown(currentDanhMucId, currentGiaiDauId, currentMonTheThaoId, function () {
-                if (qTab && (qTab === 'category' || qTab === 'sport' || qTab === 'overall')) {
-                    switchViewTab(qTab);
-                } else {
-                    loadOverallRankings();
-                }
-            });
+            switchViewTab(qTab === 'sport' ? 'sport' : 'category');
         });
 
         // ==================== QUẢN LÝ BỘ LỌC ====================
         function onTournamentChange(val) {
             currentGiaiDauId = val ? parseInt(val) : 0;
+            currentMonTheThaoId = 0;
             updateFilterBadge();
             loadSportsDropdown(currentDanhMucId, currentGiaiDauId, 0, function () {
+                updateFilterBadge();
                 refreshActiveTabData();
             });
         }
@@ -587,6 +632,7 @@
             currentMonTheThaoId = 0; // Đặt lại môn khi đổi danh mục
             updateFilterBadge();
             loadSportsDropdown(currentDanhMucId, currentGiaiDauId, 0, function () {
+                updateFilterBadge();
                 refreshActiveTabData();
             });
         }
@@ -599,14 +645,13 @@
 
         function reloadAll() {
             loadSportsDropdown(currentDanhMucId, currentGiaiDauId, currentMonTheThaoId, function () {
+                updateFilterBadge();
                 refreshActiveTabData();
             });
         }
 
         function refreshActiveTabData() {
-            if (activeTab === 'overall') {
-                loadOverallRankings();
-            } else if (activeTab === 'category') {
+            if (activeTab === 'category') {
                 loadCategoryRankings();
             } else if (activeTab === 'sport') {
                 loadSportRankings();
@@ -623,7 +668,7 @@
             else parts.push('Tất cả giải');
 
             if (currentDanhMucId > 0) parts.push(catText);
-            if (currentMonTheThaoId > 0) parts.push(sportText);
+            if (activeTab === 'sport' && currentMonTheThaoId > 0) parts.push(sportText);
 
             $('#activeFilterBadge').text(parts.join(' • '));
         }
@@ -654,30 +699,33 @@
 
         // ==================== CHUYỂN ĐỔI TAB CHẾ ĐỘ XEM ====================
         function switchViewTab(tab) {
-            activeTab = tab;
+            activeTab = tab === 'sport' ? 'sport' : 'category';
             $('.view-mode-btn').removeClass('active');
 
-            $('#tabContentOverall').addClass('d-none');
             $('#tabContentCategory').addClass('d-none');
             $('#tabContentSport').addClass('d-none');
+            $('#categoryFilterGroup').toggleClass('d-none', activeTab !== 'category');
+            $('#sportFilterGroup').toggleClass('d-none', activeTab !== 'sport');
+            updateFilterBadge();
 
-            if (tab === 'overall') {
-                $('#tabBtnOverall').addClass('active');
-                $('#tabContentOverall').removeClass('d-none');
-                loadOverallRankings();
-            } else if (tab === 'category') {
+            if (activeTab === 'category') {
                 $('#tabBtnCategory').addClass('active');
                 $('#tabContentCategory').removeClass('d-none');
                 loadCategoryRankings();
-            } else if (tab === 'sport') {
+            } else {
                 $('#tabBtnSport').addClass('active');
                 $('#tabContentSport').removeClass('d-none');
-                loadSportRankings();
+                loadSportsDropdown(currentDanhMucId, currentGiaiDauId, currentMonTheThaoId, function () {
+                    updateFilterBadge();
+                    loadSportRankings();
+                });
             }
         }
 
         // ==================== TAB 1: BẢNG TỔNG SẮP TOÀN GIẢI ====================
         function loadOverallRankings() {
+            setMockFallbackNotice(false);
+
             $('#medalTbody').html(`
                 <tr>
                     <td colspan="7" class="text-center py-5 text-muted">
@@ -693,8 +741,15 @@
             if (currentMonTheThaoId > 0) url += `monTheThaoId=${currentMonTheThaoId}&`;
 
             $.get(url, function (res) {
-                if (res && res.success && res.data) {
+                if (res && res.success) {
                     const data = res.data;
+                    const apiRankings = data && data.bangXepHang;
+                    if (!Array.isArray(apiRankings) || apiRankings.length === 0) {
+                        setMockFallbackNotice(true);
+                        renderMockOverall(window.BangXepHangMockData.overall);
+                        return;
+                    }
+
                     medalList = data.bangXepHang || [];
 
                     $('#statGold').text(data.tongSoHuyChuongVang ?? 0);
@@ -705,15 +760,22 @@
                     $('#unitCountBadge').text(`${medalList.length} đơn vị`);
                     if (data.ngayXuatBaoCao) {
                         $('#reportDateText').text(`Thời điểm xuất: ${formatDateTime(data.ngayXuatBaoCao)}`);
+                    } else {
+                        $('#reportDateText').text('Cập nhật mới nhất');
                     }
 
                     renderPodium(medalList);
                     renderTable(medalList);
+                } else if (res && res.success === false) {
+                    setMockFallbackNotice(false);
+                    showOverallError(res.message);
                 } else {
+                    setMockFallbackNotice(false);
                     showOverallEmpty();
                 }
             }).fail(function () {
-                showOverallEmpty();
+                setMockFallbackNotice(false);
+                showOverallError('Không thể kết nối để tải bảng xếp hạng.');
             });
         }
 
@@ -774,7 +836,7 @@
             if (top1) {
                 html += `
                     <div class="col-md-4 col-sm-12 order-1 order-md-2">
-                        <div class="podium-card podium-gold shadow-lg" style="transform: scale(1.03); z-index: 2;">
+                        <div class="podium-card podium-gold shadow-lg">
                             <div>
                                 <div class="podium-rank-badge badge-gold-circle">
                                     <i class="fa-solid fa-crown"></i>
@@ -873,6 +935,7 @@
             let html = '';
             list.forEach((item, index) => {
                 const rank = item.xepHang || (index + 1);
+                const rankRowClass = rank === 1 ? 'rank-row-gold' : rank === 2 ? 'rank-row-silver' : rank === 3 ? 'rank-row-bronze' : '';
                 let rankDisplay = '';
 
                 if (rank === 1) {
@@ -888,7 +951,7 @@
                 const initial = (item.tenDonVi || 'Đ').substring(0, 1).toUpperCase();
 
                 html += `
-                    <tr>
+                    <tr class="${rankRowClass}">
                         <td class="text-center">${rankDisplay}</td>
                         <td>
                             <div class="d-flex align-items-center gap-2.5">
@@ -927,6 +990,7 @@
             $('#statBronze').text('0');
             $('#statTotal').text('0');
             $('#unitCountBadge').text('0 đơn vị');
+            $('#reportDateText').text('Cập nhật mới nhất');
             $('#podiumContainer').html(`
                 <div class="col-12 text-center py-4 text-muted small">
                     Chưa có huy chương nào được trao theo tiêu chí đang chọn.
@@ -943,8 +1007,28 @@
             `);
         }
 
-        // ==================== TAB 2: THEO DANH MỤC MÔN THỂ THAO ====================
+        function showOverallError(message) {
+            $('#statGold, #statSilver, #statBronze, #statTotal').text('0');
+            $('#unitCountBadge').text('Không tải được dữ liệu');
+            $('#reportDateText').text('Lỗi tải dữ liệu');
+            $('#podiumContainer').html(`
+                <div class="col-12 text-center py-4 text-danger small">
+                    ${escapeHtml(message || 'Không thể tải bảng xếp hạng từ API.')}
+                </div>
+            `);
+            $('#medalTbody').html(`
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-danger">
+                        ${escapeHtml(message || 'Không thể tải bảng xếp hạng từ API.')}
+                    </td>
+                </tr>
+            `);
+        }
+
+        // ==================== TAB 1: THEO DANH MỤC MÔN THỂ THAO ====================
         function loadCategoryRankings() {
+            setMockFallbackNotice(false);
+
             $('#categoryRankingsContainer').html(`
                 <div class="col-12 text-center py-5 text-muted">
                     <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
@@ -956,25 +1040,39 @@
             if (currentGiaiDauId > 0) url += `giaiDauId=${currentGiaiDauId}`;
 
             $.get(url, function (res) {
-                if (res && res.success && Array.isArray(res.data)) {
-                    categoryRankingsData = res.data;
-                    $('#badgeCountCategories').text(categoryRankingsData.length);
-                    renderCategoryRankings(categoryRankingsData);
+                if (res && res.success) {
+                    categoryRankingsData = Array.isArray(res.data) && res.data.length > 0
+                        ? window.BangXepHangMockData.fillEmptyCategories(res.data)
+                        : window.BangXepHangMockData.getFallbackCategories();
+                    setMockFallbackNotice(categoryRankingsData.some(item => item._isMockFallback));
+                    const visibleCategories = getVisibleCategoryRankings();
+                    $('#badgeCountCategories').text(visibleCategories.length);
+                    renderCategoryRankings(visibleCategories);
                 } else {
+                    setMockFallbackNotice(false);
                     $('#categoryRankingsContainer').html(`
-                        <div class="col-12 text-center py-5 text-muted">
-                            <i class="fa-solid fa-folder-open fa-3x mb-3 text-secondary opacity-50"></i>
-                            <h6 class="fw-bold text-secondary">Chưa có danh mục môn thi đấu nào</h6>
+                        <div class="col-12 text-center py-5 text-danger">
+                            ${escapeHtml(res && res.message ? res.message : 'API không tải được bảng xếp hạng theo danh mục.')}
                         </div>
                     `);
                 }
             }).fail(function () {
+                setMockFallbackNotice(false);
                 $('#categoryRankingsContainer').html(`
                     <div class="col-12 text-center py-5 text-danger">
                         Có lỗi xảy ra khi tải bảng xếp hạng theo danh mục môn thể thao.
                     </div>
                 `);
             });
+        }
+
+        function getVisibleCategoryRankings() {
+            if (currentDanhMucId <= 0) return categoryRankingsData;
+
+            const selectedCategory = categoryRankingsData.filter(item => Number(item.danhMucId) === currentDanhMucId);
+            if (selectedCategory.length > 0) return selectedCategory;
+
+            return categoryRankingsData.every(item => item._isMockFallback) ? categoryRankingsData : [];
         }
 
         function renderCategoryRankings(list) {
@@ -990,6 +1088,7 @@
 
             let html = '';
             list.forEach(item => {
+                const mockDisabledAttr = item._isMockFallback ? 'disabled' : '';
                 const rankingList = item.bangXepHang || [];
                 let rowsHtml = '';
 
@@ -1057,10 +1156,11 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="p-2.5 bg-light border-top d-flex justify-content-between align-items-center">
+                            <div class="category-ranking-footer bg-light border-top d-flex justify-content-between align-items-center">
                                 <span class="small text-muted" style="font-size:0.75rem;">Tổng số: ${item.tongHuyChuong} huy chương</span>
-                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill py-0 px-2.5" style="font-size:0.78rem;" onclick="filterDirectToCategory(${item.danhMucId})">
-                                    <i class="fa-solid fa-arrow-right me-1"></i> Xem bảng tổng sắp
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill ranking-footer-action" aria-label="Xem các môn thi đấu trong danh mục" title="${item._isMockFallback ? 'Không thể lọc từ dữ liệu minh họa' : 'Xem các môn thi đấu trong danh mục'}" ${mockDisabledAttr} onclick="filterDirectToCategory(${item.danhMucId})">
+                                    <span class="ranking-footer-action-label">Xem các môn</span>
+                                    <i class="fa-solid fa-arrow-right"></i>
                                 </button>
                             </div>
                         </div>
@@ -1076,13 +1176,13 @@
             currentDanhMucId = dmId;
             currentMonTheThaoId = 0;
             updateFilterBadge();
-            loadSportsDropdown(currentDanhMucId, currentGiaiDauId, 0, function () {
-                switchViewTab('overall');
-            });
+            switchViewTab('sport');
         }
 
-        // ==================== TAB 3: THEO MÔN THỂ THAO ====================
+        // ==================== TAB 2: THEO MÔN THỂ THAO ====================
         function loadSportRankings() {
+            setMockFallbackNotice(false);
+
             $('#sportRankingsContainer').html(`
                 <div class="col-12 text-center py-5 text-muted">
                     <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
@@ -1095,19 +1195,24 @@
             if (currentDanhMucId > 0) url += `danhMucId=${currentDanhMucId}`;
 
             $.get(url, function (res) {
-                if (res && res.success && Array.isArray(res.data)) {
-                    sportRankingsData = res.data;
-                    $('#badgeCountSports').text(sportRankingsData.length);
-                    renderSportRankings(sportRankingsData);
+                if (res && res.success) {
+                    sportRankingsData = Array.isArray(res.data) && res.data.length > 0
+                        ? window.BangXepHangMockData.fillEmptySports(res.data)
+                        : window.BangXepHangMockData.getFallbackSports();
+                    setMockFallbackNotice(sportRankingsData.some(item => item._isMockFallback));
+                    const visibleRankings = getVisibleSportRankings();
+                    $('#badgeCountSports').text(visibleRankings.length);
+                    renderSportRankings(visibleRankings);
                 } else {
+                    setMockFallbackNotice(false);
                     $('#sportRankingsContainer').html(`
-                        <div class="col-12 text-center py-5 text-muted">
-                            <i class="fa-solid fa-medal fa-3x mb-3 text-secondary opacity-50"></i>
-                            <h6 class="fw-bold text-secondary">Chưa có môn thi đấu nào</h6>
+                        <div class="col-12 text-center py-5 text-danger">
+                            ${escapeHtml(res && res.message ? res.message : 'API không tải được bảng xếp hạng theo môn thi đấu.')}
                         </div>
                     `);
                 }
             }).fail(function () {
+                setMockFallbackNotice(false);
                 $('#sportRankingsContainer').html(`
                     <div class="col-12 text-center py-5 text-danger">
                         Có lỗi xảy ra khi tải bảng xếp hạng theo môn thể thao.
@@ -1118,13 +1223,22 @@
 
         function handleSportFilterSearch(val) {
             sportSearchKeyword = (val || '').trim().toLowerCase();
-            const filtered = sportRankingsData.filter(s => {
+            const filtered = getVisibleSportRankings().filter(s => {
                 const name = (s.tenMon || '').toLowerCase();
                 const code = (s.maMon || '').toLowerCase();
                 const cat = (s.tenDanhMuc || '').toLowerCase();
                 return name.includes(sportSearchKeyword) || code.includes(sportSearchKeyword) || cat.includes(sportSearchKeyword);
             });
             renderSportRankings(filtered);
+        }
+
+        function getVisibleSportRankings() {
+            if (currentMonTheThaoId <= 0) return sportRankingsData;
+
+            const selectedSport = sportRankingsData.filter(item => Number(item.monTheThaoId) === currentMonTheThaoId);
+            if (selectedSport.length > 0) return selectedSport;
+
+            return sportRankingsData.every(item => item._isMockFallback) ? sportRankingsData : [];
         }
 
         function renderSportRankings(list) {
@@ -1140,32 +1254,37 @@
 
             let html = '';
             list.forEach(item => {
-                const rankingList = item.bangXepHang || [];
+                const mockDisabledAttr = item._isMockFallback ? 'disabled' : '';
+                const isTeamSport = item.laMonDongDoi !== false;
+                const resultList = item.ketQua || [];
                 let rowsHtml = '';
 
-                if (rankingList.length === 0) {
+                if (resultList.length === 0) {
                     rowsHtml = `
                         <tr>
-                            <td colspan="6" class="text-center py-3 text-muted small">
-                                Chưa có đơn vị nào nhận huy chương ở môn này.
+                            <td colspan="4" class="text-center py-3 text-muted small">
+                                Chưa có kết quả trao huy chương cho môn này.
                             </td>
                         </tr>
                     `;
                 } else {
-                    rankingList.forEach((r, idx) => {
+                    resultList.forEach((r, idx) => {
                         const rankNum = r.xepHang || (idx + 1);
-                        let rankBadge = rankNum === 1 ? '🥇' : rankNum === 2 ? '🥈' : rankNum === 3 ? '🥉' : rankNum;
+                        const rankBadge = rankNum === 1 ? '🥇' : rankNum === 2 ? '🥈' : rankNum === 3 ? '🥉' : rankNum;
+                        const name = isTeamSport ? (r.tenDoi || 'Đội') : (r.tenVanDongVien || 'VĐV');
+                        const code = isTeamSport ? r.maDoi : r.maVanDongVien;
+                        const medalClass = rankNum === 1 ? 'bg-warning text-dark' : rankNum === 2 ? 'bg-secondary text-white' : 'text-white';
+                        const medalStyle = rankNum === 3 ? 'background:#b45309;' : '';
+                        const detail = code ? `<div class="text-muted small" style="font-size:0.75rem;">${escapeHtml(code)}</div>` : '';
                         rowsHtml += `
                             <tr>
-                                <td class="text-center fw-bold" style="width: 40px;">${rankBadge}</td>
+                                <td class="text-center fw-bold" style="width: 70px;">${rankBadge}</td>
                                 <td>
-                                    <div class="fw-bold text-dark text-truncate" style="max-width: 220px;" title="${escapeHtml(r.tenDonVi)}">${escapeHtml(r.tenDonVi)}</div>
-                                    ${r.maDonVi ? `<div class="text-muted small" style="font-size:0.75rem;">${escapeHtml(r.maDonVi)}</div>` : ''}
+                                    <div class="fw-bold text-dark text-truncate" style="max-width: 220px;" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
+                                    ${detail}
                                 </td>
-                                <td class="text-center"><span class="badge bg-warning bg-opacity-10 text-dark fw-bold border border-warning-subtle">${r.soHuyChuongVang}</span></td>
-                                <td class="text-center"><span class="badge bg-secondary bg-opacity-10 text-secondary fw-bold border">${r.soHuyChuongBac}</span></td>
-                                <td class="text-center"><span class="badge text-white fw-bold" style="background:#c2410c;">${r.soHuyChuongDong}</span></td>
-                                <td class="text-center fw-bold text-primary">${r.tongSoHuyChuong}</td>
+                                <td class="small text-muted">${escapeHtml(r.tenDonVi || '—')}</td>
+                                <td class="text-center"><span class="badge ${medalClass}" style="${medalStyle}">${escapeHtml(r.tenLoaiHuyChuong || 'Huy chương')}</span></td>
                             </tr>
                         `;
                     });
@@ -1182,24 +1301,19 @@
                                     <div>
                                         <h6 class="fw-bold mb-0 text-dark text-truncate" style="max-width: 170px;" title="${escapeHtml(item.tenMon)}">${escapeHtml(item.tenMon)}</h6>
                                         <span class="badge bg-light text-secondary border small py-0.5" style="font-size: 0.7rem;">${escapeHtml(item.tenDanhMuc)}</span>
+                                        <span class="badge ${isTeamSport ? 'bg-primary-subtle text-primary' : 'bg-success-subtle text-success'} small py-0.5" style="font-size: 0.7rem;">${isTeamSport ? 'Đồng đội' : 'Cá nhân'}</span>
+                                        <div class="text-muted small mt-1" style="font-size:0.72rem;">${escapeHtml(item.tenGiaiDau || '')}</div>
                                     </div>
-                                </div>
-                                <div class="d-flex align-items-center gap-1">
-                                    <span class="badge bg-warning text-dark" title="Vàng">🥇 ${item.tongHuyChuongVang}</span>
-                                    <span class="badge bg-secondary text-white" title="Bạc">🥈 ${item.tongHuyChuongBac}</span>
-                                    <span class="badge text-white" style="background:#b45309;" title="Đồng">🥉 ${item.tongHuyChuongDong}</span>
                                 </div>
                             </div>
                             <div class="table-responsive flex-grow-1">
                                 <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
                                     <thead class="table-light text-muted small">
                                         <tr>
-                                            <th class="text-center">#</th>
+                                            <th class="text-center">Hạng</th>
+                                            <th>${isTeamSport ? 'Đội đạt giải' : 'Vận động viên đạt giải'}</th>
                                             <th>Đơn vị</th>
-                                            <th class="text-center text-warning">V</th>
-                                            <th class="text-center text-secondary">B</th>
-                                            <th class="text-center" style="color:#b45309;">Đ</th>
-                                            <th class="text-center text-primary">Tổng</th>
+                                            <th class="text-center">Huy chương</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1208,8 +1322,8 @@
                                 </table>
                             </div>
                             <div class="p-2 bg-light border-top d-flex justify-content-between align-items-center">
-                                <span class="small text-muted" style="font-size:0.75rem;">Đã trao: ${item.tongHuyChuong} HC</span>
-                                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill py-0 px-2.5" style="font-size:0.75rem; border-color:#ea580c; color:#ea580c;" onclick="filterDirectToSport(${item.monTheThaoId}, ${item.danhMucId})">
+                                <span class="small text-muted" style="font-size:0.75rem;">${item.tongHuyChuong} kết quả huy chương</span>
+                                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill py-0 px-2.5" style="font-size:0.75rem; border-color:#ea580c; color:#ea580c;" title="${item._isMockFallback ? 'Không thể lọc từ dữ liệu minh họa' : 'Lọc môn này'}" ${mockDisabledAttr} onclick="filterDirectToSport(${item.monTheThaoId}, ${item.danhMucId})">
                                     <i class="fa-solid fa-filter me-1"></i> Lọc môn này
                                 </button>
                             </div>
@@ -1226,12 +1340,9 @@
                 $('#selectCategory').val(dmId);
                 currentDanhMucId = dmId;
             }
-            loadSportsDropdown(currentDanhMucId, currentGiaiDauId, monId, function () {
-                $('#selectSport').val(monId);
-                currentMonTheThaoId = monId;
-                updateFilterBadge();
-                switchViewTab('overall');
-            });
+            currentMonTheThaoId = monId;
+            updateFilterBadge();
+            switchViewTab('sport');
         }
 
         // ==================== TIỆN ÍCH DÙNG CHUNG ====================

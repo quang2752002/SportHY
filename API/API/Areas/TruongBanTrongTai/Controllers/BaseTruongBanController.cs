@@ -4,11 +4,12 @@ using Dms.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace API.Areas.TruongBanTrongTai.Controllers
 {
     [Area("TruongBanTrongTai")]
-    [Authorize(Roles = "HeadReferee,Admin,Manager")]
+    [Authorize]
     public abstract class BaseTruongBanController : Controller
     {
         protected readonly ITruongBanTrongTaiService _truongBanService;
@@ -30,10 +31,56 @@ namespace API.Areas.TruongBanTrongTai.Controllers
 
         protected async Task<List<GiaiDau>> GetManagedTournamentsAsync()
         {
-            bool isAdminOrManager = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager);
+            bool isAdminOrManager = IsAdminOrManager();
             var currentReferee = await GetCurrentRefereeAsync();
 
             return await _truongBanService.GetManagedTournamentsAsync(currentReferee?.Id, isAdminOrManager);
+        }
+
+        protected bool IsAdminOrManager()
+        {
+            return User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager);
+        }
+
+        protected async Task<bool> CanManageTournamentAsync(int giaiDauId)
+        {
+            if (IsAdminOrManager()) return true;
+            var managedTournaments = await GetManagedTournamentsAsync();
+            return managedTournaments.Any(tournament => tournament.Id == giaiDauId);
+        }
+
+        protected async Task<bool> CanManageAnyTournamentAsync()
+        {
+            return IsAdminOrManager() || (await GetManagedTournamentsAsync()).Count > 0;
+        }
+
+        public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        {
+            if (IsAdminOrManager())
+            {
+                await next();
+                return;
+            }
+
+            var managedTournaments = await GetManagedTournamentsAsync();
+            ViewBag.ManagedTournaments = managedTournaments;
+            ViewBag.HasManagedTournament = managedTournaments.Count > 0;
+
+            if (managedTournaments.Count == 0 && !User.IsInRole(AppRoles.HeadReferee))
+            {
+                context.Result = Forbid();
+                return;
+            }
+
+            if (context.ActionArguments.TryGetValue("giaiDauId", out var requestedTournament) &&
+                requestedTournament is int requestedTournamentId &&
+                managedTournaments.All(tournament => tournament.Id != requestedTournamentId))
+            {
+                context.Result = Forbid();
+                return;
+            }
+
+            await next();
         }
 
         protected int? GetSelectedTournamentId(int? requestGiaiDauId, List<GiaiDau> managedTournaments)

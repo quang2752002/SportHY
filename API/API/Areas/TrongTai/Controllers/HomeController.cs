@@ -33,8 +33,9 @@ namespace API.Areas.TrongTai.Controllers
             ITranDauService tranDauService,
             IGiaiDauService giaiDauService,
             ISanDauService sanDauService,
-            IMonTheThaoService monTheThaoService)
-            : base(userManager, trongTaiService, tranDauService)
+            IMonTheThaoService monTheThaoService,
+            ITruongBanTrongTaiService refereeAccessService)
+            : base(userManager, trongTaiService, refereeAccessService, tranDauService)
         {
             _giaiDauService = giaiDauService;
             _sanDauService = sanDauService;
@@ -47,20 +48,14 @@ namespace API.Areas.TrongTai.Controllers
             var currentRef = await GetCurrentRefereeAsync();
             var canBrowseAll = CanBrowseAllMatches();
             var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
-            var assignedMatches = currentRef == null
-                ? new List<TranDauDto>()
-                : (await _tranDauService.GetAccessibleMatchesAsync(null, currentRef.Id, false))?.ToList() ?? new();
-            var assignedTournamentIds = assignedMatches
-                .Where(match => match.GiaiDauId.HasValue)
-                .Select(match => match.GiaiDauId!.Value)
-                .ToHashSet();
+            var assignedTournamentIds = await GetAssignedTournamentIdsAsync(currentRef);
             var tournaments = canBrowseAll
                 ? allTournaments
                 : allTournaments.Where(tournament => assignedTournamentIds.Contains(tournament.Id)).ToList();
             ViewBag.Tournaments = tournaments;
 
             int? selectedGiaiDauId = giaiDauId;
-            if ((!selectedGiaiDauId.HasValue || !tournaments.Any(tournament => tournament.Id == selectedGiaiDauId.Value)) && tournaments.Count > 0)
+            if ((!selectedGiaiDauId.HasValue || tournaments.All(tournament => tournament.Id != selectedGiaiDauId.Value)) && tournaments.Count > 0)
             {
                 selectedGiaiDauId = tournaments[0].Id;
             }
@@ -68,10 +63,12 @@ namespace API.Areas.TrongTai.Controllers
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
             ViewBag.CanBrowseAllMatches = canBrowseAll;
 
-            var allMatches = (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentRef?.Id, canBrowseAll))?.ToList() ?? new();
-            var assignedMatchesForTournament = selectedGiaiDauId.HasValue
-                ? assignedMatches.Where(match => match.GiaiDauId == selectedGiaiDauId).ToList()
-                : assignedMatches;
+            var assignedMatchesForTournament = selectedGiaiDauId.HasValue && currentRef != null
+                ? (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentRef.Id, false))?.ToList() ?? new()
+                : new List<TranDauDto>();
+            var allMatches = canBrowseAll && selectedGiaiDauId.HasValue
+                ? (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentRef?.Id, true))?.ToList() ?? new()
+                : assignedMatchesForTournament;
             var selectedScope = canBrowseAll && filterScope == "my_matches" ? "my_matches" : (canBrowseAll ? "all" : "my_matches");
             var displayMatches = selectedScope == "all" ? allMatches : assignedMatchesForTournament;
 

@@ -1,0 +1,131 @@
+@model API.ViewComponents.PortalAccountMenuViewModel
+
+<div class="dropdown portal-account-menu">
+    <button class="btn btn-light border d-flex align-items-center gap-2 py-1 px-2 rounded-pill portal-account-menu__toggle"
+            type="button"
+            data-bs-toggle="dropdown"
+            data-bs-display="static"
+            aria-expanded="false">
+        <span class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0 portal-account-menu__avatar">
+            <i class="fa-solid fa-user"></i>
+        </span>
+        <span class="text-start lh-sm text-truncate portal-account-menu__identity">
+            <span class="fw-semibold text-dark d-block text-truncate">@Model.UserName</span>
+        </span>
+    </button>
+
+    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-0 overflow-hidden portal-account-menu__dropdown">
+        <li class="px-3 py-2 bg-light border-bottom">
+            <div class="small text-muted">Đang đăng nhập:</div>
+            <div class="fw-semibold text-dark text-break">@Model.UserName</div>
+            <div class="small text-primary mt-1 text-break">@(string.IsNullOrWhiteSpace(Model.LinkedName) ? Model.PortalLabel : Model.LinkedName)</div>
+        </li>
+
+        <li>
+            <a class="dropdown-item py-2" href="/Account/Profile">
+                <i class="fa-regular fa-id-badge me-2 text-secondary portal-account-menu__item-icon"></i> Hồ sơ cá nhân
+            </a>
+        </li>
+
+        @foreach (var task in Model.TaskLinks)
+        {
+            <li>
+                <a class="dropdown-item py-2" href="@task.Url">
+                    <i class="@task.Icon @task.IconClass me-2 portal-account-menu__item-icon"></i> @task.Label
+                </a>
+            </li>
+        }
+
+        @await Component.InvokeAsync("PortalLinks", new { currentArea = Model.CurrentArea })
+
+        <li><hr class="dropdown-divider my-1"></li>
+        <li>
+            <a class="dropdown-item py-2 text-danger" href="/Account/Logout">
+                <i class="fa-solid fa-arrow-right-from-bracket me-2 portal-account-menu__item-icon"></i> Đăng xuất
+            </a>
+        </li>
+    </ul>
+</div>
+
+<style>
+    .portal-account-menu {
+        position: relative;
+        width: max-content;
+        max-width: calc(100vw - 24px);
+    }
+
+    .portal-account-menu::before {
+        content: "";
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        width: 280px;
+        height: .5rem;
+    }
+
+    .portal-account-menu__toggle {
+        min-height: 38px;
+        min-width: 0;
+        max-width: calc(100vw - 24px);
+    }
+
+    .portal-account-menu__avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+    }
+
+    .portal-account-menu__identity {
+        min-width: 0;
+        max-width: 180px;
+    }
+
+    .portal-account-menu__identity > span {
+        font-size: 13px;
+    }
+
+    .portal-account-menu__dropdown {
+        top: 100% !important;
+        right: 0 !important;
+        left: auto !important;
+        width: 280px;
+        min-width: min(280px, calc(100vw - 24px));
+        max-width: calc(100vw - 24px);
+        max-height: calc(100vh - 16px);
+        margin: .5rem 0 0;
+        transform: none !important;
+        overflow-y: auto !important;
+    }
+
+    .portal-account-menu__dropdown .dropdown-item {
+        display: flex;
+        align-items: flex-start;
+        white-space: normal;
+        line-height: 1.35;
+    }
+
+    .portal-account-menu__dropdown .dropdown-item > i {
+        flex: 0 0 18px;
+        margin-right: .5rem !important;
+        margin-top: .1rem;
+    }
+
+    .portal-account-menu__item-icon {
+        width: 18px;
+        text-align: center;
+    }
+
+    @@media (hover: hover) and (pointer: fine) {
+        .portal-account-menu:hover::before,
+        .portal-account-menu:focus-within::before {
+            display: block;
+        }
+
+        .portal-account-menu:hover > .portal-account-menu__dropdown,
+        .portal-account-menu:focus-within > .portal-account-menu__dropdown {
+            display: block;
+        }
+    }
+
+</style>

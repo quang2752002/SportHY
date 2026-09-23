@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,21 +14,42 @@ using System.Threading.Tasks;
 namespace API.Areas.TrongTai.Controllers
 {
     [Area("TrongTai")]
-    [Authorize(Roles = AppRoles.Referee + "," + AppRoles.HeadReferee + "," + AppRoles.Secretary + "," + AppRoles.Admin + "," + AppRoles.Manager)]
+    [Authorize]
     public abstract class BaseTrongTaiController : Controller
     {
         protected readonly UserManager<ApplicationUser> _userManager;
         protected readonly ITrongTaiService _trongTaiService;
+        protected readonly ITruongBanTrongTaiService _refereeAccessService;
         protected readonly ITranDauService _tranDauService;
 
         public BaseTrongTaiController(
             UserManager<ApplicationUser> userManager,
             ITrongTaiService trongTaiService,
+            ITruongBanTrongTaiService refereeAccessService,
             ITranDauService tranDauService)
         {
             _userManager = userManager;
             _trongTaiService = trongTaiService;
+            _refereeAccessService = refereeAccessService;
             _tranDauService = tranDauService;
+        }
+
+        public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        {
+            if (CanBrowseAllMatches() || User.IsInRole(AppRoles.Secretary))
+            {
+                await next();
+                return;
+            }
+
+            var referee = await GetCurrentRefereeAsync();
+            if (referee == null || !(await _refereeAccessService.GetRefereeTournamentIdsAsync(referee.Id)).Any())
+            {
+                context.Result = Forbid();
+                return;
+            }
+
+            await next();
         }
 
         /// <summary>
@@ -36,9 +58,10 @@ namespace API.Areas.TrongTai.Controllers
         protected async Task<TrongTaiDto?> GetCurrentRefereeAsync(int? overrideRefereeId = null)
         {
             var allReferees = (await _trongTaiService.GetAllAsync())?.ToList() ?? new();
-            ViewBag.AllReferees = allReferees;
             bool canSwitch = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager);
             ViewBag.CanSwitchReferee = canSwitch;
+            ViewBag.AllReferees = canSwitch ? allReferees : new List<TrongTaiDto>();
+            ViewBag.CanBrowseAllMatches = CanBrowseAllMatches();
 
             int? targetId = null;
 
@@ -67,7 +90,10 @@ namespace API.Areas.TrongTai.Controllers
                 else if (user != null)
                 {
                     var match = allReferees.FirstOrDefault(r =>
-                        !string.IsNullOrEmpty(user.UserName) && string.Equals(r.Ma, user.UserName, StringComparison.OrdinalIgnoreCase));
+                        (!string.IsNullOrWhiteSpace(user.UserName) && string.Equals(r.Ma, user.UserName, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(user.Email) &&
+                            (string.Equals(r.Email, user.Email, StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(r.Ma, user.Email, StringComparison.OrdinalIgnoreCase))));
 
                     if (match != null)
                     {
@@ -86,6 +112,15 @@ namespace API.Areas.TrongTai.Controllers
             return current;
         }
 
+        /// <summary>Lấy các giải còn hiệu lực có phân công cho trọng tài hiện tại.</summary>
+        /// <param name="referee">Hồ sơ trọng tài đang được sử dụng, có thể không tồn tại.</param>
+        /// <returns>Tập ID giải được phân công hoặc tập rỗng khi không có hồ sơ.</returns>
+        protected async Task<HashSet<int>> GetAssignedTournamentIdsAsync(TrongTaiDto? referee)
+        {
+            if (referee == null) return new HashSet<int>();
+            return (await _refereeAccessService.GetRefereeTournamentIdsAsync(referee.Id)).ToHashSet();
+        }
+
         /// <summary>
         /// Determines whether the current user may access a match. Referees must have an explicit assignment;
         /// administrators and managers can access all matches for support and oversight.
@@ -95,8 +130,10 @@ namespace API.Areas.TrongTai.Controllers
         protected async Task<bool> CanAccessMatchAsync(TranDauDto? match)
         {
             if (match == null) return false;
+            if (CanBrowseAllMatches()) return true;
             var currentReferee = await GetCurrentRefereeAsync();
-            return await _tranDauService.CanAccessMatchAsync(match.Id, currentReferee?.Id, CanBrowseAllMatches());
+            return currentReferee != null &&
+                await _refereeAccessService.IsRefereeAssignedToMatchAsync(currentReferee.Id, match.Id);
         }
 
         /// <summary>
