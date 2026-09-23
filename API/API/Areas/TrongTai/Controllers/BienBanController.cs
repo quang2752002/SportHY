@@ -31,8 +31,9 @@ namespace API.Areas.TrongTai.Controllers
             ITrongTaiService trongTaiService,
             ITranDauService tranDauService,
             IGiaiDauService giaiDauService,
-            IDangKyThiDauService dangKyThiDauService)
-            : base(userManager, trongTaiService)
+            IDangKyThiDauService dangKyThiDauService,
+            ITruongBanTrongTaiService refereeAccessService)
+            : base(userManager, trongTaiService, refereeAccessService)
         {
             _tranDauService = tranDauService;
             _giaiDauService = giaiDauService;
@@ -43,23 +44,34 @@ namespace API.Areas.TrongTai.Controllers
         public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null)
         {
             var currentRef = await GetCurrentRefereeAsync();
-            var tournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var assignedTournamentIds = await GetAssignedTournamentIdsAsync(currentRef);
+            var tournaments = CanViewAllTournamentMatches
+                ? allTournaments
+                : allTournaments.Where(tournament => assignedTournamentIds.Contains(tournament.Id)).ToList();
             ViewBag.Tournaments = tournaments;
 
             int? selectedGiaiDauId = giaiDauId;
-            if (!selectedGiaiDauId.HasValue && tournaments.Count > 0)
+            if ((!selectedGiaiDauId.HasValue || tournaments.All(tournament => tournament.Id != selectedGiaiDauId.Value)) && tournaments.Count > 0)
             {
                 selectedGiaiDauId = tournaments[0].Id;
             }
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
 
-            var matches = (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new();
+            var matches = selectedGiaiDauId.HasValue
+                ? (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new()
+                : new List<TranDauDto>();
+            if (!CanViewAllTournamentMatches && currentRef != null)
+            {
+                matches = matches.Where(match => match.DanhSachTrongTai?.Any(assignment => assignment.TrongTaiId == currentRef.Id) == true).ToList();
+            }
             ViewBag.Matches = matches;
 
             TranDauDto? currentMatch = null;
             if (tranDauId.HasValue)
             {
-                currentMatch = matches.FirstOrDefault(m => m.Id == tranDauId.Value) ?? await _tranDauService.GetByIdAsync(tranDauId.Value);
+                currentMatch = matches.FirstOrDefault(m => m.Id == tranDauId.Value);
+                if (currentMatch == null) return Forbid();
             }
             else if (matches.Count > 0)
             {
@@ -167,6 +179,8 @@ namespace API.Areas.TrongTai.Controllers
             {
                 return Json(new { success = false, message = "Vui lòng nhập họ tên người ký xác nhận." });
             }
+
+            if (!await CanAccessMatchAsync(dto.TranDauId)) return Forbid();
 
             var match = await _tranDauService.GetByIdAsync(dto.TranDauId);
             if (match == null)

@@ -34,8 +34,9 @@ namespace API.Areas.TrongTai.Controllers
             ITranDauService tranDauService,
             IGiaiDauService giaiDauService,
             ISanDauService sanDauService,
-            IMonTheThaoService monTheThaoService)
-            : base(userManager, trongTaiService)
+            IMonTheThaoService monTheThaoService,
+            ITruongBanTrongTaiService refereeAccessService)
+            : base(userManager, trongTaiService, refereeAccessService)
         {
             _tranDauService = tranDauService;
             _giaiDauService = giaiDauService;
@@ -47,46 +48,46 @@ namespace API.Areas.TrongTai.Controllers
         public async Task<IActionResult> Index(int? giaiDauId = null, string? filterScope = "my_matches")
         {
             var currentRef = await GetCurrentRefereeAsync();
-            var tournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var assignedTournamentIds = await GetAssignedTournamentIdsAsync(currentRef);
+            var tournaments = CanViewAllTournamentMatches
+                ? allTournaments
+                : allTournaments.Where(tournament => assignedTournamentIds.Contains(tournament.Id)).ToList();
             ViewBag.Tournaments = tournaments;
 
             int? selectedGiaiDauId = giaiDauId;
-            if (!selectedGiaiDauId.HasValue && tournaments.Count > 0)
+            if ((!selectedGiaiDauId.HasValue || tournaments.All(tournament => tournament.Id != selectedGiaiDauId.Value)) && tournaments.Count > 0)
             {
                 selectedGiaiDauId = tournaments[0].Id;
             }
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
-            ViewBag.FilterScope = filterScope ?? "my_matches";
+            ViewBag.CanViewAllTournamentMatches = CanViewAllTournamentMatches;
+            ViewBag.FilterScope = CanViewAllTournamentMatches ? (filterScope ?? "my_matches") : "my_matches";
 
-            var allMatches = (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new();
+            var allMatches = selectedGiaiDauId.HasValue
+                ? (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new()
+                : new List<TranDauDto>();
 
             bool IsAssigned(TranDauDto m)
             {
                 if (currentRef == null) return false;
-                if (m.DanhSachTrongTai != null && m.DanhSachTrongTai.Any(tt =>
-                    tt.TrongTaiId == currentRef.Id ||
-                    (!string.IsNullOrEmpty(tt.TenTrongTai) && tt.TenTrongTai.Contains(currentRef.HoTen, StringComparison.OrdinalIgnoreCase))))
-                {
-                    return true;
-                }
-                return false;
+                return m.DanhSachTrongTai?.Any(assignment => assignment.TrongTaiId == currentRef.Id) == true;
             }
 
-            ViewBag.AllMatchesCount = allMatches.Count;
-            ViewBag.MyAssignedCount = allMatches.Count(IsAssigned);
-            ViewBag.LiveMatchesCount = allMatches.Count(m => m.TrangThai == "DangDau" || m.TrangThai == "DangDienRa");
-            ViewBag.FinishedCount = allMatches.Count(m => m.TrangThai == "KetThuc" || m.TrangThai == "DaKetThuc");
-            ViewBag.UpcomingCount = allMatches.Count(m => m.TrangThai == "ChuaDau");
+            var assignedMatches = allMatches.Where(IsAssigned).ToList();
+            var displayMatches = CanViewAllTournamentMatches && filterScope == "all"
+                ? allMatches
+                : assignedMatches;
 
-            var displayMatches = allMatches;
-            if (filterScope == "my_matches")
+            ViewBag.AllMatchesCount = CanViewAllTournamentMatches ? allMatches.Count : assignedMatches.Count;
+            ViewBag.MyAssignedCount = assignedMatches.Count;
+            ViewBag.LiveMatchesCount = displayMatches.Count(m => m.TrangThai == "DangDau" || m.TrangThai == "DangDienRa");
+            ViewBag.FinishedCount = displayMatches.Count(m => m.TrangThai == "KetThuc" || m.TrangThai == "DaKetThuc");
+            ViewBag.UpcomingCount = displayMatches.Count(m => m.TrangThai == "ChuaDau");
+
+            if (!CanViewAllTournamentMatches && assignedMatches.Count == 0 && allMatches.Count > 0)
             {
-                displayMatches = allMatches.Where(IsAssigned).ToList();
-                // Nếu chưa có phân công nào cụ thể, cho phép hiển thị tất cả để trọng tài dễ quan sát
-                if (displayMatches.Count == 0 && allMatches.Count > 0)
-                {
-                    ViewBag.NoMyMatchesNotice = true;
-                }
+                ViewBag.NoMyMatchesNotice = true;
             }
 
             return View(displayMatches);
@@ -99,6 +100,8 @@ namespace API.Areas.TrongTai.Controllers
             {
                 return Json(new { success = false, message = "Dữ liệu cập nhật không hợp lệ." });
             }
+
+            if (!await CanAccessMatchAsync(dto.TranDauId)) return Forbid();
 
             var match = await _tranDauService.GetByIdAsync(dto.TranDauId);
             if (match == null)

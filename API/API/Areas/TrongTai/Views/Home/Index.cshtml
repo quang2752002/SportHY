@@ -118,18 +118,26 @@
 
                 <div class="col-md-4">
                     <label class="form-label small fw-semibold mb-1">Phạm vi nhiệm vụ</label>
-                    <select name="filterScope" class="form-select form-select-sm" onchange="this.form.submit()">
-                        @if (filterScope == "my_matches")
-                        {
-                            <option value="my_matches" selected="selected">⭐ Trận tôi được phân công (@ViewBag.MyAssignedCount trận)</option>
-                            <option value="all">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
-                        }
-                        else
-                        {
-                            <option value="my_matches">⭐ Trận tôi được phân công (@ViewBag.MyAssignedCount trận)</option>
-                            <option value="all" selected="selected">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
-                        }
-                    </select>
+                    @if (ViewBag.CanViewAllTournamentMatches == true)
+                    {
+                        <select name="filterScope" class="form-select form-select-sm" onchange="this.form.submit()">
+                            @if (filterScope == "all")
+                            {
+                                <option value="my_matches">⭐ Trận tôi được phân công (@ViewBag.MyAssignedCount trận)</option>
+                                <option value="all" selected="selected">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
+                            }
+                            else
+                            {
+                                <option value="my_matches" selected="selected">⭐ Trận tôi được phân công (@ViewBag.MyAssignedCount trận)</option>
+                                <option value="all">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <div class="form-control form-control-sm bg-light">Chỉ các trận được phân công cho tôi</div>
+                        <input type="hidden" name="filterScope" value="my_matches" />
+                    }
                 </div>
 
                 <div class="col-md-4">
@@ -142,14 +150,11 @@
 
     @if (ViewBag.NoMyMatchesNotice == true)
     {
-        <div class="alert alert-info border-info d-flex align-items-center justify-content-between py-2.5 px-3 mb-0">
+        <div class="alert alert-info border-info d-flex align-items-center py-2.5 px-3 mb-0">
             <div class="d-flex align-items-center gap-2">
                 <i class="fa-solid fa-circle-info fs-5"></i>
-                <span>Bạn chưa được gán phân công cụ thể trong giải này. Bấm vào dưới đây để xem toàn bộ danh sách trận đấu.</span>
+                <span>Hiện chưa có trận nào được phân công cho bạn trong giải này.</span>
             </div>
-            <a href="/TrongTai/Home?giaiDauId=@selectedGiaiDauId&filterScope=all" class="btn btn-sm btn-info text-white rounded-pill px-3">
-                Xem toàn bộ trận đấu
-            </a>
         </div>
     }
 

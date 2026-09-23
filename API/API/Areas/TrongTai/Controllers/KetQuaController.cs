@@ -36,8 +36,9 @@ namespace API.Areas.TrongTai.Controllers
             ITrongTaiService trongTaiService,
             ITranDauService tranDauService,
             IGiaiDauService giaiDauService,
-            ICauHinhTheThucService cauHinhTheThucService)
-            : base(userManager, trongTaiService)
+            ICauHinhTheThucService cauHinhTheThucService,
+            ITruongBanTrongTaiService refereeAccessService)
+            : base(userManager, trongTaiService, refereeAccessService)
         {
             _tranDauService = tranDauService;
             _giaiDauService = giaiDauService;
@@ -47,24 +48,35 @@ namespace API.Areas.TrongTai.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null)
         {
-            await GetCurrentRefereeAsync();
-            var tournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var currentReferee = await GetCurrentRefereeAsync();
+            var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var assignedTournamentIds = await GetAssignedTournamentIdsAsync(currentReferee);
+            var tournaments = CanViewAllTournamentMatches
+                ? allTournaments
+                : allTournaments.Where(tournament => assignedTournamentIds.Contains(tournament.Id)).ToList();
             ViewBag.Tournaments = tournaments;
 
             int? selectedGiaiDauId = giaiDauId;
-            if (!selectedGiaiDauId.HasValue && tournaments.Count > 0)
+            if ((!selectedGiaiDauId.HasValue || tournaments.All(tournament => tournament.Id != selectedGiaiDauId.Value)) && tournaments.Count > 0)
             {
                 selectedGiaiDauId = tournaments[0].Id;
             }
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
 
-            var matches = (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new();
+            var matches = selectedGiaiDauId.HasValue
+                ? (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new()
+                : new List<TranDauDto>();
+            if (!CanViewAllTournamentMatches && currentReferee != null)
+            {
+                matches = matches.Where(match => match.DanhSachTrongTai?.Any(assignment => assignment.TrongTaiId == currentReferee.Id) == true).ToList();
+            }
             ViewBag.Matches = matches;
 
             TranDauDto? currentMatch = null;
             if (tranDauId.HasValue)
             {
-                currentMatch = matches.FirstOrDefault(m => m.Id == tranDauId.Value) ?? await _tranDauService.GetByIdAsync(tranDauId.Value);
+                currentMatch = matches.FirstOrDefault(m => m.Id == tranDauId.Value);
+                if (currentMatch == null) return Forbid();
             }
             else if (matches.Count > 0)
             {
@@ -148,6 +160,8 @@ namespace API.Areas.TrongTai.Controllers
                 return Json(new { success = false, message = "Dữ liệu không hợp lệ." });
             }
 
+            if (!await CanAccessMatchAsync(dto.TranDauId)) return Forbid();
+
             var match = await _tranDauService.GetByIdAsync(dto.TranDauId);
             if (match == null)
             {
@@ -208,6 +222,8 @@ namespace API.Areas.TrongTai.Controllers
         [HttpGet]
         public async Task<IActionResult> GetMatchFormat(int tranDauId)
         {
+            if (!await CanAccessMatchAsync(tranDauId)) return Forbid();
+
             try
             {
                 var config = await _cauHinhTheThucService.GetConfigByTranDauIdAsync(tranDauId);
@@ -226,6 +242,8 @@ namespace API.Areas.TrongTai.Controllers
             {
                 return Json(new { success = false, message = "Dữ liệu không hợp lệ." });
             }
+
+            if (!await CanAccessMatchAsync(dto.TranDauId)) return Forbid();
 
             try
             {

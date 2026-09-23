@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,18 +14,42 @@ using System.Threading.Tasks;
 namespace API.Areas.TrongTai.Controllers
 {
     [Area("TrongTai")]
-    [Authorize(Roles = AppRoles.Referee + "," + AppRoles.HeadReferee + "," + AppRoles.Secretary + "," + AppRoles.Admin + "," + AppRoles.Manager)]
+    [Authorize]
     public abstract class BaseTrongTaiController : Controller
     {
         protected readonly UserManager<ApplicationUser> _userManager;
         protected readonly ITrongTaiService _trongTaiService;
+        protected readonly ITruongBanTrongTaiService _refereeAccessService;
 
         public BaseTrongTaiController(
             UserManager<ApplicationUser> userManager,
-            ITrongTaiService trongTaiService)
+            ITrongTaiService trongTaiService,
+            ITruongBanTrongTaiService refereeAccessService)
         {
             _userManager = userManager;
             _trongTaiService = trongTaiService;
+            _refereeAccessService = refereeAccessService;
+        }
+
+        protected bool CanViewAllTournamentMatches =>
+            User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager) || User.IsInRole(AppRoles.Secretary);
+
+        public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        {
+            if (CanViewAllTournamentMatches)
+            {
+                await next();
+                return;
+            }
+
+            var referee = await GetCurrentRefereeAsync();
+            if (referee == null || !(await _refereeAccessService.GetRefereeTournamentIdsAsync(referee.Id)).Any())
+            {
+                context.Result = Forbid();
+                return;
+            }
+
+            await next();
         }
 
         /// <summary>
@@ -33,9 +58,10 @@ namespace API.Areas.TrongTai.Controllers
         protected async Task<TrongTaiDto?> GetCurrentRefereeAsync(int? overrideRefereeId = null)
         {
             var allReferees = (await _trongTaiService.GetAllAsync())?.ToList() ?? new();
-            ViewBag.AllReferees = allReferees;
             bool canSwitch = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager);
             ViewBag.CanSwitchReferee = canSwitch;
+            ViewBag.AllReferees = canSwitch ? allReferees : new List<TrongTaiDto>();
+            ViewBag.CanViewAllTournamentMatches = CanViewAllTournamentMatches;
 
             int? targetId = null;
 
@@ -64,8 +90,10 @@ namespace API.Areas.TrongTai.Controllers
                 else if (user != null)
                 {
                     var match = allReferees.FirstOrDefault(r =>
-                        (!string.IsNullOrEmpty(user.FullName) && r.HoTen.Contains(user.FullName, StringComparison.OrdinalIgnoreCase)) ||
-                        (!string.IsNullOrEmpty(user.UserName) && r.Ma.Equals(user.UserName, StringComparison.OrdinalIgnoreCase)));
+                        (!string.IsNullOrWhiteSpace(user.UserName) && string.Equals(r.Ma, user.UserName, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(user.Email) &&
+                            (string.Equals(r.Email, user.Email, StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(r.Ma, user.Email, StringComparison.OrdinalIgnoreCase))));
 
                     if (match != null)
                     {
@@ -80,13 +108,21 @@ namespace API.Areas.TrongTai.Controllers
                 current = allReferees.FirstOrDefault(r => r.Id == targetId.Value);
             }
 
-            if (current == null && allReferees.Count > 0)
-            {
-                current = allReferees[0];
-            }
-
             ViewBag.CurrentReferee = current;
             return current;
+        }
+
+        protected async Task<bool> CanAccessMatchAsync(int tranDauId)
+        {
+            if (CanViewAllTournamentMatches) return true;
+            var referee = await GetCurrentRefereeAsync();
+            return referee != null && await _refereeAccessService.IsRefereeAssignedToMatchAsync(referee.Id, tranDauId);
+        }
+
+        protected async Task<HashSet<int>> GetAssignedTournamentIdsAsync(TrongTaiDto? referee)
+        {
+            if (referee == null) return new HashSet<int>();
+            return (await _refereeAccessService.GetRefereeTournamentIdsAsync(referee.Id)).ToHashSet();
         }
 
         [HttpPost]

@@ -65,6 +65,22 @@ namespace API.Areas.TruongBanTrongTai.Controllers
         [HttpGet]
         public async Task<IActionResult> CheckConflict(int trongTaiId, int tranDauId)
         {
+            if (!IsAdminOrManager())
+            {
+                var managedTournaments = await GetManagedTournamentsAsync();
+                var matchBelongsToManagedTournament = false;
+                foreach (var tournament in managedTournaments)
+                {
+                    if (await _truongBanService.IsMatchInTournamentAsync(tranDauId, tournament.Id))
+                    {
+                        matchBelongsToManagedTournament = true;
+                        break;
+                    }
+                }
+
+                if (!matchBelongsToManagedTournament) return Forbid();
+            }
+
             var result = await _truongBanService.CheckConflictAsync(trongTaiId, tranDauId);
             return Json(new
             {
@@ -88,6 +104,8 @@ namespace API.Areas.TruongBanTrongTai.Controllers
         [HttpPost]
         public async Task<IActionResult> AutoAssignReferees([FromBody] AutoAssignRefereesRequestDto request)
         {
+            if (request == null || !await CanManageTournamentAsync(request.GiaiDauId)) return Forbid();
+
             var result = await _truongBanService.AutoAssignRefereesAsync(request);
             return Json(result);
         }
@@ -95,6 +113,8 @@ namespace API.Areas.TruongBanTrongTai.Controllers
         [HttpPost]
         public async Task<IActionResult> SaveAssignmentDraft([FromBody] SaveRefereeAssignmentDraftRequestDto request)
         {
+            if (request == null || !await CanManageTournamentAsync(request.GiaiDauId)) return Forbid();
+
             var savedBy = User?.Identity?.Name;
             var result = await _truongBanService.SaveRefereeAssignmentDraftAsync(request, savedBy);
             return Json(result);
