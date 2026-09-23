@@ -39,7 +39,14 @@ namespace Dms.Application.Services
                 var specific = specificConfigs.FirstOrDefault();
                 if (specific != null)
                 {
-                    return MapToDto(specific);
+                    var monEntity = await _unitOfWork.MonTheThaos.GetByIdAsync(monTheThaoId);
+                    var dtoResult = MapToDto(specific);
+                    if (monEntity != null)
+                    {
+                        dtoResult.TenMonTheThao ??= monEntity.Ten;
+                        dtoResult.HinhThucThiDau = monEntity.HinhThucThiDau.ToString();
+                    }
+                    return dtoResult;
                 }
             }
 
@@ -50,12 +57,24 @@ namespace Dms.Application.Services
             var def = defaultConfigs.FirstOrDefault();
             if (def != null)
             {
-                return MapToDto(def);
+                var monEntity = await _unitOfWork.MonTheThaos.GetByIdAsync(monTheThaoId);
+                var dtoResult = MapToDto(def);
+                if (monEntity != null)
+                {
+                    dtoResult.TenMonTheThao ??= monEntity.Ten;
+                    dtoResult.HinhThucThiDau = monEntity.HinhThucThiDau.ToString();
+                }
+                return dtoResult;
             }
 
             // 3. Fallback: Nếu chưa có trong DB, trả về cấu hình chuẩn tạo sẵn
             var mon = await _unitOfWork.MonTheThaos.GetByIdAsync(monTheThaoId);
-            return CreateFallbackDto(monTheThaoId, mon?.Ten, mon?.Ma);
+            var fallback = CreateFallbackDto(monTheThaoId, mon?.Ten, mon?.Ma);
+            if (mon != null)
+            {
+                fallback.HinhThucThiDau = mon.HinhThucThiDau.ToString();
+            }
+            return fallback;
         }
 
         /// <summary>
@@ -128,6 +147,19 @@ namespace Dms.Application.Services
                 _unitOfWork.CauHinhTheThucThiDaus.Update(entity);
             }
 
+            // Đồng bộ sơ đồ thi đấu HinhThucThiDau cho môn thể thao nếu được chỉ định
+            if (!string.IsNullOrEmpty(dto.HinhThucThiDau) && Enum.TryParse<Dms.Domain.Enums.HinhThucThiDau>(dto.HinhThucThiDau, true, out var hinhThucEnum))
+            {
+                var mon = await _unitOfWork.MonTheThaos.GetByIdAsync(dto.MonTheThaoId);
+                if (mon != null && mon.IsDeleted != true && mon.HinhThucThiDau != hinhThucEnum)
+                {
+                    mon.HinhThucThiDau = hinhThucEnum;
+                    mon.LastModified = DateTime.UtcNow;
+                    mon.LastModifiedBy = username;
+                    _unitOfWork.MonTheThaos.Update(mon);
+                }
+            }
+
             await _unitOfWork.CompleteAsync();
             return (await GetEffectiveConfigAsync(entity.MonTheThaoId, entity.GiaiDauMonTheThaoId))!;
         }
@@ -180,6 +212,7 @@ namespace Dms.Application.Services
                 TenMonTheThao = entity.MonTheThao?.Ten,
                 GiaiDauMonTheThaoId = entity.GiaiDauMonTheThaoId,
                 TenGiaiDau = entity.GiaiDauMonTheThao?.GiaiDau?.Ten,
+                HinhThucThiDau = entity.MonTheThao?.HinhThucThiDau.ToString(),
                 LoaiTheThuc = entity.LoaiTheThuc,
                 SoHiepToiDa = entity.SoHiepToiDa,
                 SoHiepThangDeThangTran = entity.SoHiepThangDeThangTran,

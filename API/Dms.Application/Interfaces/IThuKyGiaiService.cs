@@ -11,6 +11,50 @@ namespace Dms.Application.Interfaces
     public interface IThuKyGiaiService
     {
         /// <summary>
+        /// Lấy các giải đấu mà một thư ký đang được phân công và còn hiệu lực.
+        /// </summary>
+        /// <param name="thuKyId">ID hồ sơ thư ký.</param>
+        /// <returns>Danh sách giải đấu được phân công cho thư ký.</returns>
+        Task<List<GiaiDauDto>> GetAssignedTournamentsAsync(int thuKyId);
+
+        /// <summary>
+        /// Lấy danh sách thư ký hoạt động và trạng thái phân công của họ trong một giải đấu.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu.</param>
+        /// <returns>Danh sách thư ký dùng cho màn hình phân công.</returns>
+        Task<List<ThuKyPhanCongDto>> GetSecretaryAssignmentsForManagerAsync(int giaiDauId);
+
+        /// <summary>
+        /// Lưu danh sách thư ký được phân công vào giải đấu, sử dụng xóa mềm cho các phân công bị bỏ.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu.</param>
+        /// <param name="thuKyIds">Danh sách ID thư ký được chọn.</param>
+        /// <returns>Bộ đôi cho biết kết quả và thông báo nghiệp vụ.</returns>
+        Task<(bool success, string message)> SaveSecretaryAssignmentsAsync(int giaiDauId, List<int> thuKyIds);
+
+        /// <summary>
+        /// Kiểm tra một thư ký có được phân công vào giải đấu hay không.
+        /// </summary>
+        /// <param name="thuKyId">ID hồ sơ thư ký.</param>
+        /// <param name="giaiDauId">ID giải đấu.</param>
+        /// <returns>True nếu phân công đang hoạt động.</returns>
+        Task<bool> IsSecretaryAssignedAsync(int thuKyId, int giaiDauId);
+
+        /// <summary>
+        /// Lấy ID giải đấu của một trận đấu.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu.</param>
+        /// <returns>ID giải đấu hoặc null nếu không tìm thấy.</returns>
+        Task<int?> GetTournamentIdByMatchAsync(int tranDauId);
+
+        /// <summary>
+        /// Lấy ID giải đấu của một nội dung thi đấu.
+        /// </summary>
+        /// <param name="giaiDauMonTheThaoId">ID môn thể thao thuộc giải.</param>
+        /// <returns>ID giải đấu hoặc null nếu không tìm thấy.</returns>
+        Task<int?> GetTournamentIdByContentAsync(int giaiDauMonTheThaoId);
+
+        /// <summary>
         /// Lấy dữ liệu tổng quan cho Dashboard Ban Thư ký (KPIs, cảnh báo, tiến độ các môn, kết quả mới nhất).
         /// </summary>
         /// <param name="giaiDauId">ID giải đấu (nếu null sẽ lấy giải đấu đầu tiên hoặc đang diễn ra).</param>
@@ -18,21 +62,22 @@ namespace Dms.Application.Interfaces
         Task<ThuKyDashboardDto> GetDashboardAsync(int? giaiDauId);
 
         /// <summary>
-        /// Lấy danh sách toàn bộ nội dung thi đấu theo giải đấu có hỗ trợ lọc và tìm kiếm.
+        /// Lấy danh sách các môn thể thao thuộc giải đấu, kèm danh mục môn và thống kê tiến độ, có hỗ trợ lọc và tìm kiếm.
         /// </summary>
         /// <param name="giaiDauId">ID giải đấu.</param>
         /// <param name="monTheThaoId">ID môn thể thao (tùy chọn).</param>
         /// <param name="loaiThiDau">Loại thi đấu: CaNhan, Doi, DongDoi (tùy chọn).</param>
         /// <param name="gioiTinh">Giới tính: Nam, Nu, HonHop (tùy chọn).</param>
-        /// <param name="keyword">Từ khóa tìm kiếm theo tên nội dung hoặc mã (tùy chọn).</param>
-        /// <returns>Danh sách các nội dung thi đấu kèm thống kê số VĐV và số trận.</returns>
+        /// <param name="keyword">Từ khóa tìm kiếm theo tên/mã môn hoặc tên/mã danh mục (tùy chọn).</param>
+        /// <returns>Danh sách môn thể thao kèm danh mục, thống kê số đăng ký và số trận.</returns>
         Task<List<ThuKyNoiDungDto>> GetDanhSachNoiDungAsync(int? giaiDauId, int? monTheThaoId = null, string? loaiThiDau = null, string? gioiTinh = null, string? keyword = null);
 
         /// <summary>
-        /// Lấy thông tin chi tiết của một nội dung thi đấu (danh sách đăng ký, các vòng, bảng và trận đấu).
+        /// Lấy thông tin chi tiết của một môn thể thao trong giải đấu, gồm danh mục, danh sách đăng ký,
+        /// các vòng, bảng và trận đấu.
         /// </summary>
-        /// <param name="giaiDauMonTheThaoId">ID phân môn/nội dung trong giải đấu.</param>
-        /// <returns>Chi tiết nội dung thi đấu hoặc null nếu không tìm thấy.</returns>
+        /// <param name="giaiDauMonTheThaoId">ID liên kết môn thể thao với giải đấu.</param>
+        /// <returns>Chi tiết môn thể thao hoặc null nếu không tìm thấy.</returns>
         Task<ThuKyNoiDungChiTietDto?> GetChiTietNoiDungAsync(int giaiDauMonTheThaoId);
 
         /// <summary>
@@ -112,11 +157,28 @@ namespace Dms.Application.Interfaces
         Task<ThuKyBaoCaoTongHopDto> GetBaoCaoTongHopAsync(int? giaiDauId);
 
         /// <summary>
-        /// Lấy bảng tổng sắp huy chương toàn đoàn (Huy chương Vàng, Bạc, Đồng, Tổng điểm và Xếp hạng).
+        /// Lấy bảng tổng sắp huy chương toàn đoàn (Huy chương Vàng, Bạc, Đồng, Tổng điểm và Xếp hạng) có hỗ trợ lọc theo danh mục hoặc môn thể thao cụ thể.
         /// </summary>
-        /// <param name="giaiDauId">ID giải đấu.</param>
-        /// <returns>Bảng tổng sắp huy chương theo đơn vị/đoàn tham gia.</returns>
-        Task<BangTongSapHuyChuongDto> GetBangTongSapHuyChuongAsync(int? giaiDauId);
+        /// <param name="giaiDauId">ID giải đấu (tùy chọn; null hoặc 0 để tổng hợp toàn giải).</param>
+        /// <param name="danhMucMonTheThaoId">ID danh mục môn thể thao cần lọc (tùy chọn).</param>
+        /// <param name="monTheThaoId">ID môn thể thao cần lọc (tùy chọn).</param>
+        /// <returns>Bảng tổng sắp huy chương theo đơn vị/đoàn tham gia theo tiêu chí lọc.</returns>
+        Task<BangTongSapHuyChuongDto> GetBangTongSapHuyChuongAsync(int? giaiDauId, int? danhMucMonTheThaoId = null, int? monTheThaoId = null);
+
+        /// <summary>
+        /// Lấy danh sách bảng xếp hạng huy chương phân loại theo từng Danh mục môn thể thao.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu (tùy chọn; null hoặc 0 để tính toàn bộ).</param>
+        /// <returns>Danh sách các bảng xếp hạng huy chương gom nhóm theo từng Danh mục môn thể thao.</returns>
+        Task<List<BangXepHangTheoDanhMucDto>> GetBangXepHangTheoDanhMucAsync(int? giaiDauId);
+
+        /// <summary>
+        /// Lấy danh sách bảng xếp hạng huy chương phân loại theo từng Môn thể thao cụ thể.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu (tùy chọn; null hoặc 0 để tính toàn bộ).</param>
+        /// <param name="danhMucMonTheThaoId">ID danh mục môn thể thao (tùy chọn để lọc môn thuộc danh mục).</param>
+        /// <returns>Danh sách các bảng xếp hạng huy chương gom nhóm theo từng Môn thể thao.</returns>
+        Task<List<BangXepHangTheoMonDto>> GetBangXepHangTheoMonAsync(int? giaiDauId, int? danhMucMonTheThaoId = null);
 
         /// <summary>
         /// Tra cứu thông minh đa đối tượng trong giải đấu (Vận động viên, Đơn vị/Đoàn thể thao, Trận đấu & Biên bản).

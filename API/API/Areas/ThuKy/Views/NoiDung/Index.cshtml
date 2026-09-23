@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Theo Dõi Toàn Bộ Nội Dung Thi Đấu";
+    ViewData["Title"] = "Theo Dõi Môn & Danh Mục Thể Thao";
     var sports = ViewBag.Sports as IEnumerable<Dms.Application.DTOs.MonTheThaoDto> ?? new List<Dms.Application.DTOs.MonTheThaoDto>();
 }
 
@@ -8,9 +8,9 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
             <h4 class="fw-bold text-dark mb-1">
-                <i class="fa-solid fa-list-check text-primary me-2"></i> Theo Dõi Toàn Bộ Nội Dung Thi Đấu
+                <i class="fa-solid fa-list-check text-primary me-2"></i> Theo Dõi Môn & Danh Mục Thể Thao
             </h4>
-            <p class="text-muted small mb-0">Giám sát quy mô, số lượng đăng ký và tiến độ hoàn thành các nội dung trong giải</p>
+            <p class="text-muted small mb-0">Giám sát các môn thể thao, danh mục môn, số lượng đăng ký và tiến độ thi đấu trong giải</p>
         </div>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="loadNoiDung()">
@@ -23,7 +23,7 @@
     <div class="row g-3">
         <div class="col-6 col-md-3">
             <div class="card card-custom p-3 text-center border-bottom border-4 border-primary">
-                <small class="text-muted text-uppercase fw-semibold" style="font-size:0.75rem;">Tổng Nội Dung</small>
+                <small class="text-muted text-uppercase fw-semibold" style="font-size:0.75rem;">Tổng Môn Thể Thao</small>
                 <h3 class="fw-bold text-primary mb-0 mt-1" id="statAllCount">0</h3>
             </div>
         </div>
@@ -78,10 +78,10 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label small fw-semibold text-muted mb-1">Tìm kiếm nội dung</label>
+                <label class="form-label small fw-semibold text-muted mb-1">Tìm kiếm môn thể thao</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" id="filterKeyword" class="form-control" placeholder="Nhập tên môn, nội dung..." onkeyup="if(event.key==='Enter') loadNoiDung()">
+                    <input type="text" id="filterKeyword" class="form-control" placeholder="Nhập tên hoặc mã môn..." onkeyup="if(event.key==='Enter') loadNoiDung()">
                 </div>
             </div>
             <div class="col-md-2 d-flex align-items-end">
@@ -92,7 +92,7 @@
         </div>
     </div>
 
-    <!-- Bảng danh sách nội dung -->
+    <!-- Bảng danh sách môn thể thao -->
     <div class="card card-custom">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -100,8 +100,8 @@
                     <thead class="table-light small text-muted">
                         <tr>
                             <th class="ps-3" style="width: 60px;">STT</th>
-                            <th>Nội Dung Thi Đấu</th>
                             <th>Môn Thể Thao</th>
+                            <th>Danh Mục Môn</th>
                             <th>Giới Tính</th>
                             <th>Thể Thức</th>
                             <th class="text-center">Số Đăng Ký</th>
@@ -114,7 +114,7 @@
                         <tr>
                             <td colspan="9" class="text-center py-5">
                                 <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
-                                <span class="ms-2 text-muted">Đang tải danh sách nội dung thi đấu...</span>
+                                <span class="ms-2 text-muted">Đang tải danh sách môn thể thao...</span>
                             </td>
                         </tr>
                     </tbody>
@@ -124,13 +124,13 @@
     </div>
 </div>
 
-<!-- Modal Chi Tiết Nội Dung -->
+<!-- Modal Chi Tiết Môn Thể Thao -->
 <div class="modal fade" id="modalChiTietNoiDung" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-primary text-white py-3">
                 <h5 class="modal-title fw-bold" id="modalDetailTitle">
-                    <i class="fa-solid fa-circle-info me-2"></i> Chi Tiết Nội Dung Thi Đấu
+                    <i class="fa-solid fa-circle-info me-2"></i> Chi Tiết Môn Thể Thao
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -247,7 +247,7 @@
             $('#statUpcomingCount').text(upcoming);
 
             if (list.length === 0) {
-                $('#noiDungTableBody').html('<tr><td colspan="9" class="text-center py-5 text-muted">Không tìm thấy nội dung thi đấu phù hợp.</td></tr>');
+                $('#noiDungTableBody').html('<tr><td colspan="9" class="text-center py-5 text-muted">Không tìm thấy môn thể thao phù hợp.</td></tr>');
                 return;
             }
 
@@ -265,11 +265,12 @@
                     <tr>
                         <td class="ps-3 fw-bold text-muted">${idx + 1}</td>
                         <td>
-                            <div class="fw-bold text-dark">${item.tenNoiDung}</div>
-                            <small class="text-muted">Mã: ${item.maMonTheThao || '--'}</small>
+                            <div class="fw-bold text-dark">${item.tenMonTheThao || '--'}</div>
+                            <small class="text-muted">Mã môn: ${item.maMonTheThao || '--'}</small>
                         </td>
                         <td>
-                            <span class="badge bg-light text-dark border">${item.tenMonTheThao}</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border">${item.tenDanhMucMonTheThao || 'Chưa phân loại'}</span>
+                            <small class="d-block text-muted mt-1">Mã: ${item.maDanhMucMonTheThao || '--'}</small>
                         </td>
                         <td>
                             <span class="badge bg-info bg-opacity-10 text-info border">${item.gioiTinh}</span>
@@ -314,7 +315,7 @@
                     }
 
                     var d = res.data;
-                    $('#modalDetailTitle').html(`<i class="fa-solid fa-circle-info me-2"></i> ${d.thongTinChung.tenNoiDung}`);
+                    $('#modalDetailTitle').html(`<i class="fa-solid fa-circle-info me-2"></i> ${d.thongTinChung.tenMonTheThao || 'Chi tiết môn thể thao'}`);
                     $('#modalDkCount').text(d.danhSachDangKy.length);
                     $('#modalMatchCount').text(d.danhSachTranDau.length);
 

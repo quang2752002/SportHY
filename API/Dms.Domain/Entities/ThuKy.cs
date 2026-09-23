@@ -31,5 +31,7 @@ namespace Dms.Domain.Entities
         public string? DonViCongTac { get; set; }
 
         public bool TrangThai { get; set; } = true;
+
+        public virtual ICollection<PhanCongThuKy> PhanCongThuKys { get; set; } = new List<PhanCongThuKy>();
     }
 }

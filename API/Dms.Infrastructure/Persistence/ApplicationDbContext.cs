@@ -37,6 +37,7 @@ namespace Dms.Infrastructure.Persistence
         public DbSet<SanDau> SanDaus => Set<SanDau>();
         public DbSet<TrongTai> TrongTais => Set<TrongTai>();
         public DbSet<ThuKy> ThuKys => Set<ThuKy>();
+        public DbSet<PhanCongThuKy> PhanCongThuKys => Set<PhanCongThuKy>();
         public DbSet<TranDau> TranDaus => Set<TranDau>();
         public DbSet<ThanhPhanTranDau> ThanhPhanTranDaus => Set<ThanhPhanTranDau>();
         public DbSet<HiepDau> HiepDaus => Set<HiepDau>();
@@ -79,6 +80,10 @@ namespace Dms.Infrastructure.Persistence
 
             modelBuilder.Entity<GiaiDau>()
                 .HasIndex(g => g.Slug);
+
+            modelBuilder.Entity<PhanCongThuKy>()
+                .HasIndex(p => new { p.GiaiDauId, p.ThuKyId })
+                .IsUnique();
 
             // Cấu hình lưu Enum của MonTheThao dưới dạng chuỗi (VARCHAR) trong DB
             modelBuilder.Entity<MonTheThao>()

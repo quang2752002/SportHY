@@ -1,10 +1,11 @@
 @model List<Dms.Application.DTOs.CategoryAssignmentViewModelDto>
 @{
-    ViewData["Title"] = "Phân Công Trưởng Ban Trọng Tài & Điều Hành Môn";
+    ViewData["Title"] = "Phân Công Trọng Tài, Điều Hành Môn & Thư Ký";
     var tournaments = ViewBag.Tournaments as List<GiaiDauDto> ?? new();
     int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
     var currentTournament = ViewBag.CurrentTournament as GiaiDauDto;
     var allReferees = ViewBag.AllReferees as List<TrongTaiDto> ?? new();
+    var secretaryAssignments = ViewBag.SecretaryAssignments as List<ThuKyPhanCongDto> ?? new();
 }
 
 <div class="d-flex flex-column gap-4">
@@ -12,10 +13,10 @@
     <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3">
         <div>
             <h4 class="fw-bold text-dark mb-1">
-                <i class="fa-solid fa-users-gear text-primary me-2"></i> Phân Công Trưởng Ban Trọng Tài & Điều Hành Môn
+                <i class="fa-solid fa-users-gear text-primary me-2"></i> Phân Công Trọng Tài, Điều Hành Môn & Thư Ký
             </h4>
             <p class="text-muted small mb-0">
-                Phân bổ nhân sự điều hành giải: Gán Trưởng ban trọng tài cho giải và Người điều hành cho từng danh mục môn thể thao
+                Phân bổ nhân sự điều hành giải: Gán Trưởng ban trọng tài, Người điều hành môn và Thư ký vào từng giải đấu
             </p>
         </div>
     </div>
@@ -189,6 +190,81 @@
                 </div>
             }
         </div>
+
+        <!-- PHẦN 3: Phân công thư ký cho giải đấu -->
+        <div class="card-custom p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                <div>
+                    <h5 class="fw-bold text-dark mb-1">
+                        <i class="fa-solid fa-user-pen text-info me-2"></i> 3. Phân Công Thư Ký Cho Giải Đấu
+                    </h5>
+                    <p class="text-muted small mb-0">
+                        Chỉ các thư ký được chọn mới nhìn thấy và làm việc với giải đấu này sau khi đăng nhập.
+                    </p>
+                </div>
+                <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill">
+                    Đã chọn: <span id="selectedSecretaryCount">@secretaryAssignments.Count(s => s.DaPhanCong)</span>
+                </span>
+            </div>
+
+            @if (secretaryAssignments.Count == 0)
+            {
+                <div class="p-4 text-center text-muted bg-light rounded-3">
+                    <i class="fa-solid fa-user-slash fs-2 opacity-50 mb-2"></i>
+                    <p class="mb-0">Chưa có thư ký hoạt động. Hãy tạo hồ sơ thư ký trước tại màn Quản lý thư ký.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr style="text-transform: uppercase;">
+                                <th style="width: 70px;" class="text-center">Chọn</th>
+                                <th>Thư ký</th>
+                                <th>Chức vụ / Đơn vị</th>
+                                <th>Liên hệ</th>
+                                <th class="text-end">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody style="font-size: 13px;">
+                            @foreach (var secretary in secretaryAssignments)
+                            {
+                                <tr>
+                                    <td class="text-center">
+                                        <input class="form-check-input secretary-checkbox" type="checkbox"
+                                               value="@secretary.ThuKyId" @(secretary.DaPhanCong ? "checked" : "")
+                                               onchange="updateSecretaryCount()" />
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-dark">@secretary.HoTen</div>
+                                        <small class="text-muted font-monospace">Mã: @secretary.Ma</small>
+                                    </td>
+                                    <td>
+                                        <div>@(secretary.ChucVu ?? "Chưa cập nhật")</div>
+                                        <small class="text-muted">@(secretary.DonViCongTac ?? "Chưa cập nhật")</small>
+                                    </td>
+                                    <td>
+                                        <div>@(secretary.SoDienThoai ?? "-")</div>
+                                        <small class="text-muted">@(secretary.Email ?? "-")</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge secretary-status @(secretary.DaPhanCong ? "bg-success-subtle text-success" : "bg-light text-secondary")">
+                                            @(secretary.DaPhanCong ? "Đã phân công" : "Chưa phân công")
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="button" class="btn btn-info text-white rounded-pill px-4" onclick="saveSecretaries()">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu phân công thư ký
+                    </button>
+                </div>
+            }
+        </div>
     }
 </div>
 
@@ -245,6 +321,40 @@
                         });
                     } else {
                         Swal.fire('Lỗi', res.message || 'Không thể lưu', 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
+                }
+            });
+        }
+
+        function updateSecretaryCount() {
+            const count = $('.secretary-checkbox:checked').length;
+            $('#selectedSecretaryCount').text(count);
+        }
+
+        function saveSecretaries() {
+            const secretaryIds = $('.secretary-checkbox:checked').map(function () {
+                return parseInt($(this).val());
+            }).get();
+
+            $.ajax({
+                url: `/Manager/PhanCong/AssignSecretaries?giaiDauId=${tournamentId}`,
+                type: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify(secretaryIds),
+                success: function (res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu phân công thư ký', 'error');
                     }
                 },
                 error: function () {

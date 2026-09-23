@@ -28,6 +28,154 @@ namespace Dms.Application.Services
             _tranDauService = tranDauService;
         }
 
+        /// <summary>
+        /// Lấy các giải đấu mà thư ký được phân công và chỉ trả về các bản ghi còn hoạt động.
+        /// </summary>
+        /// <param name="thuKyId">ID hồ sơ thư ký.</param>
+        /// <returns>Danh sách giải đấu được phân công, sắp xếp theo ngày bắt đầu giảm dần.</returns>
+        public async Task<List<GiaiDauDto>> GetAssignedTournamentsAsync(int thuKyId)
+        {
+            var secretary = await _unitOfWork.ThuKys.GetByIdAsync(thuKyId);
+            if (secretary == null || secretary.IsDeleted == true || !secretary.TrangThai)
+            {
+                return new List<GiaiDauDto>();
+            }
+
+            var assignments = (await _unitOfWork.PhanCongThuKys.FindAsync(p =>
+                p.ThuKyId == thuKyId && p.IsDeleted != true)).ToList();
+            var tournamentIds = assignments.Select(p => p.GiaiDauId).Distinct().ToList();
+            var tournaments = (await _unitOfWork.GiaiDaus.FindAsync(g =>
+                tournamentIds.Contains(g.Id) && g.IsDeleted != true))
+                .OrderByDescending(g => g.NgayBatDau)
+                .ToList();
+
+            return _mapper.Map<List<GiaiDauDto>>(tournaments);
+        }
+
+        /// <summary>
+        /// Lấy danh sách thư ký hoạt động và đánh dấu các thư ký đã được phân công vào giải.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu.</param>
+        /// <returns>Danh sách thư ký phục vụ màn hình phân công.</returns>
+        public async Task<List<ThuKyPhanCongDto>> GetSecretaryAssignmentsForManagerAsync(int giaiDauId)
+        {
+            var secretaries = (await _unitOfWork.ThuKys.FindAsync(t =>
+                t.IsDeleted != true && t.TrangThai)).ToList();
+            var assignments = (await _unitOfWork.PhanCongThuKys.FindAsync(p =>
+                p.GiaiDauId == giaiDauId && p.IsDeleted != true)).ToList();
+            var assignedIds = assignments.Select(p => p.ThuKyId).ToHashSet();
+
+            return secretaries
+                .OrderBy(t => t.HoTen)
+                .Select(t => new ThuKyPhanCongDto
+                {
+                    ThuKyId = t.Id,
+                    Ma = t.Ma,
+                    HoTen = t.HoTen,
+                    ChucVu = t.ChucVu,
+                    DonViCongTac = t.DonViCongTac,
+                    SoDienThoai = t.SoDienThoai,
+                    Email = t.Email,
+                    DaPhanCong = assignedIds.Contains(t.Id)
+                })
+                .ToList();
+        }
+
+        /// <summary>
+        /// Lưu danh sách thư ký của một giải đấu; các phân công bị bỏ chọn được chuyển sang trạng thái xóa mềm.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu.</param>
+        /// <param name="thuKyIds">Danh sách ID thư ký được phân công.</param>
+        /// <returns>Bộ đôi cho biết kết quả và thông báo nghiệp vụ.</returns>
+        public async Task<(bool success, string message)> SaveSecretaryAssignmentsAsync(int giaiDauId, List<int> thuKyIds)
+        {
+            var tournament = await _unitOfWork.GiaiDaus.GetByIdAsync(giaiDauId);
+            if (tournament == null || tournament.IsDeleted == true)
+            {
+                return (false, "Không tìm thấy giải đấu.");
+            }
+
+            var selectedIds = (thuKyIds ?? new List<int>()).Where(id => id > 0).Distinct().ToHashSet();
+            var activeSecretaries = (await _unitOfWork.ThuKys.FindAsync(t =>
+                selectedIds.Contains(t.Id) && t.IsDeleted != true && t.TrangThai)).ToList();
+            if (activeSecretaries.Count != selectedIds.Count)
+            {
+                return (false, "Danh sách thư ký có người không tồn tại hoặc đang không hoạt động.");
+            }
+
+            var existing = (await _unitOfWork.PhanCongThuKys.FindAsync(p =>
+                p.GiaiDauId == giaiDauId)).ToList();
+
+            foreach (var assignment in existing)
+            {
+                var shouldBeActive = selectedIds.Contains(assignment.ThuKyId);
+                assignment.IsDeleted = !shouldBeActive;
+                assignment.LastModified = DateTime.UtcNow;
+                _unitOfWork.PhanCongThuKys.Update(assignment);
+            }
+
+            var existingSecretaryIds = existing.Select(p => p.ThuKyId).ToHashSet();
+            foreach (var thuKyId in selectedIds.Where(id => !existingSecretaryIds.Contains(id)))
+            {
+                await _unitOfWork.PhanCongThuKys.AddAsync(new PhanCongThuKy
+                {
+                    GiaiDauId = giaiDauId,
+                    ThuKyId = thuKyId,
+                    IsDeleted = false,
+                    Created = DateTime.UtcNow
+                });
+            }
+
+            await _unitOfWork.CompleteAsync();
+            return (true, selectedIds.Count == 0
+                ? "Đã bỏ phân công tất cả thư ký khỏi giải đấu."
+                : $"Đã lưu phân công {selectedIds.Count} thư ký cho giải đấu.");
+        }
+
+        /// <summary>
+        /// Kiểm tra thư ký có phân công còn hiệu lực trong giải đấu hay không.
+        /// </summary>
+        /// <param name="thuKyId">ID hồ sơ thư ký.</param>
+        /// <param name="giaiDauId">ID giải đấu.</param>
+        /// <returns>True nếu phân công tồn tại và cả thư ký, giải đấu đều hoạt động.</returns>
+        public async Task<bool> IsSecretaryAssignedAsync(int thuKyId, int giaiDauId)
+        {
+            var secretary = await _unitOfWork.ThuKys.GetByIdAsync(thuKyId);
+            var tournament = await _unitOfWork.GiaiDaus.GetByIdAsync(giaiDauId);
+            if (secretary == null || secretary.IsDeleted == true || !secretary.TrangThai ||
+                tournament == null || tournament.IsDeleted == true)
+            {
+                return false;
+            }
+
+            var assignments = await _unitOfWork.PhanCongThuKys.FindAsync(p =>
+                p.ThuKyId == thuKyId && p.GiaiDauId == giaiDauId && p.IsDeleted != true);
+            return assignments.Any();
+        }
+
+        /// <summary>
+        /// Lấy giải đấu chứa trận đấu được chỉ định.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu.</param>
+        /// <returns>ID giải đấu hoặc null.</returns>
+        public async Task<int?> GetTournamentIdByMatchAsync(int tranDauId)
+        {
+            var match = await _unitOfWork.TranDaus.GetByIdAsync(tranDauId);
+            if (match == null || match.IsDeleted == true) return null;
+            return await GetTournamentIdByContentAsync(match.GiaiDauMonTheThaoId);
+        }
+
+        /// <summary>
+        /// Lấy giải đấu chứa nội dung thi đấu được chỉ định.
+        /// </summary>
+        /// <param name="giaiDauMonTheThaoId">ID môn thể thao thuộc giải.</param>
+        /// <returns>ID giải đấu hoặc null.</returns>
+        public async Task<int?> GetTournamentIdByContentAsync(int giaiDauMonTheThaoId)
+        {
+            var content = await _unitOfWork.GiaiDauMonTheThaos.GetByIdAsync(giaiDauMonTheThaoId);
+            return content == null || content.IsDeleted == true ? null : content.GiaiDauId;
+        }
+
         #region Helper Methods (JSON GhiChu parsing & tournament selection)
 
         private async Task<GiaiDau?> GetEffectiveTournamentAsync(int? giaiDauId)
@@ -38,8 +186,7 @@ namespace Dms.Application.Services
                 if (target != null && target.IsDeleted != true) return target;
             }
 
-            var tournaments = (await _unitOfWork.GiaiDaus.FindAsync(g => g.IsDeleted != true)).ToList();
-            return tournaments.OrderByDescending(g => g.NgayBatDau).FirstOrDefault();
+            return null;
         }
 
         private class ParsedMatchGhiChu
@@ -217,7 +364,7 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
-        /// Lấy danh sách toàn bộ nội dung thi đấu theo giải đấu có hỗ trợ lọc và tìm kiếm.
+        /// Lấy danh sách các môn thể thao thuộc giải đấu, kèm danh mục môn và thống kê tiến độ, có hỗ trợ lọc và tìm kiếm.
         /// </summary>
         public async Task<List<ThuKyNoiDungDto>> GetDanhSachNoiDungAsync(int? giaiDauId, int? monTheThaoId = null, string? loaiThiDau = null, string? gioiTinh = null, string? keyword = null)
         {
@@ -228,6 +375,9 @@ namespace Dms.Application.Services
 
             var gdmList = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(g => g.GiaiDauId == gId && g.IsDeleted != true)).ToList();
             var monList = (await _unitOfWork.MonTheThaos.FindAsync(m => m.IsDeleted != true)).ToDictionary(m => m.Id);
+            var danhMucIds = monList.Values.Select(m => m.DanhMucId).Distinct().ToList();
+            var danhMucList = (await _unitOfWork.DanhMucMonTheThaos.FindAsync(d =>
+                danhMucIds.Contains(d.Id) && d.IsDeleted != true)).ToDictionary(d => d.Id);
 
             var gdmIds = gdmList.Select(g => g.Id).ToList();
             var allDangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => gdmIds.Contains(d.GiaiDauMonTheThaoId) && d.IsDeleted != true)).ToList();
@@ -238,6 +388,7 @@ namespace Dms.Application.Services
             foreach (var gdm in gdmList)
             {
                 monList.TryGetValue(gdm.MonTheThaoId, out var mon);
+                danhMucList.TryGetValue(mon?.DanhMucId ?? 0, out var danhMuc);
 
                 var monTen = mon?.Ten ?? "Môn thi đấu";
                 var monMa = mon?.Ma ?? "";
@@ -263,6 +414,9 @@ namespace Dms.Application.Services
                     MonTheThaoId = gdm.MonTheThaoId,
                     TenMonTheThao = monTen,
                     MaMonTheThao = monMa,
+                    DanhMucMonTheThaoId = mon?.DanhMucId ?? 0,
+                    MaDanhMucMonTheThao = danhMuc?.Ma,
+                    TenDanhMucMonTheThao = danhMuc?.Ten ?? "Chưa phân loại",
                     TenNoiDung = $"{monTen} ({monGioiTinh})",
                     GioiTinh = monGioiTinh,
                     LoaiThiDau = (mon != null && mon.LaMonDongDoi) ? "DongDoi" : "CaNhan",
@@ -281,7 +435,12 @@ namespace Dms.Application.Services
                 if (!string.IsNullOrWhiteSpace(keyword))
                 {
                     var kw = keyword.Trim().ToLower();
-                    if (!item.TenNoiDung.ToLower().Contains(kw) && !(item.TenMonTheThao ?? "").ToLower().Contains(kw)) continue;
+                    var matchKeyword =
+                        (item.TenMonTheThao ?? "").ToLower().Contains(kw) ||
+                        (item.MaMonTheThao ?? "").ToLower().Contains(kw) ||
+                        (item.TenDanhMucMonTheThao ?? "").ToLower().Contains(kw) ||
+                        (item.MaDanhMucMonTheThao ?? "").ToLower().Contains(kw);
+                    if (!matchKeyword) continue;
                 }
 
                 result.Add(item);
@@ -291,7 +450,8 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
-        /// Lấy thông tin chi tiết của một nội dung thi đấu (danh sách đăng ký, các vòng, bảng và trận đấu).
+        /// Lấy thông tin chi tiết của một môn thể thao trong giải đấu, gồm danh mục, danh sách đăng ký,
+        /// các vòng, bảng và trận đấu.
         /// </summary>
         public async Task<ThuKyNoiDungChiTietDto?> GetChiTietNoiDungAsync(int giaiDauMonTheThaoId)
         {
@@ -300,6 +460,9 @@ namespace Dms.Application.Services
 
             var giaiDau = await _unitOfWork.GiaiDaus.GetByIdAsync(gdm.GiaiDauId);
             var mon = await _unitOfWork.MonTheThaos.GetByIdAsync(gdm.MonTheThaoId);
+            var danhMuc = mon == null
+                ? null
+                : await _unitOfWork.DanhMucMonTheThaos.GetByIdAsync(mon.DanhMucId);
 
             var rawMatches = (await _tranDauService.GetAllAsync(giaiDauMonTheThaoId: giaiDauMonTheThaoId))?.ToList() ?? new List<TranDauDto>();
             var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => d.GiaiDauMonTheThaoId == giaiDauMonTheThaoId && d.IsDeleted != true)).ToList();
@@ -365,6 +528,9 @@ namespace Dms.Application.Services
                 MonTheThaoId = gdm.MonTheThaoId,
                 TenMonTheThao = mon?.Ten,
                 MaMonTheThao = mon?.Ma,
+                DanhMucMonTheThaoId = mon?.DanhMucId ?? 0,
+                MaDanhMucMonTheThao = danhMuc?.Ma,
+                TenDanhMucMonTheThao = danhMuc?.Ten ?? "Chưa phân loại",
                 TenNoiDung = $"{mon?.Ten ?? "Môn"} ({mon?.GioiTinh ?? "Hỗn hợp"})",
                 GioiTinh = mon?.GioiTinh ?? "HonHop",
                 LoaiThiDau = (mon != null && mon.LaMonDongDoi) ? "DongDoi" : "CaNhan",
@@ -878,11 +1044,13 @@ namespace Dms.Application.Services
         /// <summary>
         /// Lấy bảng tổng sắp huy chương toàn đoàn (Huy chương Vàng, Bạc, Đồng, Tổng điểm và Xếp hạng).
         /// <summary>
-        /// Lấy bảng tổng sắp huy chương (Vàng, Bạc, Đồng) theo giải đấu cụ thể hoặc tổng hợp toàn bộ các giải đấu nếu giaiDauId null hoặc 0
+        /// Lấy bảng tổng sắp huy chương (Vàng, Bạc, Đồng) theo giải đấu cụ thể hoặc tổng hợp toàn bộ các giải đấu nếu giaiDauId null hoặc 0, có hỗ trợ lọc theo danh mục môn hoặc môn thể thao.
         /// </summary>
         /// <param name="giaiDauId">Mã giải đấu (tùy chọn; nếu null hoặc 0 sẽ tổng hợp toàn bộ các giải đấu trong hệ thống)</param>
+        /// <param name="danhMucMonTheThaoId">Mã danh mục môn thể thao cần lọc (tùy chọn)</param>
+        /// <param name="monTheThaoId">Mã môn thể thao cần lọc (tùy chọn)</param>
         /// <returns>Đối tượng DTO bảng tổng sắp huy chương toàn đoàn</returns>
-        public async Task<BangTongSapHuyChuongDto> GetBangTongSapHuyChuongAsync(int? giaiDauId)
+        public async Task<BangTongSapHuyChuongDto> GetBangTongSapHuyChuongAsync(int? giaiDauId, int? danhMucMonTheThaoId = null, int? monTheThaoId = null)
         {
             var isAllTournaments = !giaiDauId.HasValue || giaiDauId.Value <= 0;
             GiaiDau? giaiDau = null;
@@ -904,6 +1072,9 @@ namespace Dms.Application.Services
             var huyChuongs = (await _unitOfWork.HuyChuongs.FindAsync(h =>
                 (isAllTournaments || h.GiaiDauId == giaiDauId!.Value) && h.IsDeleted != true
             )).ToList();
+            var gdms = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(g => g.IsDeleted != true)).ToDictionary(g => g.Id);
+            var mons = (await _unitOfWork.MonTheThaos.FindAsync(m => m.IsDeleted != true)).ToDictionary(m => m.Id);
+            var danhMucs = (await _unitOfWork.DanhMucMonTheThaos.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
             var loaiHcs = (await _unitOfWork.LoaiHuyChuongs.FindAsync(l => l.IsDeleted != true)).ToDictionary(l => l.Id);
             var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
             var dois = (await _unitOfWork.Dois.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
@@ -913,15 +1084,220 @@ namespace Dms.Application.Services
             var vdvIds = chiTiets.Select(c => c.VanDongVienId).Distinct().ToList();
             var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id) && v.IsDeleted != true)).ToDictionary(v => v.Id);
 
-            var tally = new Dictionary<int, (int vang, int bac, int dong)>();
-            foreach (var dv in donVis)
+            // Lọc huy chương theo danh mục môn hoặc môn thể thao nếu được chỉ định
+            string? tenDanhMuc = null;
+            if (danhMucMonTheThaoId.HasValue && danhMucMonTheThaoId.Value > 0 && danhMucs.TryGetValue(danhMucMonTheThaoId.Value, out var dm))
             {
-                tally[dv.Id] = (0, 0, 0);
+                tenDanhMuc = dm.Ten;
+            }
+
+            string? tenMon = null;
+            if (monTheThaoId.HasValue && monTheThaoId.Value > 0 && mons.TryGetValue(monTheThaoId.Value, out var m))
+            {
+                tenMon = m.Ten;
+            }
+
+            var filteredHuyChuongs = huyChuongs.Where(hc =>
+            {
+                if (!gdms.TryGetValue(hc.GiaiDauMonTheThaoId, out var gdm)) return false;
+                if (monTheThaoId.HasValue && monTheThaoId.Value > 0 && gdm.MonTheThaoId != monTheThaoId.Value) return false;
+                if (danhMucMonTheThaoId.HasValue && danhMucMonTheThaoId.Value > 0)
+                {
+                    if (!mons.TryGetValue(gdm.MonTheThaoId, out var sport) || sport.DanhMucId != danhMucMonTheThaoId.Value)
+                        return false;
+                }
+                return true;
+            }).ToList();
+
+            var (sortedRankings, vangTotal, bacTotal, dongTotal) = TinhBangXepHangDoan(
+                filteredHuyChuongs, donVis, loaiHcs, dangKys, dois, chiTiets, vdvs, chiLayDonViCoHuyChuong: false);
+
+            return new BangTongSapHuyChuongDto
+            {
+                GiaiDauId = isAllTournaments ? 0 : giaiDau!.Id,
+                TenGiaiDau = isAllTournaments ? "Tất cả các giải đấu (Tổng hợp toàn đoàn)" : giaiDau!.Ten,
+                DanhMucMonTheThaoId = danhMucMonTheThaoId,
+                TenDanhMucMonTheThao = tenDanhMuc,
+                MonTheThaoId = monTheThaoId,
+                TenMonTheThao = tenMon,
+                TongSoHuyChuongVang = vangTotal,
+                TongSoHuyChuongBac = bacTotal,
+                TongSoHuyChuongDong = dongTotal,
+                BangXepHang = sortedRankings,
+                NgayXuatBaoCao = DateTime.Now
+            };
+        }
+
+        /// <summary>
+        /// Lấy danh sách bảng xếp hạng huy chương phân loại theo từng Danh mục môn thể thao.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu (tùy chọn; null hoặc 0 để tính toàn bộ các giải).</param>
+        /// <returns>Danh sách các bảng xếp hạng huy chương gom nhóm theo từng Danh mục môn thể thao.</returns>
+        public async Task<List<BangXepHangTheoDanhMucDto>> GetBangXepHangTheoDanhMucAsync(int? giaiDauId)
+        {
+            var isAllTournaments = !giaiDauId.HasValue || giaiDauId.Value <= 0;
+            var donVis = (await _unitOfWork.DonVis.FindAsync(d => d.IsDeleted != true)).ToList();
+            var danhMucs = (await _unitOfWork.DanhMucMonTheThaos.FindAsync(d => d.IsDeleted != true && d.TrangThai)).ToList();
+            var mons = (await _unitOfWork.MonTheThaos.FindAsync(m => m.IsDeleted != true && m.TrangThai)).ToList();
+            var gdms = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(g =>
+                (isAllTournaments || g.GiaiDauId == giaiDauId!.Value) && g.IsDeleted != true
+            )).ToList();
+
+            var gdmIds = gdms.Select(g => g.Id).ToList();
+            var huyChuongs = (await _unitOfWork.HuyChuongs.FindAsync(h =>
+                (isAllTournaments || h.GiaiDauId == giaiDauId!.Value) &&
+                gdmIds.Contains(h.GiaiDauMonTheThaoId) &&
+                h.IsDeleted != true
+            )).ToList();
+
+            var loaiHcs = (await _unitOfWork.LoaiHuyChuongs.FindAsync(l => l.IsDeleted != true)).ToDictionary(l => l.Id);
+            var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
+            var dois = (await _unitOfWork.Dois.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
+
+            var dkIds = dangKys.Keys.ToList();
+            var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => dkIds.Contains(c.DangKyThiDauId) && c.IsDeleted != true)).ToList();
+            var vdvIds = chiTiets.Select(c => c.VanDongVienId).Distinct().ToList();
+            var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id) && v.IsDeleted != true)).ToDictionary(v => v.Id);
+
+            var gdmDict = gdms.ToDictionary(g => g.Id);
+            var monDict = mons.ToDictionary(m => m.Id);
+
+            var result = new List<BangXepHangTheoDanhMucDto>();
+
+            foreach (var dm in danhMucs)
+            {
+                var monsInDm = mons.Where(m => m.DanhMucId == dm.Id).Select(m => m.Id).ToHashSet();
+                var gdmsInDm = gdms.Where(g => monsInDm.Contains(g.MonTheThaoId)).Select(g => g.Id).ToHashSet();
+
+                // Nếu có giải đấu cụ thể và danh mục này không có môn nào trong giải thì bỏ qua
+                if (!isAllTournaments && gdmsInDm.Count == 0) continue;
+
+                var medalsInDm = huyChuongs.Where(h => gdmsInDm.Contains(h.GiaiDauMonTheThaoId)).ToList();
+                var (bangXepHang, vTot, bTot, dTot) = TinhBangXepHangDoan(
+                    medalsInDm, donVis, loaiHcs, dangKys, dois, chiTiets, vdvs, chiLayDonViCoHuyChuong: true);
+
+                result.Add(new BangXepHangTheoDanhMucDto
+                {
+                    DanhMucId = dm.Id,
+                    MaDanhMuc = dm.Ma,
+                    TenDanhMuc = dm.Ten,
+                    TongSoMon = gdmsInDm.Count > 0 ? gdms.Count(g => gdmsInDm.Contains(g.Id)) : monsInDm.Count,
+                    TongHuyChuongVang = vTot,
+                    TongHuyChuongBac = bTot,
+                    TongHuyChuongDong = dTot,
+                    BangXepHang = bangXepHang
+                });
+            }
+
+            return result.OrderByDescending(r => r.TongHuyChuong)
+                         .ThenByDescending(r => r.TongHuyChuongVang)
+                         .ThenBy(r => r.TenDanhMuc)
+                         .ToList();
+        }
+
+        /// <summary>
+        /// Lấy danh sách bảng xếp hạng huy chương phân loại theo từng Môn thể thao cụ thể.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu (tùy chọn; null hoặc 0 để tính toàn bộ).</param>
+        /// <param name="danhMucMonTheThaoId">ID danh mục môn thể thao (tùy chọn để lọc môn thuộc danh mục).</param>
+        /// <returns>Danh sách các bảng xếp hạng huy chương gom nhóm theo từng Môn thể thao.</returns>
+        public async Task<List<BangXepHangTheoMonDto>> GetBangXepHangTheoMonAsync(int? giaiDauId, int? danhMucMonTheThaoId = null)
+        {
+            var isAllTournaments = !giaiDauId.HasValue || giaiDauId.Value <= 0;
+            var donVis = (await _unitOfWork.DonVis.FindAsync(d => d.IsDeleted != true)).ToList();
+            var danhMucs = (await _unitOfWork.DanhMucMonTheThaos.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
+            var mons = (await _unitOfWork.MonTheThaos.FindAsync(m =>
+                m.IsDeleted != true &&
+                (!danhMucMonTheThaoId.HasValue || danhMucMonTheThaoId.Value <= 0 || m.DanhMucId == danhMucMonTheThaoId.Value)
+            )).ToList();
+
+            var gdms = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(g =>
+                (isAllTournaments || g.GiaiDauId == giaiDauId!.Value) && g.IsDeleted != true
+            )).ToList();
+
+            var gdmIds = gdms.Select(g => g.Id).ToList();
+            var huyChuongs = (await _unitOfWork.HuyChuongs.FindAsync(h =>
+                (isAllTournaments || h.GiaiDauId == giaiDauId!.Value) &&
+                gdmIds.Contains(h.GiaiDauMonTheThaoId) &&
+                h.IsDeleted != true
+            )).ToList();
+
+            var loaiHcs = (await _unitOfWork.LoaiHuyChuongs.FindAsync(l => l.IsDeleted != true)).ToDictionary(l => l.Id);
+            var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
+            var dois = (await _unitOfWork.Dois.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
+
+            var dkIds = dangKys.Keys.ToList();
+            var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => dkIds.Contains(c.DangKyThiDauId) && c.IsDeleted != true)).ToList();
+            var vdvIds = chiTiets.Select(c => c.VanDongVienId).Distinct().ToList();
+            var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id) && v.IsDeleted != true)).ToDictionary(v => v.Id);
+
+            var result = new List<BangXepHangTheoMonDto>();
+
+            foreach (var mon in mons)
+            {
+                var gdmsForMon = gdms.Where(g => g.MonTheThaoId == mon.Id).Select(g => g.Id).ToHashSet();
+                if (!isAllTournaments && gdmsForMon.Count == 0) continue;
+
+                var medalsForMon = huyChuongs.Where(h => gdmsForMon.Contains(h.GiaiDauMonTheThaoId)).ToList();
+                var (bangXepHang, vTot, bTot, dTot) = TinhBangXepHangDoan(
+                    medalsForMon, donVis, loaiHcs, dangKys, dois, chiTiets, vdvs, chiLayDonViCoHuyChuong: true);
+
+                danhMucs.TryGetValue(mon.DanhMucId, out var dm);
+
+                result.Add(new BangXepHangTheoMonDto
+                {
+                    MonTheThaoId = mon.Id,
+                    MaMon = mon.Ma,
+                    TenMon = mon.Ten,
+                    DanhMucId = mon.DanhMucId,
+                    TenDanhMuc = dm?.Ten ?? "Chưa phân loại",
+                    TongHuyChuongVang = vTot,
+                    TongHuyChuongBac = bTot,
+                    TongHuyChuongDong = dTot,
+                    BangXepHang = bangXepHang
+                });
+            }
+
+            return result.OrderByDescending(r => r.TongHuyChuong)
+                         .ThenByDescending(r => r.TongHuyChuongVang)
+                         .ThenBy(r => r.TenMon)
+                         .ToList();
+        }
+
+        /// <summary>
+        /// Hàm nội bộ hỗ trợ tính toán và xếp hạng danh sách huy chương theo các đoàn/đơn vị tham gia.
+        /// </summary>
+        /// <param name="medals">Danh sách huy chương đầu vào.</param>
+        /// <param name="donVis">Danh sách đơn vị trong hệ thống.</param>
+        /// <param name="loaiHcs">Map danh mục loại huy chương.</param>
+        /// <param name="dangKys">Map đăng ký thi đấu.</param>
+        /// <param name="dois">Map đội tham gia.</param>
+        /// <param name="chiTiets">Danh sách chi tiết đăng ký thi đấu.</param>
+        /// <param name="vdvs">Map vận động viên.</param>
+        /// <param name="chiLayDonViCoHuyChuong">True nếu chỉ muốn lấy các đơn vị có ít nhất 1 huy chương.</param>
+        /// <returns>Bộ tuple gồm danh sách xếp hạng đã sắp xếp và tổng số lượng từng loại huy chương.</returns>
+        private (List<HuyChuongDoanDto> bangXepHang, int vangTotal, int bacTotal, int dongTotal) TinhBangXepHangDoan(
+            List<HuyChuong> medals,
+            List<DonVi> donVis,
+            Dictionary<int, LoaiHuyChuong> loaiHcs,
+            Dictionary<int, DangKyThiDau> dangKys,
+            Dictionary<int, Doi> dois,
+            List<ChiTietDangKyThiDau> chiTiets,
+            Dictionary<int, VanDongVien> vdvs,
+            bool chiLayDonViCoHuyChuong)
+        {
+            var tally = new Dictionary<int, (int vang, int bac, int dong)>();
+            if (!chiLayDonViCoHuyChuong)
+            {
+                foreach (var dv in donVis)
+                {
+                    tally[dv.Id] = (0, 0, 0);
+                }
             }
 
             int vangTotal = 0, bacTotal = 0, dongTotal = 0;
 
-            foreach (var hc in huyChuongs)
+            foreach (var hc in medals)
             {
                 loaiHcs.TryGetValue(hc.LoaiHuyChuongId, out var loai);
                 string loaiTen = (loai?.Ten ?? "").ToLower();
@@ -973,6 +1349,11 @@ namespace Dms.Application.Services
 
             foreach (var kvp in tally)
             {
+                if (chiLayDonViCoHuyChuong && (kvp.Value.vang + kvp.Value.bac + kvp.Value.dong == 0))
+                {
+                    continue;
+                }
+
                 donViMap.TryGetValue(kvp.Key, out var dv);
                 list.Add(new HuyChuongDoanDto
                 {
@@ -997,16 +1378,7 @@ namespace Dms.Application.Services
                 sorted[i].XepHang = i + 1;
             }
 
-            return new BangTongSapHuyChuongDto
-            {
-                GiaiDauId = isAllTournaments ? 0 : giaiDau!.Id,
-                TenGiaiDau = isAllTournaments ? "Tất cả các giải đấu (Tổng hợp toàn đoàn)" : giaiDau!.Ten,
-                TongSoHuyChuongVang = vangTotal,
-                TongSoHuyChuongBac = bacTotal,
-                TongSoHuyChuongDong = dongTotal,
-                BangXepHang = sorted,
-                NgayXuatBaoCao = DateTime.Now
-            };
+            return (sorted, vangTotal, bacTotal, dongTotal);
         }
 
         /// <summary>

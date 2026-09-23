@@ -28,6 +28,7 @@ namespace Dms.Domain.Interfaces
         IGenericRepository<SanDau> SanDaus { get; }
         IGenericRepository<TrongTai> TrongTais { get; }
         IGenericRepository<ThuKy> ThuKys { get; }
+        IGenericRepository<PhanCongThuKy> PhanCongThuKys { get; }
         IGenericRepository<TranDau> TranDaus { get; }
         IGenericRepository<ThanhPhanTranDau> ThanhPhanTranDaus { get; }
         IGenericRepository<HiepDau> HiepDaus { get; }

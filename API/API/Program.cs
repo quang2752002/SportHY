@@ -159,7 +159,7 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
         await context.Database.MigrateAsync();
-        await DbInitializer.SeedDataAsync(context, userManager, roleManager);
+        //await DbInitializer.SeedDataAsync(context, userManager, roleManager);
     }
     catch (Exception ex)
     {
