@@ -54,7 +54,7 @@ namespace Dms.Application.DTOs
         public List<HuyChuongDoanDto> TopHuyChuong { get; set; } = new();
     }
 
-    // ==================== THEO DÕI NỘI DUNG THI ĐẤU DTOs ====================
+    // ==================== THEO DÕI MÔN VÀ DANH MỤC MÔN DTOs ====================
     public class ThuKyNoiDungDto
     {
         public int Id { get; set; } // GiaiDauMonTheThaoId
@@ -63,6 +63,9 @@ namespace Dms.Application.DTOs
         public int MonTheThaoId { get; set; }
         public string? TenMonTheThao { get; set; }
         public string? MaMonTheThao { get; set; }
+        public int DanhMucMonTheThaoId { get; set; }
+        public string? MaDanhMucMonTheThao { get; set; }
+        public string? TenDanhMucMonTheThao { get; set; }
         public string? TenNoiDung { get; set; }
         public string? GioiTinh { get; set; } // Nam, Nu, HonHop
         public string? LoaiThiDau { get; set; } // CaNhan, Doi, DongDoi

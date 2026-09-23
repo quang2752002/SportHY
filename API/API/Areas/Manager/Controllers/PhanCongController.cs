@@ -14,17 +14,20 @@ namespace API.Areas.Manager.Controllers
         private readonly ITruongBanTrongTaiService _truongBanService;
         private readonly IGiaiDauService _giaiDauService;
         private readonly ITrongTaiService _trongTaiService;
+        private readonly IThuKyGiaiService _thuKyGiaiService;
         private readonly UserManager<ApplicationUser> _userManager;
 
         public PhanCongController(
             ITruongBanTrongTaiService truongBanService,
             IGiaiDauService giaiDauService,
             ITrongTaiService trongTaiService,
+            IThuKyGiaiService thuKyGiaiService,
             UserManager<ApplicationUser> userManager)
         {
             _truongBanService = truongBanService;
             _giaiDauService = giaiDauService;
             _trongTaiService = trongTaiService;
+            _thuKyGiaiService = thuKyGiaiService;
             _userManager = userManager;
         }
 
@@ -43,6 +46,9 @@ namespace API.Areas.Manager.Controllers
 
             var allReferees = (await _trongTaiService.GetAllAsync())?.ToList() ?? new();
             ViewBag.AllReferees = allReferees;
+            ViewBag.SecretaryAssignments = selectedGiaiDauId.HasValue
+                ? await _thuKyGiaiService.GetSecretaryAssignmentsForManagerAsync(selectedGiaiDauId.Value)
+                : new List<ThuKyPhanCongDto>();
 
             GiaiDauDto? currentTournament = null;
             var categoriesAssigned = new List<CategoryAssignmentViewModelDto>();
@@ -126,6 +132,22 @@ namespace API.Areas.Manager.Controllers
             }
 
             return Json(new { success = true, message = message });
+        }
+
+        /// <summary>
+        /// Lưu danh sách thư ký được phân công cho giải đấu đang chọn.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu.</param>
+        /// <param name="thuKyIds">Danh sách hồ sơ thư ký được chọn.</param>
+        /// <returns>Kết quả thao tác dưới dạng JSON.</returns>
+        [HttpPost]
+        public async Task<IActionResult> AssignSecretaries(int giaiDauId, [FromBody] List<int>? thuKyIds)
+        {
+            var (success, message) = await _thuKyGiaiService.SaveSecretaryAssignmentsAsync(
+                giaiDauId,
+                thuKyIds ?? new List<int>());
+
+            return Json(new { success, message });
         }
     }
 }

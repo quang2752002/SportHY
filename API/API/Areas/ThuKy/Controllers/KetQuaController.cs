@@ -57,6 +57,11 @@ namespace API.Areas.ThuKy.Controllers
                 return Json(new { success = false, message = "Dữ liệu yêu cầu không hợp lệ." });
             }
 
+            if (!await CanAccessMatchAsync(dto.TranDauId))
+            {
+                return Forbid();
+            }
+
             var username = GetCurrentUsername();
             var (success, message) = await _thuKyService.XacNhanKetQuaAsync(dto.TranDauId, dto.GhiChu, username);
             return Json(new { success, message });
@@ -73,6 +78,11 @@ namespace API.Areas.ThuKy.Controllers
                 return Json(new { success = false, message = "Vui lòng nhập lý do cụ thể cần kiểm tra lại kết quả." });
             }
 
+            if (!await CanAccessMatchAsync(dto.TranDauId))
+            {
+                return Forbid();
+            }
+
             var username = GetCurrentUsername();
             var (success, message) = await _thuKyService.YeuCauKiemTraLaiAsync(dto.TranDauId, dto.LyDo.Trim(), username);
             return Json(new { success, message });
@@ -87,6 +97,11 @@ namespace API.Areas.ThuKy.Controllers
             if (dto == null || dto.TranDauIds == null || dto.TranDauIds.Count == 0)
             {
                 return Json(new { success = false, message = "Vui lòng chọn ít nhất một trận đấu để phê duyệt." });
+            }
+
+            if (!await CanAccessMatchesAsync(dto.TranDauIds))
+            {
+                return Forbid();
             }
 
             var username = GetCurrentUsername();

@@ -31,6 +31,7 @@ namespace Dms.Infrastructure.Repositories
         private IGenericRepository<SanDau>? _sanDaus;
         private IGenericRepository<TrongTai>? _trongTais;
         private IGenericRepository<ThuKy>? _thuKys;
+        private IGenericRepository<PhanCongThuKy>? _phanCongThuKys;
         private IGenericRepository<TranDau>? _tranDaus;
         private IGenericRepository<ThanhPhanTranDau>? _thanhPhanTranDaus;
         private IGenericRepository<HiepDau>? _hiepDaus;
@@ -115,6 +116,9 @@ namespace Dms.Infrastructure.Repositories
 
         public IGenericRepository<ThuKy> ThuKys => 
             _thuKys ??= new GenericRepository<ThuKy>(_context);
+
+        public IGenericRepository<PhanCongThuKy> PhanCongThuKys =>
+            _phanCongThuKys ??= new GenericRepository<PhanCongThuKy>(_context);
 
         public IGenericRepository<TranDau> TranDaus => 
             _tranDaus ??= new GenericRepository<TranDau>(_context);

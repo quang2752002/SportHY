@@ -94,6 +94,13 @@ namespace Dms.Application.Services
             return dtos.FirstOrDefault();
         }
 
+        /// <summary>
+        /// Tạo mới hồ sơ đăng ký thi đấu, kiểm tra tính hợp lệ về thời hạn đăng ký, giới tính, số lượng VĐV, trùng lặp VĐV và tự động giải mã HTML entities cho tên đội.
+        /// </summary>
+        /// <param name="dto">Dữ liệu đăng ký thi đấu</param>
+        /// <param name="createdBy">Tài khoản tạo hồ sơ</param>
+        /// <param name="isPrivileged">Cờ đặc quyền cho phép đăng ký quá hạn</param>
+        /// <returns>Hồ sơ đăng ký đã tạo</returns>
         public async Task<DangKyThiDauDto> CreateAsync(CreateUpdateDangKyThiDauDto dto, string? createdBy = null, bool isPrivileged = false)
         {
             var gdMon = await _unitOfWork.GiaiDauMonTheThaos.GetByIdAsync(dto.GiaiDauMonTheThaoId);
@@ -209,6 +216,10 @@ namespace Dms.Application.Services
                 int? donViId = dto.DonViId ?? vdvEntities.FirstOrDefault(v => v.DonViId.HasValue)?.DonViId;
 
                 string tenDoi = dto.TenDoi?.Trim() ?? string.Empty;
+                if (!string.IsNullOrEmpty(tenDoi))
+                {
+                    tenDoi = System.Net.WebUtility.HtmlDecode(tenDoi);
+                }
                 if (string.IsNullOrWhiteSpace(tenDoi))
                 {
                     if (vdvEntities.Count == 1)
