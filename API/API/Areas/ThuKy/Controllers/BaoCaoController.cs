@@ -1,4 +1,5 @@
 using Dms.Application.Interfaces;
+using Dms.Application.DTOs;
 using Dms.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -38,6 +39,11 @@ namespace API.Areas.ThuKy.Controllers
         public async Task<IActionResult> GetBaoCaoHuyChuong(int? giaiDauId)
         {
             var effectiveGiaiDauId = await GetSelectedGiaiDauIdAsync(giaiDauId);
+            if (User.IsInRole(Dms.Application.Common.AppRoles.Secretary) && !effectiveGiaiDauId.HasValue)
+            {
+                return Json(new { success = true, data = new BangTongSapHuyChuongDto() });
+            }
+
             var data = await _thuKyService.GetBangTongSapHuyChuongAsync(effectiveGiaiDauId);
             return Json(new { success = true, data });
         }
@@ -49,6 +55,11 @@ namespace API.Areas.ThuKy.Controllers
         public async Task<IActionResult> GetBaoCaoTongHop(int? giaiDauId)
         {
             var effectiveGiaiDauId = await GetSelectedGiaiDauIdAsync(giaiDauId);
+            if (User.IsInRole(Dms.Application.Common.AppRoles.Secretary) && !effectiveGiaiDauId.HasValue)
+            {
+                return Json(new { success = true, data = new ThuKyBaoCaoTongHopDto() });
+            }
+
             var data = await _thuKyService.GetBaoCaoTongHopAsync(effectiveGiaiDauId);
             return Json(new { success = true, data });
         }
@@ -60,6 +71,11 @@ namespace API.Areas.ThuKy.Controllers
         public async Task<IActionResult> ExportExcel(string loaiBaoCao, int? giaiDauId)
         {
             var effectiveGiaiDauId = await GetSelectedGiaiDauIdAsync(giaiDauId);
+            if (User.IsInRole(Dms.Application.Common.AppRoles.Secretary) && !effectiveGiaiDauId.HasValue)
+            {
+                return NotFound("Thư ký chưa được phân công vào giải đấu nào.");
+            }
+
             var sb = new StringBuilder();
 
             if (loaiBaoCao == "HuyChuong")

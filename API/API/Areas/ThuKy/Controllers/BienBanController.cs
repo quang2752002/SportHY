@@ -58,6 +58,11 @@ namespace API.Areas.ThuKy.Controllers
         [HttpGet]
         public async Task<IActionResult> GetChiTiet(int tranDauId)
         {
+            if (!await CanAccessMatchAsync(tranDauId))
+            {
+                return Forbid();
+            }
+
             var data = await _thuKyService.GetChiTietBienBanAsync(tranDauId);
             if (data == null)
             {
@@ -77,6 +82,11 @@ namespace API.Areas.ThuKy.Controllers
                 return Json(new { success = false, message = "Vui lòng nhập họ tên người ký xác nhận." });
             }
 
+            if (!await CanAccessMatchAsync(request.TranDauId))
+            {
+                return Forbid();
+            }
+
             var username = GetCurrentUsername();
             var (success, message) = await _thuKyService.KyXacNhanBienBanAsync(request.TranDauId, request.SignerName.Trim(), username);
             return Json(new { success, message });
@@ -88,6 +98,11 @@ namespace API.Areas.ThuKy.Controllers
         [HttpGet]
         public async Task<IActionResult> In(int id)
         {
+            if (!await CanAccessMatchAsync(id))
+            {
+                return Forbid();
+            }
+
             var data = await _thuKyService.GetChiTietBienBanAsync(id);
             if (data == null)
             {

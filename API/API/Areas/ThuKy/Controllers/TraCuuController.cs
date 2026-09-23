@@ -1,4 +1,5 @@
 using Dms.Application.Interfaces;
+using Dms.Application.DTOs;
 using Dms.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -35,6 +36,15 @@ namespace API.Areas.ThuKy.Controllers
         public async Task<IActionResult> TimKiem(string keyword, int? giaiDauId, string? loaiDoiTuong = "All")
         {
             var effectiveGiaiDauId = await GetSelectedGiaiDauIdAsync(giaiDauId);
+            if (User.IsInRole(Dms.Application.Common.AppRoles.Secretary) && !effectiveGiaiDauId.HasValue)
+            {
+                return Json(new
+                {
+                    success = true,
+                    data = new ThuKyTraCuuResultDto { Keyword = keyword ?? string.Empty }
+                });
+            }
+
             var result = await _thuKyService.TraCuuTongHopAsync(keyword, effectiveGiaiDauId, loaiDoiTuong);
             return Json(new { success = true, data = result });
         }
