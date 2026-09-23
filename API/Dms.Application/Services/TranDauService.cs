@@ -131,13 +131,18 @@ namespace Dms.Application.Services
 
             // Lấy thêm thông tin DangKyThiDau và TrongTai để điền tên
             var allDkIds = tranList.SelectMany(t => t.ThanhPhanTranDaus.Where(tp => tp.IsDeleted != true).Select(tp => tp.DangKyThiDauId)).Distinct().ToList();
-            var dangKyMap = (await _unitOfWork.DangKyThiDaus.GetPagedAsync(
+            var dangKyList = (await _unitOfWork.DangKyThiDaus.GetPagedAsync(
                 1, 2000,
                 predicate: d => allDkIds.Contains(d.Id),
                 orderBy: null,
                 d => d.Doi!,
-                d => d.Doi!.DonVi!
-            )).Items.ToDictionary(d => d.Id);
+                d => d.Doi!.DonVi!,
+                d => d.ChiTietDangKyThiDaus
+            )).Items.ToList();
+            var dangKyMap = dangKyList.ToDictionary(d => d.Id);
+
+            var allVdvIds = dangKyList.SelectMany(d => d.ChiTietDangKyThiDaus.Where(ct => ct.IsDeleted != true).Select(ct => ct.VanDongVienId)).Distinct().ToList();
+            var vdvMap = (await _unitOfWork.VanDongViens.FindAsync(v => allVdvIds.Contains(v.Id))).ToDictionary(v => v.Id, v => v.HoTen);
 
             var allTtIds = tranList.SelectMany(t => t.PhanCongTrongTais.Where(pc => pc.IsDeleted != true).Select(pc => pc.TrongTaiId)).Distinct().ToList();
             var trongTaiMap = (await _unitOfWork.TrongTais.FindAsync(tt => allTtIds.Contains(tt.Id))).ToDictionary(tt => tt.Id);
@@ -147,18 +152,47 @@ namespace Dms.Application.Services
             {
                 var tpList = t.ThanhPhanTranDaus.Where(tp => tp.IsDeleted != true).OrderBy(tp => tp.ViTri ?? 1).ToList();
                 var pcList = t.PhanCongTrongTais.Where(pc => pc.IsDeleted != true).ToList();
+                bool laMonDongDoi = t.GiaiDauMonTheThao?.MonTheThao?.LaMonDongDoi ?? false;
 
                 var thanhPhanDtos = new List<ThanhPhanTranDauItemDto>();
                 foreach (var tp in tpList)
                 {
                     dangKyMap.TryGetValue(tp.DangKyThiDauId, out var dk);
+                    string displayName;
+                    if (laMonDongDoi)
+                    {
+                        displayName = (!string.IsNullOrWhiteSpace(dk?.Doi?.Ten) && !dk.Doi.Ten.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                            ? dk.Doi.Ten
+                            : (!string.IsNullOrWhiteSpace(dk?.TenDangKy) && !dk.TenDangKy.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase) ? dk.TenDangKy : $"Đội #{tp.DangKyThiDauId}");
+                    }
+                    else
+                    {
+                        var firstVdvId = dk?.ChiTietDangKyThiDaus.FirstOrDefault(ct => ct.IsDeleted != true)?.VanDongVienId;
+                        if (firstVdvId.HasValue && vdvMap.TryGetValue(firstVdvId.Value, out var vdvName))
+                        {
+                            displayName = vdvName;
+                        }
+                        else if (!string.IsNullOrWhiteSpace(dk?.Doi?.Ten) && !dk.Doi.Ten.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                        {
+                            displayName = dk.Doi.Ten;
+                        }
+                        else if (!string.IsNullOrWhiteSpace(dk?.TenDangKy) && !dk.TenDangKy.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                        {
+                            displayName = dk.TenDangKy;
+                        }
+                        else
+                        {
+                            displayName = $"VĐV #{tp.DangKyThiDauId}";
+                        }
+                    }
+
                     thanhPhanDtos.Add(new ThanhPhanTranDauItemDto
                     {
                         Id = tp.Id,
                         TranDauId = tp.TranDauId,
                         DangKyThiDauId = tp.DangKyThiDauId,
-                        TenDangKy = dk?.TenDangKy ?? dk?.SoDangKy,
-                        TenDoi = dk?.Doi?.Ten ?? dk?.TenDangKy,
+                        TenDangKy = displayName,
+                        TenDoi = displayName,
                         TenDonVi = dk?.Doi?.DonVi?.Ten,
                         SoLane = tp.SoLane,
                         ViTri = tp.ViTri,
@@ -240,6 +274,178 @@ namespace Dms.Application.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Returns only matches assigned to the specified referee unless the caller has tournament-wide access.
+        /// </summary>
+        /// <param name="giaiDauId">Optional tournament ID used to filter the match list.</param>
+        /// <param name="trongTaiId">The referee ID whose active assignments define the accessible matches.</param>
+        /// <param name="allowAllMatches">Whether the caller may see every match in the tournament.</param>
+        /// <returns>Matches within the caller's authorized scope.</returns>
+        public async Task<IEnumerable<TranDauDto>> GetAccessibleMatchesAsync(int? giaiDauId, int? trongTaiId, bool allowAllMatches)
+        {
+            var matches = await GetAllAsync(giaiDauId: giaiDauId);
+            if (allowAllMatches) return matches;
+            if (!trongTaiId.HasValue) return Enumerable.Empty<TranDauDto>();
+
+            return matches.Where(match => match.DanhSachTrongTai.Any(assignment => assignment.TrongTaiId == trongTaiId.Value)).ToList();
+        }
+
+        /// <summary>
+        /// Verifies match access using the user's elevated tournament permission or an explicit referee assignment.
+        /// </summary>
+        /// <param name="tranDauId">The match ID to check.</param>
+        /// <param name="trongTaiId">The signed-in referee ID, if the account is linked to one.</param>
+        /// <param name="allowAllMatches">Whether the caller may access all tournament matches.</param>
+        /// <returns>True when access is allowed; otherwise false.</returns>
+        public async Task<bool> CanAccessMatchAsync(int tranDauId, int? trongTaiId, bool allowAllMatches)
+        {
+            if (allowAllMatches) return true;
+            if (!trongTaiId.HasValue) return false;
+
+            var match = await GetByIdAsync(tranDauId);
+            return match?.DanhSachTrongTai.Any(assignment => assignment.TrongTaiId == trongTaiId.Value) == true;
+        }
+
+        /// <summary>
+        /// Updates a match's score and progress fields without rewriting its teams or referee assignments.
+        /// Before marking a tied match complete, validates the configured draw, extra-time, or penalty rule;
+        /// athletics heats must use the heat-result completion workflow.
+        /// </summary>
+        /// <param name="id">The match ID to update.</param>
+        /// <param name="dto">The score, status, notes, and outcome to persist.</param>
+        /// <param name="updatedBy">The account performing the update.</param>
+        /// <returns>True when the match was updated; false when it does not exist.</returns>
+        public async Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null)
+        {
+            var entity = await _unitOfWork.TranDaus.GetByIdAsync(id);
+            if (entity == null || entity.IsDeleted == true) return false;
+            if (dto.Score1 < 0 || dto.Score2 < 0 || !new[] { "ChuaDau", "DangDau", "KetThuc" }.Contains(dto.TrangThai))
+            {
+                throw new ArgumentException("Tỷ số hoặc trạng thái trận đấu không hợp lệ.");
+            }
+
+            if (dto.TrangThai == "KetThuc")
+            {
+                var config = await _theThucService.GetConfigByTranDauIdAsync(id);
+                if (config?.LoaiTheThuc == "TinhDiemXepHang")
+                {
+                    throw new InvalidOperationException("Lượt thi thành tích cần gửi kết quả từng VĐV; không thể chốt bằng cập nhật tỷ số chung.");
+                }
+                if (dto.Score1 == dto.Score2 && config == null)
+                {
+                    throw new InvalidOperationException("Không tìm thấy cấu hình thể thức để kiểm tra kết quả hòa.");
+                }
+
+                if (dto.Score1 == dto.Score2)
+                {
+                    var tieEvaluation = _scoringEngine.EvaluateMatchResult(
+                        new CompleteMatchRequestDto
+                        {
+                            TranDauId = id,
+                            Score1 = dto.Score1,
+                            Score2 = dto.Score2,
+                            PenaltyScore1 = dto.PenaltyScore1,
+                            PenaltyScore2 = dto.PenaltyScore2,
+                            ExtraTimeScore1 = dto.ExtraTimeScore1,
+                            ExtraTimeScore2 = dto.ExtraTimeScore2
+                        },
+                        config!,
+                        !entity.BangDauId.HasValue);
+                    if (!tieEvaluation.IsValid)
+                    {
+                        throw new InvalidOperationException(tieEvaluation.ErrorMessage ?? "Chưa phân định được kết quả hòa theo cấu hình môn.");
+                    }
+                }
+            }
+
+            var nowUtc = DateTime.UtcNow;
+            var wasInProgress = string.Equals(entity.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase);
+            if ((dto.TrangThai == "DangDau" && !wasInProgress) ||
+                (dto.TrangThai == "KetThuc" && !wasInProgress && entity.TrangThai != "KetThuc"))
+            {
+                entity.ThoiGianBatDau = nowUtc;
+            }
+            if (dto.TrangThai == "KetThuc")
+            {
+                entity.ThoiGianKetThuc ??= nowUtc;
+            }
+            else
+            {
+                entity.ThoiGianKetThuc = null;
+            }
+
+            entity.TySoDoi1 = dto.Score1;
+            entity.TySoDoi2 = dto.Score2;
+            entity.DiemPenaltyDoi1 = dto.PenaltyScore1;
+            entity.DiemPenaltyDoi2 = dto.PenaltyScore2;
+            entity.TrangThai = dto.TrangThai;
+            entity.GhiChu = dto.GhiChu;
+            entity.IsHoa = dto.TrangThai == "KetThuc" && dto.IsHoa;
+            entity.DoiThangDangKyId = dto.TrangThai == "KetThuc" ? dto.DoiThangDangKyId : null;
+            entity.DoiThuaDangKyId = dto.TrangThai == "KetThuc" ? dto.DoiThuaDangKyId : null;
+            entity.LastModified = nowUtc;
+            entity.LastModifiedBy = updatedBy;
+
+            _unitOfWork.TranDaus.Update(entity);
+            await _unitOfWork.CompleteAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// Saves report content without changing match timing, result values, teams, or referee assignments.
+        /// </summary>
+        /// <param name="id">The match ID whose report should be updated.</param>
+        /// <param name="ghiChu">The serialized report content.</param>
+        /// <param name="updatedBy">The account performing the update.</param>
+        /// <returns>True when the report was updated; false when the match does not exist.</returns>
+        public async Task<bool> UpdateMatchReportAsync(int id, string ghiChu, string? updatedBy = null)
+        {
+            var entity = await _unitOfWork.TranDaus.GetByIdAsync(id);
+            if (entity == null || entity.IsDeleted == true) return false;
+
+            entity.GhiChu = ghiChu;
+            entity.LastModified = DateTime.UtcNow;
+            entity.LastModifiedBy = updatedBy;
+            _unitOfWork.TranDaus.Update(entity);
+            await _unitOfWork.CompleteAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// Lấy thành tích đã lưu theo từng làn trong một lượt thi để trọng tài có thể xem lại và sửa chỉ số phụ.
+        /// </summary>
+        /// <param name="tranDauId">ID lượt thi cần đọc.</param>
+        /// <returns>Danh sách kết quả theo thành phần trận đấu, rỗng nếu lượt chưa có thành phần.</returns>
+        public async Task<List<HeatParticipantResultDto>> GetHeatResultsByMatchIdAsync(int tranDauId)
+        {
+            var participants = (await _unitOfWork.ThanhPhanTranDaus.FindAsync(
+                participant => participant.TranDauId == tranDauId && participant.IsDeleted != true))
+                .OrderBy(participant => participant.SoLane ?? participant.ViTri ?? int.MaxValue)
+                .ThenBy(participant => participant.Id)
+                .ToList();
+            var participantIds = participants.Select(participant => participant.Id).ToList();
+            var results = (await _unitOfWork.KetQuaTranDaus.FindAsync(
+                result => participantIds.Contains(result.ThanhPhanTranDauId) && result.IsDeleted != true))
+                .GroupBy(result => result.ThanhPhanTranDauId)
+                .ToDictionary(group => group.Key, group => group.OrderByDescending(result => result.LastModified ?? result.Created).First());
+
+            return participants.Select(participant =>
+            {
+                results.TryGetValue(participant.Id, out var result);
+                return new HeatParticipantResultDto
+                {
+                    ThanhPhanTranDauId = participant.Id,
+                    DangKyThiDauId = participant.DangKyThiDauId,
+                    SoLane = participant.SoLane ?? participant.ViTri ?? 0,
+                    GiaTri = result?.GiaTri,
+                    GiaTriPhu = result?.Diem,
+                    KetQuaText = result?.KetQuaText,
+                    TrangThai = participant.TrangThai,
+                    XepHang = result?.XepHang
+                };
+            }).ToList();
         }
 
         public async Task<TranDauDto?> GetByIdAsync(int id)
@@ -2703,6 +2909,7 @@ namespace Dms.Application.Services
                 var mon = await _unitOfWork.MonTheThaos.GetByIdAsync(gdm.MonTheThaoId);
                 result.TenMonTheThao = mon?.Ten;
                 result.HinhThucThiDau = mon?.HinhThucThiDau.ToString();
+                result.LaMonDongDoi = mon?.LaMonDongDoi ?? false;
             }
 
             // 2. Lấy danh sách Vòng đấu
@@ -2799,10 +3006,48 @@ namespace Dms.Application.Services
                 int? bId = activeTvBang?.BangDauId;
                 string? bName = bId.HasValue ? bangMap.GetValueOrDefault(bId.Value) : null;
 
+                bool laMonDongDoi = result.LaMonDongDoi;
+                string displayTitle;
+                if (laMonDongDoi)
+                {
+                    if (!string.IsNullOrWhiteSpace(d.Doi?.Ten) && !d.Doi.Ten.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayTitle = d.Doi.Ten;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(d.TenDangKy) && !d.TenDangKy.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayTitle = d.TenDangKy;
+                    }
+                    else
+                    {
+                        displayTitle = $"Đội #{d.Id}";
+                    }
+                }
+                else
+                {
+                    var firstVdv = vdvNames.FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(firstVdv))
+                    {
+                        displayTitle = firstVdv;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(d.Doi?.Ten) && !d.Doi.Ten.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayTitle = d.Doi.Ten;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(d.TenDangKy) && !d.TenDangKy.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayTitle = d.TenDangKy;
+                    }
+                    else
+                    {
+                        displayTitle = $"VĐV #{d.Id}";
+                    }
+                }
+
                 var teamDto = new ManualPairingTeamDto
                 {
                     DangKyThiDauId = d.Id,
-                    TenDangKy = !string.IsNullOrWhiteSpace(d.TenDangKy) ? d.TenDangKy : (d.Doi?.Ten ?? $"Đội #{d.Id}"),
+                    TenDangKy = displayTitle,
                     TenDoi = d.Doi?.Ten,
                     TenDonVi = d.Doi?.DonVi?.Ten,
                     SoDangKy = d.SoDangKy,
@@ -3176,9 +3421,16 @@ namespace Dms.Application.Services
                 return response;
             }
 
-            // 1. Nếu là môn đo thành tích (Điền kinh, Bơi lội)
-            if (config.LoaiTheThuc == "TinhDiemXepHang" && request.HeatResults != null && request.HeatResults.Any())
+            // 1. Nếu là môn đo thành tích (Điền kinh, Bơi lội), chỉ chốt qua bảng kết quả từng VĐV.
+            if (config.LoaiTheThuc == "TinhDiemXepHang")
             {
+                if (request.HeatResults == null || !request.HeatResults.Any())
+                {
+                    response.Success = false;
+                    response.Message = "Cần nhập kết quả từng VĐV trước khi hoàn tất lượt thi thành tích.";
+                    return response;
+                }
+
                 var athleticsResult = await _athleticsProgressionEngine.ProcessHeatResultAsync(
                     match.Id, request.HeatResults, config, username);
 
@@ -3225,6 +3477,12 @@ namespace Dms.Application.Services
                 loserDangKyId = team1 != null ? team1.DangKyThiDauId : 0;
             }
 
+            // Chỉ ghi giờ bắt đầu thực tế khi trận được bắt đầu; giờ dự kiến được lưu riêng ở ThoiGianDuKien.
+            if (match.TrangThai == "ChuaDau" || !match.ThoiGianBatDau.HasValue)
+            {
+                match.ThoiGianBatDau = DateTime.UtcNow;
+            }
+
             // Cập nhật tỷ số trận đấu
             match.TySoDoi1 = evaluation.FinalScore1;
             match.TySoDoi2 = evaluation.FinalScore2;
@@ -3233,23 +3491,27 @@ namespace Dms.Application.Services
             match.IsHoa = evaluation.IsDraw;
             match.TrangThai = "KetThuc";
             match.ThoiGianKetThuc = DateTime.UtcNow;
-            if (winnerDangKyId > 0) match.DoiThangDangKyId = winnerDangKyId;
-            if (loserDangKyId > 0) match.DoiThuaDangKyId = loserDangKyId;
+            match.DoiThangDangKyId = winnerDangKyId > 0 ? winnerDangKyId : null;
+            match.DoiThuaDangKyId = loserDangKyId > 0 ? loserDangKyId : null;
 
             // Lưu điểm chi tiết / events vào GhiChu JSON
             var scoreData = new
             {
-                score1 = evaluation.FinalScore1,
-                score2 = evaluation.FinalScore2,
+                score1 = request.Score1,
+                score2 = request.Score2,
+                finalScore1 = evaluation.FinalScore1,
+                finalScore2 = evaluation.FinalScore2,
                 penalty1 = evaluation.PenaltyScore1,
                 penalty2 = evaluation.PenaltyScore2,
+                extraTimeScore1 = request.ExtraTimeScore1,
+                extraTimeScore2 = request.ExtraTimeScore2,
                 winner = evaluation.WinnerTeamIndex == 1 ? "1" : (evaluation.WinnerTeamIndex == 2 ? "2" : "draw"),
                 status = "KetThuc",
                 notes = request.GhiChu,
                 setScores = request.SetScores ?? new List<SetScoreDto>(),
                 events = request.Events ?? new List<MatchEventItemDto>(),
                 updatedBy = username,
-                updatedAt = DateTime.Now
+                updatedAt = DateTime.UtcNow
             };
             match.GhiChu = System.Text.Json.JsonSerializer.Serialize(scoreData);
             match.LastModified = DateTime.UtcNow;

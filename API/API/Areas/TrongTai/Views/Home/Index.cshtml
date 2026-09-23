@@ -5,6 +5,7 @@
     var tournaments = ViewBag.Tournaments as List<GiaiDauDto> ?? new();
     int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
     string filterScope = ViewBag.FilterScope as string ?? "my_matches";
+    bool canBrowseAllMatches = ViewBag.CanBrowseAllMatches == true;
 }
 
 <div class="d-flex flex-column gap-4">
@@ -102,6 +103,10 @@
                 <div class="col-md-4">
                     <label class="form-label small fw-semibold mb-1">Chọn giải đấu</label>
                     <select name="giaiDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @if (tournaments.Count == 0)
+                        {
+                            <option value="">-- Chưa có giải được phân công --</option>
+                        }
                         @foreach (var t in tournaments)
                         {
                             if (selectedGiaiDauId == t.Id)
@@ -116,31 +121,26 @@
                     </select>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label small fw-semibold mb-1">Phạm vi nhiệm vụ</label>
-                    @if (ViewBag.CanViewAllTournamentMatches == true)
-                    {
+                @if (canBrowseAllMatches)
+                {
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold mb-1">Phạm vi nhiệm vụ</label>
                         <select name="filterScope" class="form-select form-select-sm" onchange="this.form.submit()">
-                            @if (filterScope == "all")
-                            {
-                                <option value="my_matches">⭐ Trận tôi được phân công (@ViewBag.MyAssignedCount trận)</option>
-                                <option value="all" selected="selected">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
-                            }
-                            else
+                            @if (filterScope == "my_matches")
                             {
                                 <option value="my_matches" selected="selected">⭐ Trận tôi được phân công (@ViewBag.MyAssignedCount trận)</option>
                                 <option value="all">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
                             }
+                            else
+                            {
+                                <option value="my_matches">⭐ Trận tôi được phân công (@ViewBag.MyAssignedCount trận)</option>
+                                <option value="all" selected="selected">Toàn bộ giải đấu (@ViewBag.AllMatchesCount trận)</option>
+                            }
                         </select>
-                    }
-                    else
-                    {
-                        <div class="form-control form-control-sm bg-light">Chỉ các trận được phân công cho tôi</div>
-                        <input type="hidden" name="filterScope" value="my_matches" />
-                    }
-                </div>
+                    </div>
+                }
 
-                <div class="col-md-4">
+                <div class="@(canBrowseAllMatches ? "col-md-4" : "col-md-7")">
                     <label class="form-label small fw-semibold mb-1">Tìm kiếm trận đấu</label>
                     <input type="text" id="filterKeyword" class="form-control form-control-sm" placeholder="Tìm đội, sân bãi, môn thi..." oninput="filterMatchesClient()" />
                 </div>
@@ -150,10 +150,10 @@
 
     @if (ViewBag.NoMyMatchesNotice == true)
     {
-        <div class="alert alert-info border-info d-flex align-items-center py-2.5 px-3 mb-0">
+        <div class="alert alert-info border-info d-flex align-items-center gap-2 py-2.5 px-3 mb-0">
             <div class="d-flex align-items-center gap-2">
                 <i class="fa-solid fa-circle-info fs-5"></i>
-                <span>Hiện chưa có trận nào được phân công cho bạn trong giải này.</span>
+                <span>@(tournaments.Count == 0 ? "Tài khoản chưa được phân công trận đấu thuộc giải nào. Liên hệ ban tổ chức để được phân công." : "Bạn chưa được phân công trận nào trong giải này. Liên hệ ban tổ chức để được phân công.")</span>
             </div>
         </div>
     }

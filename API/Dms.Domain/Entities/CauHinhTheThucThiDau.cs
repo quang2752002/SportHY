@@ -49,6 +49,7 @@ namespace Dms.Domain.Entities
         public bool CoPenalty { get; set; } = false;
         public int? SoLuotPenaltyMoiDoi { get; set; } = 5;
         public bool CoTieBreak { get; set; } = false;
+        public bool CoThePhat { get; set; } = false;
 
         // Điểm số vòng bảng
         [Column(TypeName = "decimal(18,2)")]
@@ -86,6 +87,11 @@ namespace Dms.Domain.Entities
 
         [MaxLength(30)]
         public string? TieuChiXepHangThanhTich { get; set; } = "CangNhoCangTot"; // "CangNhoCangTot" (Bơi/Chạy), "CangLonCangTot" (Nhảy/Cử tạ/Bắn súng)
+
+        public bool ChoPhepDongHangThanhTich { get; set; } = true;
+        [MaxLength(100)]
+        public string? TenTieuChiPhuThanhTich { get; set; } = "Chỉ số phụ";
+        public bool TieuChiPhuCangNhoCangTot { get; set; } = true;
 
         public int SoVdvMoiLuotThi { get; set; } = 8; // Số làn (Lane 1..8)
 

@@ -23,7 +23,6 @@ namespace API.Areas.TrongTai.Controllers
 
     public class HomeController : BaseTrongTaiController
     {
-        private readonly ITranDauService _tranDauService;
         private readonly IGiaiDauService _giaiDauService;
         private readonly ISanDauService _sanDauService;
         private readonly IMonTheThaoService _monTheThaoService;
@@ -36,21 +35,21 @@ namespace API.Areas.TrongTai.Controllers
             ISanDauService sanDauService,
             IMonTheThaoService monTheThaoService,
             ITruongBanTrongTaiService refereeAccessService)
-            : base(userManager, trongTaiService, refereeAccessService)
+            : base(userManager, trongTaiService, refereeAccessService, tranDauService)
         {
-            _tranDauService = tranDauService;
             _giaiDauService = giaiDauService;
             _sanDauService = sanDauService;
             _monTheThaoService = monTheThaoService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? giaiDauId = null, string? filterScope = "my_matches")
+        public async Task<IActionResult> Index(int? giaiDauId = null, string? filterScope = null)
         {
             var currentRef = await GetCurrentRefereeAsync();
+            var canBrowseAll = CanBrowseAllMatches();
             var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
             var assignedTournamentIds = await GetAssignedTournamentIdsAsync(currentRef);
-            var tournaments = CanViewAllTournamentMatches
+            var tournaments = canBrowseAll
                 ? allTournaments
                 : allTournaments.Where(tournament => assignedTournamentIds.Contains(tournament.Id)).ToList();
             ViewBag.Tournaments = tournaments;
@@ -60,35 +59,26 @@ namespace API.Areas.TrongTai.Controllers
             {
                 selectedGiaiDauId = tournaments[0].Id;
             }
+            if (tournaments.Count == 0) selectedGiaiDauId = null;
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
-            ViewBag.CanViewAllTournamentMatches = CanViewAllTournamentMatches;
-            ViewBag.FilterScope = CanViewAllTournamentMatches ? (filterScope ?? "my_matches") : "my_matches";
+            ViewBag.CanBrowseAllMatches = canBrowseAll;
 
-            var allMatches = selectedGiaiDauId.HasValue
-                ? (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new()
+            var assignedMatchesForTournament = selectedGiaiDauId.HasValue && currentRef != null
+                ? (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentRef.Id, false))?.ToList() ?? new()
                 : new List<TranDauDto>();
+            var allMatches = canBrowseAll && selectedGiaiDauId.HasValue
+                ? (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentRef?.Id, true))?.ToList() ?? new()
+                : assignedMatchesForTournament;
+            var selectedScope = canBrowseAll && filterScope == "my_matches" ? "my_matches" : (canBrowseAll ? "all" : "my_matches");
+            var displayMatches = selectedScope == "all" ? allMatches : assignedMatchesForTournament;
 
-            bool IsAssigned(TranDauDto m)
-            {
-                if (currentRef == null) return false;
-                return m.DanhSachTrongTai?.Any(assignment => assignment.TrongTaiId == currentRef.Id) == true;
-            }
-
-            var assignedMatches = allMatches.Where(IsAssigned).ToList();
-            var displayMatches = CanViewAllTournamentMatches && filterScope == "all"
-                ? allMatches
-                : assignedMatches;
-
-            ViewBag.AllMatchesCount = CanViewAllTournamentMatches ? allMatches.Count : assignedMatches.Count;
-            ViewBag.MyAssignedCount = assignedMatches.Count;
+            ViewBag.FilterScope = selectedScope;
+            ViewBag.AllMatchesCount = canBrowseAll ? allMatches.Count : assignedMatchesForTournament.Count;
+            ViewBag.MyAssignedCount = assignedMatchesForTournament.Count;
             ViewBag.LiveMatchesCount = displayMatches.Count(m => m.TrangThai == "DangDau" || m.TrangThai == "DangDienRa");
             ViewBag.FinishedCount = displayMatches.Count(m => m.TrangThai == "KetThuc" || m.TrangThai == "DaKetThuc");
             ViewBag.UpcomingCount = displayMatches.Count(m => m.TrangThai == "ChuaDau");
-
-            if (!CanViewAllTournamentMatches && assignedMatches.Count == 0 && allMatches.Count > 0)
-            {
-                ViewBag.NoMyMatchesNotice = true;
-            }
+            ViewBag.NoMyMatchesNotice = !canBrowseAll && assignedMatchesForTournament.Count == 0;
 
             return View(displayMatches);
         }
@@ -101,54 +91,66 @@ namespace API.Areas.TrongTai.Controllers
                 return Json(new { success = false, message = "Dữ liệu cập nhật không hợp lệ." });
             }
 
-            if (!await CanAccessMatchAsync(dto.TranDauId)) return Forbid();
-
             var match = await _tranDauService.GetByIdAsync(dto.TranDauId);
             if (match == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy trận đấu." });
             }
 
-            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
+            if (!await CanAccessMatchAsync(match))
+            {
+                return Forbid();
+            }
 
+            if (dto.Score1 < 0 || dto.Score2 < 0 || !new[] { "ChuaDau", "DangDau", "KetThuc" }.Contains(dto.TrangThai))
+            {
+                return Json(new { success = false, message = "Tỷ số hoặc trạng thái trận đấu không hợp lệ." });
+            }
+
+            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
+            var nowUtc = DateTime.UtcNow;
             try
             {
-                // Lưu thông tin tỷ số vào GhiChu dạng JSON có cấu trúc
-                var scoreData = new
+                var scoreData = new Dictionary<string, object?>();
+                if (!string.IsNullOrWhiteSpace(match.GhiChu) && match.GhiChu.TrimStart().StartsWith("{"))
                 {
-                    score1 = dto.Score1,
-                    score2 = dto.Score2,
-                    status = dto.TrangThai,
-                    notes = dto.GhiChu,
-                    updatedBy = username,
-                    updatedAt = DateTime.Now
-                };
+                    try
+                    {
+                        using var document = JsonDocument.Parse(match.GhiChu);
+                        foreach (var property in document.RootElement.EnumerateObject())
+                        {
+                            scoreData[property.Name] = property.Value.Clone();
+                        }
+                    }
+                    catch (JsonException) { }
+                }
+                scoreData["score1"] = dto.Score1;
+                scoreData["score2"] = dto.Score2;
+                scoreData["status"] = dto.TrangThai;
+                scoreData["notes"] = dto.GhiChu;
+                scoreData["updatedBy"] = username;
+                scoreData["updatedAt"] = nowUtc;
                 string scoreJson = JsonSerializer.Serialize(scoreData);
 
-                var updateDto = new CreateUpdateTranDauDto
+                var isDraw = dto.TrangThai == "KetThuc" && dto.Score1 == dto.Score2;
+                var winnerId = dto.TrangThai == "KetThuc" && dto.Score1 != dto.Score2
+                    ? (dto.Score1 > dto.Score2 ? match.Doi1DangKyId : match.Doi2DangKyId)
+                    : null;
+                var loserId = dto.TrangThai == "KetThuc" && dto.Score1 != dto.Score2
+                    ? (dto.Score1 > dto.Score2 ? match.Doi2DangKyId : match.Doi1DangKyId)
+                    : null;
+                var updateDto = new UpdateMatchProgressDto
                 {
-                    GiaiDauMonTheThaoId = match.GiaiDauMonTheThaoId,
-                    VongDauId = match.VongDauId,
-                    BangDauId = match.BangDauId,
-                    SanDauId = match.SanDauId,
-                    SoTran = match.SoTran,
-                    TenTran = match.TenTran,
-                    ThoiGianDuKien = match.ThoiGianDuKien,
-                    ThoiGianBatDau = match.ThoiGianBatDau ?? (dto.TrangThai == "DangDau" ? DateTime.Now : null),
-                    ThoiGianKetThuc = dto.TrangThai == "KetThuc" ? DateTime.Now : match.ThoiGianKetThuc,
+                    Score1 = dto.Score1,
+                    Score2 = dto.Score2,
                     TrangThai = dto.TrangThai,
                     GhiChu = scoreJson,
-                    Doi1DangKyId = match.Doi1DangKyId,
-                    Doi2DangKyId = match.Doi2DangKyId,
-                    DanhSachTrongTai = match.DanhSachTrongTai.Select(t => new AssignTrongTaiDto
-                    {
-                        TrongTaiId = t.TrongTaiId,
-                        VaiTro = t.VaiTro,
-                        GhiChu = t.GhiChu
-                    }).ToList()
+                    IsHoa = isDraw,
+                    DoiThangDangKyId = winnerId,
+                    DoiThuaDangKyId = loserId
                 };
 
-                await _tranDauService.UpdateAsync(dto.TranDauId, updateDto, username);
+                await _tranDauService.UpdateMatchProgressAsync(dto.TranDauId, updateDto, username);
                 return Json(new { success = true, message = "Đã cập nhật tỷ số và trạng thái trận đấu thành công!" });
             }
             catch (Exception ex)

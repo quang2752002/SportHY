@@ -22,7 +22,6 @@ namespace API.Areas.TrongTai.Controllers
 
     public class BienBanController : BaseTrongTaiController
     {
-        private readonly ITranDauService _tranDauService;
         private readonly IGiaiDauService _giaiDauService;
         private readonly IDangKyThiDauService _dangKyThiDauService;
 
@@ -33,9 +32,8 @@ namespace API.Areas.TrongTai.Controllers
             IGiaiDauService giaiDauService,
             IDangKyThiDauService dangKyThiDauService,
             ITruongBanTrongTaiService refereeAccessService)
-            : base(userManager, trongTaiService, refereeAccessService)
+            : base(userManager, trongTaiService, refereeAccessService, tranDauService)
         {
-            _tranDauService = tranDauService;
             _giaiDauService = giaiDauService;
             _dangKyThiDauService = dangKyThiDauService;
         }
@@ -44,9 +42,10 @@ namespace API.Areas.TrongTai.Controllers
         public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null)
         {
             var currentRef = await GetCurrentRefereeAsync();
+            var canBrowseAll = CanBrowseAllMatches();
             var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
             var assignedTournamentIds = await GetAssignedTournamentIdsAsync(currentRef);
-            var tournaments = CanViewAllTournamentMatches
+            var tournaments = canBrowseAll
                 ? allTournaments
                 : allTournaments.Where(tournament => assignedTournamentIds.Contains(tournament.Id)).ToList();
             ViewBag.Tournaments = tournaments;
@@ -56,15 +55,12 @@ namespace API.Areas.TrongTai.Controllers
             {
                 selectedGiaiDauId = tournaments[0].Id;
             }
+            if (tournaments.Count == 0) selectedGiaiDauId = null;
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
 
             var matches = selectedGiaiDauId.HasValue
-                ? (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new()
+                ? (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentRef?.Id, canBrowseAll))?.ToList() ?? new()
                 : new List<TranDauDto>();
-            if (!CanViewAllTournamentMatches && currentRef != null)
-            {
-                matches = matches.Where(match => match.DanhSachTrongTai?.Any(assignment => assignment.TrongTaiId == currentRef.Id) == true).ToList();
-            }
             ViewBag.Matches = matches;
 
             TranDauDto? currentMatch = null;
@@ -175,18 +171,19 @@ namespace API.Areas.TrongTai.Controllers
         [HttpPost]
         public async Task<IActionResult> SignReport([FromBody] SignReportRequestDto dto)
         {
-            if (dto == null || dto.TranDauId <= 0 || string.IsNullOrWhiteSpace(dto.SignerName))
+            if (dto == null || dto.TranDauId <= 0 || string.IsNullOrWhiteSpace(dto.SignerName) ||
+                !new[] { "referee", "secretary", "team1", "team2" }.Contains(dto.Role, StringComparer.OrdinalIgnoreCase))
             {
-                return Json(new { success = false, message = "Vui lòng nhập họ tên người ký xác nhận." });
+                return BadRequest(new { success = false, message = "Thông tin người ký hoặc vai trò ký không hợp lệ." });
             }
-
-            if (!await CanAccessMatchAsync(dto.TranDauId)) return Forbid();
 
             var match = await _tranDauService.GetByIdAsync(dto.TranDauId);
             if (match == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy trận đấu." });
             }
+
+            if (!await CanAccessMatchAsync(match)) return Forbid();
 
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
 
@@ -223,36 +220,13 @@ namespace API.Areas.TrongTai.Controllers
                 {
                     signerName = dto.SignerName.Trim(),
                     role = dto.Role,
-                    signedAt = DateTime.Now
+                    signedAt = DateTime.UtcNow
                 };
                 dict["signatures"] = sigs;
 
                 string newJson = JsonSerializer.Serialize(dict);
 
-                var updateDto = new CreateUpdateTranDauDto
-                {
-                    GiaiDauMonTheThaoId = match.GiaiDauMonTheThaoId,
-                    VongDauId = match.VongDauId,
-                    BangDauId = match.BangDauId,
-                    SanDauId = match.SanDauId,
-                    SoTran = match.SoTran,
-                    TenTran = match.TenTran,
-                    ThoiGianDuKien = match.ThoiGianDuKien,
-                    ThoiGianBatDau = match.ThoiGianBatDau,
-                    ThoiGianKetThuc = match.ThoiGianKetThuc,
-                    TrangThai = match.TrangThai,
-                    GhiChu = newJson,
-                    Doi1DangKyId = match.Doi1DangKyId,
-                    Doi2DangKyId = match.Doi2DangKyId,
-                    DanhSachTrongTai = match.DanhSachTrongTai.Select(t => new AssignTrongTaiDto
-                    {
-                        TrongTaiId = t.TrongTaiId,
-                        VaiTro = t.VaiTro,
-                        GhiChu = t.GhiChu
-                    }).ToList()
-                };
-
-                await _tranDauService.UpdateAsync(dto.TranDauId, updateDto, username);
+                await _tranDauService.UpdateMatchReportAsync(dto.TranDauId, newJson, username);
                 return Json(new { success = true, message = $"Đã ký xác nhận biên bản trận đấu với vai trò [{dto.Role}] thành công!" });
             }
             catch (Exception ex)

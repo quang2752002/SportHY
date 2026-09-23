@@ -34,16 +34,8 @@ namespace Dms.Application.Services
             }
             else
             {
-                // Thể thức đo thành tích hoặc mặc định
-                result.FinalScore1 = request.Score1;
-                result.FinalScore2 = request.Score2;
-                if (request.Score1 > request.Score2) result.WinnerTeamIndex = 1;
-                else if (request.Score2 > request.Score1) result.WinnerTeamIndex = 2;
-                else
-                {
-                    result.IsDraw = true;
-                    result.WinnerTeamIndex = 0;
-                }
+                // Thể thức điểm số mặc định vẫn phải tuân thủ luật hòa theo giai đoạn.
+                EvaluateTimedGoalSport(request, config, isKnockout, result);
             }
 
             return result;
@@ -134,6 +126,14 @@ namespace Dms.Application.Services
             }
         }
 
+        /// <summary>
+        /// Phân định kết quả thể thức tính điểm theo luật hòa của vòng bảng hoặc loại trực tiếp,
+        /// bao gồm tổng điểm hiệp phụ và luân lưu khi được cấu hình.
+        /// </summary>
+        /// <param name="request">Tỷ số chính, điểm hiệp phụ và kết quả luân lưu do trọng tài gửi</param>
+        /// <param name="config">Quy tắc hòa và các cách phân định được cấu hình cho môn</param>
+        /// <param name="isKnockout">Cho biết trận thuộc giai đoạn loại trực tiếp</param>
+        /// <param name="result">Đối tượng được điền kết quả hợp lệ hoặc lý do chưa thể chốt</param>
         private static void EvaluateTimedGoalSport(
             CompleteMatchRequestDto request,
             CauHinhTheThucDto config,
@@ -143,13 +143,22 @@ namespace Dms.Application.Services
             int s1 = request.Score1;
             int s2 = request.Score2;
 
-            result.FinalScore1 = s1;
-            result.FinalScore2 = s2;
             result.PenaltyScore1 = request.PenaltyScore1;
             result.PenaltyScore2 = request.PenaltyScore2;
 
+            if (request.Score1 < 0 || request.Score2 < 0 ||
+                request.ExtraTimeScore1 < 0 || request.ExtraTimeScore2 < 0 ||
+                request.PenaltyScore1 < 0 || request.PenaltyScore2 < 0)
+            {
+                result.IsValid = false;
+                result.ErrorMessage = "Tỷ số, điểm hiệp phụ và luân lưu không được âm.";
+                return;
+            }
+
             if (s1 > s2)
             {
+                result.FinalScore1 = s1;
+                result.FinalScore2 = s2;
                 result.WinnerTeamIndex = 1;
                 result.IsDraw = false;
                 return;
@@ -157,6 +166,8 @@ namespace Dms.Application.Services
 
             if (s2 > s1)
             {
+                result.FinalScore1 = s1;
+                result.FinalScore2 = s2;
                 result.WinnerTeamIndex = 2;
                 result.IsDraw = false;
                 return;
@@ -168,40 +179,59 @@ namespace Dms.Application.Services
                 // Vòng bảng
                 if (config.ChoPhepHoaVongBang)
                 {
+                    result.FinalScore1 = s1;
+                    result.FinalScore2 = s2;
                     result.IsDraw = true;
                     result.WinnerTeamIndex = 0;
                     return;
                 }
             }
 
-            // Vòng Knockout hoặc thể thức không cho phép hòa
-            if (!config.ChoPhepHoaKnockout || isKnockout)
+            if (isKnockout && config.CoHiepPhu)
             {
-                // Kiểm tra xem đã có kết quả penalty luân lưu chưa
-                if (config.CoPenalty)
+                if (!request.ExtraTimeScore1.HasValue || !request.ExtraTimeScore2.HasValue)
                 {
-                    int p1 = request.PenaltyScore1 ?? 0;
-                    int p2 = request.PenaltyScore2 ?? 0;
-
-                    if (request.PenaltyScore1.HasValue && request.PenaltyScore2.HasValue && p1 != p2)
-                    {
-                        // Đã phân định bằng Penalty thành công
-                        result.WinnerTeamIndex = p1 > p2 ? 1 : 2;
-                        result.IsDraw = false;
-                        return;
-                    }
-
-                    // Chưa có penalty hoặc penalty đang hòa
                     result.IsValid = false;
                     result.RequiresOvertimeOrPenalty = true;
-                    result.ErrorMessage = "Trận đấu Knockout đang hòa. Thể thức yêu cầu thực hiện lượt luân lưu Penalty để xác định đội đi tiếp.";
+                    result.ErrorMessage = "Trận đấu đang hòa. Hãy nhập tỷ số hiệp phụ trước khi chốt kết quả.";
+                    return;
+                }
+
+                s1 += request.ExtraTimeScore1.Value;
+                s2 += request.ExtraTimeScore2.Value;
+                if (s1 != s2)
+                {
+                    result.FinalScore1 = s1;
+                    result.FinalScore2 = s2;
+                    result.WinnerTeamIndex = s1 > s2 ? 1 : 2;
+                    result.IsDraw = false;
+                    return;
+                }
+            }
+
+            result.FinalScore1 = s1;
+            result.FinalScore2 = s2;
+
+            if (config.CoPenalty)
+            {
+                if (request.PenaltyScore1.HasValue && request.PenaltyScore2.HasValue &&
+                    request.PenaltyScore1.Value != request.PenaltyScore2.Value)
+                {
+                    result.WinnerTeamIndex = request.PenaltyScore1.Value > request.PenaltyScore2.Value ? 1 : 2;
+                    result.IsDraw = false;
                     return;
                 }
 
                 result.IsValid = false;
-                result.ErrorMessage = "Trận đấu loại trực tiếp không thể kết thúc với tỷ số hòa.";
+                result.RequiresOvertimeOrPenalty = true;
+                result.ErrorMessage = "Tỷ số vẫn hòa. Hãy nhập kết quả luân lưu khác nhau để xác định đội thắng.";
                 return;
             }
+
+            result.IsValid = false;
+            result.ErrorMessage = isKnockout
+                ? "Trận loại trực tiếp vẫn hòa và chưa được cấu hình cách phân định tiếp theo."
+                : "Thể thức môn này không cho phép hòa ở vòng bảng; cần cấu hình cách phân định kết quả.";
         }
     }
 }
