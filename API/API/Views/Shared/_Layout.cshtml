@@ -285,10 +285,6 @@
                     var isManager = User.IsInRole(AppRoles.Manager);
                     var isAdmin = User.IsInRole(AppRoles.Admin);
                     var isDelegation = User.IsInRole(AppRoles.Delegation);
-                    var isSecretary = User.IsInRole(AppRoles.Secretary);
-                    var isReferee = User.IsInRole(AppRoles.Referee);
-                    var isHeadReferee = User.IsInRole(AppRoles.HeadReferee);
-                    var isSportCoordinator = User.IsInRole(AppRoles.SportCoordinator);
 
                     <div class="dropdown">
                         <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2 py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -318,62 +314,7 @@
                                     <span class="badge bg-secondary text-white mt-1">Thành viên</span>
                                 }
                             </li>
-                            @if (isHeadReferee || isManager || isAdmin)
-                            {
-                                <li>
-                                    <a class="dropdown-item py-2" href="/TruongBanTrongTai/Home">
-                                        <i class="fa-solid fa-whistle text-warning me-2"></i> Cổng Trưởng Ban Trọng Tài
-                                    </a>
-                                </li>
-                            }
-                            @if (isSportCoordinator || isManager || isAdmin)
-                            {
-                                <li>
-                                    <a class="dropdown-item py-2" href="/DieuHanhMon/Home">
-                                        <i class="fa-solid fa-volleyball text-info me-2"></i> Cổng Điều Hành Môn
-                                    </a>
-                                </li>
-                            }
-                            @if (isSecretary || isManager || isAdmin)
-                            {
-                                <li>
-                                    <a class="dropdown-item py-2" href="/ThuKy/Home">
-                                        <i class="fa-solid fa-clipboard-check text-primary me-2"></i> Cổng Thư Ký Giải
-                                    </a>
-                                </li>
-                            }
-                            @if (isReferee)
-                            {
-                                <li>
-                                    <a class="dropdown-item py-2" href="/TrongTai/Home">
-                                        <i class="fa-solid fa-flag text-warning me-2"></i> Cổng Trọng Tài
-                                    </a>
-                                </li>
-                            }
-                            @if (isDelegation)
-                            {
-                                <li>
-                                    <a class="dropdown-item py-2" href="/DonVi/Home">
-                                        <i class="fa-solid fa-building-columns text-success me-2"></i> Cổng Quản Lý Đoàn
-                                    </a>
-                                </li>
-                            }
-                            @if (isManager)
-                            {
-                                <li>
-                                    <a class="dropdown-item py-2" href="/Manager/GiaiDau">
-                                        <i class="fa-solid fa-trophy text-warning me-2"></i> Bảng Quản Lý Giải
-                                    </a>
-                                </li>
-                            }
-                            @if (isAdmin)
-                            {
-                                <li>
-                                    <a class="dropdown-item py-2" href="/Admin/GiaiDau">
-                                        <i class="fa-solid fa-sliders text-primary me-2"></i> Bảng Quản Trị Hệ Thống
-                                    </a>
-                                </li>
-                            }
+                            @await Component.InvokeAsync("PortalLinks")
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item py-2 text-danger" href="/Account/Logout">
@@ -383,13 +324,7 @@
                         </ul>
                     </div>
 
-                    @if (isReferee)
-                    {
-                        <a href="/TrongTai/Home" class="btn btn-warning btn-sm fw-bold shadow-sm d-none d-sm-inline-flex align-items-center text-dark">
-                            <i class="fa-solid fa-flag me-1"></i> Cổng Trọng Tài
-                        </a>
-                    }
-                    else if (isDelegation)
+                    @if (isDelegation)
                     {
                         <a href="/DonVi/Home" class="btn btn-success btn-sm fw-bold shadow-sm d-none d-sm-inline-flex align-items-center">
                             <i class="fa-solid fa-building-columns me-1"></i> Cổng Đoàn

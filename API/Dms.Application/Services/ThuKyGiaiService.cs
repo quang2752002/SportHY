@@ -1196,15 +1196,14 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
-        /// Lấy danh sách bảng xếp hạng huy chương phân loại theo từng Môn thể thao cụ thể.
+        /// Lấy kết quả trao huy chương riêng cho từng MonTheThao trong từng giải đấu.
         /// </summary>
-        /// <param name="giaiDauId">ID giải đấu (tùy chọn; null hoặc 0 để tính toàn bộ).</param>
+        /// <param name="giaiDauId">ID giải đấu; null hoặc 0 để lấy kết quả từng môn của mọi giải, không gộp các giải với nhau.</param>
         /// <param name="danhMucMonTheThaoId">ID danh mục môn thể thao (tùy chọn để lọc môn thuộc danh mục).</param>
-        /// <returns>Danh sách các bảng xếp hạng huy chương gom nhóm theo từng Môn thể thao.</returns>
+        /// <returns>Danh sách bảng kết quả theo từng giải và MonTheThao, giữ riêng người hoặc đội nhận từng huy chương.</returns>
         public async Task<List<BangXepHangTheoMonDto>> GetBangXepHangTheoMonAsync(int? giaiDauId, int? danhMucMonTheThaoId = null)
         {
             var isAllTournaments = !giaiDauId.HasValue || giaiDauId.Value <= 0;
-            var donVis = (await _unitOfWork.DonVis.FindAsync(d => d.IsDeleted != true)).ToList();
             var danhMucs = (await _unitOfWork.DanhMucMonTheThaos.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
             var mons = (await _unitOfWork.MonTheThaos.FindAsync(m =>
                 m.IsDeleted != true &&
@@ -1216,6 +1215,8 @@ namespace Dms.Application.Services
             )).ToList();
 
             var gdmIds = gdms.Select(g => g.Id).ToList();
+            var giaiDauIds = gdms.Select(g => g.GiaiDauId).Distinct().ToList();
+            var giaiDaus = (await _unitOfWork.GiaiDaus.FindAsync(g => giaiDauIds.Contains(g.Id) && g.IsDeleted != true)).ToDictionary(g => g.Id);
             var huyChuongs = (await _unitOfWork.HuyChuongs.FindAsync(h =>
                 (isAllTournaments || h.GiaiDauId == giaiDauId!.Value) &&
                 gdmIds.Contains(h.GiaiDauMonTheThaoId) &&
@@ -1223,43 +1224,53 @@ namespace Dms.Application.Services
             )).ToList();
 
             var loaiHcs = (await _unitOfWork.LoaiHuyChuongs.FindAsync(l => l.IsDeleted != true)).ToDictionary(l => l.Id);
-            var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
-            var dois = (await _unitOfWork.Dois.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
-
-            var dkIds = dangKys.Keys.ToList();
+            var dkIds = huyChuongs.Select(h => h.DangKyThiDauId).Distinct().ToList();
+            var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => dkIds.Contains(d.Id) && d.IsDeleted != true)).ToDictionary(d => d.Id);
+            var doiIds = dangKys.Values.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
+            var dois = (await _unitOfWork.Dois.FindAsync(d => doiIds.Contains(d.Id) && d.IsDeleted != true)).ToDictionary(d => d.Id);
             var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => dkIds.Contains(c.DangKyThiDauId) && c.IsDeleted != true)).ToList();
             var vdvIds = chiTiets.Select(c => c.VanDongVienId).Distinct().ToList();
             var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id) && v.IsDeleted != true)).ToDictionary(v => v.Id);
+            var donViIds = dois.Values.Where(d => d.DonViId.HasValue).Select(d => d.DonViId!.Value)
+                .Concat(vdvs.Values.Where(v => v.DonViId.HasValue).Select(v => v.DonViId!.Value))
+                .Distinct()
+                .ToList();
+            var donVis = (await _unitOfWork.DonVis.FindAsync(d => donViIds.Contains(d.Id) && d.IsDeleted != true)).ToDictionary(d => d.Id);
+            var monMap = mons.ToDictionary(m => m.Id);
 
             var result = new List<BangXepHangTheoMonDto>();
 
-            foreach (var mon in mons)
+            foreach (var gdm in gdms)
             {
-                var gdmsForMon = gdms.Where(g => g.MonTheThaoId == mon.Id).Select(g => g.Id).ToHashSet();
-                if (!isAllTournaments && gdmsForMon.Count == 0) continue;
+                if (!monMap.TryGetValue(gdm.MonTheThaoId, out var mon)) continue;
 
-                var medalsForMon = huyChuongs.Where(h => gdmsForMon.Contains(h.GiaiDauMonTheThaoId)).ToList();
-                var (bangXepHang, vTot, bTot, dTot) = TinhBangXepHangDoan(
-                    medalsForMon, donVis, loaiHcs, dangKys, dois, chiTiets, vdvs, chiLayDonViCoHuyChuong: true);
+                var medalsForEvent = huyChuongs.Where(h => h.GiaiDauMonTheThaoId == gdm.Id).ToList();
+                var (ketQua, vangTotal, bacTotal, dongTotal) = TinhKetQuaHuyChuongMon(
+                    medalsForEvent, mon.LaMonDongDoi, loaiHcs, dangKys, dois, chiTiets, vdvs, donVis);
 
                 danhMucs.TryGetValue(mon.DanhMucId, out var dm);
+                giaiDaus.TryGetValue(gdm.GiaiDauId, out var giaiDau);
 
                 result.Add(new BangXepHangTheoMonDto
                 {
+                    GiaiDauId = gdm.GiaiDauId,
+                    TenGiaiDau = giaiDau?.Ten ?? "Giải đấu",
+                    GiaiDauMonTheThaoId = gdm.Id,
                     MonTheThaoId = mon.Id,
                     MaMon = mon.Ma,
                     TenMon = mon.Ten,
                     DanhMucId = mon.DanhMucId,
                     TenDanhMuc = dm?.Ten ?? "Chưa phân loại",
-                    TongHuyChuongVang = vTot,
-                    TongHuyChuongBac = bTot,
-                    TongHuyChuongDong = dTot,
-                    BangXepHang = bangXepHang
+                    TongHuyChuongVang = vangTotal,
+                    TongHuyChuongBac = bacTotal,
+                    TongHuyChuongDong = dongTotal,
+                    LaMonDongDoi = mon.LaMonDongDoi,
+                    KetQua = ketQua
                 });
             }
 
-            return result.OrderByDescending(r => r.TongHuyChuong)
-                         .ThenByDescending(r => r.TongHuyChuongVang)
+            return result.OrderBy(r => r.TenGiaiDau)
+                         .ThenBy(r => r.TenDanhMuc)
                          .ThenBy(r => r.TenMon)
                          .ToList();
         }
@@ -1379,6 +1390,82 @@ namespace Dms.Application.Services
             }
 
             return (sorted, vangTotal, bacTotal, dongTotal);
+        }
+
+        /// <summary>
+        /// Tạo danh sách kết quả huy chương cho đúng một MonTheThao, giữ nguyên từng đăng ký nhận giải thay vì cộng gộp theo đơn vị.
+        /// Với nội dung đồng đội, kết quả hiển thị đội; với nội dung cá nhân, kết quả hiển thị vận động viên.
+        /// </summary>
+        /// <param name="medals">Các huy chương thuộc một môn trong một giải đấu.</param>
+        /// <param name="laMonDongDoi">True nếu người nhận giải là đội; false nếu người nhận giải là vận động viên.</param>
+        /// <param name="loaiHcs">Map loại huy chương để xác định tên và số lượng từng huy chương.</param>
+        /// <param name="dangKys">Map đăng ký thi đấu nhận huy chương.</param>
+        /// <param name="dois">Map đội đăng ký thi đấu còn hoạt động.</param>
+        /// <param name="chiTiets">Danh sách vận động viên thuộc đăng ký thi đấu.</param>
+        /// <param name="vdvs">Map vận động viên còn hoạt động.</param>
+        /// <param name="donVis">Map đơn vị để hiển thị đơn vị trực thuộc người hoặc đội nhận giải.</param>
+        /// <returns>Các dòng kết quả theo thứ hạng cùng tổng số huy chương vàng, bạc và đồng trong môn.</returns>
+        private (List<KetQuaHuyChuongMonDto> ketQua, int vangTotal, int bacTotal, int dongTotal) TinhKetQuaHuyChuongMon(
+            List<HuyChuong> medals,
+            bool laMonDongDoi,
+            Dictionary<int, LoaiHuyChuong> loaiHcs,
+            Dictionary<int, DangKyThiDau> dangKys,
+            Dictionary<int, Doi> dois,
+            List<ChiTietDangKyThiDau> chiTiets,
+            Dictionary<int, VanDongVien> vdvs,
+            Dictionary<int, DonVi> donVis)
+        {
+            int vangTotal = 0;
+            int bacTotal = 0;
+            int dongTotal = 0;
+            var results = new List<KetQuaHuyChuongMonDto>();
+
+            foreach (var medal in medals.OrderBy(m => m.XepHang > 0 ? m.XepHang : int.MaxValue).ThenBy(m => m.Id))
+            {
+                if (!dangKys.TryGetValue(medal.DangKyThiDauId, out var dangKy)) continue;
+
+                var vdv = chiTiets
+                    .Where(detail => detail.DangKyThiDauId == medal.DangKyThiDauId)
+                    .OrderBy(detail => detail.SoThuTu ?? int.MaxValue)
+                    .ThenBy(detail => detail.Id)
+                    .Select(detail => detail.VanDongVienId)
+                    .Where(vdvs.ContainsKey)
+                    .Select(vdvId => vdvs[vdvId])
+                    .FirstOrDefault();
+
+                loaiHcs.TryGetValue(medal.LoaiHuyChuongId, out var loai);
+                string loaiTen = (loai?.Ten ?? "").ToLowerInvariant();
+                int medalRank = loaiTen.Contains("vàng") || loaiTen.Contains("gold") || medal.XepHang == 1
+                    ? 1
+                    : loaiTen.Contains("bạc") || loaiTen.Contains("silver") || medal.XepHang == 2
+                        ? 2
+                        : 3;
+                if (medalRank == 1) vangTotal++;
+                else if (medalRank == 2) bacTotal++;
+                else dongTotal++;
+
+                dois.TryGetValue(dangKy.DoiId ?? 0, out var doi);
+                int? donViId = laMonDongDoi ? doi?.DonViId : vdv?.DonViId;
+                donVis.TryGetValue(donViId ?? 0, out var donVi);
+
+                results.Add(new KetQuaHuyChuongMonDto
+                {
+                    DangKyThiDauId = dangKy.Id,
+                    XepHang = medal.XepHang > 0 ? medal.XepHang : medalRank,
+                    TenLoaiHuyChuong = loai?.Ten ?? (medalRank == 1 ? "Vàng" : medalRank == 2 ? "Bạc" : "Đồng"),
+                    VanDongVienId = laMonDongDoi ? null : vdv?.Id,
+                    MaVanDongVien = laMonDongDoi ? null : vdv?.Ma,
+                    TenVanDongVien = laMonDongDoi ? null : vdv?.HoTen ?? dangKy.TenDangKy,
+                    DoiId = laMonDongDoi ? doi?.Id : null,
+                    MaDoi = laMonDongDoi ? doi?.Ma : null,
+                    TenDoi = laMonDongDoi ? doi?.Ten ?? dangKy.TenDangKy ?? vdv?.HoTen : null,
+                    DonViId = donViId,
+                    MaDonVi = donVi?.Ma,
+                    TenDonVi = donVi?.Ten
+                });
+            }
+
+            return (results, vangTotal, bacTotal, dongTotal);
         }
 
         /// <summary>

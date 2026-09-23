@@ -213,6 +213,25 @@ namespace Dms.Application.DTOs
         public int XepHang { get; set; }
     }
 
+    /// <summary>
+    /// Kết quả một lượt trao huy chương trong một môn thi đấu của một giải.
+    /// </summary>
+    public class KetQuaHuyChuongMonDto
+    {
+        public int DangKyThiDauId { get; set; }
+        public int XepHang { get; set; }
+        public string TenLoaiHuyChuong { get; set; } = string.Empty;
+        public int? VanDongVienId { get; set; }
+        public string? MaVanDongVien { get; set; }
+        public string? TenVanDongVien { get; set; }
+        public int? DoiId { get; set; }
+        public string? MaDoi { get; set; }
+        public string? TenDoi { get; set; }
+        public int? DonViId { get; set; }
+        public string? MaDonVi { get; set; }
+        public string? TenDonVi { get; set; }
+    }
+
     public class BangTongSapHuyChuongDto
     {
         public int GiaiDauId { get; set; }
@@ -250,6 +269,9 @@ namespace Dms.Application.DTOs
     /// </summary>
     public class BangXepHangTheoMonDto
     {
+        public int GiaiDauId { get; set; }
+        public string TenGiaiDau { get; set; } = string.Empty;
+        public int GiaiDauMonTheThaoId { get; set; }
         public int MonTheThaoId { get; set; }
         public string MaMon { get; set; } = string.Empty;
         public string TenMon { get; set; } = string.Empty;
@@ -259,7 +281,8 @@ namespace Dms.Application.DTOs
         public int TongHuyChuongBac { get; set; }
         public int TongHuyChuongDong { get; set; }
         public int TongHuyChuong => TongHuyChuongVang + TongHuyChuongBac + TongHuyChuongDong;
-        public List<HuyChuongDoanDto> BangXepHang { get; set; } = new();
+        public bool LaMonDongDoi { get; set; }
+        public List<KetQuaHuyChuongMonDto> KetQua { get; set; } = new();
     }
 
     public class ThuKyBaoCaoTongHopDto

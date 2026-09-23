@@ -1,0 +1,19 @@
+@model API.ViewComponents.PortalLinksViewModel
+
+@if (Model.LinksToDisplay.Count > 0)
+{
+    <li>
+        <h6 class="dropdown-header text-uppercase small fw-bold">
+            <i class="fa-solid fa-right-left me-1"></i> @Model.Heading
+        </h6>
+    </li>
+
+    @foreach (var portal in Model.LinksToDisplay)
+    {
+        <li>
+            <a class="dropdown-item py-2" href="@portal.Url">
+                <i class="@portal.Icon @portal.IconClass me-2"></i> Cổng @portal.Label
+            </a>
+        </li>
+    }
+}

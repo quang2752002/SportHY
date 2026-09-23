@@ -208,6 +208,8 @@
     </style>
 </head>
 <body>
+    @{ var managedTournaments = ViewBag.ManagedTournaments as List<GiaiDau> ?? new List<GiaiDau>(); }
+
     <!-- Sidebar -->
     <aside class="tb-sidebar" id="sidebar">
         <div class="tb-brand">
@@ -263,12 +265,15 @@
         </div>
 
         <div class="tb-nav-section">Hệ Thống</div>
-        <div class="tb-nav-item">
-            <a class="tb-nav-link" href="/Manager/GiaiDau">
-                <i class="fa-solid fa-arrow-left"></i>
-                <span>Quay Lại Quản Lý Giải</span>
-            </a>
-        </div>
+        @if (User.IsInRole("Manager") || User.IsInRole("Admin"))
+        {
+            <div class="tb-nav-item">
+                <a class="tb-nav-link" href="/Manager/GiaiDau">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Quay Lại Quản Lý Giải</span>
+                </a>
+            </div>
+        }
         <div class="tb-nav-item">
             <a class="tb-nav-link" href="/Home/Index">
                 <i class="fa-solid fa-globe"></i>
@@ -290,14 +295,14 @@
                 <button class="btn btn-outline-secondary btn-sm d-lg-none" id="sidebarToggle">
                     <i class="fa-solid fa-bars"></i>
                 </button>
-                <div class="d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-trophy text-warning"></i>
-                    <span class="fw-semibold text-muted d-none d-sm-inline" style="font-size:0.88rem;">Giải đấu đang chọn:</span>
-                    <form method="get" id="formSelectGiaiDau" class="m-0">
-                        <select name="giaiDauId" class="form-select form-select-sm fw-bold border-warning bg-light" style="min-width: 240px; max-width: 360px;" onchange="document.getElementById('formSelectGiaiDau').submit();">
-                            @if (ViewBag.ManagedTournaments != null)
-                            {
-                                foreach (var g in (List<GiaiDau>)ViewBag.ManagedTournaments)
+                @if (managedTournaments.Count > 0)
+                {
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-trophy text-warning"></i>
+                        <span class="fw-semibold text-muted d-none d-sm-inline" style="font-size:0.88rem;">Giải đấu đang chọn:</span>
+                        <form method="get" id="formSelectGiaiDau" class="m-0">
+                            <select name="giaiDauId" class="form-select form-select-sm fw-bold border-warning bg-light" style="min-width: 240px; max-width: 360px;" onchange="document.getElementById('formSelectGiaiDau').submit();">
+                                @foreach (var g in managedTournaments)
                                 {
                                     if (ViewBag.SelectedGiaiDauId != null && (int)ViewBag.SelectedGiaiDauId == g.Id)
                                     {
@@ -308,37 +313,41 @@
                                         <option value="@g.Id">@g.Ten</option>
                                     }
                                 }
-                            }
-                        </select>
-                    </form>
-                </div>
+                            </select>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <span class="small text-muted"><i class="fa-solid fa-circle-info me-1"></i>Chưa được phân công giải đấu</span>
+                }
             </div>
 
             <div class="d-flex align-items-center gap-3">
-                <a href="/TruongBanTrongTai/KiemTraTrungLich" class="btn btn-sm btn-outline-danger position-relative d-none d-md-flex align-items-center gap-1">
-                    <i class="fa-solid fa-shield-halved"></i>
-                    <span>Quét Trùng Lịch</span>
-                </a>
+                @if (managedTournaments.Count > 0)
+                {
+                    <a href="/TruongBanTrongTai/KiemTraTrungLich" class="btn btn-sm btn-outline-danger position-relative d-none d-md-flex align-items-center gap-1">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Quét Trùng Lịch</span>
+                    </a>
+                }
 
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
-                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.8rem;">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
-                        <span class="fw-medium text-truncate" style="max-width: 140px;">
-                            @(ViewBag.CurrentReferee != null ? ViewBag.CurrentReferee.HoTen : User.Identity?.Name)
-                        </span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                        <li><a class="dropdown-menu-item dropdown-item" href="/Account/Profile"><i class="fa-regular fa-id-badge me-2"></i> Hồ sơ cá nhân</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-menu-item dropdown-item text-danger" href="/Account/Logout"><i class="fa-solid fa-power-off me-2"></i> Đăng xuất</a></li>
-                    </ul>
-                </div>
+                @await Component.InvokeAsync("PortalAccountMenu", new {
+                    currentArea = "TruongBanTrongTai",
+                    portalLabel = "Trưởng ban trọng tài",
+                    linkedName = ViewBag.CurrentReferee?.HoTen as string
+                })
             </div>
         </header>
 
         <main class="tb-content">
+            @if (ViewBag.HasManagedTournament == false && User.IsInRole("HeadReferee"))
+            {
+                <div class="alert alert-info border-0 shadow-sm rounded-3 mb-3">
+                    <i class="fa-solid fa-circle-info me-2"></i>
+                    Bạn đã có quyền vào cổng Trưởng ban trọng tài nhưng hiện chưa được giao phụ trách giải đấu nào. Các chức năng quản lý sẽ khả dụng sau khi được phân công.
+                </div>
+            }
             @RenderBody()
         </main>
     </div>

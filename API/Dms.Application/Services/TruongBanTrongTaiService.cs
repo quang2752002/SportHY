@@ -82,6 +82,93 @@ namespace Dms.Application.Services
             return allTournaments.Where(g => g.TruongBanTrongTaiId == refereeId.Value).ToList();
         }
 
+        /// <summary>
+        /// Lấy các giải đấu đang có ít nhất một trận được phân công cho trọng tài.
+        /// </summary>
+        /// <param name="refereeId">ID hồ sơ trọng tài liên kết với tài khoản.</param>
+        /// <returns>Danh sách ID giải đấu có phân công trọng tài còn hiệu lực.</returns>
+        public async Task<List<int>> GetRefereeTournamentIdsAsync(int refereeId)
+        {
+            if (refereeId <= 0) return new List<int>();
+
+            var assignments = (await _unitOfWork.PhanCongTrongTais.FindAsync(assignment =>
+                assignment.TrongTaiId == refereeId && assignment.IsDeleted != true)).ToList();
+            var matchIds = assignments.Select(assignment => assignment.TranDauId).Distinct().ToList();
+            if (matchIds.Count == 0) return new List<int>();
+
+            var matches = (await _unitOfWork.TranDaus.FindAsync(match =>
+                matchIds.Contains(match.Id) && match.IsDeleted != true)).ToList();
+            var gdmIds = matches.Select(match => match.GiaiDauMonTheThaoId).Distinct().ToList();
+            if (gdmIds.Count == 0) return new List<int>();
+
+            var tournamentIds = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(gdm =>
+                    gdmIds.Contains(gdm.Id) && gdm.IsDeleted != true))
+                .Select(gdm => gdm.GiaiDauId)
+                .Distinct()
+                .ToList();
+            if (tournamentIds.Count == 0) return new List<int>();
+
+            return (await _unitOfWork.GiaiDaus.FindAsync(tournament =>
+                    tournamentIds.Contains(tournament.Id) && tournament.IsDeleted != true))
+                .Select(tournament => tournament.Id)
+                .Distinct()
+                .ToList();
+        }
+
+        /// <summary>
+        /// Kiểm tra trọng tài có được phân công điều hành một trận đấu cụ thể hay không.
+        /// </summary>
+        /// <param name="refereeId">ID hồ sơ trọng tài.</param>
+        /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
+        /// <returns>True nếu trọng tài có phân công còn hiệu lực trong trận đấu thuộc giải còn hiệu lực.</returns>
+        public async Task<bool> IsRefereeAssignedToMatchAsync(int refereeId, int tranDauId)
+        {
+            if (refereeId <= 0 || tranDauId <= 0) return false;
+
+            var match = (await _unitOfWork.TranDaus.FindAsync(item =>
+                item.Id == tranDauId && item.IsDeleted != true)).FirstOrDefault();
+            if (match == null) return false;
+
+            var gdm = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(item =>
+                item.Id == match.GiaiDauMonTheThaoId && item.IsDeleted != true)).FirstOrDefault();
+            if (gdm == null) return false;
+
+            var tournament = (await _unitOfWork.GiaiDaus.FindAsync(item =>
+                item.Id == gdm.GiaiDauId && item.IsDeleted != true)).FirstOrDefault();
+            if (tournament == null) return false;
+
+            return (await _unitOfWork.PhanCongTrongTais.FindAsync(assignment =>
+                    assignment.TranDauId == tranDauId &&
+                    assignment.TrongTaiId == refereeId &&
+                    assignment.IsDeleted != true))
+                .Any();
+        }
+
+        /// <summary>
+        /// Kiểm tra trận đấu có thuộc giải đấu được chỉ định hay không.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
+        /// <param name="giaiDauId">ID giải đấu cần đối chiếu.</param>
+        /// <returns>True nếu trận đấu thuộc giải đấu và các bản ghi liên quan chưa bị xóa mềm.</returns>
+        public async Task<bool> IsMatchInTournamentAsync(int tranDauId, int giaiDauId)
+        {
+            if (tranDauId <= 0 || giaiDauId <= 0) return false;
+
+            var match = (await _unitOfWork.TranDaus.FindAsync(item =>
+                item.Id == tranDauId && item.IsDeleted != true)).FirstOrDefault();
+            if (match == null) return false;
+
+            var gdm = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(item =>
+                item.Id == match.GiaiDauMonTheThaoId &&
+                item.GiaiDauId == giaiDauId &&
+                item.IsDeleted != true)).FirstOrDefault();
+            if (gdm == null) return false;
+
+            return (await _unitOfWork.GiaiDaus.FindAsync(item =>
+                    item.Id == giaiDauId && item.IsDeleted != true))
+                .Any();
+        }
+
         public async Task<TruongBanDashboardDto> GetDashboardAsync(int giaiDauId)
         {
             var tournament = (await _unitOfWork.GiaiDaus.FindAsync(g => g.Id == giaiDauId && g.IsDeleted != true)).FirstOrDefault();
@@ -218,7 +305,13 @@ namespace Dms.Application.Services
             };
         }
 
-        public async Task<RefereeDetailsDto?> GetRefereeDetailsAsync(int id)
+        /// <summary>
+        /// Lấy thông tin hồ sơ và lịch sử phân công của trọng tài, có thể giới hạn lịch sử theo một giải.
+        /// </summary>
+        /// <param name="id">ID hồ sơ trọng tài.</param>
+        /// <param name="giaiDauId">ID giải cần giới hạn lịch sử; null để lấy lịch sử của mọi giải.</param>
+        /// <returns>Thông tin trọng tài và lịch sử phù hợp, hoặc null nếu không tìm thấy hồ sơ.</returns>
+        public async Task<RefereeDetailsDto?> GetRefereeDetailsAsync(int id, int? giaiDauId = null)
         {
             var referee = (await _unitOfWork.TrongTais.FindAsync(t => t.Id == id && t.IsDeleted != true)).FirstOrDefault();
             if (referee == null) return null;
@@ -228,13 +321,20 @@ namespace Dms.Application.Services
             var matches = (await _unitOfWork.TranDaus.FindAsync(m => matchIds.Contains(m.Id) && m.IsDeleted != true)).ToList();
 
             var gdmIds = matches.Select(m => m.GiaiDauMonTheThaoId).Distinct().ToList();
-            var gdms = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(gm => gdmIds.Contains(gm.Id))).ToDictionary(x => x.Id);
+            var gdms = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(gm =>
+                gdmIds.Contains(gm.Id) &&
+                (!giaiDauId.HasValue || gm.GiaiDauId == giaiDauId.Value) &&
+                gm.IsDeleted != true)).ToDictionary(x => x.Id);
+            var scopedGdmIds = gdms.Keys.ToHashSet();
+            matches = matches.Where(match => scopedGdmIds.Contains(match.GiaiDauMonTheThaoId)).ToList();
+            var scopedMatchIds = matches.Select(match => match.Id).ToHashSet();
+            pcs = pcs.Where(assignment => scopedMatchIds.Contains(assignment.TranDauId)).ToList();
 
             var monIds = gdms.Values.Select(x => x.MonTheThaoId).Distinct().ToList();
-            var mons = (await _unitOfWork.MonTheThaos.FindAsync(m => monIds.Contains(m.Id))).ToDictionary(x => x.Id);
+            var mons = (await _unitOfWork.MonTheThaos.FindAsync(m => monIds.Contains(m.Id) && m.IsDeleted != true)).ToDictionary(x => x.Id);
 
             var giaiDauIds = gdms.Values.Select(x => x.GiaiDauId).Distinct().ToList();
-            var giaiDaus = (await _unitOfWork.GiaiDaus.FindAsync(g => giaiDauIds.Contains(g.Id))).ToDictionary(x => x.Id);
+            var giaiDaus = (await _unitOfWork.GiaiDaus.FindAsync(g => giaiDauIds.Contains(g.Id) && g.IsDeleted != true)).ToDictionary(x => x.Id);
 
             var history = (from pc in pcs
                            join m in matches on pc.TranDauId equals m.Id
@@ -471,6 +571,29 @@ namespace Dms.Application.Services
                 : null;
 
             var conflicts = new List<ConflictItemDto>();
+
+            // Một trọng tài không được giữ đồng thời nhiều vai trò trong cùng một trận.
+            // Kiểm tra ngay tại đây để giao diện có thể cảnh báo trước khi tạo bản nháp.
+            var sameMatchAssignment = (await _unitOfWork.PhanCongTrongTais.FindAsync(pc =>
+                pc.TranDauId == tranDauId &&
+                pc.TrongTaiId == trongTaiId &&
+                pc.IsDeleted != true)).FirstOrDefault();
+            if (sameMatchAssignment != null)
+            {
+                conflicts.Add(new ConflictItemDto
+                {
+                    TranDauId = match.Id,
+                    SoTran = match.SoTran,
+                    TenTran = match.TenTran ?? $"Trận số {match.SoTran}",
+                    ThoiGian = match.ThoiGianDuKien.Value.ToString("HH:mm dd/MM/yyyy"),
+                    TenMon = mon?.Ten ?? "Môn thi đấu",
+                    VaiTro = sameMatchAssignment.VaiTro ?? "Trọng tài",
+                    DiffMinutes = 0,
+                    RequiredRestMinutes = nghiToiThieuPhut,
+                    LoaiXungDot = "TrungTran",
+                    MoTa = $"Trọng tài đã được phân công ở vai trò {sameMatchAssignment.VaiTro ?? "khác"} trong chính trận này."
+                });
+            }
 
             // 2. Kiểm tra thời gian đệm nghỉ giữa 2 trận liên tiếp (NghiToiThieuTrongTaiPhut)
             foreach (var om in otherMatches)
