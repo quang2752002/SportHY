@@ -22,7 +22,7 @@ namespace API.Areas.TruongBanTrongTai.Controllers
             _refereeService = refereeService;
         }
 
-        public async Task<IActionResult> Index(int? giaiDauId, int? monTheThaoId, string? status, DateTime? date)
+        public async Task<IActionResult> Index(int? giaiDauId, int? monTheThaoId, string? status, DateTime? date, int? trongTaiId)
         {
             var managedTournaments = await GetManagedTournamentsAsync();
             var currentReferee = await GetCurrentRefereeAsync();
@@ -34,6 +34,12 @@ namespace API.Areas.TruongBanTrongTai.Controllers
             ViewBag.SelectedMonId = monTheThaoId;
             ViewBag.SelectedStatus = status;
             ViewBag.SelectedDate = date?.ToString("yyyy-MM-dd");
+            ViewBag.SelectedRefereeId = trongTaiId;
+
+            var selectedTournament = selectedGiaiDauId.HasValue
+                ? managedTournaments.FirstOrDefault(tournament => tournament.Id == selectedGiaiDauId.Value)
+                : null;
+            ViewBag.HeadRefereeId = selectedTournament?.TruongBanTrongTaiId;
 
             if (!selectedGiaiDauId.HasValue)
             {
@@ -41,14 +47,17 @@ namespace API.Areas.TruongBanTrongTai.Controllers
                 return View(new List<MatchAssignmentDto>());
             }
 
-            var assignments = await _truongBanService.GetMatchAssignmentsAsync(selectedGiaiDauId.Value, monTheThaoId, status, date);
+            var assignments = await _truongBanService.GetMatchAssignmentsAsync(selectedGiaiDauId.Value, monTheThaoId, status, date, trongTaiId);
 
             // Môn thể thao và danh sách trọng tài phục vụ View
             var allMons = await _monTheThaoService.GetAllAsync();
             ViewBag.SportList = allMons.OrderBy(m => m.Ten).ToList();
 
             var allReferees = await _refereeService.GetAllAsync();
-            ViewBag.AllReferees = allReferees.Where(t => t.TrangThai).OrderBy(t => t.HoTen).ToList();
+            ViewBag.AllReferees = allReferees
+                .Where(referee => referee.TrangThai && referee.Id != selectedTournament?.TruongBanTrongTaiId)
+                .OrderBy(referee => referee.HoTen)
+                .ToList();
 
             return View(assignments);
         }
@@ -67,16 +76,28 @@ namespace API.Areas.TruongBanTrongTai.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AssignReferee(int tranDauId, string vaiTro, int? trongTaiId, bool force = false)
+        public IActionResult AssignReferee(int tranDauId, string vaiTro, int? trongTaiId, bool force = false)
         {
-            var (success, message, refName) = await _truongBanService.AssignRefereeAsync(tranDauId, vaiTro, trongTaiId, force);
-            return Json(new
+            return BadRequest(new
             {
-                success = success,
-                message = message,
-                refereeName = refName,
-                refereeId = trongTaiId
+                success = false,
+                message = "Phân công hiện hoạt động theo cơ chế bản nháp. Hãy cập nhật trên giao diện và bấm Lưu nháp để xác nhận."
             });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AutoAssignReferees([FromBody] AutoAssignRefereesRequestDto request)
+        {
+            var result = await _truongBanService.AutoAssignRefereesAsync(request);
+            return Json(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveAssignmentDraft([FromBody] SaveRefereeAssignmentDraftRequestDto request)
+        {
+            var savedBy = User?.Identity?.Name;
+            var result = await _truongBanService.SaveRefereeAssignmentDraftAsync(request, savedBy);
+            return Json(result);
         }
     }
 }
