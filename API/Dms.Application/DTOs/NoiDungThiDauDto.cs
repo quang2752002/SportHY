@@ -653,6 +653,7 @@ namespace Dms.Application.DTOs
         public int GiaiDauMonTheThaoId { get; set; }
         public string? TenMonTheThao { get; set; }
         public string? HinhThucThiDau { get; set; }
+        public bool LaMonDongDoi { get; set; }
         public List<VongDauDto> VongDaus { get; set; } = new();
         public List<BangDauDto> BangDaus { get; set; } = new();
         public List<SanDauDto> SanDaus { get; set; } = new();

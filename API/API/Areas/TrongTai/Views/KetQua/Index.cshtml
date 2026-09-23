@@ -615,6 +615,8 @@
         let matchClockHasStarted = matchWasInProgress;
 
         const sportConfig = @Html.Raw(matchFormat != null ? System.Text.Json.JsonSerializer.Serialize(matchFormat) : "null");
+        const tenDoi1 = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.TenDoi1 ?? "Đội 1"));
+        const tenDoi2 = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.TenDoi2 ?? "Đội 2"));
 
         let setScoresList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(setScores));
         let eventsList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(events));
@@ -733,13 +735,13 @@
             const setsToWin = sportConfig?.SoHiepThangDeThangTran || 2;
             if (won1 >= setsToWin) {
                 $('#autoWinnerAlert').removeClass('d-none');
-                $('#autoWinnerText').text(`@(Model?.TenDoi1 ?? "Đội 1") đã thắng ${won1} set -> Đủ điều kiện thắng trận!`);
+                $('#autoWinnerText').text(`${tenDoi1} đã thắng ${won1} set -> Đủ điều kiện thắng trận!`);
                 $('#selectWinner').val('1');
                 $('#stKetThuc').prop('checked', true);
                 onStatusChanged();
             } else if (won2 >= setsToWin) {
                 $('#autoWinnerAlert').removeClass('d-none');
-                $('#autoWinnerText').text(`@(Model?.TenDoi2 ?? "Đội 2") đã thắng ${won2} set -> Đủ điều kiện thắng trận!`);
+                $('#autoWinnerText').text(`${tenDoi2} đã thắng ${won2} set -> Đủ điều kiện thắng trận!`);
                 $('#selectWinner').val('2');
                 $('#stKetThuc').prop('checked', true);
                 onStatusChanged();

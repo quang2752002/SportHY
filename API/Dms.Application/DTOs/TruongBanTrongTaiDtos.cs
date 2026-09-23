@@ -174,4 +174,133 @@ namespace Dms.Application.DTOs
         public List<string> DanhSachMon { get; set; } = new();
         public int SoMonCon { get; set; }
     }
+
+    /// <summary>
+    /// Tham số chạy chức năng tự động phân công trọng tài cho các trận đã có lịch.
+    /// </summary>
+    public class AutoAssignRefereesRequestDto
+    {
+        /// <summary>ID giải đấu cần phân công.</summary>
+        public int GiaiDauId { get; set; }
+
+        /// <summary>ID môn thể thao cần phân công; để trống sẽ áp dụng cho toàn giải.</summary>
+        public int? MonTheThaoId { get; set; }
+
+        /// <summary>Ngày thi đấu cần phân công; để trống sẽ áp dụng cho mọi ngày.</summary>
+        public DateTime? Date { get; set; }
+
+        /// <summary>
+        /// Chỉ xử lý các trận chưa đấu. Mặc định bật để không tác động tới trận đang diễn ra hoặc đã kết thúc.
+        /// </summary>
+        public bool ChiPhanCongTranChuaDau { get; set; } = true;
+
+        /// <summary>Chỉ lấp các vị trí còn trống, không ghi đè phân công hiện tại.</summary>
+        public bool ChiLapViTriTrong { get; set; } = true;
+
+        /// <summary>
+        /// Danh sách vai trò cần tự động phân công. Nếu để trống, hệ thống dùng đủ 5 vị trí tiêu chuẩn.
+        /// </summary>
+        public List<string> VaiTros { get; set; } = new();
+
+        /// <summary>
+        /// Danh sách trọng tài người dùng chọn để thuật toán sử dụng. Nếu để trống, hệ thống sử dụng toàn bộ trọng tài hợp lệ, trừ Trưởng ban trọng tài.
+        /// </summary>
+        public List<int> TrongTaiIds { get; set; } = new();
+
+        /// <summary>
+        /// Các thay đổi đang ở trạng thái nháp trên giao diện. Thuật toán dùng chúng để lập bản nháp tiếp theo nhưng không ghi dữ liệu.
+        /// </summary>
+        public List<RefereeAssignmentDraftItemDto> DraftChanges { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Kết quả tổng hợp của một lần tự động phân công trọng tài.
+    /// </summary>
+    public class AutoAssignRefereesResultDto
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int MatchesConsidered { get; set; }
+        public int MatchesAssigned { get; set; }
+        public int PositionsAssigned { get; set; }
+        public int PositionsUnassigned { get; set; }
+        public List<AutoAssignRefereeItemDto> Assignments { get; set; } = new();
+        public List<AutoAssignRefereeUnassignedDto> Unassigned { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Một vị trí trọng tài đã được tự động phân công.
+    /// </summary>
+    public class AutoAssignRefereeItemDto
+    {
+        public int TranDauId { get; set; }
+        public int SoTran { get; set; }
+        public string TenTran { get; set; } = string.Empty;
+        public string VaiTro { get; set; } = string.Empty;
+        public int TrongTaiId { get; set; }
+        public string HoTenTrongTai { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Một vị trí chưa thể phân công và lý do chi tiết.
+    /// </summary>
+    public class AutoAssignRefereeUnassignedDto
+    {
+        public int TranDauId { get; set; }
+        public int SoTran { get; set; }
+        public string TenTran { get; set; } = string.Empty;
+        public string VaiTro { get; set; } = string.Empty;
+        public string LyDo { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Một thay đổi phân công trong bản nháp. TrongTaiId bằng null nghĩa là hủy phân công ở vị trí đó khi lưu.
+    /// </summary>
+    public class RefereeAssignmentDraftItemDto
+    {
+        /// <summary>ID trận đấu cần thay đổi.</summary>
+        public int TranDauId { get; set; }
+
+        /// <summary>Vai trò phân công cần thêm, đổi hoặc hủy.</summary>
+        public string VaiTro { get; set; } = string.Empty;
+
+        /// <summary>ID trọng tài được chọn; null biểu thị hủy phân công vị trí.</summary>
+        public int? TrongTaiId { get; set; }
+
+        /// <summary>Cờ cho biết người dùng đã chủ động chấp nhận cảnh báo trùng lịch khi tạo nháp thủ công.</summary>
+        public bool Force { get; set; }
+    }
+
+    /// <summary>
+    /// Dữ liệu xác nhận lưu toàn bộ thay đổi phân công đang ở trạng thái nháp.
+    /// </summary>
+    public class SaveRefereeAssignmentDraftRequestDto
+    {
+        /// <summary>ID giải đấu chứa các trận đấu cần lưu.</summary>
+        public int GiaiDauId { get; set; }
+
+        /// <summary>Danh sách vị trí cần thêm, thay đổi hoặc xóa mềm.</summary>
+        public List<RefereeAssignmentDraftItemDto> Changes { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Kết quả xác nhận lưu bản nháp phân công trọng tài.
+    /// </summary>
+    public class SaveRefereeAssignmentDraftResultDto
+    {
+        /// <summary>Cho biết thao tác lưu có thành công hay không.</summary>
+        public bool Success { get; set; }
+
+        /// <summary>Thông báo tóm tắt kết quả lưu.</summary>
+        public string Message { get; set; } = string.Empty;
+
+        /// <summary>Số vị trí đã xử lý từ bản nháp.</summary>
+        public int ChangesSaved { get; set; }
+
+        /// <summary>Số phân công mới được tạo.</summary>
+        public int AssignmentsCreated { get; set; }
+
+        /// <summary>Số phân công cũ được xóa mềm.</summary>
+        public int AssignmentsRemoved { get; set; }
+    }
 }

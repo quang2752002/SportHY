@@ -66,8 +66,9 @@ namespace Dms.Application.Interfaces
         /// <param name="monTheThaoId">ID môn thể thao (nếu lọc theo môn)</param>
         /// <param name="status">Trạng thái trận đấu</param>
         /// <param name="date">Ngày thi đấu</param>
+        /// <param name="trongTaiId">ID trọng tài được chỉ định (nếu lọc theo trọng tài)</param>
         /// <returns>Danh sách trận đấu kèm thông tin trọng tài phân công</returns>
-        Task<List<MatchAssignmentDto>> GetMatchAssignmentsAsync(int giaiDauId, int? monTheThaoId, string? status, DateTime? date);
+        Task<List<MatchAssignmentDto>> GetMatchAssignmentsAsync(int giaiDauId, int? monTheThaoId, string? status, DateTime? date, int? trongTaiId = null);
 
         /// <summary>
         /// Kiểm tra xung đột trùng lịch thi đấu tức thời khi phân công một trọng tài vào một trận đấu
@@ -86,6 +87,24 @@ namespace Dms.Application.Interfaces
         /// <param name="force">Bỏ qua cảnh báo quá tải/xung đột khi Trưởng ban chủ động xác nhận</param>
         /// <returns>Kết quả thực hiện kèm họ tên trọng tài đã gán</returns>
         Task<(bool success, string message, string? refereeName)> AssignRefereeAsync(int tranDauId, string vaiTro, int? trongTaiId, bool force = false);
+
+        /// <summary>
+        /// Lập bản nháp tự động phân công các vị trí trọng tài cho những trận đấu đã có lịch trong phạm vi yêu cầu.
+        /// Hàm không ghi dữ liệu; chỉ trả về các vị trí được đề xuất sau khi kiểm tra trùng giờ,
+        /// thời gian nghỉ tối thiểu, giới hạn số trận mỗi ngày và danh sách trọng tài được chọn.
+        /// </summary>
+        /// <param name="request">Phạm vi giải đấu, môn, ngày, vai trò, trọng tài được chọn và các thay đổi nháp hiện có.</param>
+        /// <returns>Kết quả nháp, danh sách vị trí được đề xuất và các vị trí chưa thể gán.</returns>
+        Task<AutoAssignRefereesResultDto> AutoAssignRefereesAsync(AutoAssignRefereesRequestDto request);
+
+        /// <summary>
+        /// Xác nhận và lưu các thay đổi phân công trọng tài từ bản nháp.
+        /// Các phân công bị thay thế hoặc hủy đều được xóa mềm; Trưởng ban trọng tài không được phép xuất hiện trong kết quả lưu.
+        /// </summary>
+        /// <param name="request">Giải đấu và danh sách thay đổi nháp cần lưu.</param>
+        /// <param name="savedBy">Tên tài khoản thực hiện để lưu lịch sử thay đổi.</param>
+        /// <returns>Kết quả lưu gồm số bản ghi tạo mới và số bản ghi xóa mềm.</returns>
+        Task<SaveRefereeAssignmentDraftResultDto> SaveRefereeAssignmentDraftAsync(SaveRefereeAssignmentDraftRequestDto request, string? savedBy = null);
 
         /// <summary>
         /// Lấy lịch trình làm việc và tiến độ hoàn thành nhiệm vụ theo từng trọng tài trong giải đấu

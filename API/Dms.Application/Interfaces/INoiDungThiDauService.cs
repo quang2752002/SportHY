@@ -48,6 +48,14 @@ namespace Dms.Application.Interfaces
 
         Task<IEnumerable<DangKyThiDauDto>> GetAllAsync(int? giaiDauId = null, int? giaiDauMonTheThaoId = null, int? donViId = null);
         Task<DangKyThiDauDto?> GetByIdAsync(int id);
+
+        /// <summary>
+        /// Tạo mới hồ sơ đăng ký thi đấu, kiểm tra tính hợp lệ về thời hạn, điều kiện môn thi, giới tính, số lượng VĐV và trùng lặp VĐV.
+        /// </summary>
+        /// <param name="dto">Dữ liệu đăng ký thi đấu</param>
+        /// <param name="createdBy">Tài khoản tạo hồ sơ</param>
+        /// <param name="isPrivileged">Cờ đặc quyền bỏ qua kiểm tra thời hạn đăng ký</param>
+        /// <returns>Hồ sơ đăng ký đã tạo</returns>
         Task<DangKyThiDauDto> CreateAsync(CreateUpdateDangKyThiDauDto dto, string? createdBy = null, bool isPrivileged = false);
         Task<DangKyThiDauDto?> UpdateAsync(int id, CreateUpdateDangKyThiDauDto dto, string? updatedBy = null, bool isPrivileged = false);
         Task<bool> DeleteAsync(int id, bool isPrivileged = false);

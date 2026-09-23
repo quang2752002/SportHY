@@ -94,6 +94,13 @@ namespace Dms.Application.Services
             return dtos.FirstOrDefault();
         }
 
+        /// <summary>
+        /// Tạo mới hồ sơ đăng ký thi đấu, kiểm tra tính hợp lệ về thời hạn đăng ký, giới tính, số lượng VĐV, trùng lặp VĐV, bắt buộc tên đội với môn đồng đội và tự động giải mã HTML entities.
+        /// </summary>
+        /// <param name="dto">Dữ liệu đăng ký thi đấu</param>
+        /// <param name="createdBy">Tài khoản tạo hồ sơ</param>
+        /// <param name="isPrivileged">Cờ đặc quyền cho phép đăng ký quá hạn</param>
+        /// <returns>Hồ sơ đăng ký đã tạo</returns>
         public async Task<DangKyThiDauDto> CreateAsync(CreateUpdateDangKyThiDauDto dto, string? createdBy = null, bool isPrivileged = false)
         {
             var gdMon = await _unitOfWork.GiaiDauMonTheThaos.GetByIdAsync(dto.GiaiDauMonTheThaoId);
@@ -201,16 +208,25 @@ namespace Dms.Application.Services
             }
 
             int? resolvedDoiId = dto.DoiId;
+            var vdvEntities = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id))).ToList();
 
             // Tự động tạo Doi + ThanhVienDoi nếu chưa có DoiId
             if (!resolvedDoiId.HasValue && vdvIds.Any())
             {
-                var vdvEntities = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id))).ToList();
                 int? donViId = dto.DonViId ?? vdvEntities.FirstOrDefault(v => v.DonViId.HasValue)?.DonViId;
 
                 string tenDoi = dto.TenDoi?.Trim() ?? string.Empty;
+                if (!string.IsNullOrEmpty(tenDoi))
+                {
+                    tenDoi = System.Net.WebUtility.HtmlDecode(tenDoi);
+                }
                 if (string.IsNullOrWhiteSpace(tenDoi))
                 {
+                    if (monTheThao != null && monTheThao.LaMonDongDoi)
+                    {
+                        throw new InvalidOperationException("Vui lòng nhập tên đội thi đấu cho môn thi đồng đội.");
+                    }
+
                     if (vdvEntities.Count == 1)
                     {
                         tenDoi = vdvEntities[0].HoTen;
@@ -259,14 +275,28 @@ namespace Dms.Application.Services
                 resolvedDoiId = newDoi.Id;
             }
 
+            string resolvedTenDangKy;
+            if (!string.IsNullOrWhiteSpace(dto.TenDangKy))
+            {
+                resolvedTenDangKy = dto.TenDangKy;
+            }
+            else if (monTheThao != null && !monTheThao.LaMonDongDoi)
+            {
+                // Môn cá nhân: ưu tiên lấy họ tên VĐV
+                resolvedTenDangKy = vdvEntities.FirstOrDefault()?.HoTen ?? (!string.IsNullOrWhiteSpace(dto.TenDoi) ? dto.TenDoi : "Vận động viên");
+            }
+            else
+            {
+                // Môn đồng đội: lấy tên đội
+                resolvedTenDangKy = !string.IsNullOrWhiteSpace(dto.TenDoi) ? dto.TenDoi : "Đội thi đấu";
+            }
+
             var entity = new DangKyThiDau
             {
                 GiaiDauMonTheThaoId = dto.GiaiDauMonTheThaoId,
                 DoiId = resolvedDoiId,
                 SoDangKy = string.IsNullOrWhiteSpace(dto.SoDangKy) ? $"DK_{DateTime.Now:yyyyMMddHHmmss}" : dto.SoDangKy,
-                TenDangKy = !string.IsNullOrWhiteSpace(dto.TenDangKy)
-                    ? dto.TenDangKy
-                    : (!string.IsNullOrWhiteSpace(dto.TenDoi) ? dto.TenDoi : $"Tham gia - {monTheThao?.Ten ?? "Môn thi đấu"}"),
+                TenDangKy = resolvedTenDangKy,
                 TrangThai = "DaDuyet", // Luôn mặc định đã duyệt theo yêu cầu của hệ thống
                 NgayDangKy = dto.NgayDangKy != default ? dto.NgayDangKy : DateTime.Now,
                 GhiChu = dto.GhiChu,
