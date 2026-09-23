@@ -295,6 +295,16 @@ namespace Dms.Infrastructure.Migrations
                     b.Property<bool>("CoThePhat")
                         .HasColumnType("bit");
 
+                      b.Property<bool>("ChoPhepDongHangThanhTich")
+                          .HasColumnType("bit");
+
+                      b.Property<string>("TenTieuChiPhuThanhTich")
+                          .HasMaxLength(100)
+                          .HasColumnType("nvarchar(100)");
+
+                      b.Property<bool>("TieuChiPhuCangNhoCangTot")
+                          .HasColumnType("bit");
+
                     b.Property<DateTime?>("Created")
                         .HasColumnType("datetime2");
 

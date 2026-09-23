@@ -110,6 +110,13 @@ namespace Dms.Application.Interfaces
         Task<bool> CanAccessMatchAsync(int tranDauId, int? trongTaiId, bool allowAllMatches);
 
         /// <summary>
+        /// Lấy kết quả đã lưu của từng thành phần trong một lượt thi thành tích để mở lại và chỉnh sửa.
+        /// </summary>
+        /// <param name="tranDauId">ID lượt thi cần lấy kết quả.</param>
+        /// <returns>Danh sách làn, trạng thái, thành tích chính, chỉ số phụ và thứ hạng đã lưu.</returns>
+        Task<List<HeatParticipantResultDto>> GetHeatResultsByMatchIdAsync(int tranDauId);
+
+        /// <summary>
         /// Lưu tỷ số và tiến độ trận đấu mà không thay đổi danh sách đội hoặc phân công trọng tài.
         /// </summary>
         /// <param name="id">ID trận đấu cần cập nhật.</param>

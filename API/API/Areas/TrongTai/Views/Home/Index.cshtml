@@ -103,6 +103,10 @@
                 <div class="col-md-4">
                     <label class="form-label small fw-semibold mb-1">Chọn giải đấu</label>
                     <select name="giaiDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @if (tournaments.Count == 0)
+                        {
+                            <option value="">-- Chưa có giải được phân công --</option>
+                        }
                         @foreach (var t in tournaments)
                         {
                             if (selectedGiaiDauId == t.Id)
@@ -149,7 +153,7 @@
         <div class="alert alert-info border-info d-flex align-items-center gap-2 py-2.5 px-3 mb-0">
             <div class="d-flex align-items-center gap-2">
                 <i class="fa-solid fa-circle-info fs-5"></i>
-                <span>Bạn chưa được phân công trận nào trong giải này. Liên hệ ban tổ chức để được phân công.</span>
+                <span>@(tournaments.Count == 0 ? "Tài khoản chưa được phân công trận đấu thuộc giải nào. Liên hệ ban tổ chức để được phân công." : "Bạn chưa được phân công trận nào trong giải này. Liên hệ ban tổ chức để được phân công.")</span>
             </div>
         </div>
     }

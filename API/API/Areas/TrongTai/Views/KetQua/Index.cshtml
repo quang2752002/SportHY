@@ -8,18 +8,26 @@
 
     int initScore1 = ViewBag.Score1 is int s1 ? s1 : (Model?.TySoDoi1 ?? 0);
     int initScore2 = ViewBag.Score2 is int s2 ? s2 : (Model?.TySoDoi2 ?? 0);
-    int initPen1 = Model?.DiemPenaltyDoi1 ?? 0;
-    int initPen2 = Model?.DiemPenaltyDoi2 ?? 0;
     string initWinner = ViewBag.Winner as string ?? (Model?.DoiThangDangKyId.HasValue == true ? (Model.DoiThangDangKyId == Model.Doi1DangKyId ? "1" : "2") : (Model?.IsHoa == true ? "draw" : ""));
     string initNotes = ViewBag.Notes as string ?? "";
     var setScores = ViewBag.SetScores as List<SetScoreDto> ?? new();
     var events = ViewBag.Events as List<MatchEventItemDto> ?? new();
+    var savedHeatResults = ViewBag.HeatResults as List<HeatParticipantResultDto> ?? new();
+    var heatResultByParticipantId = savedHeatResults.ToDictionary(result => result.ThanhPhanTranDauId);
 
     bool isHeatMatch = matchFormat?.LoaiTheThuc == "TinhDiemXepHang" || (Model?.ThanhPhanTranDaus?.Count > 2);
     bool isSetSport = matchFormat?.LoaiTheThuc == "SetDiem";
     bool isTimeSport = matchFormat?.LoaiTheThuc == "ThoiGianHiep" || (!isHeatMatch && !isSetSport);
     bool isKnockout = Model != null && (Model.BangDauId == null || !string.IsNullOrEmpty(Model.MaTranBracket));
     bool hasPenaltyCards = matchFormat?.CoThePhat == true;
+    bool hasExtraTime = matchFormat?.CoHiepPhu == true;
+    bool hasPenalty = matchFormat?.CoPenalty == true;
+    bool allowSharedPerformanceRank = matchFormat?.ChoPhepDongHangThanhTich != false;
+    bool secondaryMetricSmallerIsBetter = matchFormat?.TieuChiPhuCangNhoCangTot != false;
+    int? initExtraTime1 = ViewBag.ExtraTimeScore1 as int?;
+    int? initExtraTime2 = ViewBag.ExtraTimeScore2 as int?;
+    int? initPen1 = Model?.DiemPenaltyDoi1;
+    int? initPen2 = Model?.DiemPenaltyDoi2;
     string? matchStatus = Model?.TrangThai;
     DateTime? actualStartTime = Model?.ThoiGianBatDau;
     DateTime? actualEndTime = Model?.ThoiGianKetThuc;
@@ -56,6 +64,10 @@
                 <div class="col-md-5">
                     <label class="form-label small fw-semibold mb-1">1. Chọn Giải Đấu</label>
                     <select name="giaiDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @if (tournaments.Count == 0)
+                        {
+                            <option value="">-- Chưa có giải được phân công --</option>
+                        }
                         @foreach (var t in tournaments)
                         {
                             if (selectedGiaiDauId == t.Id)
@@ -74,7 +86,7 @@
                     <select name="tranDauId" class="form-select form-select-sm" onchange="this.form.submit()">
                         @if (matches.Count == 0)
                         {
-                            <option value="">-- Giải này chưa có trận đấu --</option>
+                            <option value="">@(tournaments.Count == 0 ? "-- Chưa có trận được phân công --" : "-- Giải này chưa có trận đấu được phân công --")</option>
                         }
                         else
                         {
@@ -105,8 +117,8 @@
     {
         <div class="card-custom p-5 text-center text-muted">
             <i class="fa-solid fa-gamepad fs-1 mb-3 opacity-25"></i>
-            <h5>Vui lòng chọn một trận đấu để bắt đầu điều hành</h5>
-            <p class="small mb-0">Chọn giải đấu và trận đấu ở thanh lọc phía trên.</p>
+            <h5>@(tournaments.Count == 0 ? "Bạn chưa được phân công giải đấu nào" : "Vui lòng chọn một trận đấu để bắt đầu điều hành")</h5>
+            <p class="small mb-0">@(tournaments.Count == 0 ? "Liên hệ ban tổ chức để được phân công giải và trận đấu." : "Chọn giải đấu và trận đấu ở thanh lọc phía trên.")</p>
         </div>
     }
     else
@@ -242,6 +254,10 @@
                                 <th style="width: 70px;">Làn</th>
                                 <th class="text-start">Vận Động Viên & Đơn Vị</th>
                                 <th style="width: 200px;">Thành Tích (@(matchFormat?.DonViThanhTich ?? "giây"))</th>
+                                @if (!allowSharedPerformanceRank)
+                                {
+                                    <th style="width: 180px;">@(matchFormat?.TenTieuChiPhuThanhTich ?? "Chỉ số phụ") (@(secondaryMetricSmallerIsBetter ? "nhỏ hơn tốt hơn" : "lớn hơn tốt hơn"))</th>
+                                }
                                 <th style="width: 220px;">Trạng Thái Xuất Phát</th>
                                 <th style="width: 110px;">Xếp Hạng</th>
                                 <th>Kỷ Lục / Ghi Chú</th>
@@ -253,6 +269,7 @@
                                 @for (int i = 0; i < Model.ThanhPhanTranDaus.Count; i++)
                                 {
                                     var tp = Model.ThanhPhanTranDaus[i];
+                                    heatResultByParticipantId.TryGetValue(tp.Id, out var savedHeatResult);
                                     <tr data-tp-id="@tp.Id" data-dk-id="@tp.DangKyThiDauId" data-lane="@(tp.SoLane ?? (i + 1))">
                                         <td class="fw-bold fs-5 font-monospace text-primary">
                                             Làn @(tp.SoLane ?? (i + 1))
@@ -264,21 +281,29 @@
                                         <td>
                                             <input type="text" class="form-control form-control-sm text-center font-monospace fs-6 heat-time-input"
                                                    placeholder="VD: 10.45"
-                                                   value=""
+                                                   value="@(savedHeatResult?.GiaTri?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
                                                    onchange="onLaneTimeChanged(this)" />
                                         </td>
+                                        @if (!allowSharedPerformanceRank)
+                                        {
+                                            <td>
+                                                <input type="number" step="0.01" class="form-control form-control-sm text-center font-monospace heat-tiebreak-input"
+                                                       placeholder="@(matchFormat?.TenTieuChiPhuThanhTich ?? "Nhập chỉ số phụ")"
+                                                       value="@(savedHeatResult?.GiaTriPhu?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" onchange="recalculateHeatRanks()" />
+                                            </td>
+                                        }
                                         <td>
                                             <div class="btn-group btn-group-sm w-100" role="group">
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_ok_@tp.Id" value="ThamGia" checked onchange="onLaneStatusChanged(@tp.Id)" />
+                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_ok_@tp.Id" value="ThamGia" @(savedHeatResult?.TrangThai == null || savedHeatResult.TrangThai == "ThamGia" ? "checked" : "") onchange="onLaneStatusChanged(@tp.Id)" />
                                                 <label class="btn btn-outline-success" for="laneSt_ok_@tp.Id">Hợp lệ</label>
 
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dns_@tp.Id" value="DNS" onchange="onLaneStatusChanged(@tp.Id)" />
+                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dns_@tp.Id" value="DNS" @(savedHeatResult?.TrangThai == "DNS" ? "checked" : "") onchange="onLaneStatusChanged(@tp.Id)" />
                                                 <label class="btn btn-outline-secondary" for="laneSt_dns_@tp.Id" title="Did Not Start">DNS</label>
 
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dnf_@tp.Id" value="DNF" onchange="onLaneStatusChanged(@tp.Id)" />
+                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dnf_@tp.Id" value="DNF" @(savedHeatResult?.TrangThai == "DNF" ? "checked" : "") onchange="onLaneStatusChanged(@tp.Id)" />
                                                 <label class="btn btn-outline-warning" for="laneSt_dnf_@tp.Id" title="Did Not Finish">DNF</label>
 
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dq_@tp.Id" value="DQ" onchange="onLaneStatusChanged(@tp.Id)" />
+                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dq_@tp.Id" value="DQ" @(savedHeatResult?.TrangThai == "DQ" ? "checked" : "") onchange="onLaneStatusChanged(@tp.Id)" />
                                                 <label class="btn btn-outline-danger" for="laneSt_dq_@tp.Id" title="Disqualified">DQ</label>
                                             </div>
                                         </td>
@@ -294,7 +319,7 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="6" class="text-muted py-4">Chưa có danh sách VĐV trong lượt thi này.</td>
+                                    <td colspan="@(allowSharedPerformanceRank ? 6 : 7)" class="text-muted py-4">Chưa có danh sách VĐV trong lượt thi này.</td>
                                 </tr>
                             }
                         </tbody>
@@ -395,30 +420,49 @@
                 </div>
             </div>
 
-            <!-- Khu Vực Loạt Sút Luân Lưu / Penalty (Hiển thị khi bóng đá hòa trong Knockout) -->
-            <div id="penaltyCard" class="card-custom p-4 border border-danger border-opacity-25 bg-danger-subtle bg-opacity-10 d-none">
-                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-danger border-opacity-25">
-                    <h6 class="fw-bold text-danger mb-0">
-                        <i class="fa-solid fa-bullseye me-2"></i> Loạt Sút Luân Lưu (Penalty Shootout) - Phân Định Thắng Thua Knockout
-                    </h6>
-                    <span class="badge bg-danger text-white font-monospace">Bắt buộc xác định đội thắng</span>
+            @if ((isKnockout || matchFormat?.ChoPhepHoaVongBang == false) && !isSetSport && !isHeatMatch && (hasPenalty || (hasExtraTime && isKnockout)))
+            {
+                <div id="tieBreakCard" class="card-custom p-4 border border-warning border-opacity-25 bg-warning-subtle bg-opacity-10 d-none">
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-warning border-opacity-25">
+                        <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-scale-balanced text-warning me-2"></i>Phân định kết quả hòa</h6>
+                        <span class="badge bg-warning text-dark">Theo cấu hình môn thi đấu</span>
+                    </div>
+                    @if (hasExtraTime && isKnockout)
+                    {
+                        <div class="mb-3">
+                            <div class="small text-muted mb-2">Nhập điểm hiệp phụ. Điểm được cộng vào tỷ số chính trước khi xét luân lưu.</div>
+                            <div class="row g-3 align-items-center">
+                                <div class="col-md-5 text-center">
+                                    <label class="form-label small fw-semibold">Hiệp phụ: @(Model.TenDoi1 ?? "Đội 1")</label>
+                                    <input type="number" id="inputExtraTime1" class="form-control form-control-lg text-center font-monospace fw-bold" min="0" step="1" value="@(initExtraTime1?.ToString() ?? "")" onchange="onTieBreakScoreChanged()" />
+                                </div>
+                                <div class="col-md-2 text-center"><span class="fs-4 fw-bold text-warning">VS</span></div>
+                                <div class="col-md-5 text-center">
+                                    <label class="form-label small fw-semibold">Hiệp phụ: @(Model.TenDoi2 ?? "Đội 2")</label>
+                                    <input type="number" id="inputExtraTime2" class="form-control form-control-lg text-center font-monospace fw-bold" min="0" step="1" value="@(initExtraTime2?.ToString() ?? "")" onchange="onTieBreakScoreChanged()" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (hasPenalty)
+                    {
+                        <div id="penaltySection" class="@(hasExtraTime && isKnockout ? "d-none" : "")">
+                            <div class="small text-muted mb-2">@(hasExtraTime && isKnockout ? "Nếu tổng tỷ số sau hiệp phụ vẫn hòa, nhập kết quả luân lưu." : "Nhập kết quả phân định để xác định đội thắng.")</div>
+                            <div class="row g-3 align-items-center">
+                                <div class="col-md-5 text-center">
+                                    <label class="form-label small fw-semibold">Luân lưu: @(Model.TenDoi1 ?? "Đội 1")</label>
+                                    <input type="number" id="inputPenalty1" class="form-control form-control-lg text-center font-monospace fw-bold fs-3" min="0" max="50" value="@(initPen1?.ToString() ?? "")" onchange="onPenaltyScoreChanged()" />
+                                </div>
+                                <div class="col-md-2 text-center"><span class="fs-4 fw-bold text-danger">VS</span></div>
+                                <div class="col-md-5 text-center">
+                                    <label class="form-label small fw-semibold">Luân lưu: @(Model.TenDoi2 ?? "Đội 2")</label>
+                                    <input type="number" id="inputPenalty2" class="form-control form-control-lg text-center font-monospace fw-bold fs-3" min="0" max="50" value="@(initPen2?.ToString() ?? "")" onchange="onPenaltyScoreChanged()" />
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
-                <div class="row g-3 align-items-center">
-                    <div class="col-md-5 text-center">
-                        <label class="form-label small fw-semibold text-dark">Penalty: @(Model.TenDoi1 ?? "Đội 1")</label>
-                        <input type="number" id="inputPenalty1" class="form-control form-control-lg text-center font-monospace fw-bold fs-3"
-                               min="0" max="50" value="@initPen1" onchange="onPenaltyScoreChanged()" />
-                    </div>
-                    <div class="col-md-2 text-center">
-                        <span class="fs-4 fw-bold text-danger font-monospace">VS</span>
-                    </div>
-                    <div class="col-md-5 text-center">
-                        <label class="form-label small fw-semibold text-dark">Penalty: @(Model.TenDoi2 ?? "Đội 2")</label>
-                        <input type="number" id="inputPenalty2" class="form-control form-control-lg text-center font-monospace fw-bold fs-3"
-                               min="0" max="50" value="@initPen2" onchange="onPenaltyScoreChanged()" />
-                    </div>
-                </div>
-            </div>
+            }
 
             <!-- 2 Cột: Điểm Từng Hiệp / Set & Diễn Biến Sự Kiện -->
             <div class="row g-4">
@@ -601,13 +645,17 @@
         const matchId = @(Model?.Id ?? 0);
         let score1 = @initScore1;
         let score2 = @initScore2;
-        let pen1 = @initPen1;
-        let pen2 = @initPen2;
+        let pen1 = @(initPen1.HasValue ? initPen1.Value.ToString() : "null");
+        let pen2 = @(initPen2.HasValue ? initPen2.Value.ToString() : "null");
+        let extraTime1 = @(initExtraTime1.HasValue ? initExtraTime1.Value.ToString() : "null");
+        let extraTime2 = @(initExtraTime2.HasValue ? initExtraTime2.Value.ToString() : "null");
 
         const isHeatMatch = @(isHeatMatch ? "true" : "false");
         const isSetSport = @(isSetSport ? "true" : "false");
         const isTimeSport = @(isTimeSport ? "true" : "false");
         const isKnockout = @(isKnockout ? "true" : "false");
+        const hasExtraTime = @(hasExtraTime ? "true" : "false");
+        const hasPenalty = @(hasPenalty ? "true" : "false");
         const hasPenaltyCards = @(hasPenaltyCards ? "true" : "false");
         const matchWasInProgress = @(matchStatus == "DangDau" ? "true" : "false");
         let elapsedMatchSeconds = @elapsedSeconds;
@@ -790,33 +838,82 @@
         }
 
         function checkTieBreakCondition() {
-            if (!isSetSport && !isHeatMatch) {
-                const isTied = (score1 === score2);
-                const allowDraw = sportConfig?.ChoPhepHoaKnockout ?? !isKnockout;
-                if (isTied && !allowDraw) {
-                    $('#penaltyCard').removeClass('d-none');
-                } else {
-                    $('#penaltyCard').addClass('d-none');
-                }
-
-                // Auto suggest winner
-                if ($('input[name="statusOption"]:checked').val() === 'KetThuc') {
-                    if (score1 > score2) $('#selectWinner').val('1');
-                    else if (score2 > score1) $('#selectWinner').val('2');
-                    else {
-                        if (pen1 > pen2) $('#selectWinner').val('1');
-                        else if (pen2 > pen1) $('#selectWinner').val('2');
-                        else $('#selectWinner').val('draw');
-                    }
-                }
+            if (isSetSport || isHeatMatch) return;
+            refreshTieBreakUI();
+            if ($('input[name="statusOption"]:checked').val() === 'KetThuc') {
+                const outcome = getTimedMatchOutcome();
+                $('#selectWinner').val(outcome.winner || '');
             }
         }
 
+        function readOptionalScore(selector) {
+            const raw = $(selector).val();
+            if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+            const parsed = Number(raw);
+            return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+        }
+
+        function getTimedMatchOutcome() {
+            if (score1 > score2) return { winner: '1' };
+            if (score2 > score1) return { winner: '2' };
+
+            if (!isKnockout && sportConfig?.ChoPhepHoaVongBang !== false) return { winner: 'draw' };
+
+            let final1 = score1;
+            let final2 = score2;
+            if (isKnockout && hasExtraTime) {
+                extraTime1 = readOptionalScore('#inputExtraTime1');
+                extraTime2 = readOptionalScore('#inputExtraTime2');
+                if (extraTime1 === null || extraTime2 === null) {
+                    return { winner: null, message: 'Hãy nhập điểm hiệp phụ cho cả hai đội.' };
+                }
+                final1 += extraTime1;
+                final2 += extraTime2;
+                if (final1 !== final2) return { winner: final1 > final2 ? '1' : '2' };
+            }
+
+            if (hasPenalty) {
+                pen1 = readOptionalScore('#inputPenalty1');
+                pen2 = readOptionalScore('#inputPenalty2');
+                if (pen1 === null || pen2 === null) {
+                    return { winner: null, message: 'Hãy nhập kết quả luân lưu cho cả hai đội.' };
+                }
+                if (pen1 !== pen2) return { winner: pen1 > pen2 ? '1' : '2' };
+                return { winner: null, message: 'Kết quả luân lưu vẫn hòa; chưa thể chốt trận.' };
+            }
+
+            return { winner: null, message: isKnockout
+                ? 'Trận loại trực tiếp đang hòa nhưng chưa có cách phân định hợp lệ theo cấu hình môn.'
+                : 'Môn này không cho phép hòa ở giai đoạn hiện tại và chưa có kết quả phân định.' };
+        }
+
+        function refreshTieBreakUI() {
+            const requiresResolution = isKnockout || sportConfig?.ChoPhepHoaVongBang === false;
+            const showTieBreak = requiresResolution && score1 === score2;
+            $('#tieBreakCard').toggleClass('d-none', !showTieBreak);
+
+            if ($('#penaltySection').length) {
+                let showPenalty = !hasExtraTime || !isKnockout;
+                if (hasExtraTime && isKnockout) {
+                    const ot1 = readOptionalScore('#inputExtraTime1');
+                    const ot2 = readOptionalScore('#inputExtraTime2');
+                    showPenalty = ot1 !== null && ot2 !== null && (score1 + ot1 === score2 + ot2);
+                }
+                $('#penaltySection').toggleClass('d-none', !showTieBreak || !showPenalty);
+            }
+        }
+
+        function onTieBreakScoreChanged() {
+            extraTime1 = readOptionalScore('#inputExtraTime1');
+            extraTime2 = readOptionalScore('#inputExtraTime2');
+            refreshTieBreakUI();
+            checkTieBreakCondition();
+        }
+
         function onPenaltyScoreChanged() {
-            pen1 = parseInt($('#inputPenalty1').val()) || 0;
-            pen2 = parseInt($('#inputPenalty2').val()) || 0;
-            if (pen1 > pen2) $('#selectWinner').val('1');
-            else if (pen2 > pen1) $('#selectWinner').val('2');
+            pen1 = readOptionalScore('#inputPenalty1');
+            pen2 = readOptionalScore('#inputPenalty2');
+            checkTieBreakCondition();
         }
 
         function onStatusChanged() {
@@ -834,17 +931,15 @@
                 badgeHtml = '<span class="badge bg-danger rounded-pill px-3 py-1.5"><i class="fa-solid fa-circle-play me-1"></i>Đang diễn ra</span>';
             } else if (st === 'KetThuc') {
                 badgeHtml = '<span class="badge bg-success rounded-pill px-3 py-1.5"><i class="fa-solid fa-flag-checkered me-1"></i>Đã kết thúc</span>';
-                if (score1 > score2) $('#selectWinner').val('1');
-                else if (score2 > score1) $('#selectWinner').val('2');
-                else {
-                    if (pen1 > pen2) $('#selectWinner').val('1');
-                    else if (pen2 > pen1) $('#selectWinner').val('2');
-                    else $('#selectWinner').val('draw');
+                if (!isSetSport && !isHeatMatch) {
+                    const outcome = getTimedMatchOutcome();
+                    $('#selectWinner').val(outcome.winner || '');
                 }
             } else {
                 badgeHtml = '<span class="badge bg-secondary rounded-pill px-3 py-1.5"><i class="fa-solid fa-clock me-1"></i>Chưa đấu</span>';
             }
             $('#badgeMatchStatus').html(badgeHtml);
+            if (!isSetSport && !isHeatMatch) refreshTieBreakUI();
         }
 
         function renderMatchClock() {
@@ -878,6 +973,8 @@
 
             const kyLuc = sportConfig?.KyLucHienTai || null;
             const cangNhoCangTot = (sportConfig?.TieuChiXepHangThanhTich !== 'CangLonCangTot');
+            const allowSharedRank = sportConfig?.ChoPhepDongHangThanhTich !== false;
+            const secondarySmallerIsBetter = sportConfig?.TieuChiPhuCangNhoCangTot !== false;
 
             const validItems = [];
             rows.forEach(r => {
@@ -886,22 +983,57 @@
                 const st = $r.find(`input[name="laneStatus_${tpId}"]:checked`).val() || 'ThamGia';
                 const timeStr = $r.find('.heat-time-input').val().trim();
                 const val = parseFloat(timeStr);
+                const secondaryRaw = $r.find('.heat-tiebreak-input').val();
+                const secondary = secondaryRaw !== undefined && String(secondaryRaw).trim() !== '' ? Number(secondaryRaw) : null;
 
                 if (st === 'ThamGia' && !isNaN(val) && val > 0) {
-                    validItems.push({ row: $r, val: val });
+                    validItems.push({ row: $r, val: val, secondary: Number.isFinite(secondary) ? secondary : null });
                 } else {
-                    $r.find('.lane-rank-badge').text(st !== 'ThamGia' ? st : '--').removeClass('bg-success bg-warning text-dark').addClass('bg-secondary');
+                    $r.find('.lane-rank-badge').text(st !== 'ThamGia' ? st : '--').removeClass('bg-success bg-warning bg-primary bg-danger text-dark text-white').addClass('bg-secondary').removeData('rank');
                     $r.find('.lane-record-notice').html('<small class="text-muted">--</small>');
                 }
             });
 
-            validItems.sort((a, b) => cangNhoCangTot ? (a.val - b.val) : (b.val - a.val));
+            const unresolvedPrimaryValues = new Set();
+            if (!allowSharedRank) {
+                const primaryGroups = new Map();
+                validItems.forEach(item => {
+                    const group = primaryGroups.get(item.val) || [];
+                    group.push(item);
+                    primaryGroups.set(item.val, group);
+                });
+                primaryGroups.forEach((group, primary) => {
+                    if (group.length > 1 && (group.some(item => item.secondary === null) ||
+                        new Set(group.map(item => item.secondary)).size !== group.length)) {
+                        unresolvedPrimaryValues.add(primary);
+                    }
+                });
+            }
+
+            validItems.sort((a, b) => {
+                const primaryOrder = cangNhoCangTot ? (a.val - b.val) : (b.val - a.val);
+                if (primaryOrder !== 0 || allowSharedRank) return primaryOrder;
+                if (a.secondary === null) return b.secondary === null ? 0 : 1;
+                if (b.secondary === null) return -1;
+                return secondarySmallerIsBetter ? a.secondary - b.secondary : b.secondary - a.secondary;
+            });
 
             validItems.forEach((item, idx) => {
-                const rank = idx + 1;
+                const previous = idx > 0 ? validItems[idx - 1] : null;
+                const tiedPrimary = previous && previous.val === item.val;
+                const unresolvedSecondaryTie = unresolvedPrimaryValues.has(item.val);
+                const rank = allowSharedRank && tiedPrimary
+                    ? Number(previous.row.find('.lane-rank-badge').data('rank') || idx)
+                    : idx + 1;
                 const $badge = item.row.find('.lane-rank-badge');
-                $badge.text('#' + rank).removeClass('bg-secondary');
-                if (rank === 1) $badge.addClass('bg-warning text-dark');
+                if (unresolvedSecondaryTie) {
+                    $badge.text('Cần chỉ số phụ').removeClass('bg-secondary bg-success bg-warning bg-primary text-dark text-white').addClass('bg-danger text-white').removeData('rank');
+                } else {
+                    $badge.text('#' + rank).removeClass('bg-secondary bg-danger bg-success bg-warning bg-primary text-dark text-white').data('rank', rank);
+                }
+                if (unresolvedSecondaryTie) {
+                    // Không hiển thị huy chương/thứ hạng giả khi tiêu chí phụ chưa phân định được.
+                } else if (rank === 1) $badge.addClass('bg-warning text-dark');
                 else if (rank <= 3) $badge.addClass('bg-success text-white');
                 else $badge.addClass('bg-primary text-white');
 
@@ -1001,6 +1133,7 @@
                 const lane = $r.data('lane');
                 const st = $r.find(`input[name="laneStatus_${tpId}"]:checked`).val() || 'ThamGia';
                 const timeStr = $r.find('.heat-time-input').val().trim();
+                const secondaryRaw = $r.find('.heat-tiebreak-input').val();
                 const rankText = $r.find('.lane-rank-badge').text().replace('#', '');
                 const rank = parseInt(rankText) || null;
 
@@ -1009,6 +1142,7 @@
                     dangKyThiDauId: dkId,
                     soLane: lane,
                     giaTri: parseFloat(timeStr) || null,
+                    giaTriPhu: secondaryRaw !== undefined && String(secondaryRaw).trim() !== '' ? Number(secondaryRaw) : null,
                     ketQuaText: timeStr || st,
                     trangThai: st,
                     xepHang: rank
@@ -1022,6 +1156,10 @@
                 tranDauId: matchId,
                 score1: score1,
                 score2: score2,
+                penaltyScore1: readOptionalScore('#inputPenalty1'),
+                penaltyScore2: readOptionalScore('#inputPenalty2'),
+                extraTimeScore1: readOptionalScore('#inputExtraTime1'),
+                extraTimeScore2: readOptionalScore('#inputExtraTime2'),
                 winner: $('#selectWinner').val(),
                 trangThai: $('input[name="statusOption"]:checked').val(),
                 setScores: setScoresList,
@@ -1060,34 +1198,27 @@
         function completeMatchFinal() {
             let winnerVal = $('#selectWinner').val();
 
-            if (!isHeatMatch) {
-                // Kiểm tra ràng buộc Knockout không được hòa
-                const allowDraw = sportConfig?.ChoPhepHoaKnockout ?? !isKnockout;
-                if (score1 === score2 && !allowDraw) {
-                    if (pen1 === pen2) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Chưa phân định thắng thua!',
-                            text: 'Trận đấu loại trực tiếp (Knockout) bắt buộc phải xác định đội thắng qua loạt sút Penalty hoặc điểm quyết định!',
-                        });
-                        return;
-                    }
-                    winnerVal = pen1 > pen2 ? '1' : '2';
+            if (!isHeatMatch && !isSetSport) {
+                const outcome = getTimedMatchOutcome();
+                if (!outcome.winner) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Chưa phân định được kết quả',
+                        text: outcome.message || 'Hãy hoàn tất tiêu chí phân định hòa đã cấu hình trước khi chốt trận.'
+                    });
+                    return;
                 }
-
-                if (!winnerVal && $('input[name="statusOption"]:checked').val() === 'KetThuc') {
-                    if (score1 > score2) winnerVal = '1';
-                    else if (score2 > score1) winnerVal = '2';
-                    else if (allowDraw) winnerVal = 'draw';
-                }
+                winnerVal = outcome.winner;
             }
 
             const payload = {
                 tranDauId: matchId,
                 score1: score1,
                 score2: score2,
-                penaltyScore1: pen1 > 0 ? pen1 : null,
-                penaltyScore2: pen2 > 0 ? pen2 : null,
+                penaltyScore1: readOptionalScore('#inputPenalty1'),
+                penaltyScore2: readOptionalScore('#inputPenalty2'),
+                extraTimeScore1: readOptionalScore('#inputExtraTime1'),
+                extraTimeScore2: readOptionalScore('#inputExtraTime2'),
                 winner: winnerVal,
                 trangThai: 'KetThuc',
                 setScores: setScoresList,

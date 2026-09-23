@@ -203,6 +203,9 @@ namespace Dms.Application.Services
             target.LoaiDoThanhTich = source.LoaiDoThanhTich;
             target.DonViThanhTich = source.DonViThanhTich;
             target.TieuChiXepHangThanhTich = source.TieuChiXepHangThanhTich;
+            target.ChoPhepDongHangThanhTich = source.ChoPhepDongHangThanhTich;
+            target.TenTieuChiPhuThanhTich = string.IsNullOrWhiteSpace(source.TenTieuChiPhuThanhTich) ? "Chỉ số phụ" : source.TenTieuChiPhuThanhTich.Trim();
+            target.TieuChiPhuCangNhoCangTot = source.TieuChiPhuCangNhoCangTot;
             target.SoVdvMoiLuotThi = source.SoVdvMoiLuotThi > 0 ? source.SoVdvMoiLuotThi : 8;
             target.QuyCachTienVaoChungKet = source.QuyCachTienVaoChungKet;
             target.SoVdvVaoChungKet = source.SoVdvVaoChungKet;
@@ -251,6 +254,9 @@ namespace Dms.Application.Services
                 LoaiDoThanhTich = entity.LoaiDoThanhTich,
                 DonViThanhTich = entity.DonViThanhTich,
                 TieuChiXepHangThanhTich = entity.TieuChiXepHangThanhTich,
+                ChoPhepDongHangThanhTich = entity.ChoPhepDongHangThanhTich,
+                TenTieuChiPhuThanhTich = entity.TenTieuChiPhuThanhTich,
+                TieuChiPhuCangNhoCangTot = entity.TieuChiPhuCangNhoCangTot,
                 SoVdvMoiLuotThi = entity.SoVdvMoiLuotThi,
                 QuyCachTienVaoChungKet = entity.QuyCachTienVaoChungKet,
                 SoVdvVaoChungKet = entity.SoVdvVaoChungKet,

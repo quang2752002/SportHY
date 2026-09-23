@@ -364,6 +364,10 @@ namespace Dms.Application.DTOs
     {
         public int Score1 { get; set; }
         public int Score2 { get; set; }
+        public int? PenaltyScore1 { get; set; }
+        public int? PenaltyScore2 { get; set; }
+        public int? ExtraTimeScore1 { get; set; }
+        public int? ExtraTimeScore2 { get; set; }
         public string TrangThai { get; set; } = "ChuaDau";
         public string? GhiChu { get; set; }
         public bool IsHoa { get; set; }

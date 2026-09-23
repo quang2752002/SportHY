@@ -44,6 +44,10 @@
                 <div class="col-md-5">
                     <label class="form-label small fw-semibold mb-1">Chọn Giải Đấu</label>
                     <select name="giaiDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @if (tournaments.Count == 0)
+                        {
+                            <option value="">-- Chưa có giải được phân công --</option>
+                        }
                         @foreach (var t in tournaments)
                         {
                             if (selectedGiaiDauId == t.Id)
@@ -62,7 +66,7 @@
                     <select name="tranDauId" class="form-select form-select-sm" onchange="this.form.submit()">
                         @if (matches.Count == 0)
                         {
-                            <option value="">-- Chưa có trận đấu --</option>
+                            <option value="">@(tournaments.Count == 0 ? "-- Chưa có trận được phân công --" : "-- Giải này chưa có trận đấu được phân công --")</option>
                         }
                         else
                         {
@@ -88,7 +92,11 @@
     {
         <div class="card-custom p-5 text-center text-muted">
             <i class="fa-solid fa-file-excel fs-1 mb-3 opacity-25"></i>
-            <h5>Vui lòng chọn một trận đấu để hiển thị biên bản</h5>
+            <h5>@(tournaments.Count == 0 ? "Bạn chưa được phân công giải đấu nào" : "Vui lòng chọn một trận đấu để hiển thị biên bản")</h5>
+            @if (tournaments.Count == 0)
+            {
+                <p class="small mb-0">Liên hệ ban tổ chức để được phân công giải và trận đấu.</p>
+            }
         </div>
     }
     else

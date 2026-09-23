@@ -440,6 +440,28 @@
                                     <label class="form-label fw-semibold small">Số làn / VĐV mỗi lượt thi</label>
                                     <input type="number" class="form-control" id="fmtSoVdvLuot" value="8" min="1" max="12">
                                 </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="fmtChoPhepDongHangThanhTich" checked>
+                                            <label class="form-check-label fw-semibold small" for="fmtChoPhepDongHangThanhTich">Cho phép đồng hạng khi thành tích bằng nhau</label>
+                                        </div>
+                                        <small class="form-text">Nếu tắt, trọng tài phải nhập chỉ số phụ để phân định; nếu chỉ số phụ vẫn bằng nhau, hệ thống không chốt lượt thi.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Chiều xếp theo chỉ số phụ</label>
+                                    <select id="fmtTieuChiPhuCangNhoCangTot" class="form-select">
+                                        <option value="true">Giá trị nhỏ hơn xếp trên</option>
+                                        <option value="false">Giá trị lớn hơn xếp trên</option>
+                                    </select>
+                                    <small class="form-text">Áp dụng khi không cho phép đồng hạng, ví dụ số lần thử phụ hoặc thời gian phản ứng.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Tên tiêu chí phụ</label>
+                                    <input type="text" class="form-control" id="fmtTenTieuChiPhuThanhTich" maxlength="100" placeholder="VD: Lần nhảy tốt thứ hai">
+                                    <small class="form-text">Tên này hiển thị trên bảng nhập kết quả cho trọng tài.</small>
+                                </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Quy cách chọn vào Chung kết</label>
                                     <select id="fmtQuyCachVaoCk" class="form-select">
@@ -924,6 +946,9 @@
 
             $('#fmtLoaiDo').val('ThoiGian');
             $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
+            $('#fmtChoPhepDongHangThanhTich').prop('checked', true);
+            $('#fmtTieuChiPhuCangNhoCangTot').val('true');
+            $('#fmtTenTieuChiPhuThanhTich').val('Chỉ số phụ');
             $('#fmtSoVdvLuot').val(8);
             $('#fmtQuyCachVaoCk').val('TopNToanVong');
             $('#fmtSoVdvVaoCk').val(8);
@@ -958,6 +983,9 @@
 
             $('#fmtLoaiDo').val(data.loaiDoThanhTich || 'ThoiGian');
             $('#fmtTieuChiThanhTich').val(data.tieuChiXepHangThanhTich || 'CangNhoCangTot');
+            $('#fmtChoPhepDongHangThanhTich').prop('checked', data.choPhepDongHangThanhTich !== false);
+            $('#fmtTieuChiPhuCangNhoCangTot').val(data.tieuChiPhuCangNhoCangTot === false ? 'false' : 'true');
+            $('#fmtTenTieuChiPhuThanhTich').val(data.tenTieuChiPhuThanhTich || 'Chỉ số phụ');
             $('#fmtSoVdvLuot').val(data.soVdvMoiLuotThi || 8);
             $('#fmtQuyCachVaoCk').val(data.quyCachTienVaoChungKet || 'TopNToanVong');
             $('#fmtSoVdvVaoCk').val(data.soVdvVaoChungKet || 8);
@@ -1089,6 +1117,9 @@
 
                 loaiDoThanhTich: $('#fmtLoaiDo').val(),
                 tieuChiXepHangThanhTich: $('#fmtTieuChiThanhTich').val(),
+                choPhepDongHangThanhTich: $('#fmtChoPhepDongHangThanhTich').is(':checked'),
+                tenTieuChiPhuThanhTich: ($('#fmtTenTieuChiPhuThanhTich').val() || '').trim(),
+                tieuChiPhuCangNhoCangTot: $('#fmtTieuChiPhuCangNhoCangTot').val() === 'true',
                 soVdvMoiLuotThi: parseInt($('#fmtSoVdvLuot').val()) || 8,
                 quyCachTienVaoChungKet: $('#fmtQuyCachVaoCk').val(),
                 soVdvVaoChungKet: parseInt($('#fmtSoVdvVaoCk').val()) || 8,

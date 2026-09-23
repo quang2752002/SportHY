@@ -310,6 +310,8 @@ namespace Dms.Application.Services
 
         /// <summary>
         /// Updates a match's score and progress fields without rewriting its teams or referee assignments.
+        /// Before marking a tied match complete, validates the configured draw, extra-time, or penalty rule;
+        /// athletics heats must use the heat-result completion workflow.
         /// </summary>
         /// <param name="id">The match ID to update.</param>
         /// <param name="dto">The score, status, notes, and outcome to persist.</param>
@@ -322,6 +324,40 @@ namespace Dms.Application.Services
             if (dto.Score1 < 0 || dto.Score2 < 0 || !new[] { "ChuaDau", "DangDau", "KetThuc" }.Contains(dto.TrangThai))
             {
                 throw new ArgumentException("Tỷ số hoặc trạng thái trận đấu không hợp lệ.");
+            }
+
+            if (dto.TrangThai == "KetThuc")
+            {
+                var config = await _theThucService.GetConfigByTranDauIdAsync(id);
+                if (config?.LoaiTheThuc == "TinhDiemXepHang")
+                {
+                    throw new InvalidOperationException("Lượt thi thành tích cần gửi kết quả từng VĐV; không thể chốt bằng cập nhật tỷ số chung.");
+                }
+                if (dto.Score1 == dto.Score2 && config == null)
+                {
+                    throw new InvalidOperationException("Không tìm thấy cấu hình thể thức để kiểm tra kết quả hòa.");
+                }
+
+                if (dto.Score1 == dto.Score2)
+                {
+                    var tieEvaluation = _scoringEngine.EvaluateMatchResult(
+                        new CompleteMatchRequestDto
+                        {
+                            TranDauId = id,
+                            Score1 = dto.Score1,
+                            Score2 = dto.Score2,
+                            PenaltyScore1 = dto.PenaltyScore1,
+                            PenaltyScore2 = dto.PenaltyScore2,
+                            ExtraTimeScore1 = dto.ExtraTimeScore1,
+                            ExtraTimeScore2 = dto.ExtraTimeScore2
+                        },
+                        config!,
+                        !entity.BangDauId.HasValue);
+                    if (!tieEvaluation.IsValid)
+                    {
+                        throw new InvalidOperationException(tieEvaluation.ErrorMessage ?? "Chưa phân định được kết quả hòa theo cấu hình môn.");
+                    }
+                }
             }
 
             var nowUtc = DateTime.UtcNow;
@@ -342,6 +378,8 @@ namespace Dms.Application.Services
 
             entity.TySoDoi1 = dto.Score1;
             entity.TySoDoi2 = dto.Score2;
+            entity.DiemPenaltyDoi1 = dto.PenaltyScore1;
+            entity.DiemPenaltyDoi2 = dto.PenaltyScore2;
             entity.TrangThai = dto.TrangThai;
             entity.GhiChu = dto.GhiChu;
             entity.IsHoa = dto.TrangThai == "KetThuc" && dto.IsHoa;
@@ -373,6 +411,41 @@ namespace Dms.Application.Services
             _unitOfWork.TranDaus.Update(entity);
             await _unitOfWork.CompleteAsync();
             return true;
+        }
+
+        /// <summary>
+        /// Lấy thành tích đã lưu theo từng làn trong một lượt thi để trọng tài có thể xem lại và sửa chỉ số phụ.
+        /// </summary>
+        /// <param name="tranDauId">ID lượt thi cần đọc.</param>
+        /// <returns>Danh sách kết quả theo thành phần trận đấu, rỗng nếu lượt chưa có thành phần.</returns>
+        public async Task<List<HeatParticipantResultDto>> GetHeatResultsByMatchIdAsync(int tranDauId)
+        {
+            var participants = (await _unitOfWork.ThanhPhanTranDaus.FindAsync(
+                participant => participant.TranDauId == tranDauId && participant.IsDeleted != true))
+                .OrderBy(participant => participant.SoLane ?? participant.ViTri ?? int.MaxValue)
+                .ThenBy(participant => participant.Id)
+                .ToList();
+            var participantIds = participants.Select(participant => participant.Id).ToList();
+            var results = (await _unitOfWork.KetQuaTranDaus.FindAsync(
+                result => participantIds.Contains(result.ThanhPhanTranDauId) && result.IsDeleted != true))
+                .GroupBy(result => result.ThanhPhanTranDauId)
+                .ToDictionary(group => group.Key, group => group.OrderByDescending(result => result.LastModified ?? result.Created).First());
+
+            return participants.Select(participant =>
+            {
+                results.TryGetValue(participant.Id, out var result);
+                return new HeatParticipantResultDto
+                {
+                    ThanhPhanTranDauId = participant.Id,
+                    DangKyThiDauId = participant.DangKyThiDauId,
+                    SoLane = participant.SoLane ?? participant.ViTri ?? 0,
+                    GiaTri = result?.GiaTri,
+                    GiaTriPhu = result?.Diem,
+                    KetQuaText = result?.KetQuaText,
+                    TrangThai = participant.TrangThai,
+                    XepHang = result?.XepHang
+                };
+            }).ToList();
         }
 
         public async Task<TranDauDto?> GetByIdAsync(int id)
@@ -3348,9 +3421,16 @@ namespace Dms.Application.Services
                 return response;
             }
 
-            // 1. Nếu là môn đo thành tích (Điền kinh, Bơi lội)
-            if (config.LoaiTheThuc == "TinhDiemXepHang" && request.HeatResults != null && request.HeatResults.Any())
+            // 1. Nếu là môn đo thành tích (Điền kinh, Bơi lội), chỉ chốt qua bảng kết quả từng VĐV.
+            if (config.LoaiTheThuc == "TinhDiemXepHang")
             {
+                if (request.HeatResults == null || !request.HeatResults.Any())
+                {
+                    response.Success = false;
+                    response.Message = "Cần nhập kết quả từng VĐV trước khi hoàn tất lượt thi thành tích.";
+                    return response;
+                }
+
                 var athleticsResult = await _athleticsProgressionEngine.ProcessHeatResultAsync(
                     match.Id, request.HeatResults, config, username);
 
@@ -3411,16 +3491,20 @@ namespace Dms.Application.Services
             match.IsHoa = evaluation.IsDraw;
             match.TrangThai = "KetThuc";
             match.ThoiGianKetThuc = DateTime.UtcNow;
-            if (winnerDangKyId > 0) match.DoiThangDangKyId = winnerDangKyId;
-            if (loserDangKyId > 0) match.DoiThuaDangKyId = loserDangKyId;
+            match.DoiThangDangKyId = winnerDangKyId > 0 ? winnerDangKyId : null;
+            match.DoiThuaDangKyId = loserDangKyId > 0 ? loserDangKyId : null;
 
             // Lưu điểm chi tiết / events vào GhiChu JSON
             var scoreData = new
             {
-                score1 = evaluation.FinalScore1,
-                score2 = evaluation.FinalScore2,
+                score1 = request.Score1,
+                score2 = request.Score2,
+                finalScore1 = evaluation.FinalScore1,
+                finalScore2 = evaluation.FinalScore2,
                 penalty1 = evaluation.PenaltyScore1,
                 penalty2 = evaluation.PenaltyScore2,
+                extraTimeScore1 = request.ExtraTimeScore1,
+                extraTimeScore2 = request.ExtraTimeScore2,
                 winner = evaluation.WinnerTeamIndex == 1 ? "1" : (evaluation.WinnerTeamIndex == 2 ? "2" : "draw"),
                 status = "KetThuc",
                 notes = request.GhiChu,

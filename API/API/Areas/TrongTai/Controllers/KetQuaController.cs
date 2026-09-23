@@ -20,6 +20,10 @@ namespace API.Areas.TrongTai.Controllers
         public int Score2 { get; set; }
         public string? Winner { get; set; } // "1", "2", "draw"
         public string TrangThai { get; set; } = "DangDau";
+        public int? PenaltyScore1 { get; set; }
+        public int? PenaltyScore2 { get; set; }
+        public int? ExtraTimeScore1 { get; set; }
+        public int? ExtraTimeScore2 { get; set; }
         public List<SetScoreDto>? SetScores { get; set; }
         public List<MatchEventItemDto>? Events { get; set; }
         public string? GhiChu { get; set; }
@@ -46,17 +50,29 @@ namespace API.Areas.TrongTai.Controllers
         public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null)
         {
             var currentReferee = await GetCurrentRefereeAsync();
-            var tournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var canBrowseAll = CanBrowseAllMatches();
+            var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var assignedMatches = currentReferee == null
+                ? new List<TranDauDto>()
+                : (await _tranDauService.GetAccessibleMatchesAsync(null, currentReferee.Id, false))?.ToList() ?? new();
+            var assignedTournamentIds = assignedMatches
+                .Where(match => match.GiaiDauId.HasValue)
+                .Select(match => match.GiaiDauId!.Value)
+                .ToHashSet();
+            var tournaments = canBrowseAll
+                ? allTournaments
+                : allTournaments.Where(tournament => assignedTournamentIds.Contains(tournament.Id)).ToList();
             ViewBag.Tournaments = tournaments;
 
             int? selectedGiaiDauId = giaiDauId;
-            if (!selectedGiaiDauId.HasValue && tournaments.Count > 0)
+            if ((!selectedGiaiDauId.HasValue || !tournaments.Any(tournament => tournament.Id == selectedGiaiDauId.Value)) && tournaments.Count > 0)
             {
                 selectedGiaiDauId = tournaments[0].Id;
             }
+            if (tournaments.Count == 0) selectedGiaiDauId = null;
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
 
-            var matches = (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentReferee?.Id, CanBrowseAllMatches()))?.ToList() ?? new();
+            var matches = (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentReferee?.Id, canBrowseAll))?.ToList() ?? new();
             ViewBag.Matches = matches;
 
             TranDauDto? currentMatch = null;
@@ -78,6 +94,9 @@ namespace API.Areas.TrongTai.Controllers
                 matchFormat = await _cauHinhTheThucService.GetConfigByTranDauIdAsync(currentMatch.Id);
             }
             ViewBag.MatchFormat = matchFormat;
+            ViewBag.HeatResults = currentMatch != null && matchFormat?.LoaiTheThuc == "TinhDiemXepHang"
+                ? await _tranDauService.GetHeatResultsByMatchIdAsync(currentMatch.Id)
+                : new List<HeatParticipantResultDto>();
 
             // Đọc dữ liệu JSON chi tiết từ GhiChu nếu có
             int score1 = 0, score2 = 0;
@@ -94,6 +113,8 @@ namespace API.Areas.TrongTai.Controllers
                     var root = doc.RootElement;
                     if (root.TryGetProperty("score1", out var p1)) score1 = p1.GetInt32();
                     if (root.TryGetProperty("score2", out var p2)) score2 = p2.GetInt32();
+                    if (root.TryGetProperty("extraTimeScore1", out var extra1) && extra1.ValueKind == JsonValueKind.Number) ViewBag.ExtraTimeScore1 = extra1.GetInt32();
+                    if (root.TryGetProperty("extraTimeScore2", out var extra2) && extra2.ValueKind == JsonValueKind.Number) ViewBag.ExtraTimeScore2 = extra2.GetInt32();
                     if (root.TryGetProperty("winner", out var pw)) winner = pw.GetString() ?? "";
                     if (root.TryGetProperty("notes", out var pn)) notes = pn.GetString() ?? "";
 
@@ -173,6 +194,10 @@ namespace API.Areas.TrongTai.Controllers
                 {
                     score1 = dto.Score1,
                     score2 = dto.Score2,
+                    penaltyScore1 = dto.PenaltyScore1,
+                    penaltyScore2 = dto.PenaltyScore2,
+                    extraTimeScore1 = dto.ExtraTimeScore1,
+                    extraTimeScore2 = dto.ExtraTimeScore2,
                     winner = dto.Winner,
                     status = dto.TrangThai,
                     notes = dto.GhiChu,
@@ -195,6 +220,10 @@ namespace API.Areas.TrongTai.Controllers
                 {
                     Score1 = dto.Score1,
                     Score2 = dto.Score2,
+                    PenaltyScore1 = dto.PenaltyScore1,
+                    PenaltyScore2 = dto.PenaltyScore2,
+                    ExtraTimeScore1 = dto.ExtraTimeScore1,
+                    ExtraTimeScore2 = dto.ExtraTimeScore2,
                     TrangThai = dto.TrangThai,
                     GhiChu = scoreJson,
                     IsHoa = isDraw,
