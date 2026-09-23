@@ -82,6 +82,9 @@ builder.Services.AddControllersWithViews()
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     })
     .AddRazorRuntimeCompilation();
+
+// Cấu hình HtmlEncoder hỗ trợ toàn bộ dải Unicode để Razor không mã hóa ký tự tiếng Việt thành entity &#x...
+builder.Services.AddSingleton(System.Text.Encodings.Web.HtmlEncoder.Create(System.Text.Unicode.UnicodeRanges.All));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
