@@ -13,9 +13,40 @@ namespace Dms.Application.Services
     {
         private readonly IUnitOfWork _unitOfWork;
 
+        private static readonly IReadOnlyDictionary<string, string> RefereeRoleAliases =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Trọng tài chính"] = "Trọng tài chính",
+                ["Chính"] = "Trọng tài chính",
+                ["TrongTaiChinh"] = "Trọng tài chính",
+                ["Trọng tài phụ"] = "Trọng tài phụ 1",
+                ["Trọng tài phụ 1"] = "Trọng tài phụ 1",
+                ["TrongTaiPhu"] = "Trọng tài phụ 1",
+                ["TrongTaiPhu1"] = "Trọng tài phụ 1",
+                ["Trọng tài phụ 2"] = "Trọng tài phụ 2",
+                ["TrongTaiPhu2"] = "Trọng tài phụ 2",
+                ["Trọng tài bàn"] = "Trọng tài bàn",
+                ["Bàn"] = "Trọng tài bàn",
+                ["TrongTaiBan"] = "Trọng tài bàn",
+                ["Giám sát trận đấu"] = "Giám sát trận đấu",
+                ["GiamSat"] = "Giám sát trận đấu",
+                ["GiamSatTranDau"] = "Giám sát trận đấu"
+            };
+
         public TruongBanTrongTaiService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
+        }
+
+        /// <summary>
+        /// Chuẩn hóa các tên vai trò phân công cũ và mới về cùng một giá trị hiển thị.
+        /// </summary>
+        /// <param name="role">Tên vai trò cần chuẩn hóa.</param>
+        /// <returns>Tên vai trò chuẩn hoặc chuỗi rỗng nếu vai trò không hợp lệ.</returns>
+        private static string NormalizeRefereeRole(string? role)
+        {
+            if (string.IsNullOrWhiteSpace(role)) return string.Empty;
+            return RefereeRoleAliases.TryGetValue(role.Trim(), out var canonical) ? canonical : string.Empty;
         }
 
         public async Task<TrongTai?> GetRefereeByUserIdOrNameAsync(int? trongTaiId, string? userName, string? email)
@@ -279,7 +310,12 @@ namespace Dms.Application.Services
             }
         }
 
-        public async Task<List<MatchAssignmentDto>> GetMatchAssignmentsAsync(int giaiDauId, int? monTheThaoId, string? status, DateTime? date)
+        public async Task<List<MatchAssignmentDto>> GetMatchAssignmentsAsync(
+            int giaiDauId,
+            int? monTheThaoId,
+            string? status,
+            DateTime? date,
+            int? trongTaiId = null)
         {
             var gdmList = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(gm => gm.GiaiDauId == giaiDauId && gm.IsDeleted != true)).ToList();
             if (monTheThaoId.HasValue)
@@ -305,6 +341,15 @@ namespace Dms.Application.Services
 
             var phanCongs = (await _unitOfWork.PhanCongTrongTais.FindAsync(pc => matchIds.Contains(pc.TranDauId) && pc.IsDeleted != true)).ToList();
 
+            if (trongTaiId.HasValue)
+            {
+                var assignedMatchIds = phanCongs
+                    .Where(pc => pc.TrongTaiId == trongTaiId.Value)
+                    .Select(pc => pc.TranDauId)
+                    .ToHashSet();
+                matches = matches.Where(match => assignedMatchIds.Contains(match.Id)).ToList();
+            }
+
             var allReferees = (await _unitOfWork.TrongTais.FindAsync(t => t.IsDeleted != true)).ToList();
             var refMap = allReferees.ToDictionary(t => t.Id);
 
@@ -325,11 +370,26 @@ namespace Dms.Application.Services
 
                 var matchPcs = phanCongs.Where(pc => pc.TranDauId == m.Id).ToList();
 
-                var ttChinh = matchPcs.FirstOrDefault(pc => pc.VaiTro == "Trọng tài chính");
-                var ttPhu1 = matchPcs.FirstOrDefault(pc => pc.VaiTro == "Trọng tài phụ 1");
-                var ttPhu2 = matchPcs.FirstOrDefault(pc => pc.VaiTro == "Trọng tài phụ 2");
-                var ttBan = matchPcs.FirstOrDefault(pc => pc.VaiTro == "Trọng tài bàn");
-                var ttGiamSat = matchPcs.FirstOrDefault(pc => pc.VaiTro == "Giám sát trận đấu");
+                var ttChinh = matchPcs.FirstOrDefault(pc =>
+                    pc.VaiTro == "Trọng tài chính" ||
+                    pc.VaiTro == "Chính" ||
+                    pc.VaiTro == "TrongTaiChinh");
+                var ttPhu1 = matchPcs.FirstOrDefault(pc =>
+                    pc.VaiTro == "Trọng tài phụ 1" ||
+                    pc.VaiTro == "Trọng tài phụ" ||
+                    pc.VaiTro == "TrongTaiPhu" ||
+                    pc.VaiTro == "TrongTaiPhu1");
+                var ttPhu2 = matchPcs.FirstOrDefault(pc =>
+                    pc.VaiTro == "Trọng tài phụ 2" ||
+                    pc.VaiTro == "TrongTaiPhu2");
+                var ttBan = matchPcs.FirstOrDefault(pc =>
+                    pc.VaiTro == "Trọng tài bàn" ||
+                    pc.VaiTro == "Bàn" ||
+                    pc.VaiTro == "TrongTaiBan");
+                var ttGiamSat = matchPcs.FirstOrDefault(pc =>
+                    pc.VaiTro == "Giám sát trận đấu" ||
+                    pc.VaiTro == "GiamSat" ||
+                    pc.VaiTro == "GiamSatTranDau");
 
                 return new MatchAssignmentDto
                 {
@@ -496,7 +556,32 @@ namespace Dms.Application.Services
                 return (false, "Không tìm thấy trận đấu.", null);
             }
 
-            var existingPcs = (await _unitOfWork.PhanCongTrongTais.FindAsync(pc => pc.TranDauId == tranDauId && pc.VaiTro == vaiTro && pc.IsDeleted != true)).ToList();
+            var canonicalRole = NormalizeRefereeRole(vaiTro);
+            if (string.IsNullOrWhiteSpace(canonicalRole))
+            {
+                return (false, "Vai trò phân công không hợp lệ.", null);
+            }
+
+            var gdm = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(item =>
+                item.Id == match.GiaiDauMonTheThaoId && item.IsDeleted != true)).FirstOrDefault();
+            var tournament = gdm == null
+                ? null
+                : (await _unitOfWork.GiaiDaus.FindAsync(item => item.Id == gdm.GiaiDauId && item.IsDeleted != true)).FirstOrDefault();
+
+            if (tournament == null)
+            {
+                return (false, "Không tìm thấy giải đấu của trận đấu.", null);
+            }
+
+            if (trongTaiId.HasValue && tournament.TruongBanTrongTaiId == trongTaiId.Value)
+            {
+                return (false, "Trưởng ban trọng tài không được phép phân công điều hành trận đấu.", null);
+            }
+
+            var existingPcs = (await _unitOfWork.PhanCongTrongTais.FindAsync(pc =>
+                pc.TranDauId == tranDauId && pc.IsDeleted != true))
+                .Where(pc => NormalizeRefereeRole(pc.VaiTro) == canonicalRole)
+                .ToList();
 
             if (!trongTaiId.HasValue || trongTaiId.Value == 0)
             {
@@ -506,13 +591,14 @@ namespace Dms.Application.Services
                     _unitOfWork.PhanCongTrongTais.Update(pc);
                 }
                 await _unitOfWork.CompleteAsync();
-                return (true, $"Đã hủy phân công {vaiTro} cho trận đấu.", null);
+                return (true, $"Đã hủy phân công {canonicalRole} cho trận đấu.", null);
             }
 
-            var referee = (await _unitOfWork.TrongTais.FindAsync(t => t.Id == trongTaiId.Value)).FirstOrDefault();
+            var referee = (await _unitOfWork.TrongTais.FindAsync(t =>
+                t.Id == trongTaiId.Value && t.IsDeleted != true && t.TrangThai)).FirstOrDefault();
             if (referee == null)
             {
-                return (false, "Không tìm thấy thông tin trọng tài.", null);
+                return (false, "Không tìm thấy trọng tài đang hoạt động.", null);
             }
 
             // Kiểm tra xung đột & quá tải thể lực theo cấu hình môn
@@ -534,6 +620,7 @@ namespace Dms.Application.Services
             {
                 var pc = existingPcs.First();
                 pc.TrongTaiId = trongTaiId.Value;
+                pc.VaiTro = canonicalRole;
                 pc.LastModified = DateTime.UtcNow;
                 _unitOfWork.PhanCongTrongTais.Update(pc);
             }
@@ -543,7 +630,7 @@ namespace Dms.Application.Services
                 {
                     TranDauId = tranDauId,
                     TrongTaiId = trongTaiId.Value,
-                    VaiTro = vaiTro,
+                    VaiTro = canonicalRole,
                     Created = DateTime.UtcNow
                 };
                 await _unitOfWork.PhanCongTrongTais.AddAsync(newPc);
@@ -551,7 +638,634 @@ namespace Dms.Application.Services
 
             await _unitOfWork.CompleteAsync();
 
-            return (true, $"Đã phân công {vaiTro}: {referee.HoTen} thành công!", referee.HoTen);
+            return (true, $"Đã phân công {canonicalRole}: {referee.HoTen} thành công!", referee.HoTen);
+        }
+
+        /// <summary>
+        /// Lập bản nháp tự động phân công các vị trí trọng tài cho những trận đấu đã được xếp lịch.
+        /// Chức năng độc lập với thuật toán tự động chia lịch đấu: chỉ đọc các trận hiện có,
+        /// kiểm tra lịch toàn giải, ưu tiên cân bằng số trận giữa các trọng tài và trả về đề xuất
+        /// mà không ghi dữ liệu vào cơ sở dữ liệu.
+        /// </summary>
+        /// <param name="request">Phạm vi, trọng tài được chọn và các thay đổi nháp hiện có.</param>
+        /// <returns>Kết quả nháp kèm danh sách vị trí đề xuất và vị trí chưa thể gán.</returns>
+        public async Task<AutoAssignRefereesResultDto> AutoAssignRefereesAsync(AutoAssignRefereesRequestDto request)
+        {
+            var result = new AutoAssignRefereesResultDto();
+
+            if (request == null || request.GiaiDauId <= 0)
+            {
+                result.Message = "Giải đấu không hợp lệ.";
+                return result;
+            }
+
+            var tournament = (await _unitOfWork.GiaiDaus.FindAsync(item =>
+                item.Id == request.GiaiDauId && item.IsDeleted != true)).FirstOrDefault();
+            if (tournament == null)
+            {
+                result.Message = "Không tìm thấy giải đấu.";
+                return result;
+            }
+
+            var headRefereeId = tournament.TruongBanTrongTaiId;
+
+            var canonicalRoles = new[]
+            {
+                "Trọng tài chính",
+                "Trọng tài phụ 1",
+                "Trọng tài phụ 2",
+                "Trọng tài bàn",
+                "Giám sát trận đấu"
+            };
+
+            var requestedRoles = (request.VaiTros ?? new List<string>())
+                .Select(NormalizeRefereeRole)
+                .Where(role => !string.IsNullOrWhiteSpace(role))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (requestedRoles.Count == 0)
+            {
+                requestedRoles.AddRange(canonicalRoles);
+            }
+
+            var allGdm = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(gdm =>
+                gdm.GiaiDauId == request.GiaiDauId &&
+                gdm.IsDeleted != true &&
+                gdm.TrangThai)).ToList();
+
+            if (allGdm.Count == 0)
+            {
+                result.Message = "Giải đấu chưa có môn thi đấu đang hoạt động.";
+                return result;
+            }
+
+            var selectedGdm = request.MonTheThaoId.HasValue
+                ? allGdm.Where(gdm => gdm.MonTheThaoId == request.MonTheThaoId.Value).ToList()
+                : allGdm;
+            var selectedGdmIds = selectedGdm.Select(gdm => gdm.Id).ToHashSet();
+
+            if (selectedGdmIds.Count == 0)
+            {
+                result.Message = "Không tìm thấy môn thi đấu thuộc giải đã chọn.";
+                return result;
+            }
+
+            var allMatches = (await _unitOfWork.TranDaus.FindAsync(match =>
+                selectedGdmIds.Contains(match.GiaiDauMonTheThaoId) &&
+                match.IsDeleted != true &&
+                match.ThoiGianDuKien.HasValue)).ToList();
+
+            var targetMatches = allMatches.AsEnumerable();
+            if (request.ChiPhanCongTranChuaDau)
+            {
+                targetMatches = targetMatches.Where(match => match.TrangThai == "ChuaDau");
+            }
+
+            if (request.Date.HasValue)
+            {
+                targetMatches = targetMatches.Where(match => match.ThoiGianDuKien!.Value.Date == request.Date.Value.Date);
+            }
+
+            var targetMatchList = targetMatches
+                .OrderBy(match => match.ThoiGianDuKien!.Value)
+                .ThenBy(match => match.SoTran)
+                .ToList();
+
+            result.MatchesConsidered = targetMatchList.Count;
+            if (targetMatchList.Count == 0)
+            {
+                result.Success = true;
+                result.Message = "Không có trận đấu phù hợp để tự động phân công.";
+                return result;
+            }
+
+            // Nạp toàn bộ trận có lịch trong giải để kiểm tra xung đột xuyên môn.
+            var allTournamentGdmIds = allGdm.Select(gdm => gdm.Id).ToHashSet();
+            var tournamentMatches = (await _unitOfWork.TranDaus.FindAsync(match =>
+                allTournamentGdmIds.Contains(match.GiaiDauMonTheThaoId) &&
+                match.IsDeleted != true &&
+                match.ThoiGianDuKien.HasValue)).ToList();
+            var matchMap = tournamentMatches.ToDictionary(match => match.Id);
+            var gdmMap = allGdm.ToDictionary(gdm => gdm.Id);
+
+            var matchIds = tournamentMatches.Select(match => match.Id).ToHashSet();
+            var persistedAssignments = (await _unitOfWork.PhanCongTrongTais.FindAsync(pc =>
+                matchIds.Contains(pc.TranDauId) && pc.IsDeleted != true)).ToList();
+
+            // Tạo ảnh chụp dữ liệu để mô phỏng nháp. Trưởng ban không được giữ vị trí điều hành trận đấu.
+            var existingAssignments = persistedAssignments
+                .Where(assignment => !headRefereeId.HasValue || assignment.TrongTaiId != headRefereeId.Value)
+                .Select(assignment => new PhanCongTrongTai
+                {
+                    Id = assignment.Id,
+                    TranDauId = assignment.TranDauId,
+                    TrongTaiId = assignment.TrongTaiId,
+                    VaiTro = NormalizeRefereeRole(assignment.VaiTro)
+                })
+                .ToList();
+
+            var draftChanges = (request.DraftChanges ?? new List<RefereeAssignmentDraftItemDto>())
+                .Select(change => new
+                {
+                    Change = change,
+                    VaiTro = NormalizeRefereeRole(change.VaiTro)
+                })
+                .Where(item => item.Change.TranDauId > 0 && !string.IsNullOrWhiteSpace(item.VaiTro) && matchMap.ContainsKey(item.Change.TranDauId))
+                .GroupBy(item => new { item.Change.TranDauId, item.VaiTro })
+                .Select(group => group.Last())
+                .ToList();
+
+            var draftAssignmentId = -1;
+            foreach (var draft in draftChanges)
+            {
+                existingAssignments.RemoveAll(assignment =>
+                    assignment.TranDauId == draft.Change.TranDauId &&
+                    NormalizeRefereeRole(assignment.VaiTro) == draft.VaiTro);
+
+                if (draft.Change.TrongTaiId.HasValue && draft.Change.TrongTaiId.Value > 0 &&
+                    (!headRefereeId.HasValue || draft.Change.TrongTaiId.Value != headRefereeId.Value))
+                {
+                    existingAssignments.Add(new PhanCongTrongTai
+                    {
+                        Id = draftAssignmentId--,
+                        TranDauId = draft.Change.TranDauId,
+                        TrongTaiId = draft.Change.TrongTaiId.Value,
+                        VaiTro = draft.VaiTro
+                    });
+                }
+            }
+
+            var activeReferees = (await _unitOfWork.TrongTais.FindAsync(referee =>
+                referee.IsDeleted != true &&
+                referee.TrangThai &&
+                (!headRefereeId.HasValue || referee.Id != headRefereeId.Value)))
+                .OrderBy(referee => referee.HoTen)
+                .ToList();
+
+            var selectedRefereeIds = (request.TrongTaiIds ?? new List<int>())
+                .Where(id => id > 0)
+                .Distinct()
+                .ToHashSet();
+            if (selectedRefereeIds.Count > 0)
+            {
+                activeReferees = activeReferees
+                    .Where(referee => selectedRefereeIds.Contains(referee.Id))
+                    .ToList();
+            }
+
+            if (activeReferees.Count == 0)
+            {
+                result.Message = "Không có trọng tài hợp lệ trong danh sách đã chọn để phân công.";
+                return result;
+            }
+
+            var monIds = allGdm.Select(gdm => gdm.MonTheThaoId).Distinct().ToHashSet();
+            var configurations = (await _unitOfWork.CauHinhLichThiDaus.FindAsync(config =>
+                config.IsDeleted != true && monIds.Contains(config.MonTheThaoId)))
+                .ToDictionary(config => config.MonTheThaoId);
+
+            int GetSportId(TranDau match)
+            {
+                return gdmMap.TryGetValue(match.GiaiDauMonTheThaoId, out var gdm) ? gdm.MonTheThaoId : 0;
+            }
+
+            DateTime GetMatchEnd(TranDau match)
+            {
+                var start = match.ThoiGianDuKien!.Value;
+                if (match.ThoiGianKetThuc.HasValue && match.ThoiGianKetThuc.Value > start)
+                {
+                    return match.ThoiGianKetThuc.Value;
+                }
+
+                var sportId = GetSportId(match);
+                var duration = configurations.TryGetValue(sportId, out var config) && config.ThoiLuongTranMacDinhPhut > 0
+                    ? config.ThoiLuongTranMacDinhPhut
+                    : 60;
+                return start.AddMinutes(duration);
+            }
+
+            int GetMaxMatchesPerDay(TranDau match)
+            {
+                var sportId = GetSportId(match);
+                return configurations.TryGetValue(sportId, out var config) && config.SoTranToiDaMoiTrongTaiMoiNgay > 0
+                    ? config.SoTranToiDaMoiTrongTaiMoiNgay
+                    : 4;
+            }
+
+            int GetRequiredRestMinutes(TranDau match)
+            {
+                var sportId = GetSportId(match);
+                return configurations.TryGetValue(sportId, out var config) && config.NghiToiThieuTrongTaiPhut > 0
+                    ? config.NghiToiThieuTrongTaiPhut
+                    : 15;
+            }
+
+            var refereeIntervals = new Dictionary<int, List<(int TranDauId, DateTime Start, DateTime End, string VaiTro)>>();
+            foreach (var referee in activeReferees)
+            {
+                refereeIntervals[referee.Id] = new List<(int, DateTime, DateTime, string)>();
+            }
+
+            foreach (var assignment in existingAssignments)
+            {
+                if (!refereeIntervals.ContainsKey(assignment.TrongTaiId) || !matchMap.TryGetValue(assignment.TranDauId, out var assignedMatch))
+                {
+                    continue;
+                }
+
+                refereeIntervals[assignment.TrongTaiId].Add((
+                    assignedMatch.Id,
+                    assignedMatch.ThoiGianDuKien!.Value,
+                    GetMatchEnd(assignedMatch),
+                    NormalizeRefereeRole(assignment.VaiTro)));
+            }
+
+            var plans = new List<(TranDau Match, string VaiTro, TrongTai Referee)>();
+            var plannedRefsByMatch = new Dictionary<int, HashSet<int>>();
+            var releasedAssignmentIds = new HashSet<int>();
+
+            foreach (var match in targetMatchList)
+            {
+                plannedRefsByMatch[match.Id] = existingAssignments
+                    .Where(assignment => assignment.TranDauId == match.Id)
+                    .Select(assignment => assignment.TrongTaiId)
+                    .ToHashSet();
+            }
+
+            void RebuildMatchReferees(int tranDauId)
+            {
+                var refs = existingAssignments
+                    .Where(assignment => assignment.TranDauId == tranDauId && !releasedAssignmentIds.Contains(assignment.Id))
+                    .Select(assignment => assignment.TrongTaiId)
+                    .ToHashSet();
+
+                foreach (var plan in plans.Where(plan => plan.Match.Id == tranDauId))
+                {
+                    refs.Add(plan.Referee.Id);
+                }
+
+                plannedRefsByMatch[tranDauId] = refs;
+            }
+
+            string? GetConflictReason(int refereeId, TranDau targetMatch)
+            {
+                if (plannedRefsByMatch.TryGetValue(targetMatch.Id, out var assignedRefs) && assignedRefs.Contains(refereeId))
+                {
+                    return "Trọng tài này đã có vị trí khác trong cùng trận.";
+                }
+
+                var intervals = refereeIntervals.GetValueOrDefault(refereeId, new List<(int TranDauId, DateTime Start, DateTime End, string VaiTro)>())
+                    .Where(interval => interval.TranDauId != targetMatch.Id)
+                    .GroupBy(interval => interval.TranDauId)
+                    .Select(group => group.First())
+                    .ToList();
+
+                var targetStart = targetMatch.ThoiGianDuKien!.Value;
+                var targetEnd = GetMatchEnd(targetMatch);
+                var sameDayMatches = intervals.Count(interval => interval.Start.Date == targetStart.Date);
+                var maxPerDay = GetMaxMatchesPerDay(targetMatch);
+                if (sameDayMatches >= maxPerDay)
+                {
+                    return $"Đã đủ {sameDayMatches}/{maxPerDay} trận trong ngày {targetStart:dd/MM/yyyy}.";
+                }
+
+                foreach (var interval in intervals)
+                {
+                    if (!matchMap.TryGetValue(interval.TranDauId, out var otherMatch))
+                    {
+                        continue;
+                    }
+
+                    var requiredRest = Math.Max(GetRequiredRestMinutes(targetMatch), GetRequiredRestMinutes(otherMatch));
+                    var violatesRest = targetStart < interval.End.AddMinutes(requiredRest) &&
+                                       interval.Start < targetEnd.AddMinutes(requiredRest);
+                    if (!violatesRest)
+                    {
+                        continue;
+                    }
+
+                    var directOverlap = targetStart < interval.End && interval.Start < targetEnd;
+                    return directOverlap
+                        ? $"Trùng giờ với trận #{otherMatch.SoTran}."
+                        : $"Chưa đủ thời gian nghỉ tối thiểu {requiredRest} phút sau trận #{otherMatch.SoTran}.";
+                }
+
+                return null;
+            }
+
+            foreach (var match in targetMatchList)
+            {
+                foreach (var role in requestedRoles)
+                {
+                    var currentAssignments = existingAssignments
+                        .Where(assignment => assignment.TranDauId == match.Id &&
+                                             !releasedAssignmentIds.Contains(assignment.Id) &&
+                                             NormalizeRefereeRole(assignment.VaiTro).Equals(role, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    if (currentAssignments.Count > 0 && request.ChiLapViTriTrong)
+                    {
+                        continue;
+                    }
+
+                    var temporarilyReleasedIntervals = new List<(int RefereeId, (int TranDauId, DateTime Start, DateTime End, string VaiTro) Interval)>();
+                    if (currentAssignments.Count > 0)
+                    {
+                        foreach (var currentAssignment in currentAssignments)
+                        {
+                            releasedAssignmentIds.Add(currentAssignment.Id);
+                            if (refereeIntervals.TryGetValue(currentAssignment.TrongTaiId, out var intervals))
+                            {
+                                var removed = intervals
+                                    .Where(interval => interval.TranDauId == match.Id && interval.VaiTro.Equals(role, StringComparison.OrdinalIgnoreCase))
+                                    .ToList();
+                                intervals.RemoveAll(interval => interval.TranDauId == match.Id && interval.VaiTro.Equals(role, StringComparison.OrdinalIgnoreCase));
+                                temporarilyReleasedIntervals.AddRange(removed.Select(interval => (currentAssignment.TrongTaiId, interval)));
+                            }
+                        }
+
+                        RebuildMatchReferees(match.Id);
+                    }
+
+                    var candidates = activeReferees
+                        .Where(referee => GetConflictReason(referee.Id, match) == null)
+                        .Select(referee => new
+                        {
+                            Referee = referee,
+                            TotalMatches = refereeIntervals[referee.Id].Select(interval => interval.TranDauId).Distinct().Count(),
+                            SameDayMatches = refereeIntervals[referee.Id]
+                                .Where(interval => interval.Start.Date == match.ThoiGianDuKien!.Value.Date)
+                                .Select(interval => interval.TranDauId)
+                                .Distinct()
+                                .Count()
+                        })
+                        .OrderBy(candidate => candidate.TotalMatches)
+                        .ThenBy(candidate => candidate.SameDayMatches)
+                        .ThenBy(candidate => candidate.Referee.HoTen)
+                        .ToList();
+
+                    // Cân bằng tải là điều kiện bắt buộc: chỉ chọn trọng tài đang có ít
+                    // trận nhất trong toàn bộ nhóm đã chọn. Nếu nhóm này đều xung đột lịch,
+                    // để trống vị trí thay vì giao thêm cho người đang có nhiều trận hơn.
+                    var minimumTotalMatches = activeReferees
+                        .Select(referee => refereeIntervals[referee.Id]
+                            .Select(interval => interval.TranDauId)
+                            .Distinct()
+                            .Count())
+                        .DefaultIfEmpty(0)
+                        .Min();
+                    var balancedCandidates = candidates
+                        .Where(candidate => candidate.TotalMatches == minimumTotalMatches)
+                        .ToList();
+
+                    // Nếu nhiều người cùng ít trận, ưu tiên người ít trận trong ngày hơn,
+                    // sau đó random để không luôn chọn theo thứ tự tên.
+                    TrongTai? selected = null;
+                    if (balancedCandidates.Count > 0)
+                    {
+                        var minimumSameDayMatches = balancedCandidates
+                            .Min(candidate => candidate.SameDayMatches);
+                        var leastLoaded = balancedCandidates
+                            .Where(candidate => candidate.SameDayMatches == minimumSameDayMatches)
+                            .ToList();
+                        selected = leastLoaded[Random.Shared.Next(leastLoaded.Count)].Referee;
+                    }
+                    if (selected == null)
+                    {
+                        // Không tìm được phương án thay thế thì khôi phục phân công cũ.
+                        foreach (var currentAssignment in currentAssignments)
+                        {
+                            releasedAssignmentIds.Remove(currentAssignment.Id);
+                        }
+
+                        foreach (var released in temporarilyReleasedIntervals)
+                        {
+                            refereeIntervals[released.RefereeId].Add(released.Interval);
+                        }
+
+                        RebuildMatchReferees(match.Id);
+                        result.Unassigned.Add(new AutoAssignRefereeUnassignedDto
+                        {
+                            TranDauId = match.Id,
+                            SoTran = match.SoTran,
+                            TenTran = match.TenTran ?? $"Trận {match.SoTran}",
+                            VaiTro = role,
+                            LyDo = balancedCandidates.Count == 0
+                                ? "Không thể giữ cân bằng số trận: các trọng tài đang ít trận nhất đều trùng lịch, thiếu thời gian nghỉ hoặc đã đạt giới hạn trong ngày."
+                                : "Không còn trọng tài phù hợp do trùng lịch, thiếu thời gian nghỉ hoặc vượt giới hạn số trận trong ngày."
+                        });
+                        continue;
+                    }
+
+                    var selectedInterval = (match.Id, match.ThoiGianDuKien!.Value, GetMatchEnd(match), role);
+                    refereeIntervals[selected.Id].Add(selectedInterval);
+                    plans.Add((match, role, selected));
+                    RebuildMatchReferees(match.Id);
+                    result.Assignments.Add(new AutoAssignRefereeItemDto
+                    {
+                        TranDauId = match.Id,
+                        SoTran = match.SoTran,
+                        TenTran = match.TenTran ?? $"Trận {match.SoTran}",
+                        VaiTro = role,
+                        TrongTaiId = selected.Id,
+                        HoTenTrongTai = selected.HoTen
+                    });
+                }
+            }
+
+            result.Success = true;
+            result.PositionsAssigned = result.Assignments.Count;
+            result.PositionsUnassigned = result.Unassigned.Count;
+            result.MatchesAssigned = result.Assignments.Select(assignment => assignment.TranDauId).Distinct().Count();
+            result.Message = result.PositionsAssigned == 0
+                ? "Không có vị trí trống nào có thể đưa vào bản nháp phân công."
+                : $"Đã tạo nháp {result.PositionsAssigned} vị trí cho {result.MatchesAssigned} trận. " +
+                  (result.PositionsUnassigned > 0
+                      ? $"Còn {result.PositionsUnassigned} vị trí chưa thể phân công do không đủ điều kiện."
+                      : "Tất cả vị trí yêu cầu đã được đưa vào nháp. Hãy bấm Lưu để xác nhận.");
+
+            return result;
+        }
+
+        /// <summary>
+        /// Xác nhận và lưu bản nháp phân công trọng tài cho một giải đấu.
+        /// Mọi phân công bị thay đổi hoặc hủy đều được xóa mềm trước khi thêm bản ghi mới;
+        /// Trưởng ban trọng tài bị loại khỏi toàn bộ kết quả lưu theo quy định nghiệp vụ.
+        /// </summary>
+        /// <param name="request">Giải đấu và các thay đổi nháp theo từng trận, từng vai trò.</param>
+        /// <param name="savedBy">Tài khoản thực hiện để lưu lịch sử thay đổi.</param>
+        /// <returns>Kết quả lưu gồm số vị trí xử lý, số bản ghi tạo mới và số bản ghi xóa mềm.</returns>
+        public async Task<SaveRefereeAssignmentDraftResultDto> SaveRefereeAssignmentDraftAsync(
+            SaveRefereeAssignmentDraftRequestDto request,
+            string? savedBy = null)
+        {
+            var result = new SaveRefereeAssignmentDraftResultDto();
+            if (request == null || request.GiaiDauId <= 0)
+            {
+                result.Message = "Giải đấu không hợp lệ.";
+                return result;
+            }
+
+            var tournament = (await _unitOfWork.GiaiDaus.FindAsync(item =>
+                item.Id == request.GiaiDauId && item.IsDeleted != true)).FirstOrDefault();
+            if (tournament == null)
+            {
+                result.Message = "Không tìm thấy giải đấu.";
+                return result;
+            }
+
+            var gdmIds = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(item =>
+                item.GiaiDauId == request.GiaiDauId && item.IsDeleted != true))
+                .Select(item => item.Id)
+                .ToHashSet();
+            var matches = (await _unitOfWork.TranDaus.FindAsync(item =>
+                gdmIds.Contains(item.GiaiDauMonTheThaoId) && item.IsDeleted != true)).ToList();
+            var matchIds = matches.Select(match => match.Id).ToHashSet();
+
+            var draftBySlot = new Dictionary<string, RefereeAssignmentDraftItemDto>(StringComparer.OrdinalIgnoreCase);
+            foreach (var change in request.Changes ?? new List<RefereeAssignmentDraftItemDto>())
+            {
+                var canonicalRole = NormalizeRefereeRole(change.VaiTro);
+                if (change.TranDauId <= 0 || !matchIds.Contains(change.TranDauId) || string.IsNullOrWhiteSpace(canonicalRole))
+                {
+                    result.Message = "Bản nháp chứa trận đấu hoặc vai trò không hợp lệ.";
+                    return result;
+                }
+
+                draftBySlot[$"{change.TranDauId}:{canonicalRole}"] = new RefereeAssignmentDraftItemDto
+                {
+                    TranDauId = change.TranDauId,
+                    VaiTro = canonicalRole,
+                    TrongTaiId = change.TrongTaiId,
+                    Force = change.Force
+                };
+            }
+
+            var existingAssignments = (await _unitOfWork.PhanCongTrongTais.FindAsync(assignment =>
+                matchIds.Contains(assignment.TranDauId) && assignment.IsDeleted != true)).ToList();
+
+            // Dọn các phân công cũ của Trưởng ban trong lần lưu kế tiếp để đảm bảo quy định được áp dụng cả với dữ liệu cũ.
+            if (tournament.TruongBanTrongTaiId.HasValue)
+            {
+                foreach (var assignment in existingAssignments.Where(assignment =>
+                             assignment.TrongTaiId == tournament.TruongBanTrongTaiId.Value))
+                {
+                    var canonicalRole = NormalizeRefereeRole(assignment.VaiTro);
+                    if (!string.IsNullOrWhiteSpace(canonicalRole))
+                    {
+                        var slotKey = $"{assignment.TranDauId}:{canonicalRole}";
+                        if (!draftBySlot.ContainsKey(slotKey))
+                        {
+                            draftBySlot[slotKey] = new RefereeAssignmentDraftItemDto
+                            {
+                                TranDauId = assignment.TranDauId,
+                                VaiTro = canonicalRole,
+                                TrongTaiId = null
+                            };
+                        }
+                    }
+                }
+            }
+
+            if (draftBySlot.Count == 0)
+            {
+                result.Success = true;
+                result.Message = "Bản nháp không có thay đổi để lưu.";
+                return result;
+            }
+
+            var activeReferees = (await _unitOfWork.TrongTais.FindAsync(referee =>
+                referee.IsDeleted != true && referee.TrangThai)).ToDictionary(referee => referee.Id);
+
+            foreach (var change in draftBySlot.Values.Where(change => change.TrongTaiId.HasValue && change.TrongTaiId.Value > 0))
+            {
+                if (tournament.TruongBanTrongTaiId == change.TrongTaiId)
+                {
+                    result.Message = "Trưởng ban trọng tài không được phép phân công điều hành trận đấu.";
+                    return result;
+                }
+
+                if (!activeReferees.ContainsKey(change.TrongTaiId!.Value))
+                {
+                    result.Message = "Bản nháp có trọng tài không tồn tại hoặc không còn hoạt động.";
+                    return result;
+                }
+            }
+
+            var finalAssignments = existingAssignments
+                .Select(assignment => new RefereeAssignmentDraftItemDto
+                {
+                    TranDauId = assignment.TranDauId,
+                    VaiTro = NormalizeRefereeRole(assignment.VaiTro),
+                    TrongTaiId = assignment.TrongTaiId
+                })
+                .Where(assignment => !string.IsNullOrWhiteSpace(assignment.VaiTro))
+                .ToList();
+
+            foreach (var change in draftBySlot.Values)
+            {
+                finalAssignments.RemoveAll(assignment =>
+                    assignment.TranDauId == change.TranDauId && assignment.VaiTro == change.VaiTro);
+
+                if (change.TrongTaiId.HasValue && change.TrongTaiId.Value > 0)
+                {
+                    finalAssignments.Add(change);
+                }
+            }
+
+            var duplicateRefereeInMatch = finalAssignments
+                .Where(assignment => assignment.TrongTaiId.HasValue)
+                .GroupBy(assignment => new { assignment.TranDauId, RefereeId = assignment.TrongTaiId!.Value })
+                .FirstOrDefault(group => group.Count() > 1);
+            if (duplicateRefereeInMatch != null)
+            {
+                result.Message = $"Một trọng tài không thể giữ nhiều vị trí trong trận #{matches.First(match => match.Id == duplicateRefereeInMatch.Key.TranDauId).SoTran}.";
+                return result;
+            }
+
+            var assignmentsRemoved = 0;
+            var assignmentsCreated = 0;
+            foreach (var change in draftBySlot.Values)
+            {
+                var assignmentsAtSlot = existingAssignments.Where(assignment =>
+                    assignment.TranDauId == change.TranDauId &&
+                    NormalizeRefereeRole(assignment.VaiTro) == change.VaiTro).ToList();
+
+                foreach (var assignment in assignmentsAtSlot)
+                {
+                    assignment.IsDeleted = true;
+                    assignment.LastModified = DateTime.UtcNow;
+                    assignment.LastModifiedBy = savedBy;
+                    _unitOfWork.PhanCongTrongTais.Update(assignment);
+                    assignmentsRemoved++;
+                }
+
+                if (!change.TrongTaiId.HasValue || change.TrongTaiId.Value <= 0)
+                {
+                    continue;
+                }
+
+                await _unitOfWork.PhanCongTrongTais.AddAsync(new PhanCongTrongTai
+                {
+                    TranDauId = change.TranDauId,
+                    TrongTaiId = change.TrongTaiId.Value,
+                    VaiTro = change.VaiTro,
+                    Created = DateTime.UtcNow,
+                    CreatedBy = savedBy,
+                    IsDeleted = false
+                });
+                assignmentsCreated++;
+            }
+
+            await _unitOfWork.CompleteAsync();
+
+            result.Success = true;
+            result.ChangesSaved = draftBySlot.Count;
+            result.AssignmentsCreated = assignmentsCreated;
+            result.AssignmentsRemoved = assignmentsRemoved;
+            result.Message = $"Đã lưu {result.ChangesSaved} thay đổi nháp: tạo {assignmentsCreated} phân công mới, xóa mềm {assignmentsRemoved} phân công cũ.";
+            return result;
         }
 
         public async Task<List<RefereeScheduleGroupDto>> GetRefereeSchedulesAsync(int giaiDauId, int? trongTaiId, DateTime? date, int? monTheThaoId)

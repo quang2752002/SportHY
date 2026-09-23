@@ -1,8 +1,13 @@
 @model List<Dms.Application.DTOs.MatchAssignmentDto>
 @{
     ViewData["Title"] = "Phân Công Trọng Tài Theo Môn & Trận";
-    var sportList = ViewBag.SportList as List<MonTheThao> ?? new();
-    var allReferees = ViewBag.AllReferees as List<Dms.Domain.Entities.TrongTai> ?? new();
+    var sportList = ViewBag.SportList as List<Dms.Application.DTOs.MonTheThaoDto> ?? new();
+    var allReferees = ViewBag.AllReferees as List<Dms.Application.DTOs.TrongTaiDto> ?? new();
+    int? selectedMonId = ViewBag.SelectedMonId is int selectedId ? selectedId : null;
+    int? selectedRefereeId = ViewBag.SelectedRefereeId is int selectedReferee ? selectedReferee : null;
+    var selectedSport = selectedMonId.HasValue
+        ? sportList.FirstOrDefault(sport => sport.Id == selectedMonId.Value)
+        : null;
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
@@ -12,48 +17,92 @@
         </h4>
         <p class="text-muted small mb-0">Phân công trọng tài chính, phụ, bàn, giám sát theo từng môn & từng trận - Tích hợp kiểm tra trùng lịch tự động</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-primary" onclick="openAutoAssignModal()">
+            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Tự động phân công
+        </button>
+        <button type="button" class="btn btn-outline-danger" onclick="stageClearAllAssignments()">
+            <i class="fa-solid fa-trash-can me-1"></i> Xóa tất cả (nháp)
+        </button>
+        <button type="button" class="btn btn-success" id="btnSaveDraft" onclick="saveAssignmentDraft()" disabled>
+            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu nháp <span id="draftChangeCount" class="badge bg-light text-success ms-1">0</span>
+        </button>
         <a href="/TruongBanTrongTai/KiemTraTrungLich" class="btn btn-outline-danger">
             <i class="fa-solid fa-triangle-exclamation me-1"></i> Quét Trùng Lịch Giải
         </a>
     </div>
 </div>
 
-<!-- Tabs chọn môn thi đấu -->
-<div class="card card-custom mb-3 p-2 bg-white">
-    <div class="d-flex align-items-center overflow-auto py-1 gap-2">
-        <span class="text-muted small fw-bold text-uppercase px-2 text-nowrap"><i class="fa-solid fa-volleyball text-warning me-1"></i> Môn thi:</span>
-        @if (sportList.Count > 0)
-        {
-            foreach (var sp in sportList)
+<div id="draftStateBar" class="alert alert-warning border-warning d-none d-flex justify-content-between align-items-center gap-3 py-2 mb-3">
+    <div class="small">
+        <i class="fa-solid fa-pen-ruler me-1"></i>
+        Bạn đang có <strong id="draftStateCount">0</strong> thay đổi nháp. Dữ liệu chưa được ghi cho đến khi bấm <strong>Lưu nháp</strong>.
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" onclick="discardAssignmentDraft()">
+        Hủy nháp
+    </button>
+</div>
+
+<!-- Bộ lọc môn thi đấu dạng panel mở/đóng -->
+<div class="card card-custom mb-3 bg-white">
+    <div class="card-header bg-white border-0 py-2">
+        <button type="button"
+                class="btn w-100 d-flex justify-content-between align-items-center text-start px-2 py-1"
+                data-bs-toggle="collapse"
+                data-bs-target="#sportFilterPanel"
+                aria-expanded="@(selectedMonId.HasValue ? "false" : "true")"
+                aria-controls="sportFilterPanel">
+            <span class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-volleyball text-warning"></i>
+                <span class="small fw-bold text-uppercase">Môn thi</span>
+                <span class="badge rounded-pill @(selectedSport == null ? "bg-primary" : "bg-light text-dark border")">
+                    @(selectedSport?.Ten ?? "Tất cả môn")
+                </span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-muted"></i>
+        </button>
+    </div>
+    <div id="sportFilterPanel" class="collapse @(selectedMonId.HasValue ? "" : "show")">
+        <div class="card-body border-top py-3">
+            @if (sportList.Count > 0)
             {
-                bool isActive = ViewBag.SelectedMonId == sp.Id;
-                <a href="/TruongBanTrongTai/PhanCong?monTheThaoId=@sp.Id&date=@ViewBag.SelectedDate&status=@ViewBag.SelectedStatus"
-                   class="btn btn-sm text-nowrap rounded-pill @(isActive ? "btn-primary fw-bold" : "btn-light border")">
-                    @sp.Ten
-                </a>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="/TruongBanTrongTai/PhanCong?giaiDauId=@ViewBag.SelectedGiaiDauId&date=@ViewBag.SelectedDate&status=@ViewBag.SelectedStatus&trongTaiId=@ViewBag.SelectedRefereeId"
+                       class="btn btn-sm rounded-pill @(selectedMonId.HasValue ? "btn-light border" : "btn-primary fw-bold")"
+                       title="Bỏ chọn môn đang lọc và hiển thị tất cả môn">
+                        <i class="fa-solid fa-layer-group me-1"></i> Tất cả môn
+                    </a>
+                    @foreach (var sp in sportList)
+                    {
+                        bool isActive = selectedMonId == sp.Id;
+                        <a href="/TruongBanTrongTai/PhanCong?giaiDauId=@ViewBag.SelectedGiaiDauId&monTheThaoId=@sp.Id&date=@ViewBag.SelectedDate&status=@ViewBag.SelectedStatus&trongTaiId=@ViewBag.SelectedRefereeId"
+                           class="btn btn-sm rounded-pill @(isActive ? "btn-primary fw-bold" : "btn-light border")">
+                            @sp.Ten
+                        </a>
+                    }
+                </div>
             }
-        }
-        else
-        {
-            <span class="text-muted small">Giải đấu chưa có môn thi đấu nào.</span>
-        }
+            else
+            {
+                <span class="text-muted small">Giải đấu chưa có môn thi đấu nào.</span>
+            }
+        </div>
     </div>
 </div>
 
-<!-- Bộ lọc ngày & trạng thái -->
+<!-- Bộ lọc ngày, trạng thái và trọng tài -->
 <div class="card card-custom mb-4 p-3">
     <form method="get" class="row g-2 align-items-center">
         <input type="hidden" name="giaiDauId" value="@ViewBag.SelectedGiaiDauId" />
         <input type="hidden" name="monTheThaoId" value="@ViewBag.SelectedMonId" />
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="input-group input-group-sm">
                 <span class="input-group-text bg-light"><i class="fa-regular fa-calendar text-muted"></i></span>
                 <input type="date" name="date" value="@ViewBag.SelectedDate" class="form-control" placeholder="Lọc theo ngày đấu" />
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <select name="status" class="form-select form-select-sm">
                 <option value="">-- Tất cả trạng thái trận đấu --</option>
                 <option value="ChuaDau" selected="@(ViewBag.SelectedStatus == "ChuaDau")">Chưa đấu</option>
@@ -61,11 +110,20 @@
                 <option value="KetThuc" selected="@(ViewBag.SelectedStatus == "KetThuc")">Đã kết thúc</option>
             </select>
         </div>
-        <div class="col-md-4 d-flex gap-2">
+        <div class="col-md-3">
+            <select id="refereeFilter" name="trongTaiId" class="form-select form-select-sm" title="Chọn trọng tài để lọc ngay lịch phân công">
+                <option value="">-- Tất cả trọng tài --</option>
+                @foreach (var referee in allReferees)
+                {
+                    <option value="@referee.Id" selected="@(selectedRefereeId == referee.Id)">@referee.HoTen (@referee.Ma)</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
             <button type="submit" class="btn btn-sm btn-primary flex-fill fw-semibold">
                 <i class="fa-solid fa-filter me-1"></i> Lọc danh sách
             </button>
-            <a href="/TruongBanTrongTai/PhanCong?monTheThaoId=@ViewBag.SelectedMonId" class="btn btn-sm btn-light border">
+            <a id="clearAssignmentFilters" href="/TruongBanTrongTai/PhanCong?giaiDauId=@ViewBag.SelectedGiaiDauId" class="btn btn-sm btn-light border" title="Xóa toàn bộ bộ lọc">
                 <i class="fa-solid fa-rotate-left"></i> Đặt lại
             </a>
         </div>
@@ -85,6 +143,7 @@
             <thead class="table-light text-muted small text-uppercase">
                 <tr>
                     <th style="width: 140px;">Thông Tin Trận</th>
+                    <th style="min-width: 140px;">Môn Thi Đấu</th>
                     <th style="width: 130px;">Thời Gian & Sân</th>
                     <th style="min-width: 180px;">Trọng Tài Chính <span class="text-danger">*</span></th>
                     <th style="min-width: 180px;">Trọng Tài Phụ 1</th>
@@ -104,6 +163,11 @@
                                 <div class="badge bg-light text-secondary border small mt-1">@item.TenVongDau</div>
                             </td>
                             <td>
+                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
+                                    <i class="fa-solid fa-volleyball me-1"></i>@item.TenMon
+                                </span>
+                            </td>
+                            <td>
                                 <div class="small fw-semibold text-dark">
                                     <i class="fa-regular fa-clock text-warning me-1"></i>
                                     @(item.ThoiGianDuKien?.ToString("HH:mm - dd/MM") ?? "Chưa xếp giờ")
@@ -115,27 +179,62 @@
 
                             <!-- Trọng tài chính -->
                             <td>
-                                @await Html.PartialAsync("_RefereeSlot", new { TranDauId = item.TranDauId, VaiTro = "Trọng tài chính", CurrentId = item.TrongTaiChinhId, CurrentName = item.TenTrongTaiChinh, BadgeClass = "bg-primary text-white" })
+                                @await Html.PartialAsync("_RefereeSlot", new API.Areas.TruongBanTrongTai.Models.RefereeSlotViewModel
+                                {
+                                    TranDauId = item.TranDauId,
+                                    VaiTro = "Trọng tài chính",
+                                    CurrentId = item.TrongTaiChinhId,
+                                    CurrentName = item.TenTrongTaiChinh,
+                                    BadgeClass = "bg-primary text-white"
+                                })
                             </td>
 
                             <!-- Trọng tài phụ 1 -->
                             <td>
-                                @await Html.PartialAsync("_RefereeSlot", new { TranDauId = item.TranDauId, VaiTro = "Trọng tài phụ 1", CurrentId = item.TrongTaiPhu1Id, CurrentName = item.TenTrongTaiPhu1, BadgeClass = "bg-info text-dark" })
+                                @await Html.PartialAsync("_RefereeSlot", new API.Areas.TruongBanTrongTai.Models.RefereeSlotViewModel
+                                {
+                                    TranDauId = item.TranDauId,
+                                    VaiTro = "Trọng tài phụ 1",
+                                    CurrentId = item.TrongTaiPhu1Id,
+                                    CurrentName = item.TenTrongTaiPhu1,
+                                    BadgeClass = "bg-info text-dark"
+                                })
                             </td>
 
                             <!-- Trọng tài phụ 2 -->
                             <td>
-                                @await Html.PartialAsync("_RefereeSlot", new { TranDauId = item.TranDauId, VaiTro = "Trọng tài phụ 2", CurrentId = item.TrongTaiPhu2Id, CurrentName = item.TenTrongTaiPhu2, BadgeClass = "bg-info text-dark" })
+                                @await Html.PartialAsync("_RefereeSlot", new API.Areas.TruongBanTrongTai.Models.RefereeSlotViewModel
+                                {
+                                    TranDauId = item.TranDauId,
+                                    VaiTro = "Trọng tài phụ 2",
+                                    CurrentId = item.TrongTaiPhu2Id,
+                                    CurrentName = item.TenTrongTaiPhu2,
+                                    BadgeClass = "bg-info text-dark"
+                                })
                             </td>
 
                             <!-- Trọng tài bàn -->
                             <td>
-                                @await Html.PartialAsync("_RefereeSlot", new { TranDauId = item.TranDauId, VaiTro = "Trọng tài bàn", CurrentId = item.TrongTaiBanId, CurrentName = item.TenTrongTaiBan, BadgeClass = "bg-secondary text-white" })
+                                @await Html.PartialAsync("_RefereeSlot", new API.Areas.TruongBanTrongTai.Models.RefereeSlotViewModel
+                                {
+                                    TranDauId = item.TranDauId,
+                                    VaiTro = "Trọng tài bàn",
+                                    CurrentId = item.TrongTaiBanId,
+                                    CurrentName = item.TenTrongTaiBan,
+                                    BadgeClass = "bg-secondary text-white"
+                                })
                             </td>
 
                             <!-- Giám sát -->
                             <td>
-                                @await Html.PartialAsync("_RefereeSlot", new { TranDauId = item.TranDauId, VaiTro = "Giám sát trận đấu", CurrentId = item.GiamSatId, CurrentName = item.TenGiamSat, BadgeClass = "bg-dark text-white" })
+                                @await Html.PartialAsync("_RefereeSlot", new API.Areas.TruongBanTrongTai.Models.RefereeSlotViewModel
+                                {
+                                    TranDauId = item.TranDauId,
+                                    VaiTro = "Giám sát trận đấu",
+                                    CurrentId = item.GiamSatId,
+                                    CurrentName = item.TenGiamSat,
+                                    BadgeClass = "bg-dark text-white"
+                                })
                             </td>
                         </tr>
                     }
@@ -143,7 +242,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="8" class="text-center py-5 text-muted">
                             <i class="fa-regular fa-folder-open fs-1 d-block mb-2 text-secondary opacity-50"></i>
                             Chưa có trận đấu nào trong danh mục hoặc bộ lọc này.
                         </td>
@@ -151,6 +250,57 @@
                 }
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Modal Chọn trọng tài dùng cho thuật toán tự động -->
+<div class="modal fade" id="modalAutoAssignReferees" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <div>
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>Chọn trọng tài tự động</h5>
+                    <small class="opacity-75">Hệ thống chỉ random trong danh sách bạn chọn. Trưởng ban trọng tài đã được loại khỏi danh sách.</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                @if (allReferees.Count == 0)
+                {
+                    <div class="alert alert-warning mb-0">Không có trọng tài hoạt động hợp lệ để chọn.</div>
+                }
+                else
+                {
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small text-muted">Đã chọn <strong id="selectedAutoRefereeCount">@allReferees.Count</strong> trọng tài</span>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-primary" onclick="toggleAutoReferees(true)">Chọn tất cả</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="toggleAutoReferees(false)">Bỏ chọn</button>
+                        </div>
+                    </div>
+                    <div class="row g-2" id="autoRefereeList">
+                        @foreach (var refItem in allReferees)
+                        {
+                            <div class="col-md-6">
+                                <label class="d-flex align-items-center gap-2 border rounded p-2 h-100 bg-light">
+                                    <input type="checkbox" class="form-check-input auto-referee-checkbox mt-0" value="@refItem.Id" checked onchange="updateAutoRefereeCount()" />
+                                    <span>
+                                        <span class="fw-semibold d-block">@refItem.HoTen</span>
+                                        <small class="text-muted">@refItem.Ma - @(refItem.CapBac ?? "Chưa xếp cấp")</small>
+                                    </span>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary fw-semibold" onclick="previewAutoAssignment()" @(allReferees.Count == 0 ? "disabled" : null)>
+                    <i class="fa-solid fa-pen-ruler me-1"></i> Tạo bản nháp
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -205,13 +355,308 @@
 
 @section Scripts {
     <script>
+        var giaiDauId = @(ViewBag.SelectedGiaiDauId ?? 0);
+        var monTheThaoId = @(ViewBag.SelectedMonId ?? "null");
+        var selectedDate = '@(ViewBag.SelectedDate ?? "")';
+        var draftChanges = {};
+        var refereeFilterStorageKey = 'phanCongRefereeFilter_' + giaiDauId;
         var currentWarningData = {
             isOverloaded: false,
             overloadMessage: '',
             conflicts: []
         };
 
-        function openAssignModal(tranDauId, vaiTro, currentId, currentName) {
+        var refereeCatalog = {};
+        @foreach (var refItem in allReferees)
+        {
+            <text>refereeCatalog[@refItem.Id] = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(refItem.HoTen));</text>
+        }
+
+        function persistRefereeFilter() {
+            var selectedRefereeId = $('#refereeFilter').val() || '';
+            if (selectedRefereeId) {
+                localStorage.setItem(refereeFilterStorageKey, selectedRefereeId);
+            } else {
+                localStorage.removeItem(refereeFilterStorageKey);
+            }
+        }
+
+        $('#refereeFilter').on('change', function () {
+            persistRefereeFilter();
+            this.form.submit();
+        });
+
+        $('#clearAssignmentFilters').on('click', function () {
+            localStorage.removeItem(refereeFilterStorageKey);
+        });
+
+        (function restoreRefereeFilter() {
+            var refereeFilter = $('#refereeFilter');
+            if (!refereeFilter.length) return;
+
+            var queryRefereeId = new URLSearchParams(window.location.search).get('trongTaiId');
+            if (queryRefereeId) {
+                localStorage.setItem(refereeFilterStorageKey, queryRefereeId);
+                return;
+            }
+
+            var savedRefereeId = localStorage.getItem(refereeFilterStorageKey);
+            var hasSavedOption = savedRefereeId && refereeFilter.find('option').filter(function () {
+                return this.value === savedRefereeId;
+            }).length > 0;
+
+            if (hasSavedOption) {
+                refereeFilter.val(savedRefereeId);
+                refereeFilter.closest('form')[0].submit();
+            }
+        })();
+
+        function draftKey(tranDauId, vaiTro) {
+            return tranDauId + ':' + vaiTro;
+        }
+
+        function escapeHtml(value) {
+            return $('<div>').text(value || '').html();
+        }
+
+        function getSlotElement(tranDauId, vaiTro) {
+            return $('.referee-slot').filter(function () {
+                return parseInt($(this).attr('data-tran-dau-id')) === parseInt(tranDauId) &&
+                    $(this).attr('data-vai-tro') === vaiTro;
+            }).first();
+        }
+
+        function getEffectiveSlot(tranDauId, vaiTro) {
+            var slot = getSlotElement(tranDauId, vaiTro);
+            var key = draftKey(tranDauId, vaiTro);
+            if (Object.prototype.hasOwnProperty.call(draftChanges, key)) {
+                var draft = draftChanges[key];
+                return { id: draft.trongTaiId, name: refereeCatalog[draft.trongTaiId] || '' };
+            }
+
+            return {
+                id: slot.attr('data-original-id') ? parseInt(slot.attr('data-original-id')) : null,
+                name: slot.attr('data-original-name') || ''
+            };
+        }
+
+        function renderSlot(tranDauId, vaiTro) {
+            var slot = getSlotElement(tranDauId, vaiTro);
+            if (!slot.length) return;
+
+            var effective = getEffectiveSlot(tranDauId, vaiTro);
+            var badgeClass = slot.attr('data-badge-class') || 'bg-primary text-white';
+            if (effective.id) {
+                slot.html(`
+                    <span class="badge ${badgeClass} fw-semibold px-2 py-1 text-truncate" style="max-width: 130px;" title="${escapeHtml(effective.name)}">${escapeHtml(effective.name)}</span>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-sm btn-link text-primary p-0 px-1 draft-edit" title="Đổi trọng tài"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1 draft-remove" title="Hủy phân công"><i class="fa-solid fa-xmark"></i></button>
+                    </div>`);
+                slot.find('.draft-edit').on('click', function () { openAssignModal(tranDauId, vaiTro); });
+                slot.find('.draft-remove').on('click', function () { openAssignModal(tranDauId, vaiTro); });
+            } else {
+                slot.html(`
+                    <span class="text-muted small fst-italic px-1">Chưa gán</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 small draft-edit"><i class="fa-solid fa-plus me-1"></i> Gán</button>`);
+                slot.find('.draft-edit').on('click', function () { openAssignModal(tranDauId, vaiTro); });
+            }
+        }
+
+        function stageAssignmentChange(tranDauId, vaiTro, trongTaiId, force) {
+            var key = draftKey(tranDauId, vaiTro);
+            draftChanges[key] = {
+                tranDauId: parseInt(tranDauId),
+                vaiTro: vaiTro,
+                trongTaiId: trongTaiId ? parseInt(trongTaiId) : null,
+                force: force === true
+            };
+            renderSlot(tranDauId, vaiTro);
+            updateDraftIndicator();
+        }
+
+        function updateDraftIndicator() {
+            var count = Object.keys(draftChanges).length;
+            $('#draftChangeCount').text(count);
+            $('#draftStateCount').text(count);
+            $('#btnSaveDraft').prop('disabled', count === 0);
+            $('#draftStateBar').toggleClass('d-none', count === 0);
+        }
+
+        function getDraftChanges() {
+            return Object.keys(draftChanges).map(function (key) { return draftChanges[key]; });
+        }
+
+        function openAutoAssignModal() {
+            if (!giaiDauId) {
+                Swal.fire('Thiếu giải đấu', 'Vui lòng chọn giải đấu trước khi tự động phân công.', 'warning');
+                return;
+            }
+            updateAutoRefereeCount();
+            new bootstrap.Modal(document.getElementById('modalAutoAssignReferees')).show();
+        }
+
+        function toggleAutoReferees(checked) {
+            $('.auto-referee-checkbox').prop('checked', checked);
+            updateAutoRefereeCount();
+        }
+
+        function updateAutoRefereeCount() {
+            $('#selectedAutoRefereeCount').text($('.auto-referee-checkbox:checked').length);
+        }
+
+        function previewAutoAssignment() {
+            var selectedRefereeIds = $('.auto-referee-checkbox:checked').map(function () {
+                return parseInt($(this).val());
+            }).get();
+
+            if (selectedRefereeIds.length === 0) {
+                Swal.fire('Chưa chọn trọng tài', 'Hãy chọn ít nhất một trọng tài để lập bản nháp.', 'warning');
+                return;
+            }
+
+            var modal = bootstrap.Modal.getInstance(document.getElementById('modalAutoAssignReferees'));
+            if (modal) modal.hide();
+
+            var request = {
+                giaiDauId: giaiDauId,
+                monTheThaoId: monTheThaoId,
+                date: selectedDate || null,
+                chiPhanCongTranChuaDau: true,
+                chiLapViTriTrong: true,
+                trongTaiIds: selectedRefereeIds,
+                draftChanges: getDraftChanges(),
+                vaiTros: [
+                    'Trọng tài chính',
+                    'Trọng tài phụ 1',
+                    'Trọng tài phụ 2',
+                    'Trọng tài bàn',
+                    'Giám sát trận đấu'
+                ]
+            };
+
+            Swal.fire({
+                title: 'Đang lập bản nháp...',
+                text: 'Hệ thống đang kiểm tra lịch toàn giải. Dữ liệu chưa được lưu.',
+                allowOutsideClick: false,
+                didOpen: function () { Swal.showLoading(); }
+            });
+
+            $.ajax({
+                url: '/TruongBanTrongTai/PhanCong/AutoAssignReferees',
+                type: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify(request),
+                success: function (res) {
+                    if (!res.success) {
+                        Swal.fire('Không thể lập bản nháp', res.message || 'Không thể xử lý yêu cầu.', 'error');
+                        return;
+                    }
+
+                    (res.assignments || []).forEach(function (item) {
+                        refereeCatalog[item.trongTaiId] = item.hoTenTrongTai;
+                        stageAssignmentChange(item.tranDauId, item.vaiTro, item.trongTaiId, false);
+                    });
+
+                    var warning = res.positionsUnassigned > 0
+                        ? `<br><span class="text-warning">Còn ${res.positionsUnassigned} vị trí chưa thể đưa vào nháp.</span>`
+                        : '';
+                    Swal.fire({
+                        title: 'Đã tạo bản nháp',
+                        html: `${res.message || 'Đã lập đề xuất phân công.'}${warning}<br><br><b>Hãy bấm “Lưu nháp” để ghi dữ liệu.</b>`,
+                        icon: res.positionsUnassigned > 0 ? 'warning' : 'success',
+                        confirmButtonText: 'Đóng'
+                    });
+                },
+                error: function (xhr) {
+                    Swal.fire('Lỗi', xhr.responseJSON?.message || 'Không thể lập bản nháp tự động.', 'error');
+                }
+            });
+        }
+
+        function stageClearAllAssignments() {
+            if (!$('.referee-slot').length) {
+                Swal.fire('Không có dữ liệu', 'Danh sách hiện tại không có vị trí phân công.', 'info');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Xóa tất cả phân công hiện tại?',
+                html: '<div class="text-start small">Hệ thống chỉ tạo bản nháp xóa các vị trí đang hiển thị. Database chưa bị thay đổi cho đến khi bạn bấm <b>Lưu nháp</b>.</div>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Tạo nháp xóa tất cả',
+                cancelButtonText: 'Hủy'
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                $('.referee-slot').each(function () {
+                    var slot = $(this);
+                    var tranDauId = parseInt(slot.attr('data-tran-dau-id'));
+                    var vaiTro = slot.attr('data-vai-tro');
+                    var effective = getEffectiveSlot(tranDauId, vaiTro);
+                    if (effective.id) stageAssignmentChange(tranDauId, vaiTro, null, false);
+                });
+
+                Swal.fire('Đã tạo bản nháp', 'Tất cả phân công đang hiển thị đã được đánh dấu hủy. Bấm “Lưu nháp” để xác nhận.', 'success');
+            });
+        }
+
+        function discardAssignmentDraft() {
+            Swal.fire({
+                title: 'Hủy toàn bộ bản nháp?',
+                text: 'Các thay đổi chưa lưu sẽ bị bỏ qua.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Hủy bản nháp',
+                cancelButtonText: 'Giữ lại'
+            }).then(function (result) {
+                if (result.isConfirmed) window.location.reload();
+            });
+        }
+
+        function saveAssignmentDraft() {
+            var changes = getDraftChanges();
+            if (changes.length === 0) return;
+
+            Swal.fire({
+                title: 'Lưu bản nháp phân công?',
+                html: `Hệ thống sẽ ghi <b>${changes.length}</b> thay đổi vào database. Các phân công cũ bị thay thế sẽ được xóa mềm.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#198754',
+                confirmButtonText: 'Lưu và xác nhận',
+                cancelButtonText: 'Hủy'
+            }).then(function (confirmResult) {
+                if (!confirmResult.isConfirmed) return;
+
+                Swal.fire({
+                    title: 'Đang lưu...',
+                    allowOutsideClick: false,
+                    didOpen: function () { Swal.showLoading(); }
+                });
+
+                $.ajax({
+                    url: '/TruongBanTrongTai/PhanCong/SaveAssignmentDraft',
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    data: JSON.stringify({ giaiDauId: giaiDauId, changes: changes }),
+                    success: function (res) {
+                        if (!res.success) {
+                            Swal.fire('Không thể lưu', res.message || 'Không thể lưu bản nháp.', 'error');
+                            return;
+                        }
+                        Swal.fire('Đã lưu', res.message, 'success').then(function () { window.location.reload(); });
+                    },
+                    error: function (xhr) {
+                        Swal.fire('Lỗi', xhr.responseJSON?.message || 'Không thể lưu bản nháp.', 'error');
+                    }
+                });
+            });
+        }
+
+        function openAssignModal(tranDauId, vaiTro) {
             $('#assignTranDauId').val(tranDauId);
             $('#assignVaiTro').val(vaiTro);
             $('#modalAssignTitle').text('Phân công ' + vaiTro);
@@ -220,8 +665,9 @@
             $('#conflictAlertBox').addClass('d-none');
             currentWarningData = { isOverloaded: false, overloadMessage: '', conflicts: [] };
 
-            if (currentId) {
-                $('#selectReferee').val(currentId).trigger('change');
+            var effective = getEffectiveSlot(tranDauId, vaiTro);
+            if (effective.id) {
+                $('#selectReferee').val(effective.id).trigger('change');
             } else {
                 $('#selectReferee').val('').trigger('change');
             }
@@ -281,7 +727,9 @@
             var refId = $('#selectReferee').val() ? parseInt($('#selectReferee').val()) : null;
 
             if (!refId) {
-                sendAssignRequest(tranId, vaiTro, null, false);
+                stageAssignmentChange(tranId, vaiTro, null, false);
+                bootstrap.Modal.getInstance(document.getElementById('modalAssignReferee'))?.hide();
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã cập nhật bản nháp', showConfirmButton: false, timer: 1400 });
                 return;
             }
 
@@ -311,35 +759,18 @@
                     cancelButtonText: 'Hủy để chọn người khác'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        sendAssignRequest(tranId, vaiTro, refId, true);
+                        stageAssignmentChange(tranId, vaiTro, refId, true);
+                        bootstrap.Modal.getInstance(document.getElementById('modalAssignReferee'))?.hide();
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã cập nhật bản nháp', showConfirmButton: false, timer: 1400 });
                     }
                 });
             } else {
-                sendAssignRequest(tranId, vaiTro, refId, false);
+                stageAssignmentChange(tranId, vaiTro, refId, false);
+                bootstrap.Modal.getInstance(document.getElementById('modalAssignReferee'))?.hide();
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã cập nhật bản nháp', showConfirmButton: false, timer: 1400 });
             }
         }
 
-        function sendAssignRequest(tranId, vaiTro, refId, force) {
-            $.post('/TruongBanTrongTai/PhanCong/AssignReferee', {
-                tranDauId: tranId,
-                vaiTro: vaiTro,
-                trongTaiId: refId,
-                force: force || false
-            }, function (res) {
-                if (res.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Thành công',
-                        text: res.message,
-                        timer: 1200,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire('Không thể phân công', res.message, 'error');
-                }
-            });
-        }
+        updateDraftIndicator();
     </script>
 }
