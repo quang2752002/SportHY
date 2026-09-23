@@ -164,6 +164,12 @@ namespace Dms.Application.Services
             return (await GetEffectiveConfigAsync(entity.MonTheThaoId, entity.GiaiDauMonTheThaoId))!;
         }
 
+        /// <summary>
+        /// Copies the submitted sport-format settings to the persisted configuration entity.
+        /// </summary>
+        /// <param name="source">The configuration values submitted by the manager.</param>
+        /// <param name="target">The entity that will receive the submitted values.</param>
+        /// <returns>This method does not return a value.</returns>
         private static void CopyProperties(CreateUpdateCauHinhTheThucDto source, CauHinhTheThucThiDau target)
         {
             target.LoaiTheThuc = source.LoaiTheThuc;
@@ -183,6 +189,7 @@ namespace Dms.Application.Services
             target.CoPenalty = source.CoPenalty;
             target.SoLuotPenaltyMoiDoi = source.SoLuotPenaltyMoiDoi;
             target.CoTieBreak = source.CoTieBreak;
+            target.CoThePhat = source.CoThePhat;
 
             target.DiemThang = source.DiemThang;
             target.DiemHoa = source.DiemHoa;
@@ -196,6 +203,9 @@ namespace Dms.Application.Services
             target.LoaiDoThanhTich = source.LoaiDoThanhTich;
             target.DonViThanhTich = source.DonViThanhTich;
             target.TieuChiXepHangThanhTich = source.TieuChiXepHangThanhTich;
+            target.ChoPhepDongHangThanhTich = source.ChoPhepDongHangThanhTich;
+            target.TenTieuChiPhuThanhTich = string.IsNullOrWhiteSpace(source.TenTieuChiPhuThanhTich) ? "Chỉ số phụ" : source.TenTieuChiPhuThanhTich.Trim();
+            target.TieuChiPhuCangNhoCangTot = source.TieuChiPhuCangNhoCangTot;
             target.SoVdvMoiLuotThi = source.SoVdvMoiLuotThi > 0 ? source.SoVdvMoiLuotThi : 8;
             target.QuyCachTienVaoChungKet = source.QuyCachTienVaoChungKet;
             target.SoVdvVaoChungKet = source.SoVdvVaoChungKet;
@@ -203,6 +213,11 @@ namespace Dms.Application.Services
             target.KyLucHienTaiText = source.KyLucHienTaiText;
         }
 
+        /// <summary>
+        /// Maps a persisted sport-format configuration entity to the DTO used by application screens.
+        /// </summary>
+        /// <param name="entity">The configuration entity to map.</param>
+        /// <returns>A DTO containing the entity's configuration values.</returns>
         private static CauHinhTheThucDto MapToDto(CauHinhTheThucThiDau entity)
         {
             return new CauHinhTheThucDto
@@ -229,6 +244,7 @@ namespace Dms.Application.Services
                 CoPenalty = entity.CoPenalty,
                 SoLuotPenaltyMoiDoi = entity.SoLuotPenaltyMoiDoi,
                 CoTieBreak = entity.CoTieBreak,
+                CoThePhat = entity.CoThePhat,
                 DiemThang = entity.DiemThang,
                 DiemHoa = entity.DiemHoa,
                 DiemThua = entity.DiemThua,
@@ -238,6 +254,9 @@ namespace Dms.Application.Services
                 LoaiDoThanhTich = entity.LoaiDoThanhTich,
                 DonViThanhTich = entity.DonViThanhTich,
                 TieuChiXepHangThanhTich = entity.TieuChiXepHangThanhTich,
+                ChoPhepDongHangThanhTich = entity.ChoPhepDongHangThanhTich,
+                TenTieuChiPhuThanhTich = entity.TenTieuChiPhuThanhTich,
+                TieuChiPhuCangNhoCangTot = entity.TieuChiPhuCangNhoCangTot,
                 SoVdvMoiLuotThi = entity.SoVdvMoiLuotThi,
                 QuyCachTienVaoChungKet = entity.QuyCachTienVaoChungKet,
                 SoVdvVaoChungKet = entity.SoVdvVaoChungKet,
@@ -264,6 +283,7 @@ namespace Dms.Application.Services
                     ChoPhepHoaVongBang = true,
                     ChoPhepHoaKnockout = false,
                     CoPenalty = true,
+                    CoThePhat = true,
                     DiemThang = 3,
                     DiemHoa = 1,
                     DiemThua = 0

@@ -22,7 +22,6 @@ namespace API.Areas.TrongTai.Controllers
 
     public class BienBanController : BaseTrongTaiController
     {
-        private readonly ITranDauService _tranDauService;
         private readonly IGiaiDauService _giaiDauService;
         private readonly IDangKyThiDauService _dangKyThiDauService;
 
@@ -32,9 +31,8 @@ namespace API.Areas.TrongTai.Controllers
             ITranDauService tranDauService,
             IGiaiDauService giaiDauService,
             IDangKyThiDauService dangKyThiDauService)
-            : base(userManager, trongTaiService)
+            : base(userManager, trongTaiService, tranDauService)
         {
-            _tranDauService = tranDauService;
             _giaiDauService = giaiDauService;
             _dangKyThiDauService = dangKyThiDauService;
         }
@@ -43,23 +41,36 @@ namespace API.Areas.TrongTai.Controllers
         public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null)
         {
             var currentRef = await GetCurrentRefereeAsync();
-            var tournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var canBrowseAll = CanBrowseAllMatches();
+            var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var assignedMatches = currentRef == null
+                ? new List<TranDauDto>()
+                : (await _tranDauService.GetAccessibleMatchesAsync(null, currentRef.Id, false))?.ToList() ?? new();
+            var assignedTournamentIds = assignedMatches
+                .Where(match => match.GiaiDauId.HasValue)
+                .Select(match => match.GiaiDauId!.Value)
+                .ToHashSet();
+            var tournaments = canBrowseAll
+                ? allTournaments
+                : allTournaments.Where(tournament => assignedTournamentIds.Contains(tournament.Id)).ToList();
             ViewBag.Tournaments = tournaments;
 
             int? selectedGiaiDauId = giaiDauId;
-            if (!selectedGiaiDauId.HasValue && tournaments.Count > 0)
+            if ((!selectedGiaiDauId.HasValue || !tournaments.Any(tournament => tournament.Id == selectedGiaiDauId.Value)) && tournaments.Count > 0)
             {
                 selectedGiaiDauId = tournaments[0].Id;
             }
+            if (tournaments.Count == 0) selectedGiaiDauId = null;
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
 
-            var matches = (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new();
+            var matches = (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentRef?.Id, canBrowseAll))?.ToList() ?? new();
             ViewBag.Matches = matches;
 
             TranDauDto? currentMatch = null;
             if (tranDauId.HasValue)
             {
-                currentMatch = matches.FirstOrDefault(m => m.Id == tranDauId.Value) ?? await _tranDauService.GetByIdAsync(tranDauId.Value);
+                currentMatch = matches.FirstOrDefault(m => m.Id == tranDauId.Value);
+                if (currentMatch == null) return Forbid();
             }
             else if (matches.Count > 0)
             {
@@ -163,9 +174,10 @@ namespace API.Areas.TrongTai.Controllers
         [HttpPost]
         public async Task<IActionResult> SignReport([FromBody] SignReportRequestDto dto)
         {
-            if (dto == null || dto.TranDauId <= 0 || string.IsNullOrWhiteSpace(dto.SignerName))
+            if (dto == null || dto.TranDauId <= 0 || string.IsNullOrWhiteSpace(dto.SignerName) ||
+                !new[] { "referee", "secretary", "team1", "team2" }.Contains(dto.Role, StringComparer.OrdinalIgnoreCase))
             {
-                return Json(new { success = false, message = "Vui lòng nhập họ tên người ký xác nhận." });
+                return BadRequest(new { success = false, message = "Thông tin người ký hoặc vai trò ký không hợp lệ." });
             }
 
             var match = await _tranDauService.GetByIdAsync(dto.TranDauId);
@@ -173,6 +185,8 @@ namespace API.Areas.TrongTai.Controllers
             {
                 return Json(new { success = false, message = "Không tìm thấy trận đấu." });
             }
+
+            if (!await CanAccessMatchAsync(match)) return Forbid();
 
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
 
@@ -209,36 +223,13 @@ namespace API.Areas.TrongTai.Controllers
                 {
                     signerName = dto.SignerName.Trim(),
                     role = dto.Role,
-                    signedAt = DateTime.Now
+                    signedAt = DateTime.UtcNow
                 };
                 dict["signatures"] = sigs;
 
                 string newJson = JsonSerializer.Serialize(dict);
 
-                var updateDto = new CreateUpdateTranDauDto
-                {
-                    GiaiDauMonTheThaoId = match.GiaiDauMonTheThaoId,
-                    VongDauId = match.VongDauId,
-                    BangDauId = match.BangDauId,
-                    SanDauId = match.SanDauId,
-                    SoTran = match.SoTran,
-                    TenTran = match.TenTran,
-                    ThoiGianDuKien = match.ThoiGianDuKien,
-                    ThoiGianBatDau = match.ThoiGianBatDau,
-                    ThoiGianKetThuc = match.ThoiGianKetThuc,
-                    TrangThai = match.TrangThai,
-                    GhiChu = newJson,
-                    Doi1DangKyId = match.Doi1DangKyId,
-                    Doi2DangKyId = match.Doi2DangKyId,
-                    DanhSachTrongTai = match.DanhSachTrongTai.Select(t => new AssignTrongTaiDto
-                    {
-                        TrongTaiId = t.TrongTaiId,
-                        VaiTro = t.VaiTro,
-                        GhiChu = t.GhiChu
-                    }).ToList()
-                };
-
-                await _tranDauService.UpdateAsync(dto.TranDauId, updateDto, username);
+                await _tranDauService.UpdateMatchReportAsync(dto.TranDauId, newJson, username);
                 return Json(new { success = true, message = $"Đã ký xác nhận biên bản trận đấu với vai trò [{dto.Role}] thành công!" });
             }
             catch (Exception ex)

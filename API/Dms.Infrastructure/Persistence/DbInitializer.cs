@@ -611,6 +611,7 @@ WHERE LoaiThiDau IS NULL OR LoaiThiDau = '';
                                 CoHiepPhu = false,
                                 CoPenalty = true,
                                 SoLuotPenaltyMoiDoi = 5,
+                                CoThePhat = true,
                                 DiemThang = 3,
                                 DiemHoa = 1,
                                 DiemThua = 0,

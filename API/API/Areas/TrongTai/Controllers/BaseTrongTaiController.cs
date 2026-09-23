@@ -18,13 +18,16 @@ namespace API.Areas.TrongTai.Controllers
     {
         protected readonly UserManager<ApplicationUser> _userManager;
         protected readonly ITrongTaiService _trongTaiService;
+        protected readonly ITranDauService _tranDauService;
 
         public BaseTrongTaiController(
             UserManager<ApplicationUser> userManager,
-            ITrongTaiService trongTaiService)
+            ITrongTaiService trongTaiService,
+            ITranDauService tranDauService)
         {
             _userManager = userManager;
             _trongTaiService = trongTaiService;
+            _tranDauService = tranDauService;
         }
 
         /// <summary>
@@ -64,8 +67,7 @@ namespace API.Areas.TrongTai.Controllers
                 else if (user != null)
                 {
                     var match = allReferees.FirstOrDefault(r =>
-                        (!string.IsNullOrEmpty(user.FullName) && r.HoTen.Contains(user.FullName, StringComparison.OrdinalIgnoreCase)) ||
-                        (!string.IsNullOrEmpty(user.UserName) && r.Ma.Equals(user.UserName, StringComparison.OrdinalIgnoreCase)));
+                        !string.IsNullOrEmpty(user.UserName) && string.Equals(r.Ma, user.UserName, StringComparison.OrdinalIgnoreCase));
 
                     if (match != null)
                     {
@@ -80,13 +82,30 @@ namespace API.Areas.TrongTai.Controllers
                 current = allReferees.FirstOrDefault(r => r.Id == targetId.Value);
             }
 
-            if (current == null && allReferees.Count > 0)
-            {
-                current = allReferees[0];
-            }
-
             ViewBag.CurrentReferee = current;
             return current;
+        }
+
+        /// <summary>
+        /// Determines whether the current user may access a match. Referees must have an explicit assignment;
+        /// administrators and managers can access all matches for support and oversight.
+        /// </summary>
+        /// <param name="match">The match whose access should be checked.</param>
+        /// <returns>True when the user is elevated or assigned to the match; otherwise false.</returns>
+        protected async Task<bool> CanAccessMatchAsync(TranDauDto? match)
+        {
+            if (match == null) return false;
+            var currentReferee = await GetCurrentRefereeAsync();
+            return await _tranDauService.CanAccessMatchAsync(match.Id, currentReferee?.Id, CanBrowseAllMatches());
+        }
+
+        /// <summary>
+        /// Indicates whether the current user may browse every match in a tournament.
+        /// </summary>
+        /// <returns>True for administrators and managers; otherwise false.</returns>
+        protected bool CanBrowseAllMatches()
+        {
+            return User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager);
         }
 
         [HttpPost]

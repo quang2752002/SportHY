@@ -33,6 +33,7 @@ namespace Dms.Application.DTOs
         public bool CoPenalty { get; set; } = false;
         public int? SoLuotPenaltyMoiDoi { get; set; } = 5;
         public bool CoTieBreak { get; set; } = false;
+        public bool CoThePhat { get; set; } = false;
 
         public decimal DiemThang { get; set; } = 3;
         public decimal DiemHoa { get; set; } = 1;
@@ -45,6 +46,9 @@ namespace Dms.Application.DTOs
         public string? LoaiDoThanhTich { get; set; } = "ThoiGian";
         public string? DonViThanhTich { get; set; } = "giay";
         public string? TieuChiXepHangThanhTich { get; set; } = "CangNhoCangTot";
+        public bool ChoPhepDongHangThanhTich { get; set; } = true;
+        public string? TenTieuChiPhuThanhTich { get; set; } = "Chỉ số phụ";
+        public bool TieuChiPhuCangNhoCangTot { get; set; } = true;
         public int SoVdvMoiLuotThi { get; set; } = 8;
         public string? QuyCachTienVaoChungKet { get; set; } = "TopNToanVong";
         public int? SoVdvVaoChungKet { get; set; } = 8;
@@ -78,6 +82,7 @@ namespace Dms.Application.DTOs
         public bool CoPenalty { get; set; } = false;
         public int? SoLuotPenaltyMoiDoi { get; set; } = 5;
         public bool CoTieBreak { get; set; } = false;
+        public bool CoThePhat { get; set; } = false;
 
         public decimal DiemThang { get; set; } = 3;
         public decimal DiemHoa { get; set; } = 1;
@@ -89,6 +94,9 @@ namespace Dms.Application.DTOs
         public string? LoaiDoThanhTich { get; set; } = "ThoiGian";
         public string? DonViThanhTich { get; set; } = "giay";
         public string? TieuChiXepHangThanhTich { get; set; } = "CangNhoCangTot";
+        public bool ChoPhepDongHangThanhTich { get; set; } = true;
+        public string? TenTieuChiPhuThanhTich { get; set; } = "Chỉ số phụ";
+        public bool TieuChiPhuCangNhoCangTot { get; set; } = true;
         public int SoVdvMoiLuotThi { get; set; } = 8;
         public string? QuyCachTienVaoChungKet { get; set; } = "TopNToanVong";
         public int? SoVdvVaoChungKet { get; set; } = 8;
@@ -106,6 +114,8 @@ namespace Dms.Application.DTOs
         public int Score2 { get; set; }
         public int? PenaltyScore1 { get; set; }
         public int? PenaltyScore2 { get; set; }
+        public int? ExtraTimeScore1 { get; set; }
+        public int? ExtraTimeScore2 { get; set; }
         public string? Winner { get; set; } // "1", "2", "draw"
         public string TrangThai { get; set; } = "KetThuc";
         public List<SetScoreDto>? SetScores { get; set; }
@@ -123,6 +133,7 @@ namespace Dms.Application.DTOs
         public int DangKyThiDauId { get; set; }
         public int SoLane { get; set; }
         public decimal? GiaTri { get; set; } // Giây hoặc mét
+        public decimal? GiaTriPhu { get; set; }
         public string? KetQuaText { get; set; } // "10.45s", "01:02.34", "DNS", "DNF", "DQ"
         public string TrangThai { get; set; } = "ThamGia"; // "ThamGia", "DNS", "DNF", "DQ"
         public int? XepHang { get; set; }

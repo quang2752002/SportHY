@@ -360,6 +360,21 @@ namespace Dms.Application.DTOs
         public List<AssignTrongTaiDto>? DanhSachTrongTai { get; set; }
     }
 
+    public class UpdateMatchProgressDto
+    {
+        public int Score1 { get; set; }
+        public int Score2 { get; set; }
+        public int? PenaltyScore1 { get; set; }
+        public int? PenaltyScore2 { get; set; }
+        public int? ExtraTimeScore1 { get; set; }
+        public int? ExtraTimeScore2 { get; set; }
+        public string TrangThai { get; set; } = "ChuaDau";
+        public string? GhiChu { get; set; }
+        public bool IsHoa { get; set; }
+        public int? DoiThangDangKyId { get; set; }
+        public int? DoiThuaDangKyId { get; set; }
+    }
+
     // ==================== AUTO SCHEDULE & CONFLICT CHECK DTOs ====================
     public class AutoScheduleRequestDto
     {

@@ -91,6 +91,49 @@ namespace Dms.Application.Interfaces
             DateTime? ngay = null,
             int? danhMucMonTheThaoId = null);
 
+        /// <summary>
+        /// Lấy các trận đấu mà trọng tài được phân công, hoặc toàn bộ trận khi người gọi có quyền giám sát.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu cần lọc; null để không lọc theo giải.</param>
+        /// <param name="trongTaiId">ID trọng tài; bắt buộc khi không cho phép xem toàn bộ.</param>
+        /// <param name="allowAllMatches">Cho phép trả về toàn bộ trận đấu của giải.</param>
+        /// <returns>Danh sách trận đấu phù hợp với phạm vi truy cập.</returns>
+        Task<IEnumerable<TranDauDto>> GetAccessibleMatchesAsync(int? giaiDauId, int? trongTaiId, bool allowAllMatches);
+
+        /// <summary>
+        /// Kiểm tra người gọi có thể truy cập trận dựa trên quyền giám sát hoặc phân công trọng tài thực tế.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
+        /// <param name="trongTaiId">ID trọng tài đang đăng nhập; null nếu không gắn hồ sơ trọng tài.</param>
+        /// <param name="allowAllMatches">Cho phép bỏ qua kiểm tra phân công cho quản lý hoặc quản trị viên.</param>
+        /// <returns>True nếu có quyền truy cập; ngược lại false.</returns>
+        Task<bool> CanAccessMatchAsync(int tranDauId, int? trongTaiId, bool allowAllMatches);
+
+        /// <summary>
+        /// Lấy kết quả đã lưu của từng thành phần trong một lượt thi thành tích để mở lại và chỉnh sửa.
+        /// </summary>
+        /// <param name="tranDauId">ID lượt thi cần lấy kết quả.</param>
+        /// <returns>Danh sách làn, trạng thái, thành tích chính, chỉ số phụ và thứ hạng đã lưu.</returns>
+        Task<List<HeatParticipantResultDto>> GetHeatResultsByMatchIdAsync(int tranDauId);
+
+        /// <summary>
+        /// Lưu tỷ số và tiến độ trận đấu mà không thay đổi danh sách đội hoặc phân công trọng tài.
+        /// </summary>
+        /// <param name="id">ID trận đấu cần cập nhật.</param>
+        /// <param name="dto">Tỷ số, trạng thái, ghi chú và kết quả cần lưu.</param>
+        /// <param name="updatedBy">Tài khoản thực hiện cập nhật.</param>
+        /// <returns>True nếu trận được cập nhật; false nếu không tìm thấy trận.</returns>
+        Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null);
+
+        /// <summary>
+        /// Cập nhật nội dung biên bản mà không thay đổi kết quả, thời gian, đội hoặc phân công trận đấu.
+        /// </summary>
+        /// <param name="id">ID trận đấu có biên bản cần cập nhật.</param>
+        /// <param name="ghiChu">Nội dung biên bản đã tuần tự hóa.</param>
+        /// <param name="updatedBy">Tài khoản thực hiện cập nhật.</param>
+        /// <returns>True nếu biên bản được cập nhật; false nếu không tìm thấy trận.</returns>
+        Task<bool> UpdateMatchReportAsync(int id, string ghiChu, string? updatedBy = null);
+
         Task<TranDauDto?> GetByIdAsync(int id);
         Task<TranDauDto> CreateAsync(CreateUpdateTranDauDto dto, string? createdBy = null);
         Task<TranDauDto?> UpdateAsync(int id, CreateUpdateTranDauDto dto, string? updatedBy = null);
