@@ -131,13 +131,18 @@ namespace Dms.Application.Services
 
             // Lấy thêm thông tin DangKyThiDau và TrongTai để điền tên
             var allDkIds = tranList.SelectMany(t => t.ThanhPhanTranDaus.Where(tp => tp.IsDeleted != true).Select(tp => tp.DangKyThiDauId)).Distinct().ToList();
-            var dangKyMap = (await _unitOfWork.DangKyThiDaus.GetPagedAsync(
+            var dangKyList = (await _unitOfWork.DangKyThiDaus.GetPagedAsync(
                 1, 2000,
                 predicate: d => allDkIds.Contains(d.Id),
                 orderBy: null,
                 d => d.Doi!,
-                d => d.Doi!.DonVi!
-            )).Items.ToDictionary(d => d.Id);
+                d => d.Doi!.DonVi!,
+                d => d.ChiTietDangKyThiDaus
+            )).Items.ToList();
+            var dangKyMap = dangKyList.ToDictionary(d => d.Id);
+
+            var allVdvIds = dangKyList.SelectMany(d => d.ChiTietDangKyThiDaus.Where(ct => ct.IsDeleted != true).Select(ct => ct.VanDongVienId)).Distinct().ToList();
+            var vdvMap = (await _unitOfWork.VanDongViens.FindAsync(v => allVdvIds.Contains(v.Id))).ToDictionary(v => v.Id, v => v.HoTen);
 
             var allTtIds = tranList.SelectMany(t => t.PhanCongTrongTais.Where(pc => pc.IsDeleted != true).Select(pc => pc.TrongTaiId)).Distinct().ToList();
             var trongTaiMap = (await _unitOfWork.TrongTais.FindAsync(tt => allTtIds.Contains(tt.Id))).ToDictionary(tt => tt.Id);
@@ -147,18 +152,47 @@ namespace Dms.Application.Services
             {
                 var tpList = t.ThanhPhanTranDaus.Where(tp => tp.IsDeleted != true).OrderBy(tp => tp.ViTri ?? 1).ToList();
                 var pcList = t.PhanCongTrongTais.Where(pc => pc.IsDeleted != true).ToList();
+                bool laMonDongDoi = t.GiaiDauMonTheThao?.MonTheThao?.LaMonDongDoi ?? false;
 
                 var thanhPhanDtos = new List<ThanhPhanTranDauItemDto>();
                 foreach (var tp in tpList)
                 {
                     dangKyMap.TryGetValue(tp.DangKyThiDauId, out var dk);
+                    string displayName;
+                    if (laMonDongDoi)
+                    {
+                        displayName = (!string.IsNullOrWhiteSpace(dk?.Doi?.Ten) && !dk.Doi.Ten.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                            ? dk.Doi.Ten
+                            : (!string.IsNullOrWhiteSpace(dk?.TenDangKy) && !dk.TenDangKy.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase) ? dk.TenDangKy : $"Đội #{tp.DangKyThiDauId}");
+                    }
+                    else
+                    {
+                        var firstVdvId = dk?.ChiTietDangKyThiDaus.FirstOrDefault(ct => ct.IsDeleted != true)?.VanDongVienId;
+                        if (firstVdvId.HasValue && vdvMap.TryGetValue(firstVdvId.Value, out var vdvName))
+                        {
+                            displayName = vdvName;
+                        }
+                        else if (!string.IsNullOrWhiteSpace(dk?.Doi?.Ten) && !dk.Doi.Ten.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                        {
+                            displayName = dk.Doi.Ten;
+                        }
+                        else if (!string.IsNullOrWhiteSpace(dk?.TenDangKy) && !dk.TenDangKy.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                        {
+                            displayName = dk.TenDangKy;
+                        }
+                        else
+                        {
+                            displayName = $"VĐV #{tp.DangKyThiDauId}";
+                        }
+                    }
+
                     thanhPhanDtos.Add(new ThanhPhanTranDauItemDto
                     {
                         Id = tp.Id,
                         TranDauId = tp.TranDauId,
                         DangKyThiDauId = tp.DangKyThiDauId,
-                        TenDangKy = dk?.TenDangKy ?? dk?.SoDangKy,
-                        TenDoi = dk?.Doi?.Ten ?? dk?.TenDangKy,
+                        TenDangKy = displayName,
+                        TenDoi = displayName,
                         TenDonVi = dk?.Doi?.DonVi?.Ten,
                         SoLane = tp.SoLane,
                         ViTri = tp.ViTri,
@@ -2703,6 +2737,7 @@ namespace Dms.Application.Services
                 var mon = await _unitOfWork.MonTheThaos.GetByIdAsync(gdm.MonTheThaoId);
                 result.TenMonTheThao = mon?.Ten;
                 result.HinhThucThiDau = mon?.HinhThucThiDau.ToString();
+                result.LaMonDongDoi = mon?.LaMonDongDoi ?? false;
             }
 
             // 2. Lấy danh sách Vòng đấu
@@ -2799,10 +2834,48 @@ namespace Dms.Application.Services
                 int? bId = activeTvBang?.BangDauId;
                 string? bName = bId.HasValue ? bangMap.GetValueOrDefault(bId.Value) : null;
 
+                bool laMonDongDoi = result.LaMonDongDoi;
+                string displayTitle;
+                if (laMonDongDoi)
+                {
+                    if (!string.IsNullOrWhiteSpace(d.Doi?.Ten) && !d.Doi.Ten.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayTitle = d.Doi.Ten;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(d.TenDangKy) && !d.TenDangKy.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayTitle = d.TenDangKy;
+                    }
+                    else
+                    {
+                        displayTitle = $"Đội #{d.Id}";
+                    }
+                }
+                else
+                {
+                    var firstVdv = vdvNames.FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(firstVdv))
+                    {
+                        displayTitle = firstVdv;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(d.Doi?.Ten) && !d.Doi.Ten.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayTitle = d.Doi.Ten;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(d.TenDangKy) && !d.TenDangKy.StartsWith("Tham gia -", StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayTitle = d.TenDangKy;
+                    }
+                    else
+                    {
+                        displayTitle = $"VĐV #{d.Id}";
+                    }
+                }
+
                 var teamDto = new ManualPairingTeamDto
                 {
                     DangKyThiDauId = d.Id,
-                    TenDangKy = !string.IsNullOrWhiteSpace(d.TenDangKy) ? d.TenDangKy : (d.Doi?.Ten ?? $"Đội #{d.Id}"),
+                    TenDangKy = displayTitle,
                     TenDoi = d.Doi?.Ten,
                     TenDonVi = d.Doi?.DonVi?.Ten,
                     SoDangKy = d.SoDangKy,

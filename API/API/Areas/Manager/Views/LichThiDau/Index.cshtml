@@ -1117,6 +1117,7 @@
                             giaiDauMonTheThaoId: res.data.giaiDauMonTheThaoId,
                             tenMonTheThao: res.data.tenMonTheThao,
                             hinhThucThiDau: res.data.hinhThucThiDau,
+                            laMonDongDoi: res.data.laMonDongDoi,
                             vongDaus: res.data.vongDaus || [],
                             bangDaus: res.data.bangDaus || [],
                             sanDaus: res.data.sanDaus || [],
@@ -1184,6 +1185,23 @@
             $('#mainBangDauSelect').html(opts);
         }
 
+        function getParticipantDisplayName(team, isModal = false, fallback = 'Chưa xếp') {
+            if (!team) return fallback;
+            const isTeamSport = isModal ? (modalData && modalData.laMonDongDoi) : (mainViewData && mainViewData.laMonDongDoi);
+            if (isTeamSport) {
+                // Môn đồng đội: Ưu tiên tên đội
+                if (team.tenDoi && !team.tenDoi.startsWith('Tham gia -')) return team.tenDoi;
+                if (team.tenDangKy && !team.tenDangKy.startsWith('Tham gia -')) return team.tenDangKy;
+                return fallback;
+            } else {
+                // Môn cá nhân: Ưu tiên tên VĐV
+                if (team.vanDongVienNames && team.vanDongVienNames.length > 0 && team.vanDongVienNames[0]) return team.vanDongVienNames[0];
+                if (team.tenDangKy && !team.tenDangKy.startsWith('Tham gia -')) return team.tenDangKy;
+                if (team.tenDoi && !team.tenDoi.startsWith('Tham gia -')) return team.tenDoi;
+                return fallback;
+            }
+        }
+
         function renderMainViewOnlyUI() {
             renderMainUnpairedTeams();
             renderMainMatchesContainer();
@@ -1207,7 +1225,7 @@
             }
 
             mainViewData.unpairedTeams.forEach(team => {
-                const teamName = escapeHtml(team.tenDangKy || team.tenDoi || `Đội #${team.dangKyThiDauId}`);
+                const teamName = escapeHtml(getParticipantDisplayName(team, false, `Đội #${team.dangKyThiDauId}`));
                 const unitName = team.tenDonVi ? escapeHtml(team.tenDonVi) : 'Tự do';
                 const vdvList = (team.vanDongVienNames && team.vanDongVienNames.length > 0)
                     ? `<div class="text-muted small mt-1" style="font-size: 0.75rem;"><i class="fa-solid fa-user me-1"></i>${escapeHtml(team.vanDongVienNames.slice(0, 2).join(', '))}${team.vanDongVienNames.length > 2 ? ` (+${team.vanDongVienNames.length - 2})` : ''}</div>`
@@ -1277,7 +1295,7 @@
                 // Slot 1 Display (Chỉ xem)
                 let slot1Html = '';
                 if (pair.doi1) {
-                    const d1Name = escapeHtml(pair.doi1.tenDangKy || pair.doi1.tenDoi || `Đội #${pair.doi1.dangKyThiDauId}`);
+                    const d1Name = escapeHtml(getParticipantDisplayName(pair.doi1, false, `Đội #${pair.doi1.dangKyThiDauId}`));
                     const d1Unit = pair.doi1.tenDonVi ? escapeHtml(pair.doi1.tenDonVi) : 'Tự do';
                     slot1Html = `
                         <div class="slot-team-view">
@@ -1300,7 +1318,7 @@
                 // Slot 2 Display (Chỉ xem)
                 let slot2Html = '';
                 if (pair.doi2) {
-                    const d2Name = escapeHtml(pair.doi2.tenDangKy || pair.doi2.tenDoi || `Đội #${pair.doi2.dangKyThiDauId}`);
+                    const d2Name = escapeHtml(getParticipantDisplayName(pair.doi2, false, `Đội #${pair.doi2.dangKyThiDauId}`));
                     const d2Unit = pair.doi2.tenDonVi ? escapeHtml(pair.doi2.tenDonVi) : 'Tự do';
                     slot2Html = `
                         <div class="slot-team-view">
@@ -1341,7 +1359,7 @@
                     if (pair.danhSachVdv && pair.danhSachVdv.length > 0) {
                         let lanesHtml = '';
                         pair.danhSachVdv.forEach(vdv => {
-                            const vdvName = escapeHtml(vdv.tenDangKy || vdv.tenDoi || 'VĐV');
+                            const vdvName = escapeHtml(getParticipantDisplayName(vdv, false, 'VĐV'));
                             const unitName = vdv.tenDonVi ? escapeHtml(vdv.tenDonVi) : 'Tự do';
                             const laneNo = vdv.soLane || vdv.viTri || '-';
                             lanesHtml += `
@@ -1559,7 +1577,7 @@
                     // Đội 1
                     let team1Html = '';
                     if (pair.doi1) {
-                        const d1Name = escapeHtml(pair.doi1.tenDangKy || pair.doi1.tenDoi || 'Đội 1');
+                        const d1Name = escapeHtml(getParticipantDisplayName(pair.doi1, false, 'Đội 1'));
                         const d1Unit = pair.doi1.tenDonVi ? escapeHtml(pair.doi1.tenDonVi) : 'Tự do';
                         const winIcon = isDoi1Winner ? '<i class="fa-solid fa-crown text-warning me-1" title="Thắng trận"></i>' : '';
                         team1Html = `
@@ -1586,7 +1604,7 @@
                     // Đội 2
                     let team2Html = '';
                     if (pair.doi2) {
-                        const d2Name = escapeHtml(pair.doi2.tenDangKy || pair.doi2.tenDoi || 'Đội 2');
+                        const d2Name = escapeHtml(getParticipantDisplayName(pair.doi2, false, 'Đội 2'));
                         const d2Unit = pair.doi2.tenDonVi ? escapeHtml(pair.doi2.tenDonVi) : 'Tự do';
                         const winIcon = isDoi2Winner ? '<i class="fa-solid fa-crown text-warning me-1" title="Thắng trận"></i>' : '';
                         team2Html = `
@@ -2105,6 +2123,7 @@
                     if (res.success && res.data) {
                         modalData = {
                             giaiDauMonTheThaoId: res.data.giaiDauMonTheThaoId,
+                            laMonDongDoi: res.data.laMonDongDoi,
                             vongDaus: res.data.vongDaus || [],
                             bangDaus: res.data.bangDaus || [],
                             sanDaus: res.data.sanDaus || [],
@@ -2198,7 +2217,7 @@
             }
 
             modalData.unpairedTeams.forEach(team => {
-                const teamName = escapeHtml(team.tenDangKy || team.tenDoi || `Đội #${team.dangKyThiDauId}`);
+                const teamName = escapeHtml(getParticipantDisplayName(team, true, `Đội #${team.dangKyThiDauId}`));
                 const unitName = team.tenDonVi ? escapeHtml(team.tenDonVi) : 'Tự do';
                 const vdvList = (team.vanDongVienNames && team.vanDongVienNames.length > 0)
                     ? `<div class="text-muted small mt-1" style="font-size: 0.75rem;"><i class="fa-solid fa-user me-1"></i>${escapeHtml(team.vanDongVienNames.slice(0, 2).join(', '))}${team.vanDongVienNames.length > 2 ? ` (+${team.vanDongVienNames.length - 2})` : ''}</div>`
@@ -2281,7 +2300,7 @@
                 // Render Slot 1 trong Modal
                 let slot1Html = '';
                 if (pair.doi1) {
-                    const d1Name = escapeHtml(pair.doi1.tenDangKy || pair.doi1.tenDoi || `Đội #${pair.doi1.dangKyThiDauId}`);
+                    const d1Name = escapeHtml(getParticipantDisplayName(pair.doi1, true, `Đội #${pair.doi1.dangKyThiDauId}`));
                     const d1Unit = pair.doi1.tenDonVi ? escapeHtml(pair.doi1.tenDonVi) : 'Tự do';
                     slot1Html = `
                         <div class="slot-team-assigned"
@@ -2312,7 +2331,7 @@
                 // Render Slot 2 trong Modal
                 let slot2Html = '';
                 if (pair.doi2) {
-                    const d2Name = escapeHtml(pair.doi2.tenDangKy || pair.doi2.tenDoi || `Đội #${pair.doi2.dangKyThiDauId}`);
+                    const d2Name = escapeHtml(getParticipantDisplayName(pair.doi2, true, `Đội #${pair.doi2.dangKyThiDauId}`));
                     const d2Unit = pair.doi2.tenDonVi ? escapeHtml(pair.doi2.tenDonVi) : 'Tự do';
                     slot2Html = `
                         <div class="slot-team-assigned"
