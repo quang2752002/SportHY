@@ -330,6 +330,23 @@
                     </select>
                 </div>
 
+                <div id="refereeChangePreview" class="border rounded-3 p-3 mb-3 bg-light">
+                    <div class="row align-items-center g-2">
+                        <div class="col-5">
+                            <div class="text-muted small">Trọng tài cũ</div>
+                            <div id="oldRefereeName" class="fw-semibold text-secondary text-truncate">Chưa gán</div>
+                        </div>
+                        <div class="col-2 text-center">
+                            <i class="fa-solid fa-arrow-right text-primary"></i>
+                        </div>
+                        <div class="col-5 text-end">
+                            <div class="text-muted small">Trọng tài mới</div>
+                            <div id="newRefereeName" class="fw-semibold text-primary text-truncate">Chưa gán</div>
+                        </div>
+                    </div>
+                    <div id="refereeChangeStatus" class="small text-muted text-center mt-2"></div>
+                </div>
+
                 <div id="conflictAlertBox" class="alert alert-danger d-none border-danger">
                     <div class="d-flex gap-2">
                         <i class="fa-solid fa-triangle-exclamation fs-4 text-danger flex-shrink-0 mt-1"></i>
@@ -360,6 +377,7 @@
         var selectedDate = '@(ViewBag.SelectedDate ?? "")';
         var draftChanges = {};
         var refereeFilterStorageKey = 'phanCongRefereeFilter_' + giaiDauId;
+        var conflictRequestToken = 0;
         var currentWarningData = {
             isOverloaded: false,
             overloadMessage: '',
@@ -675,18 +693,58 @@
             new bootstrap.Modal(document.getElementById('modalAssignReferee')).show();
         }
 
+        function updateRefereeChangePreview() {
+            var tranId = parseInt($('#assignTranDauId').val());
+            var vaiTro = $('#assignVaiTro').val();
+            var current = getEffectiveSlot(tranId, vaiTro);
+            var newId = $('#selectReferee').val() ? parseInt($('#selectReferee').val()) : null;
+            var selectedText = $('#selectReferee option:selected').text() || '';
+            var newName = newId ? selectedText.split(' (')[0] : 'Hủy phân công';
+            var oldName = current.name || 'Chưa gán';
+            var changed = (current.id || null) !== newId;
+
+            $('#oldRefereeName').text(oldName);
+            $('#newRefereeName').text(newName);
+            $('#refereeChangeStatus')
+                .text(changed
+                    ? (newId ? 'Thay đổi này sẽ được lưu trong bản nháp.' : 'Vị trí này sẽ được hủy trong bản nháp.')
+                    : 'Chưa có thay đổi.')
+                .toggleClass('text-warning', changed)
+                .toggleClass('text-muted', !changed);
+            $('#refereeChangePreview')
+                .toggleClass('border-warning', changed)
+                .toggleClass('border-secondary', !changed);
+        }
+
         // Tự động quét trùng lịch và kiểm tra quá tải khi chọn trọng tài
         $('#selectReferee').on('change', function () {
             var refId = $(this).val();
             var tranId = $('#assignTranDauId').val();
+            var current = getEffectiveSlot(parseInt(tranId), $('#assignVaiTro').val());
+            var requestToken = ++conflictRequestToken;
 
-            if (!refId) {
+            updateRefereeChangePreview();
+
+            $('#conflictAlertBox').removeClass('alert-info').addClass('alert-danger');
+            $('#conflictAlertBox').removeClass('border-info').addClass('border-danger');
+
+            // Không cần cảnh báo khi giữ nguyên người đang được gán hoặc chọn hủy.
+            if (!refId || parseInt(refId) === current.id) {
                 $('#conflictAlertBox').addClass('d-none');
                 currentWarningData = { isOverloaded: false, overloadMessage: '', conflicts: [] };
+                $('#btnConfirmAssign').prop('disabled', false);
                 return;
             }
 
-            $.get('/TruongBanTrongTai/PhanCong/CheckConflict', { trongTaiId: refId, tranDauId: tranId }, function (res) {
+            // Báo ngay trong lúc chờ server kiểm tra để người dùng biết lựa chọn đang được xác thực.
+            $('#conflictDetailsText').html('<span class="text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i>Đang kiểm tra trùng lịch và quy tắc phân công...</span>');
+            $('#conflictAlertBox').removeClass('d-none');
+            $('#btnConfirmAssign').prop('disabled', true);
+
+            $.get('/TruongBanTrongTai/PhanCong/CheckConflict', { trongTaiId: refId, tranDauId: tranId })
+            .done(function (res) {
+                if (requestToken !== conflictRequestToken) return;
+
                 currentWarningData.isOverloaded = res.isOverloaded;
                 currentWarningData.overloadMessage = res.overloadMessage || '';
                 currentWarningData.conflicts = res.conflicts || [];
@@ -703,9 +761,11 @@
                     if (res.conflicts && res.conflicts.length > 0) {
                         html += '<div class="fw-semibold text-danger mb-1">Xung đột lịch trình / Thiếu đệm nghỉ:</div><ul class="mb-0 ps-3">';
                         res.conflicts.forEach(function (c) {
-                            var typeBadge = c.loaiXungDot === 'TrungGio' 
-                                ? '<span class="badge bg-danger">Trùng giờ</span>' 
-                                : `<span class="badge bg-warning text-dark">Thiếu đệm nghỉ (${c.diffMinutes}/${c.requiredRestMinutes}p)</span>`;
+                            var typeBadge = c.loaiXungDot === 'TrungGio'
+                                ? '<span class="badge bg-danger">Trùng giờ</span>'
+                                : c.loaiXungDot === 'TrungTran'
+                                    ? '<span class="badge bg-danger">Trùng trong trận</span>'
+                                    : `<span class="badge bg-warning text-dark">Thiếu đệm nghỉ (${c.diffMinutes}/${c.requiredRestMinutes}p)</span>`;
                             html += `<li class="mb-1">
                                         ${typeBadge} <b>${c.tenMon}</b> - ${c.tenTran} (${c.vaiTro}) lúc <b>${c.thoiGian}</b>.
                                         <div class="text-muted small">${c.moTa || ''}</div>
@@ -718,6 +778,14 @@
                 } else {
                     $('#conflictAlertBox').addClass('d-none');
                 }
+                $('#btnConfirmAssign').prop('disabled', false);
+            })
+            .fail(function () {
+                if (requestToken !== conflictRequestToken) return;
+                currentWarningData = { isOverloaded: false, overloadMessage: '', conflicts: [] };
+                $('#conflictDetailsText').html('<span class="text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>Không thể kiểm tra quy tắc lúc này. Vui lòng thử lại.</span>');
+                $('#conflictAlertBox').removeClass('d-none');
+                $('#btnConfirmAssign').prop('disabled', true);
             });
         });
 

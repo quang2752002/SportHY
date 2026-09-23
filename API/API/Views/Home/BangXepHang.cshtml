@@ -25,13 +25,17 @@
             background: #f1f5f9;
             border-radius: 9999px;
             padding: 4px;
-            display: inline-flex;
+            display: grid;
+            grid-template-columns: repeat(3, 44px);
+            width: max-content;
             gap: 4px;
-            flex-wrap: wrap;
         }
         .view-mode-btn {
             border-radius: 9999px;
-            padding: 7px 18px;
+            position: relative;
+            width: 44px;
+            height: 44px;
+            padding: 0;
             font-size: 0.88rem;
             font-weight: 600;
             border: none;
@@ -41,7 +45,36 @@
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            min-width: 0;
+        }
+        .view-mode-label,
+        .view-mode-count {
+            display: none;
+        }
+        .view-mode-btn::after {
+            content: attr(data-label);
+            position: absolute;
+            z-index: 20;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translate(-50%, -4px);
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            padding: 6px 9px;
+            border-radius: 0.5rem;
+            background: #0f172a;
+            color: #ffffff;
+            font-size: 0.76rem;
+            font-weight: 600;
+            box-shadow: 0 5px 14px rgba(15, 23, 42, 0.2);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .view-mode-btn:hover::after,
+        .view-mode-btn:focus-visible::after {
+            opacity: 1;
+            transform: translate(-50%, 0);
         }
         .view-mode-btn:hover {
             color: #ea580c;
@@ -113,6 +146,21 @@
             border: 2px solid #fdba74;
             box-shadow: 0 10px 30px rgba(217, 119, 6, 0.15);
         }
+        @@media (min-width: 768px) {
+            #podiumContainer {
+                padding-top: 48px;
+            }
+
+            .podium-card.podium-gold {
+                transform: translateY(-48px) scale(1.03);
+                z-index: 2;
+            }
+
+            .podium-card.podium-gold:hover {
+                transform: translateY(-53px) scale(1.03);
+            }
+        }
+
         .podium-rank-badge {
             width: 54px;
             height: 54px;
@@ -144,6 +192,24 @@
             border: 1px solid #e2e8f0;
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        #mainMedalTable tbody tr.rank-row-gold > *,
+        #mainMedalTable.table-hover > tbody > tr.rank-row-gold:hover > * {
+            --bs-table-bg: #fffdf3;
+            --bs-table-bg-type: #fffdf3;
+            --bs-table-bg-state: #fff8df;
+        }
+        #mainMedalTable tbody tr.rank-row-silver > *,
+        #mainMedalTable.table-hover > tbody > tr.rank-row-silver:hover > * {
+            --bs-table-bg: #f8fafc;
+            --bs-table-bg-type: #f8fafc;
+            --bs-table-bg-state: #f1f5f9;
+        }
+        #mainMedalTable tbody tr.rank-row-bronze > *,
+        #mainMedalTable.table-hover > tbody > tr.rank-row-bronze:hover > * {
+            --bs-table-bg: #fff8f1;
+            --bs-table-bg-type: #fff8f1;
+            --bs-table-bg-state: #fff0e2;
         }
         .unit-avatar-circle {
             width: 38px;
@@ -239,6 +305,39 @@
             border-bottom: 1px solid #f1f5f9;
             background: #fafafa;
         }
+        .category-ranking-footer {
+            min-height: 50px;
+            padding: 0.45rem 0.75rem;
+        }
+        .ranking-footer-action {
+            width: 36px;
+            height: 34px;
+            padding: 0 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+        }
+        .ranking-footer-action-label {
+            max-width: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-width 0.2s ease, opacity 0.15s ease, margin 0.2s ease;
+        }
+        .ranking-footer-action:hover,
+        .ranking-footer-action:focus-visible {
+            width: 174px;
+            padding-inline: 10px;
+        }
+        .ranking-footer-action:hover .ranking-footer-action-label,
+        .ranking-footer-action:focus-visible .ranking-footer-action-label {
+            max-width: 140px;
+            opacity: 1;
+            margin-right: 7px;
+        }
 
         /* Filter Toolbar Card (Bộ lọc đưa xuống dưới) */
         .filter-toolbar-card {
@@ -273,10 +372,40 @@
             background-color: #ffffff;
             color: #0f172a;
         }
+        .filter-toolbar-card .filter-select,
+        .filter-toolbar-card .active-filter-badge,
+        .filter-toolbar-card .filter-reload-btn {
+            height: 40px;
+            min-height: 40px;
+            box-sizing: border-box;
+        }
+        .filter-toolbar-card .active-filter-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 0.75rem;
+            border-radius: 0.65rem;
+            line-height: 1;
+        }
+        .filter-toolbar-card .filter-reload-btn {
+            border-radius: 0.65rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
         .filter-select:focus {
             border-color: #ea580c;
             box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
             outline: none;
+        }
+
+        /* Bộ chọn chỉ giữ icon, căn giữa và luôn nằm trên một hàng. */
+        @@media (max-width: 991.98px) {
+            .page-header-card > .d-flex {
+                align-items: center !important;
+            }
+
+            .view-mode-pill {
+                flex-shrink: 0;
+            }
         }
     </style>
 }
@@ -297,19 +426,19 @@
 
             <!-- Tabs Chế Độ Xem -->
             <div class="view-mode-pill">
-                <button type="button" class="view-mode-btn active" id="tabBtnOverall" onclick="switchViewTab('overall')">
+                <button type="button" class="view-mode-btn active" id="tabBtnOverall" data-label="Bảng Tổng Sắp" aria-label="Bảng Tổng Sắp" onclick="switchViewTab('overall')">
                     <i class="fa-solid fa-trophy"></i>
-                    <span>Bảng Tổng Sắp</span>
+                    <span class="view-mode-label">Bảng Tổng Sắp</span>
                 </button>
-                <button type="button" class="view-mode-btn" id="tabBtnCategory" onclick="switchViewTab('category')">
+                <button type="button" class="view-mode-btn" id="tabBtnCategory" data-label="Theo Danh Mục Môn" aria-label="Theo Danh Mục Môn" onclick="switchViewTab('category')">
                     <i class="fa-solid fa-folder-tree"></i>
-                    <span>Theo Danh Mục Môn</span>
-                    <span class="badge rounded-pill bg-light text-secondary border ms-1" id="badgeCountCategories">0</span>
+                    <span class="view-mode-label">Theo Danh Mục Môn</span>
+                    <span class="view-mode-count badge rounded-pill bg-light text-secondary border ms-1" id="badgeCountCategories">0</span>
                 </button>
-                <button type="button" class="view-mode-btn" id="tabBtnSport" onclick="switchViewTab('sport')">
+                <button type="button" class="view-mode-btn" id="tabBtnSport" data-label="Theo Môn Thể Thao" aria-label="Theo Môn Thể Thao" onclick="switchViewTab('sport')">
                     <i class="fa-solid fa-medal"></i>
-                    <span>Theo Môn Thể Thao</span>
-                    <span class="badge rounded-pill bg-light text-secondary border ms-1" id="badgeCountSports">0</span>
+                    <span class="view-mode-label">Theo Môn Thể Thao</span>
+                    <span class="view-mode-count badge rounded-pill bg-light text-secondary border ms-1" id="badgeCountSports">0</span>
                 </button>
             </div>
         </div>
@@ -383,9 +512,9 @@
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="d-flex align-items-center justify-content-between justify-content-lg-end gap-2">
                     <div class="text-truncate" style="max-width: 180px;">
-                        <span class="badge bg-light text-dark border px-2.5 py-2 text-truncate d-inline-block" style="max-width: 170px;" id="activeFilterBadge" title="Tất cả giải đấu">Tất cả giải đấu</span>
+                        <span class="badge bg-light text-dark border active-filter-badge text-truncate" style="max-width: 170px;" id="activeFilterBadge" title="Tất cả giải đấu">Tất cả giải đấu</span>
                     </div>
-                    <button type="button" class="btn btn-outline-secondary border d-inline-flex align-items-center gap-1.5 px-3 flex-shrink-0" style="height: 40px; border-radius: 0.65rem; font-size: 0.88rem; font-weight: 600;" onclick="reloadAll()" title="Tải lại toàn bộ dữ liệu">
+                    <button type="button" class="btn btn-outline-secondary border d-inline-flex align-items-center gap-1.5 px-3 flex-shrink-0 filter-reload-btn" onclick="reloadAll()" title="Tải lại toàn bộ dữ liệu">
                         <i class="bi bi-arrow-clockwise"></i>
                         <span>Tải lại</span>
                     </button>
@@ -774,7 +903,7 @@
             if (top1) {
                 html += `
                     <div class="col-md-4 col-sm-12 order-1 order-md-2">
-                        <div class="podium-card podium-gold shadow-lg" style="transform: scale(1.03); z-index: 2;">
+                        <div class="podium-card podium-gold shadow-lg">
                             <div>
                                 <div class="podium-rank-badge badge-gold-circle">
                                     <i class="fa-solid fa-crown"></i>
@@ -873,6 +1002,7 @@
             let html = '';
             list.forEach((item, index) => {
                 const rank = item.xepHang || (index + 1);
+                const rankRowClass = rank === 1 ? 'rank-row-gold' : rank === 2 ? 'rank-row-silver' : rank === 3 ? 'rank-row-bronze' : '';
                 let rankDisplay = '';
 
                 if (rank === 1) {
@@ -888,7 +1018,7 @@
                 const initial = (item.tenDonVi || 'Đ').substring(0, 1).toUpperCase();
 
                 html += `
-                    <tr>
+                    <tr class="${rankRowClass}">
                         <td class="text-center">${rankDisplay}</td>
                         <td>
                             <div class="d-flex align-items-center gap-2.5">
@@ -1057,10 +1187,11 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="p-2.5 bg-light border-top d-flex justify-content-between align-items-center">
+                            <div class="category-ranking-footer bg-light border-top d-flex justify-content-between align-items-center">
                                 <span class="small text-muted" style="font-size:0.75rem;">Tổng số: ${item.tongHuyChuong} huy chương</span>
-                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill py-0 px-2.5" style="font-size:0.78rem;" onclick="filterDirectToCategory(${item.danhMucId})">
-                                    <i class="fa-solid fa-arrow-right me-1"></i> Xem bảng tổng sắp
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill ranking-footer-action" aria-label="Xem bảng tổng sắp" title="Xem bảng tổng sắp" onclick="filterDirectToCategory(${item.danhMucId})">
+                                    <span class="ranking-footer-action-label">Xem bảng tổng sắp</span>
+                                    <i class="fa-solid fa-arrow-right"></i>
                                 </button>
                             </div>
                         </div>

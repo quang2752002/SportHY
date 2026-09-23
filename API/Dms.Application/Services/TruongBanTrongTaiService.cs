@@ -472,6 +472,29 @@ namespace Dms.Application.Services
 
             var conflicts = new List<ConflictItemDto>();
 
+            // Một trọng tài không được giữ đồng thời nhiều vai trò trong cùng một trận.
+            // Kiểm tra ngay tại đây để giao diện có thể cảnh báo trước khi tạo bản nháp.
+            var sameMatchAssignment = (await _unitOfWork.PhanCongTrongTais.FindAsync(pc =>
+                pc.TranDauId == tranDauId &&
+                pc.TrongTaiId == trongTaiId &&
+                pc.IsDeleted != true)).FirstOrDefault();
+            if (sameMatchAssignment != null)
+            {
+                conflicts.Add(new ConflictItemDto
+                {
+                    TranDauId = match.Id,
+                    SoTran = match.SoTran,
+                    TenTran = match.TenTran ?? $"Trận số {match.SoTran}",
+                    ThoiGian = match.ThoiGianDuKien.Value.ToString("HH:mm dd/MM/yyyy"),
+                    TenMon = mon?.Ten ?? "Môn thi đấu",
+                    VaiTro = sameMatchAssignment.VaiTro ?? "Trọng tài",
+                    DiffMinutes = 0,
+                    RequiredRestMinutes = nghiToiThieuPhut,
+                    LoaiXungDot = "TrungTran",
+                    MoTa = $"Trọng tài đã được phân công ở vai trò {sameMatchAssignment.VaiTro ?? "khác"} trong chính trận này."
+                });
+            }
+
             // 2. Kiểm tra thời gian đệm nghỉ giữa 2 trận liên tiếp (NghiToiThieuTrongTaiPhut)
             foreach (var om in otherMatches)
             {
