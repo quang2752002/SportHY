@@ -767,8 +767,8 @@ namespace Dms.Application.Services
         /// <summary>
         /// Lập bản nháp tự động phân công các vị trí trọng tài cho những trận đấu đã được xếp lịch.
         /// Chức năng độc lập với thuật toán tự động chia lịch đấu: chỉ đọc các trận hiện có,
-        /// kiểm tra lịch toàn giải, ưu tiên cân bằng số trận giữa các trọng tài và trả về đề xuất
-        /// mà không ghi dữ liệu vào cơ sở dữ liệu.
+        /// ưu tiên phân công trọng tài chính cho toàn bộ trận trước các vị trí phụ, kiểm tra lịch
+        /// toàn giải, cân bằng số trận giữa các trọng tài và trả về đề xuất mà không ghi dữ liệu.
         /// </summary>
         /// <param name="request">Phạm vi, trọng tài được chọn và các thay đổi nháp hiện có.</param>
         /// <returns>Kết quả nháp kèm danh sách vị trí đề xuất và vị trí chưa thể gán.</returns>
@@ -805,6 +805,7 @@ namespace Dms.Application.Services
                 .Select(NormalizeRefereeRole)
                 .Where(role => !string.IsNullOrWhiteSpace(role))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(role => Array.IndexOf(canonicalRoles, role))
                 .ToList();
 
             if (requestedRoles.Count == 0)
@@ -1077,9 +1078,11 @@ namespace Dms.Application.Services
                 return null;
             }
 
-            foreach (var match in targetMatchList)
+            // Phân bổ theo vai trò trên toàn bộ lịch: vị trí trọng tài chính được xử lý
+            // trước để không bị các vị trí phụ của những trận trước chiếm mất nguồn lực.
+            foreach (var role in requestedRoles)
             {
-                foreach (var role in requestedRoles)
+                foreach (var match in targetMatchList)
                 {
                     var currentAssignments = existingAssignments
                         .Where(assignment => assignment.TranDauId == match.Id &&
