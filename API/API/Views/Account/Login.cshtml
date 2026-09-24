@@ -97,20 +97,31 @@
                     </div>
 
                     <!-- Các đơn vị khác -->
-                                        <!-- Trong tai -->
+                                        <!-- Trọng tài & Điều hành môn -->
                     <small class="text-muted d-block mb-1" style="font-size: 0.75rem;">
-                        <i class="fa-solid fa-whistle text-warning me-1"></i> Tai khoan Trong Tai:
+                        <i class="fa-solid fa-whistle text-warning me-1"></i> Tài khoản Trọng tài:
                     </small>
                     <div class="d-flex gap-1 mb-2">
-                        <button type="button" class="btn btn-sm btn-outline-warning flex-fill text-truncate py-1 px-2 fw-semibold" onclick="fillAccount('hanh', '123')" title="Trong tai: hanh / 123">
-                            <i class="fa-solid fa-whistle me-1"></i> hanh
+                        <button type="button" class="btn btn-sm btn-outline-warning flex-fill text-truncate py-1 px-1 fw-semibold" onclick="fillAccount('taia', '123')" title="Trưởng ban / Trọng tài A: taia / 123">
+                            <i class="fa-solid fa-whistle me-1"></i> Tài A
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-warning flex-fill text-truncate py-1 px-2 fw-semibold" onclick="fillAccount('trong', '123')" title="Trong tai: trong / 123">
-                            <i class="fa-solid fa-whistle me-1"></i> trong
+                        <button type="button" class="btn btn-sm btn-outline-warning flex-fill text-truncate py-1 px-1 fw-semibold" onclick="fillAccount('taib', '123')" title="Trọng tài B: taib / 123">
+                            <i class="fa-solid fa-whistle me-1"></i> Tài B
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-warning flex-fill text-truncate py-1 px-2 fw-semibold" onclick="fillAccount('trongtai', '123')" title="Trong tai: trongtai / 123">
-                            <i class="fa-solid fa-whistle me-1"></i> trongtai
+                        <button type="button" class="btn btn-sm btn-outline-warning flex-fill text-truncate py-1 px-1 fw-semibold" onclick="fillAccount('taic', '123')" title="Trọng tài C: taic / 123">
+                            <i class="fa-solid fa-whistle me-1"></i> Tài C
                         </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning flex-fill text-truncate py-1 px-1 fw-semibold" onclick="fillAccount('trong', '123')" title="Trọng tài Trọng: trong / 123">
+                            <i class="fa-solid fa-whistle me-1"></i> TT Trọng
+                        </button>
+                    </div>
+                    <div class="d-flex gap-1 mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary flex-fill text-truncate py-1 px-1 fw-semibold" onclick="fillAccount('hanh', '123')" title="Điều hành môn: hanh / 123">
+                            <i class="fa-solid fa-clipboard-user me-1 text-info"></i> ĐH Môn (hanh)
+                        </button>
+                        <a href="/Account/Login?switchAccount=true" class="btn btn-sm btn-light border flex-fill text-truncate py-1 px-1 text-danger" title="Xóa phiên để đổi tài khoản mới">
+                            <i class="fa-solid fa-arrow-rotate-right me-1"></i> Xóa phiên cũ
+                        </a>
                     </div>
 <div class="d-flex gap-1">
                         <button type="button" class="btn btn-sm btn-outline-dark flex-fill text-truncate py-1 px-1" onclick="fillAccount('donvi_sphn', 'Delegation@123')" title="ĐH Sư Phạm Hà Nội (donvi_sphn / Delegation@123)" style="font-size: 0.75rem;">

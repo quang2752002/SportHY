@@ -185,7 +185,8 @@
                     <tr>
                         <td class="ps-3 fw-bold text-muted">${stt}</td>
                         <td>
-                            <div class="fw-bold text-dark">${escapeHtml(item.tenDangKy || 'Hồ sơ')}</div>
+                            <div class="fw-bold text-dark"><i class="fa-solid fa-users text-primary me-1"></i>${escapeHtml(item.tenDoi || item.tenDangKy || 'Đội thi đấu')}</div>
+                            ${item.tenDoi && item.tenDangKy && item.tenDangKy !== item.tenDoi ? `<div class="small text-muted mb-1">${escapeHtml(item.tenDangKy)}</div>` : ''}
                             <small class="text-muted"><span class="badge bg-light text-secondary border">Mã: ${escapeHtml(item.soDangKy || '-')}</span></small>
                         </td>
                         <td>
@@ -245,7 +246,7 @@
             $.get('/Manager/DangKyThiDau/GetById', { id: id }, function (res) {
                 if (res.success && res.data) {
                     const item = res.data;
-                    const vdvs = item.chiTietDangKyThiDaus || [];
+                    const vdvs = item.thanhVienDois || item.chiTietDangKyThiDaus || [];
 
                     let vdvHtml = '';
                     if (vdvs.length === 0) {
@@ -282,8 +283,9 @@
                     const bodyHtml = `
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="text-muted small">Tên hồ sơ / Đội:</label>
-                                <div class="fw-bold fs-6">${escapeHtml(item.tenDangKy)}</div>
+                                <label class="text-muted small">Tên Đội / Hồ sơ:</label>
+                                <div class="fw-bold fs-6 text-dark"><i class="fa-solid fa-users text-primary me-1"></i>${escapeHtml(item.tenDoi || item.tenDangKy)}</div>
+                                ${item.tenDoi && item.tenDangKy && item.tenDangKy !== item.tenDoi ? `<div class="small text-muted">${escapeHtml(item.tenDangKy)}</div>` : ''}
                             </div>
                             <div class="col-md-3">
                                 <label class="text-muted small">Mã số đăng ký:</label>

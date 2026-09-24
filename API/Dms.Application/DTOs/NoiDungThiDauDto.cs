@@ -129,8 +129,22 @@ namespace Dms.Application.DTOs
         public int SoVdv { get; set; }
         public List<int> VanDongVienIds { get; set; } = new();
         public List<string> VanDongVienNames { get; set; } = new();
+        public List<ThanhVienDoiChiTietDto> ThanhVienDois { get; set; } = new();
+        public List<ThanhVienDoiChiTietDto> ChiTietDangKyThiDaus => ThanhVienDois;
         public DateTime? Created { get; set; }
         public DateTime? LastModified { get; set; }
+    }
+
+    public class ThanhVienDoiChiTietDto
+    {
+        public int Id { get; set; }
+        public int VanDongVienId { get; set; }
+        public string? TenVanDongVien { get; set; }
+        public string? HoTen { get; set; }
+        public string? MaVanDongVien { get; set; }
+        public string? SoAo { get; set; }
+        public string? ViTri { get; set; }
+        public bool LaDoiTruong { get; set; }
     }
 
     public class CreateUpdateDangKyThiDauDto

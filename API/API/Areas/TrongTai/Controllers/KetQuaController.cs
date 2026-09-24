@@ -12,6 +12,19 @@ using System.Threading.Tasks;
 
 namespace API.Areas.TrongTai.Controllers
 {
+    internal sealed class MatchScoreSnapshot
+    {
+        public MatchScoreSnapshot() { }
+
+        public int Score1 { get; set; }
+        public int Score2 { get; set; }
+        public int? ExtraTimeScore1 { get; set; }
+        public int? ExtraTimeScore2 { get; set; }
+        public string? Winner { get; set; }
+        public string? Notes { get; set; }
+        public List<SetScoreDto> SetScores { get; set; } = new();
+        public List<MatchEventItemDto> Events { get; set; } = new();
+    }
 
     public class SaveMatchResultDto
     {
@@ -48,7 +61,7 @@ namespace API.Areas.TrongTai.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null)
+        public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null, int? giaiDauMonTheThaoId = null)
         {
             var currentReferee = await GetCurrentRefereeAsync();
             var canBrowseAll = CanBrowseAllMatches();
@@ -67,9 +80,38 @@ namespace API.Areas.TrongTai.Controllers
             if (tournaments.Count == 0) selectedGiaiDauId = null;
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
 
-            var matches = selectedGiaiDauId.HasValue
+            var accessibleMatches = selectedGiaiDauId.HasValue
                 ? (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentReferee?.Id, canBrowseAll))?.ToList() ?? new()
                 : new List<TranDauDto>();
+
+            var availableSports = accessibleMatches
+                .GroupBy(match => match.GiaiDauMonTheThaoId)
+                .Select(group => new KeyValuePair<int, string>(
+                    group.Key,
+                    group.Select(match => match.TenMonTheThao).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name))
+                        ?? group.Select(match => match.TenDanhMucMonTheThao).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name))
+                        ?? $"Môn thi đấu #{group.Key}"))
+                .OrderBy(sport => sport.Value)
+                .ToList();
+            if (giaiDauMonTheThaoId.HasValue && availableSports.All(sport => sport.Key != giaiDauMonTheThaoId.Value))
+            {
+                giaiDauMonTheThaoId = null;
+            }
+
+            var requestedMatch = tranDauId.HasValue
+                ? accessibleMatches.FirstOrDefault(match => match.Id == tranDauId.Value)
+                : null;
+            if (tranDauId.HasValue && requestedMatch == null) return Forbid();
+            if (requestedMatch != null && requestedMatch.GiaiDauMonTheThaoId != giaiDauMonTheThaoId)
+            {
+                giaiDauMonTheThaoId = requestedMatch.GiaiDauMonTheThaoId;
+            }
+
+            ViewBag.Sports = availableSports;
+            ViewBag.SelectedGiaiDauMonTheThaoId = giaiDauMonTheThaoId;
+            var matches = giaiDauMonTheThaoId.HasValue
+                ? accessibleMatches.Where(match => match.GiaiDauMonTheThaoId == giaiDauMonTheThaoId.Value).ToList()
+                : accessibleMatches;
             ViewBag.Matches = matches;
 
             TranDauDto? currentMatch = null;
@@ -106,42 +148,19 @@ namespace API.Areas.TrongTai.Controllers
             {
                 try
                 {
-                    using var doc = JsonDocument.Parse(currentMatch.GhiChu);
-                    var root = doc.RootElement;
-                    if (root.TryGetProperty("score1", out var p1)) score1 = p1.GetInt32();
-                    if (root.TryGetProperty("score2", out var p2)) score2 = p2.GetInt32();
-                    if (root.TryGetProperty("extraTimeScore1", out var extra1) && extra1.ValueKind == JsonValueKind.Number) ViewBag.ExtraTimeScore1 = extra1.GetInt32();
-                    if (root.TryGetProperty("extraTimeScore2", out var extra2) && extra2.ValueKind == JsonValueKind.Number) ViewBag.ExtraTimeScore2 = extra2.GetInt32();
-                    if (root.TryGetProperty("winner", out var pw)) winner = pw.GetString() ?? "";
-                    if (root.TryGetProperty("notes", out var pn)) notes = pn.GetString() ?? "";
-
-                    if (root.TryGetProperty("setScores", out var pSets) && pSets.ValueKind == JsonValueKind.Array)
+                    var savedScore = JsonSerializer.Deserialize<MatchScoreSnapshot>(
+                        currentMatch.GhiChu,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (savedScore != null)
                     {
-                        foreach (var el in pSets.EnumerateArray())
-                        {
-                            setScores.Add(new SetScoreDto
-                            {
-                                SetNumber = el.TryGetProperty("setNumber", out var sn) ? sn.GetInt32() : 1,
-                                Score1 = el.TryGetProperty("score1", out var s1) ? s1.GetInt32() : 0,
-                                Score2 = el.TryGetProperty("score2", out var s2) ? s2.GetInt32() : 0,
-                            });
-                        }
-                    }
-
-                    if (root.TryGetProperty("events", out var pEvents) && pEvents.ValueKind == JsonValueKind.Array)
-                    {
-                        foreach (var el in pEvents.EnumerateArray())
-                        {
-                            events.Add(new MatchEventItemDto
-                            {
-                                Id = el.TryGetProperty("id", out var eid) ? eid.GetInt32() : 0,
-                                Minute = el.TryGetProperty("minute", out var em) ? em.GetInt32() : 0,
-                                Type = el.TryGetProperty("type", out var et) ? et.GetString() ?? "goal" : "goal",
-                                Team = el.TryGetProperty("team", out var etm) ? etm.GetInt32() : 1,
-                                Player = el.TryGetProperty("player", out var ep) ? ep.GetString() : null,
-                                Notes = el.TryGetProperty("notes", out var en) ? en.GetString() : null,
-                            });
-                        }
+                        score1 = savedScore.Score1;
+                        score2 = savedScore.Score2;
+                        winner = savedScore.Winner ?? "";
+                        notes = savedScore.Notes ?? "";
+                        setScores = savedScore.SetScores ?? new List<SetScoreDto>();
+                        events = savedScore.Events ?? new List<MatchEventItemDto>();
+                        ViewBag.ExtraTimeScore1 = savedScore.ExtraTimeScore1;
+                        ViewBag.ExtraTimeScore2 = savedScore.ExtraTimeScore2;
                     }
                 }
                 catch { }
