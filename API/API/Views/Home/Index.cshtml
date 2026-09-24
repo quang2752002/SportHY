@@ -243,15 +243,20 @@
 
                 <!-- Tabs ở giữa -->
                 <div class="status-pill-wrap" id="statusPillsGroupDesktop">
-                    <button type="button" class="status-tab-btn active-tab" data-tab="sapDienRa" onclick="switchTab('sapDienRa')">
-                        <i class="bi bi-calendar-event"></i>
-                        <span>Sắp diễn ra</span>
-                        <span class="badge-count" id="countSapDienRaDesktop">0</span>
+                    <button type="button" class="status-tab-btn active-tab" data-tab="tatCa" onclick="switchTab('tatCa')">
+                        <i class="bi bi-grid-fill"></i>
+                        <span>Tất cả</span>
+                        <span class="badge-count" id="countTatCaDesktop">0</span>
                     </button>
                     <button type="button" class="status-tab-btn" data-tab="dangDienRa" onclick="switchTab('dangDienRa')">
                         <i class="bi bi-trophy"></i>
                         <span>Đang diễn ra</span>
                         <span class="badge-count" id="countDangDienRaDesktop">0</span>
+                    </button>
+                    <button type="button" class="status-tab-btn" data-tab="sapDienRa" onclick="switchTab('sapDienRa')">
+                        <i class="bi bi-calendar-event"></i>
+                        <span>Sắp diễn ra</span>
+                        <span class="badge-count" id="countSapDienRaDesktop">0</span>
                     </button>
                     <button type="button" class="status-tab-btn" data-tab="daKetThuc" onclick="switchTab('daKetThuc')">
                         <i class="bi bi-check2-circle"></i>
@@ -265,9 +270,9 @@
                     <div class="search-input-group" style="width: 240px;">
                         <i class="bi bi-search"></i>
                         <input type="text"
-                               placeholder="Tìm giải đấu..."
-                               id="searchBoxInputDesktop"
-                               oninput="handleSearchInput(this.value)">
+                                placeholder="Tìm giải đấu..."
+                                id="searchBoxInputDesktop"
+                                oninput="handleSearchInput(this.value)">
                     </div>
                     <button type="button"
                             class="btn btn-outline-secondary border d-flex align-items-center justify-content-center"
@@ -286,9 +291,9 @@
                     <div class="search-input-group">
                         <i class="bi bi-search"></i>
                         <input type="text"
-                               placeholder="Tìm giải đấu..."
-                               id="searchBoxInputMobile"
-                               oninput="handleSearchInput(this.value)">
+                                placeholder="Tìm giải đấu..."
+                                id="searchBoxInputMobile"
+                                oninput="handleSearchInput(this.value)">
                     </div>
                     <button type="button"
                             class="btn btn-outline-secondary border d-flex align-items-center justify-content-center flex-shrink-0"
@@ -301,15 +306,20 @@
 
                 <!-- Hàng 2: Bộ Tabs trạng thái cuộn ngang -->
                 <div class="status-pill-wrap" id="statusPillsGroupMobile">
-                    <button type="button" class="status-tab-btn active-tab" data-tab="sapDienRa" onclick="switchTab('sapDienRa')">
-                        <i class="bi bi-calendar-event"></i>
-                        <span>Sắp diễn ra</span>
-                        <span class="badge-count" id="countSapDienRaMobile">0</span>
+                    <button type="button" class="status-tab-btn active-tab" data-tab="tatCa" onclick="switchTab('tatCa')">
+                        <i class="bi bi-grid-fill"></i>
+                        <span>Tất cả</span>
+                        <span class="badge-count" id="countTatCaMobile">0</span>
                     </button>
                     <button type="button" class="status-tab-btn" data-tab="dangDienRa" onclick="switchTab('dangDienRa')">
                         <i class="bi bi-trophy"></i>
                         <span>Đang diễn ra</span>
                         <span class="badge-count" id="countDangDienRaMobile">0</span>
+                    </button>
+                    <button type="button" class="status-tab-btn" data-tab="sapDienRa" onclick="switchTab('sapDienRa')">
+                        <i class="bi bi-calendar-event"></i>
+                        <span>Sắp diễn ra</span>
+                        <span class="badge-count" id="countSapDienRaMobile">0</span>
                     </button>
                     <button type="button" class="status-tab-btn" data-tab="daKetThuc" onclick="switchTab('daKetThuc')">
                         <i class="bi bi-check2-circle"></i>
@@ -351,7 +361,7 @@
 @section Scripts {
     <script>
         let allTournaments = [];
-        let activeTab = 'sapDienRa';
+        let activeTab = 'tatCa';
         let searchQuery = '';
 
         // Dữ liệu bảng huy chương
@@ -410,35 +420,48 @@
             searchQuery = '';
             $('#searchBoxInputDesktop').val('');
             $('#searchBoxInputMobile').val('');
-            switchTab('sapDienRa');
+            switchTab('tatCa');
         }
 
         function updateCounts() {
-            const countSapDienRa = allTournaments.filter(t => isMatchStatus(t, 'SapDienRa')).length;
-            const countDangDienRa = allTournaments.filter(t => isMatchStatus(t, 'DangDienRa')).length;
-            const countDaKetThuc = allTournaments.filter(t => isMatchStatus(t, 'KetThuc')).length;
+            const countTatCa = allTournaments.length;
+            const countDangDienRa = allTournaments.filter(t => isMatchStatus(t, 'dangDienRa')).length;
+            const countSapDienRa = allTournaments.filter(t => isMatchStatus(t, 'sapDienRa')).length;
+            const countDaKetThuc = allTournaments.filter(t => isMatchStatus(t, 'daKetThuc')).length;
 
-            $('#countSapDienRaDesktop').text(countSapDienRa);
+            $('#countTatCaDesktop').text(countTatCa);
             $('#countDangDienRaDesktop').text(countDangDienRa);
+            $('#countSapDienRaDesktop').text(countSapDienRa);
             $('#countDaKetThucDesktop').text(countDaKetThuc);
 
-            $('#countSapDienRaMobile').text(countSapDienRa);
+            $('#countTatCaMobile').text(countTatCa);
             $('#countDangDienRaMobile').text(countDangDienRa);
+            $('#countSapDienRaMobile').text(countSapDienRa);
             $('#countDaKetThucMobile').text(countDaKetThuc);
         }
 
         function isMatchStatus(item, tab) {
+            if (tab === 'tatCa') return true;
             const st = (item.trangThai || '').toString();
-            if (tab === 'sapDienRa') {
-                return st === 'SapDienRa' || st === '2' || st === 'Nhap' || st === '1';
-            }
             if (tab === 'dangDienRa') {
                 return st === 'DangDienRa' || st === '3';
+            }
+            if (tab === 'sapDienRa') {
+                return st === 'SapDienRa' || st === '2' || st === 'Nhap' || st === '1';
             }
             if (tab === 'daKetThuc') {
                 return st === 'KetThuc' || st === '4';
             }
             return true;
+        }
+
+        // Ưu tiên sắp xếp tab Tất cả: Đang diễn ra (1) -> Sắp diễn ra (2) -> Đã kết thúc (3)
+        function getStatusPriority(item) {
+            const st = (item.trangThai || '').toString();
+            if (st === 'DangDienRa' || st === '3') return 1;
+            if (st === 'SapDienRa' || st === '2' || st === 'Nhap' || st === '1') return 2;
+            if (st === 'KetThuc' || st === '4') return 3;
+            return 4;
         }
 
         function renderList() {
@@ -449,6 +472,20 @@
                     const name = (t.ten || '').toLowerCase();
                     const place = (t.diaDiem || '').toLowerCase();
                     return name.includes(searchQuery) || place.includes(searchQuery);
+                });
+            }
+
+            if (activeTab === 'tatCa') {
+                // Sắp xếp: Đang diễn ra lên trước, rồi đến Sắp diễn ra, rồi Đã kết thúc
+                filtered.sort((a, b) => {
+                    const prioA = getStatusPriority(a);
+                    const prioB = getStatusPriority(b);
+                    if (prioA !== prioB) {
+                        return prioA - prioB;
+                    }
+                    const dateA = a.ngayBatDau ? new Date(a.ngayBatDau).getTime() : 0;
+                    const dateB = b.ngayBatDau ? new Date(b.ngayBatDau).getTime() : 0;
+                    return dateB - dateA;
                 });
             }
 

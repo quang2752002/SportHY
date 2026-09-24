@@ -37,6 +37,17 @@ namespace Dms.Application.Interfaces
 
     public interface IDangKyThiDauService
     {
+        /// <summary>
+        /// Lấy danh sách hồ sơ đăng ký thi đấu có phân trang theo các điều kiện lọc (từ khóa, giải đấu, môn, đơn vị, trạng thái).
+        /// </summary>
+        /// <param name="pageIndex">Số trang hiện tại (bắt đầu từ 1)</param>
+        /// <param name="pageSize">Số lượng bản ghi trên một trang</param>
+        /// <param name="keyword">Từ khóa tìm kiếm theo số đăng ký hoặc tên đăng ký</param>
+        /// <param name="giaiDauId">Lọc theo mã định danh giải đấu</param>
+        /// <param name="giaiDauMonTheThaoId">Lọc theo môn thi đấu trong giải</param>
+        /// <param name="donViId">Lọc theo đơn vị / đoàn</param>
+        /// <param name="trangThai">Lọc theo trạng thái hồ sơ</param>
+        /// <returns>Danh sách phân trang các hồ sơ đăng ký thi đấu kèm thông tin chi tiết</returns>
         Task<PagedResult<DangKyThiDauDto>> GetPagedAsync(
             int pageIndex,
             int pageSize,
@@ -46,7 +57,20 @@ namespace Dms.Application.Interfaces
             int? donViId = null,
             string? trangThai = null);
 
+        /// <summary>
+        /// Lấy tất cả danh sách hồ sơ đăng ký thi đấu theo giải đấu, môn và đơn vị.
+        /// </summary>
+        /// <param name="giaiDauId">Mã định danh giải đấu</param>
+        /// <param name="giaiDauMonTheThaoId">Mã định danh môn thi đấu trong giải</param>
+        /// <param name="donViId">Mã định danh đơn vị / đoàn</param>
+        /// <returns>Tập hợp các hồ sơ đăng ký thi đấu</returns>
         Task<IEnumerable<DangKyThiDauDto>> GetAllAsync(int? giaiDauId = null, int? giaiDauMonTheThaoId = null, int? donViId = null);
+
+        /// <summary>
+        /// Lấy thông tin chi tiết một hồ sơ đăng ký thi đấu theo Id.
+        /// </summary>
+        /// <param name="id">Mã định danh hồ sơ đăng ký thi đấu</param>
+        /// <returns>Chi tiết hồ sơ đăng ký thi đấu hoặc null nếu không tồn tại</returns>
         Task<DangKyThiDauDto?> GetByIdAsync(int id);
 
         /// <summary>
@@ -57,7 +81,23 @@ namespace Dms.Application.Interfaces
         /// <param name="isPrivileged">Cờ đặc quyền bỏ qua kiểm tra thời hạn đăng ký</param>
         /// <returns>Hồ sơ đăng ký đã tạo</returns>
         Task<DangKyThiDauDto> CreateAsync(CreateUpdateDangKyThiDauDto dto, string? createdBy = null, bool isPrivileged = false);
+
+        /// <summary>
+        /// Cập nhật thông tin hồ sơ đăng ký thi đấu.
+        /// </summary>
+        /// <param name="id">Mã định danh hồ sơ</param>
+        /// <param name="dto">Dữ liệu cần cập nhật</param>
+        /// <param name="updatedBy">Tài khoản thực hiện cập nhật</param>
+        /// <param name="isPrivileged">Cờ đặc quyền cho phép cập nhật khi quá hạn</param>
+        /// <returns>Hồ sơ đăng ký sau cập nhật hoặc null nếu không tìm thấy</returns>
         Task<DangKyThiDauDto?> UpdateAsync(int id, CreateUpdateDangKyThiDauDto dto, string? updatedBy = null, bool isPrivileged = false);
+
+        /// <summary>
+        /// Xóa mềm hồ sơ đăng ký thi đấu.
+        /// </summary>
+        /// <param name="id">Mã định danh hồ sơ</param>
+        /// <param name="isPrivileged">Cờ đặc quyền</param>
+        /// <returns>True nếu xóa thành công, ngược lại False</returns>
         Task<bool> DeleteAsync(int id, bool isPrivileged = false);
     }
 

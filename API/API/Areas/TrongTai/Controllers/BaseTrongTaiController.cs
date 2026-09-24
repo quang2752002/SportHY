@@ -36,19 +36,11 @@ namespace API.Areas.TrongTai.Controllers
 
         public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            if (CanBrowseAllMatches() || User.IsInRole(AppRoles.Secretary))
-            {
-                await next();
-                return;
-            }
+            // Nạp thông tin trọng tài hiện tại phục vụ giao diện
+            await GetCurrentRefereeAsync();
 
-            var referee = await GetCurrentRefereeAsync();
-            if (referee == null || !(await _refereeAccessService.GetRefereeTournamentIdsAsync(referee.Id)).Any())
-            {
-                context.Result = Forbid();
-                return;
-            }
-
+            // Cho phép người dùng có quyền tiếp tục truy cập.
+            // Các trang chi tiết (Biên bản, Kết quả) sẽ tự kiểm tra quyền theo từng trận đấu cụ thể.
             await next();
         }
 

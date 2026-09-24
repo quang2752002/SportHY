@@ -368,7 +368,7 @@
     <div class="card border shadow-sm mb-3">
         <div class="card-header bg-white py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
             <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-danger text-white px-2 py-1 shadow-2xs">
+                <span id="bracketSportBadge" class="badge bg-danger text-white px-2 py-1 shadow-2xs">
                     <i class="fa-solid fa-trophy me-1"></i> Loại trực tiếp (Knockout)
                 </span>
                 <span id="bracketSportTitle" class="fw-bold text-dark small"></span>
@@ -1778,7 +1778,61 @@
             }
         }
 
+        function updateBracketSportBadge() {
+            if (!mainViewData) return;
+            const ht = (mainViewData.hinhThucThiDau != null) ? mainViewData.hinhThucThiDau.toString() : '';
+            let badgeHtml = '';
+            let badgeClass = 'badge px-2 py-1 shadow-2xs ';
+            let badgeStyle = '';
+
+            switch (ht) {
+                case 'KetHopVongBangVaLoaiTrucTiep':
+                case '3':
+                    badgeClass += 'bg-primary text-white';
+                    badgeHtml = '<i class="fa-solid fa-diagram-project me-1"></i> Kết hợp vòng bảng & loại trực tiếp';
+                    break;
+                case 'VongBang':
+                case '2':
+                    badgeClass += 'bg-success text-white';
+                    badgeHtml = '<i class="fa-solid fa-table-cells me-1"></i> Vòng tròn tính điểm (Vòng bảng)';
+                    break;
+                case 'NhanhThangNhanhThua':
+                case '4':
+                    badgeClass += 'bg-warning text-dark';
+                    badgeHtml = '<i class="fa-solid fa-code-branch me-1"></i> Nhánh thắng - nhánh thua';
+                    break;
+                case 'HeThuySi':
+                case '5':
+                    badgeClass += 'text-white';
+                    badgeStyle = 'background-color: #7e22ce;';
+                    badgeHtml = '<i class="fa-solid fa-chess me-1"></i> Hệ Thụy Sĩ';
+                    break;
+                case 'TinhDiemXepHang':
+                case '6':
+                    badgeClass += 'bg-info text-white';
+                    badgeHtml = '<i class="fa-solid fa-stopwatch me-1"></i> Đo thành tích / Tính điểm';
+                    break;
+                case 'LoaiTrucTiep':
+                case '1':
+                default:
+                    badgeClass += 'bg-danger text-white';
+                    badgeHtml = '<i class="fa-solid fa-trophy me-1"></i> Loại trực tiếp (Knockout)';
+                    break;
+            }
+
+            const $badge = $('#bracketSportBadge');
+            $badge.attr('class', badgeClass);
+            if (badgeStyle) {
+                $badge.attr('style', badgeStyle);
+            } else {
+                $badge.removeAttr('style');
+            }
+            $badge.html(badgeHtml);
+        }
+
         function renderBracketUI() {
+            updateBracketSportBadge();
+
             if (!mainViewData || !mainViewData.pairs || mainViewData.pairs.length === 0) {
                 $('#bracketTreeEmpty').removeClass('d-none');
                 $('#bracketTreeWorkspace').addClass('d-none');
@@ -1794,7 +1848,7 @@
             $('#bracketBranchesWorkspace').removeClass('d-none');
 
             $('#bracketSportTitle').html(`
-                <span class="text-primary fw-bold">${escapeHtml(mainViewData.tenMonTheThao || 'Môn Loại Trực Tiếp')}</span>
+                <span class="text-primary fw-bold">${escapeHtml(mainViewData.tenMonTheThao || 'Môn Thi Đấu')}</span>
                 <span class="text-muted fw-normal ms-2">(${mainViewData.pairs.length} trận • ${mainViewData.allTeams ? mainViewData.allTeams.length : 0} đội tham gia)</span>
             `);
 
@@ -2435,6 +2489,174 @@
                 // Nếu có trận Knockout (Chung kết, Bán kết...)
                 const koMatches = (mainViewData.pairs || []).filter(p => isMatchKnockout(p));
                 if (koMatches.length > 0) {
+                    const sortMatches = (a, b) => (a.soTran || 0) - (b.soTran || 0);
+                    const quarterMatches = koMatches.filter(m => isMatchQuarter(m)).sort(sortMatches);
+                    const semiMatches = koMatches.filter(m => isMatchSemi(m)).sort(sortMatches);
+                    const bronzeMatches = koMatches.filter(m => isMatchBronze(m)).sort(sortMatches);
+                    const finalMatches = koMatches.filter(m => isMatchFinal(m)).sort(sortMatches);
+                    const otherKoMatches = koMatches.filter(m => !isMatchQuarter(m) && !isMatchSemi(m) && !isMatchBronze(m) && !isMatchFinal(m)).sort(sortMatches);
+
+                    const renderKoCard = (m) => {
+                        const isFinal = isMatchFinal(m);
+                        const isBronze = isMatchBronze(m);
+                        const isSemi = isMatchSemi(m);
+                        const isQuarter = isMatchQuarter(m);
+
+                        let headerBadgeClass = 'bg-secondary text-white';
+                        let cardBorder = '';
+                        let cardBg = 'bg-white';
+
+                        if (isFinal) {
+                            headerBadgeClass = 'bg-warning text-dark fw-bold';
+                            cardBorder = 'border-warning';
+                            cardBg = 'style="background: #fffdf5;"';
+                        } else if (isBronze) {
+                            headerBadgeClass = 'bg-info text-white fw-bold';
+                            cardBorder = 'border-info border-opacity-50';
+                            cardBg = 'style="background: #f8fafc;"';
+                        } else if (isSemi) {
+                            headerBadgeClass = 'bg-primary text-white fw-semibold';
+                            cardBorder = 'border-primary-subtle';
+                        } else if (isQuarter) {
+                            headerBadgeClass = 'bg-dark text-white fw-semibold';
+                        }
+
+                        const ph = getMatchPlaceholderTeams(m);
+                        const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : escapeHtml(ph.t1);
+                        const d2 = m.doi2 ? escapeHtml(m.doi2.tenDangKy || m.doi2.tenDoi || 'Đội 2') : escapeHtml(ph.t2);
+                        const timeStr = m.thoiGianDuKien ? formatDate(m.thoiGianDuKien, true) : 'Chưa xếp giờ';
+                        const scoreBadge = (m.diemDoi1 != null && m.diemDoi2 != null)
+                            ? `<span class="badge bg-dark fs-6 px-3 py-1">${m.diemDoi1} - ${m.diemDoi2}</span>`
+                            : `<span class="badge bg-light text-muted border">Chưa đấu</span>`;
+
+                        return `
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 shadow-2xs h-100 ${cardBorder}" ${cardBg}>
+                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                                        <span class="badge ${headerBadgeClass}">#${m.soTran || ''} • ${escapeHtml(m.tenTran)}</span>
+                                        <div class="d-flex align-items-center gap-1">
+                                            <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>${timeStr}</small>
+                                            ${m.tranDauId ? `<button type="button" class="btn btn-2xs btn-outline-primary" onclick="openScoreModal(${m.tranDauId})" title="Cập nhật điểm"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center my-2">
+                                        <div class="text-truncate me-2" style="max-width: 40%;">
+                                            <strong class="d-block text-dark ${m.doiThangDangKyId && m.doi1 && m.doi1.dangKyThiDauId === m.doiThangDangKyId ? 'text-success' : ''}">${d1}</strong>
+                                            <small class="text-muted">${escapeHtml(m.doi1?.tenDonVi || '')}</small>
+                                        </div>
+                                        <div>${scoreBadge}</div>
+                                        <div class="text-truncate text-end ms-2" style="max-width: 40%;">
+                                            <strong class="d-block text-dark ${m.doiThangDangKyId && m.doi2 && m.doi2.dangKyThiDauId === m.doiThangDangKyId ? 'text-success' : ''}">${d2}</strong>
+                                            <small class="text-muted">${escapeHtml(m.doi2?.tenDonVi || '')}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    };
+
+                    let koSectionsHtml = '';
+
+                    // 1. Các vòng loại / 1/8 trước Tứ kết (nếu có)
+                    if (otherKoMatches.length > 0) {
+                        koSectionsHtml += `
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-secondary-subtle text-secondary border px-2 py-1 fw-bold">
+                                            <i class="fa-solid fa-list-ol me-1"></i> VÒNG SƠ LOẠI / VÒNG 1/8
+                                        </span>
+                                        <span class="small text-muted fw-semibold">(${otherKoMatches.length} trận)</span>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.72rem;">Các trận đấu loại trực tiếp mở màn</small>
+                                </div>
+                                <div class="row g-3">
+                                    ${otherKoMatches.map(renderKoCard).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // 2. Vòng Tứ Kết
+                    if (quarterMatches.length > 0) {
+                        koSectionsHtml += `
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge px-2 py-1 fw-bold" style="background-color: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                                            <i class="fa-solid fa-layer-group me-1"></i> VÒNG TỨ KẾT (QUARTERFINALS)
+                                        </span>
+                                        <span class="small text-muted fw-semibold">(${quarterMatches.length} trận)</span>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.72rem;">Xác định 4 đội chiến thắng bước vào Bán kết</small>
+                                </div>
+                                <div class="row g-3">
+                                    ${quarterMatches.map(renderKoCard).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // 3. Vòng Bán Kết
+                    if (semiMatches.length > 0) {
+                        koSectionsHtml += `
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold">
+                                            <i class="fa-solid fa-shield-halved me-1"></i> VÒNG BÁN KẾT (SEMIFINALS)
+                                        </span>
+                                        <span class="small text-muted fw-semibold">(${semiMatches.length} trận)</span>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.72rem;">Cạnh tranh 2 tấm vé danh giá vào Chung kết</small>
+                                </div>
+                                <div class="row g-3">
+                                    ${semiMatches.map(renderKoCard).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // 4. Trận Tranh Hạng 3 - 4 (Huy Chương Đồng)
+                    if (bronzeMatches.length > 0) {
+                        koSectionsHtml += `
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1 fw-bold">
+                                            <i class="fa-solid fa-medal me-1"></i> TRANH HẠNG 3 - 4 (HUY CHƯƠNG ĐỒNG)
+                                        </span>
+                                        <span class="small text-muted fw-semibold">(${bronzeMatches.length} trận)</span>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.72rem;">Quyết định chủ nhân tấm Huy chương Đồng</small>
+                                </div>
+                                <div class="row g-3">
+                                    ${bronzeMatches.map(renderKoCard).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // 5. Trận Chung Kết (Huy Chương Vàng & Bạc)
+                    if (finalMatches.length > 0) {
+                        koSectionsHtml += `
+                            <div class="mb-2">
+                                <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-warning text-dark border border-warning px-2 py-1 fw-bold">
+                                            <i class="fa-solid fa-trophy text-dark me-1"></i> CHUNG KẾT (TRANH NGÔI VÔ ĐỊCH — HCV & HCB)
+                                        </span>
+                                        <span class="small text-muted fw-semibold">(${finalMatches.length} trận)</span>
+                                    </div>
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size: 0.72rem;">Trận Đấu Đỉnh Cao</span>
+                                </div>
+                                <div class="row g-3">
+                                    ${finalMatches.map(renderKoCard).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
                     groupsHtml += `
                         <div class="col-12 mt-3">
                             <div class="card border border-warning shadow-sm" style="background: #fffdf7;">
@@ -2445,44 +2667,7 @@
                                     <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Quyết Định Ngôi Vô Địch</span>
                                 </div>
                                 <div class="card-body p-3">
-                                    <div class="row g-3">
-                                        ${koMatches.map(m => {
-                                            const isFinal = isMatchFinal(m);
-                                            const headerClass = isFinal ? 'bg-warning text-dark' : 'bg-secondary text-white';
-                                            const ph = getMatchPlaceholderTeams(m);
-                                            const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : escapeHtml(ph.t1);
-                                            const d2 = m.doi2 ? escapeHtml(m.doi2.tenDangKy || m.doi2.tenDoi || 'Đội 2') : escapeHtml(ph.t2);
-                                            const timeStr = m.thoiGianDuKien ? formatDate(m.thoiGianDuKien, true) : 'Chưa xếp giờ';
-                                            const scoreBadge = (m.diemDoi1 != null && m.diemDoi2 != null)
-                                                ? `<span class="badge bg-dark fs-6 px-3 py-1">${m.diemDoi1} - ${m.diemDoi2}</span>`
-                                                : `<span class="badge bg-light text-muted border">Chưa đấu</span>`;
-
-                                            return `
-                                                <div class="col-md-6">
-                                                    <div class="border rounded p-3 bg-white shadow-2xs h-100 ${isFinal ? 'border-warning' : ''}">
-                                                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                                                            <span class="badge ${headerClass} fw-bold">#${m.soTran || ''} • ${escapeHtml(m.tenTran)}</span>
-                                                            <div class="d-flex align-items-center gap-1">
-                                                                <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>${timeStr}</small>
-                                                                ${m.tranDauId ? `<button type="button" class="btn btn-2xs btn-outline-primary" onclick="openScoreModal(${m.tranDauId})" title="Cập nhật điểm"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
-                                                            </div>
-                                                        </div>
-                                                        <div class="d-flex justify-content-between align-items-center my-2">
-                                                            <div class="text-truncate me-2" style="max-width: 40%;">
-                                                                <strong class="d-block text-dark ${m.doiThangDangKyId && m.doi1 && m.doi1.dangKyThiDauId === m.doiThangDangKyId ? 'text-success' : ''}">${d1}</strong>
-                                                                <small class="text-muted">${escapeHtml(m.doi1?.tenDonVi || '')}</small>
-                                                            </div>
-                                                            <div>${scoreBadge}</div>
-                                                            <div class="text-truncate text-end ms-2" style="max-width: 40%;">
-                                                                <strong class="d-block text-dark ${m.doiThangDangKyId && m.doi2 && m.doi2.dangKyThiDauId === m.doiThangDangKyId ? 'text-success' : ''}">${d2}</strong>
-                                                                <small class="text-muted">${escapeHtml(m.doi2?.tenDonVi || '')}</small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
+                                    ${koSectionsHtml}
                                     ${podiumHtml}
                                 </div>
                             </div>

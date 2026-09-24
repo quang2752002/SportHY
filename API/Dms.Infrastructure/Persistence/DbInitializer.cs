@@ -1,6 +1,12 @@
+using Dms.Application.Common;
 using Dms.Domain.Entities;
+using Dms.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Dms.Infrastructure.Persistence
 {
@@ -11,51 +17,32 @@ namespace Dms.Infrastructure.Persistence
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole<int>> roleManager)
         {
+            // 1. Đảm bảo schema migration và các cột mở rộng đã sẵn sàng
             try
             {
-                await context.Database.ExecuteSqlRawAsync(@"
-IF NOT EXISTS (
-    SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-    WHERE TABLE_NAME = 'MonTheThao' AND COLUMN_NAME = 'LoaiThiDau'
-)
-BEGIN
-    ALTER TABLE MonTheThao ADD LoaiThiDau NVARCHAR(30) NULL;
-END
-");
-                await context.Database.ExecuteSqlRawAsync(@"
-UPDATE MonTheThao 
-SET LoaiThiDau = CASE WHEN LaMonDongDoi = 1 THEN 'DongDoi' ELSE 'CaNhan' END 
-WHERE LoaiThiDau IS NULL OR LoaiThiDau = '';
-");
+                await context.Database.MigrateAsync();
             }
             catch { }
 
-            // Đảm bảo Database đã được tạo hoặc được migrate
-            await context.Database.MigrateAsync();
-
             try
             {
                 await context.Database.ExecuteSqlRawAsync(@"
-                    IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('GiaiDau') AND name = 'HanDangKy'
-                    )
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MonTheThao') AND name = 'LoaiThiDau')
+                    BEGIN
+                        ALTER TABLE MonTheThao ADD LoaiThiDau NVARCHAR(30) NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('GiaiDau') AND name = 'HanDangKy')
                     BEGIN
                         ALTER TABLE GiaiDau ADD HanDangKy DATETIME2 NULL;
                     END
 
-                    IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('GiaiDau') AND name = 'TruongBanTrongTaiId'
-                    )
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('GiaiDau') AND name = 'TruongBanTrongTaiId')
                     BEGIN
                         ALTER TABLE GiaiDau ADD TruongBanTrongTaiId INT NULL;
                     END
 
-                    IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('GiaiDauMonTheThao') AND name = 'NguoiDieuHanhId'
-                    )
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('GiaiDauMonTheThao') AND name = 'NguoiDieuHanhId')
                     BEGIN
                         ALTER TABLE GiaiDauMonTheThao ADD NguoiDieuHanhId INT NULL;
                     END
@@ -63,24 +50,22 @@ WHERE LoaiThiDau IS NULL OR LoaiThiDau = '';
             }
             catch { }
 
-            // Khởi tạo các Role mặc định theo hệ thống thể thao giải đấu
-            string[] roleNames = Dms.Application.Common.AppRoles.AllRoles;
+            // 2. Khởi tạo các Role mặc định theo hệ thống
+            string[] roleNames = AppRoles.AllRoles;
             foreach (var roleName in roleNames)
             {
-                var roleExist = await roleManager.RoleExistsAsync(roleName);
-                if (!roleExist)
+                if (!await roleManager.RoleExistsAsync(roleName))
                 {
                     await roleManager.CreateAsync(new IdentityRole<int>(roleName));
                 }
             }
 
-            // Gán Permissions cho Role Admin (Toàn bộ quyền hệ thống)
-            var adminRole = await roleManager.FindByNameAsync(Dms.Application.Common.AppRoles.Admin);
+            // Gán Permissions cho Role Admin
+            var adminRole = await roleManager.FindByNameAsync(AppRoles.Admin);
             if (adminRole != null)
             {
                 var existingClaims = await roleManager.GetClaimsAsync(adminRole);
-                var allPermissions = Dms.Application.Common.Permissions.GetAllPermissions();
-
+                var allPermissions = Permissions.GetAllPermissions();
                 foreach (var permission in allPermissions)
                 {
                     if (!existingClaims.Any(c => c.Type == "permission" && c.Value == permission))
@@ -90,654 +75,669 @@ WHERE LoaiThiDau IS NULL OR LoaiThiDau = '';
                 }
             }
 
-            // Cấu hình permissions cho từng Role nghiệp vụ
-            var rolePermissionsMap = new Dictionary<string, List<string>>
+            // 3. Khởi tạo các Đơn Vị (4 đơn vị đại học lớn)
+            var khoiTruong = await context.Khois.FirstOrDefaultAsync(k => k.Ma == "KHOI_DAIHOC");
+            if (khoiTruong == null)
             {
-                [Dms.Application.Common.AppRoles.Manager] = new()
+                khoiTruong = new Khoi
                 {
-                    Dms.Application.Common.Permissions.GiaiDau.View,
-                    Dms.Application.Common.Permissions.GiaiDau.Create,
-                    Dms.Application.Common.Permissions.GiaiDau.Edit,
-                    Dms.Application.Common.Permissions.GiaiDau.Delete,
-                    Dms.Application.Common.Permissions.GiaiDau.AssignManager,
-                    Dms.Application.Common.Permissions.Khoi.View,
-                    Dms.Application.Common.Permissions.Khoi.Create,
-                    Dms.Application.Common.Permissions.Khoi.Edit,
-                    Dms.Application.Common.Permissions.DonVi.View,
-                    Dms.Application.Common.Permissions.DonVi.Create,
-                    Dms.Application.Common.Permissions.DonVi.Edit,
-                    Dms.Application.Common.Permissions.DanhMucMonTheThao.View,
-                    Dms.Application.Common.Permissions.DanhMucMonTheThao.Create,
-                    Dms.Application.Common.Permissions.DanhMucMonTheThao.Edit,
-                    Dms.Application.Common.Permissions.MonTheThao.View,
-                    Dms.Application.Common.Permissions.MonTheThao.Create,
-                    Dms.Application.Common.Permissions.MonTheThao.Edit,
-                    Dms.Application.Common.Permissions.MonTheThao.Delete,
-                    Dms.Application.Common.Permissions.GiaiDauMonTheThao.View,
-                    Dms.Application.Common.Permissions.GiaiDauMonTheThao.Create,
-                    Dms.Application.Common.Permissions.GiaiDauMonTheThao.Delete,
-                    Dms.Application.Common.Permissions.NoiDungThiDau.View,
-                    Dms.Application.Common.Permissions.NoiDungThiDau.Create,
-                    Dms.Application.Common.Permissions.NoiDungThiDau.Edit,
-                    Dms.Application.Common.Permissions.BangDau.View,
-                    Dms.Application.Common.Permissions.BangDau.Create,
-                    Dms.Application.Common.Permissions.BangDau.Edit,
-                    Dms.Application.Common.Permissions.BangDau.Delete,
-                    Dms.Application.Common.Permissions.VongDau.View,
-                    Dms.Application.Common.Permissions.VongDau.Create,
-                    Dms.Application.Common.Permissions.VongDau.Edit,
-                    Dms.Application.Common.Permissions.Doi.View,
-                    Dms.Application.Common.Permissions.Doi.Create,
-                    Dms.Application.Common.Permissions.Doi.Edit,
-                    Dms.Application.Common.Permissions.Doi.Delete,
-                    Dms.Application.Common.Permissions.VanDongVien.View,
-                    Dms.Application.Common.Permissions.VanDongVien.Create,
-                    Dms.Application.Common.Permissions.VanDongVien.Edit,
-                    Dms.Application.Common.Permissions.VanDongVien.Delete,
-                    Dms.Application.Common.Permissions.DangKyThiDau.View,
-                    Dms.Application.Common.Permissions.DangKyThiDau.Create,
-                    Dms.Application.Common.Permissions.DangKyThiDau.Edit,
-                    Dms.Application.Common.Permissions.DangKyThiDau.Approve,
-                    Dms.Application.Common.Permissions.TranDau.View,
-                    Dms.Application.Common.Permissions.TranDau.Create,
-                    Dms.Application.Common.Permissions.TranDau.Edit,
-                    Dms.Application.Common.Permissions.TranDau.Delete,
-                    Dms.Application.Common.Permissions.SanDau.View,
-                    Dms.Application.Common.Permissions.SanDau.Create,
-                    Dms.Application.Common.Permissions.SanDau.Edit,
-                    Dms.Application.Common.Permissions.HuyChuong.View,
-                    Dms.Application.Common.Permissions.HuyChuong.Create,
-                    Dms.Application.Common.Permissions.HuyChuong.Edit,
-                },
-                [Dms.Application.Common.AppRoles.HeadReferee] = new()
-                {
-                    Dms.Application.Common.Permissions.TrongTai.Assign,
-                    Dms.Application.Common.Permissions.TrongTai.Supervise,
-                    Dms.Application.Common.Permissions.TrongTai.View,
-                    Dms.Application.Common.Permissions.GiaiDau.View,
-                    Dms.Application.Common.Permissions.MonTheThao.View,
-                    Dms.Application.Common.Permissions.TranDau.View,
-                    Dms.Application.Common.Permissions.TranDau.UpdateScore,
-                },
-                [Dms.Application.Common.AppRoles.Referee] = new()
-                {
-                    Dms.Application.Common.Permissions.TranDau.View,
-                    Dms.Application.Common.Permissions.TranDau.UpdateScore,
-                    Dms.Application.Common.Permissions.GiaiDau.View,
-                    Dms.Application.Common.Permissions.MonTheThao.View,
-                    Dms.Application.Common.Permissions.SanDau.View,
-                    Dms.Application.Common.Permissions.TrongTai.View,
-                    Dms.Application.Common.Permissions.BangDau.View,
-                    Dms.Application.Common.Permissions.VongDau.View,
-                    Dms.Application.Common.Permissions.DonVi.View,
-                    Dms.Application.Common.Permissions.Doi.View,
-                    Dms.Application.Common.Permissions.VanDongVien.View,
-                    Dms.Application.Common.Permissions.DangKyThiDau.View
-                },
-                [Dms.Application.Common.AppRoles.Secretary] = new()
-                {
-                    Dms.Application.Common.Permissions.GiaiDau.View,
-                    Dms.Application.Common.Permissions.TranDau.View,
-                    Dms.Application.Common.Permissions.TranDau.VerifyReport,
-                    Dms.Application.Common.Permissions.TranDau.ExportReport
-                },
-                [Dms.Application.Common.AppRoles.Delegation] = new()
-                {
-                    Dms.Application.Common.Permissions.DonVi.ManageAthletes,
-                    Dms.Application.Common.Permissions.GiaiDau.View,
-                    Dms.Application.Common.Permissions.Doi.View,
-                    Dms.Application.Common.Permissions.Doi.Create,
-                    Dms.Application.Common.Permissions.Doi.Edit,
-                    Dms.Application.Common.Permissions.VanDongVien.View,
-                    Dms.Application.Common.Permissions.VanDongVien.Create,
-                    Dms.Application.Common.Permissions.VanDongVien.Edit,
-                    Dms.Application.Common.Permissions.VanDongVien.Delete,
-                    Dms.Application.Common.Permissions.DangKyThiDau.View,
-                    Dms.Application.Common.Permissions.DangKyThiDau.Create,
-                    Dms.Application.Common.Permissions.DangKyThiDau.Edit,
-                    Dms.Application.Common.Permissions.DangKyThiDau.Delete,
-                }
-            };
-
-            foreach (var kvp in rolePermissionsMap)
-            {
-                var roleObj = await roleManager.FindByNameAsync(kvp.Key);
-                if (roleObj != null)
-                {
-                    var existingClaims = await roleManager.GetClaimsAsync(roleObj);
-                    foreach (var permission in kvp.Value)
-                    {
-                        if (!existingClaims.Any(c => c.Type == "permission" && c.Value == permission))
-                        {
-                            await roleManager.AddClaimAsync(roleObj, new System.Security.Claims.Claim("permission", permission));
-                        }
-                    }
-                }
+                    Ma = "KHOI_DAIHOC",
+                    Ten = "Khối Các Trường Đại Học & Học Viện",
+                    MoTa = "Các trường Đại học, Học viện trên toàn quốc",
+                    TrangThai = true
+                };
+                await context.Khois.AddAsync(khoiTruong);
+                await context.SaveChangesAsync();
             }
 
-            // Khởi tạo tài khoản Admin mặc định
-            // Danh sách tài khoản mẫu cho 6 vai trò
-            var defaultUsers = new[]
+            var dvBk = await context.DonVis.FirstOrDefaultAsync(d => d.Ma == "DV_BK");
+            if (dvBk == null)
             {
+                dvBk = new DonVi { Ma = "DV_BK", Ten = "Đại học Bách Khoa Hà Nội", KhoiId = khoiTruong.Id, LoaiDonVi = "TruongHoc", DiaChi = "Số 1 Đại Cồ Việt, Hai Bà Trưng, Hà Nội", NguoiDaiDien = "Nguyễn Văn Hùng", SoDienThoai = "0901234567", Email = "sport@hust.edu.vn", TrangThai = true };
+                await context.DonVis.AddAsync(dvBk);
+            }
 
-                new { Username = "admin", Email = "admin@sportdms.com", Name = "Quản trị viên hệ thống", Role = Dms.Application.Common.AppRoles.Admin, Pass = "Admin@123" },
-                new { Username = "manager", Email = "manager@sportdms.com", Name = "Nguyễn Văn Quản Lý", Role = Dms.Application.Common.AppRoles.Manager, Pass = "Manager@123" },
-                new { Username = "head_referee", Email = "head_ref@sportdms.com", Name = "Trần Trưởng Trọng Tài", Role = Dms.Application.Common.AppRoles.HeadReferee, Pass = "HeadReferee@123" },
-                new { Username = "referee", Email = "referee@sportdms.com", Name = "Lê Văn Trọng Tài", Role = Dms.Application.Common.AppRoles.Referee, Pass = "Referee@123" },
-                new { Username = "delegation", Email = "delegation@sportdms.com", Name = "Đoàn VĐV Sở VH-TT", Role = Dms.Application.Common.AppRoles.Delegation, Pass = "Delegation@123" },
-                new { Username = "donvi_bk", Email = "bk_hcm@sportdms.com", Name = "Đại diện Đại học Bách Khoa", Role = Dms.Application.Common.AppRoles.Delegation, Pass = "Delegation@123" },
-                new { Username = "donvi_hvtc", Email = "tc@hanoi.edu.vn", Name = "Đại diện Học Viện Tài Chính", Role = Dms.Application.Common.AppRoles.Delegation, Pass = "Delegation@123" },
-                new { Username = "donvi_sphn", Email = "sp@hanoi.edu.vn", Name = "Đại diện ĐH Sư Phạm Hà Nội", Role = Dms.Application.Common.AppRoles.Delegation, Pass = "Delegation@123" },
-                new { Username = "donvi_qghn", Email = "qg@hanoi.edu.vn", Name = "Đại diện ĐH Quốc Gia Hà Nội", Role = Dms.Application.Common.AppRoles.Delegation, Pass = "Delegation@123" }
-            };
-            foreach (var u in defaultUsers)
+            var dvHvtc = await context.DonVis.FirstOrDefaultAsync(d => d.Ma == "DV_HVTC");
+            if (dvHvtc == null)
             {
-                var existing = await userManager.FindByNameAsync(u.Username);
-                if (existing == null)
+                dvHvtc = new DonVi { Ma = "DV_HVTC", Ten = "Học Viện Tài Chính", KhoiId = khoiTruong.Id, LoaiDonVi = "TruongHoc", DiaChi = "Số 58 Lê Văn Hiến, Bắc Từ Liêm, Hà Nội", NguoiDaiDien = "Trần Thị Mai", SoDienThoai = "0902345678", Email = "sport@hvtc.edu.vn", TrangThai = true };
+                await context.DonVis.AddAsync(dvHvtc);
+            }
+
+            var dvSphn = await context.DonVis.FirstOrDefaultAsync(d => d.Ma == "DV_SPHN");
+            if (dvSphn == null)
+            {
+                dvSphn = new DonVi { Ma = "DV_SPHN", Ten = "Đại học Sư Phạm Hà Nội", KhoiId = khoiTruong.Id, LoaiDonVi = "TruongHoc", DiaChi = "136 Xuân Thủy, Cầu Giấy, Hà Nội", NguoiDaiDien = "Lê Hoàng Quân", SoDienThoai = "0903456789", Email = "sport@hnue.edu.vn", TrangThai = true };
+                await context.DonVis.AddAsync(dvSphn);
+            }
+
+            var dvQghn = await context.DonVis.FirstOrDefaultAsync(d => d.Ma == "DV_QGHN");
+            if (dvQghn == null)
+            {
+                dvQghn = new DonVi { Ma = "DV_QGHN", Ten = "Đại học Quốc Gia Hà Nội", KhoiId = khoiTruong.Id, LoaiDonVi = "TruongHoc", DiaChi = "144 Xuân Thủy, Cầu Giấy, Hà Nội", NguoiDaiDien = "Phạm Quốc Tuấn", SoDienThoai = "0904567890", Email = "sport@vnu.edu.vn", TrangThai = true };
+                await context.DonVis.AddAsync(dvQghn);
+            }
+            await context.SaveChangesAsync();
+
+            // 4. Khởi tạo danh sách Trọng Tài trong bảng TrongTai
+            var ttA = await context.TrongTais.FirstOrDefaultAsync(t => t.Ma == "TT_A");
+            if (ttA == null)
+            {
+                ttA = new TrongTai { Ma = "TT_A", HoTen = "Tài A (Trưởng ban)", GioiTinh = "Nam", SoDienThoai = "0988000001", Email = "taia@sport.vn", CapBac = "Trọng tài Quốc gia", TrangThai = true };
+                await context.TrongTais.AddAsync(ttA);
+            }
+
+            var ttB = await context.TrongTais.FirstOrDefaultAsync(t => t.Ma == "TT_B");
+            if (ttB == null)
+            {
+                ttB = new TrongTai { Ma = "TT_B", HoTen = "Trọng tài B", GioiTinh = "Nam", SoDienThoai = "0988000002", Email = "taib@sport.vn", CapBac = "Trọng tài cấp 1", TrangThai = true };
+                await context.TrongTais.AddAsync(ttB);
+            }
+
+            var ttC = await context.TrongTais.FirstOrDefaultAsync(t => t.Ma == "TT_C");
+            if (ttC == null)
+            {
+                ttC = new TrongTai { Ma = "TT_C", HoTen = "Trọng tài C", GioiTinh = "Nam", SoDienThoai = "0988000003", Email = "taic@sport.vn", CapBac = "Trọng tài cấp 1", TrangThai = true };
+                await context.TrongTais.AddAsync(ttC);
+            }
+
+            var ttD = await context.TrongTais.FirstOrDefaultAsync(t => t.Ma == "TT_D");
+            if (ttD == null)
+            {
+                ttD = new TrongTai { Ma = "TT_D", HoTen = "Trọng tài D", GioiTinh = "Nam", SoDienThoai = "0988000004", Email = "taid@sport.vn", CapBac = "Trọng tài cấp 2", TrangThai = true };
+                await context.TrongTais.AddAsync(ttD);
+            }
+
+            var ttE = await context.TrongTais.FirstOrDefaultAsync(t => t.Ma == "TT_E");
+            if (ttE == null)
+            {
+                ttE = new TrongTai { Ma = "TT_E", HoTen = "Trọng tài E", GioiTinh = "Nam", SoDienThoai = "0988000005", Email = "taie@sport.vn", CapBac = "Trọng tài cấp 2", TrangThai = true };
+                await context.TrongTais.AddAsync(ttE);
+            }
+
+            var ttF = await context.TrongTais.FirstOrDefaultAsync(t => t.Ma == "TT_F");
+            if (ttF == null)
+            {
+                ttF = new TrongTai { Ma = "TT_F", HoTen = "Trọng tài F", GioiTinh = "Nam", SoDienThoai = "0988000006", Email = "taif@sport.vn", CapBac = "Trọng tài cấp 2", TrangThai = true };
+                await context.TrongTais.AddAsync(ttF);
+            }
+
+            var ttTrong = await context.TrongTais.FirstOrDefaultAsync(t => t.Ma == "TT_TRONG");
+            if (ttTrong == null)
+            {
+                ttTrong = new TrongTai { Ma = "TT_TRONG", HoTen = "Trần Văn Trọng", GioiTinh = "Nam", SoDienThoai = "0988000007", Email = "trong@sport.vn", CapBac = "Trọng tài cấp 1", TrangThai = true };
+                await context.TrongTais.AddAsync(ttTrong);
+            }
+
+            var ttHanh = await context.TrongTais.FirstOrDefaultAsync(t => t.Ma == "TT_HANH");
+            if (ttHanh == null)
+            {
+                ttHanh = new TrongTai { Ma = "TT_HANH", HoTen = "Lê Thị Bích Hạnh", GioiTinh = "Nu", SoDienThoai = "0988000008", Email = "hanh@sport.vn", CapBac = "Giám sát trọng tài FIFA", TrangThai = true };
+                await context.TrongTais.AddAsync(ttHanh);
+            }
+            await context.SaveChangesAsync();
+
+            // 5. Khởi tạo danh sách Tài Khoản Users đăng nhập
+            var seedUsers = new[]
+            {
+                new { Username = "admin", Email = "admin@sport.vn", Name = "Quản trị viên hệ thống", Pass = "Admin@123", Roles = new[] { AppRoles.Admin }, DonViId = (int?)null, TrongTaiId = (int?)null },
+                new { Username = "manager", Email = "manager@sport.vn", Name = "Nguyễn Văn Quản Lý", Pass = "Manager@123", Roles = new[] { AppRoles.Manager }, DonViId = (int?)null, TrongTaiId = (int?)null },
+                
+                // 4 Đơn vị
+                new { Username = "donvi_bk", Email = "bk@hust.edu.vn", Name = "Đoàn ĐH Bách Khoa Hà Nội", Pass = "Delegation@123", Roles = new[] { AppRoles.Delegation }, DonViId = (int?)dvBk.Id, TrongTaiId = (int?)null },
+                new { Username = "donvi_hvtc", Email = "tc@hvtc.edu.vn", Name = "Đoàn Học Viện Tài Chính", Pass = "Delegation@123", Roles = new[] { AppRoles.Delegation }, DonViId = (int?)dvHvtc.Id, TrongTaiId = (int?)null },
+                new { Username = "donvi_sphn", Email = "sp@hnue.edu.vn", Name = "Đoàn ĐH Sư Phạm Hà Nội", Pass = "Delegation@123", Roles = new[] { AppRoles.Delegation }, DonViId = (int?)dvSphn.Id, TrongTaiId = (int?)null },
+                new { Username = "donvi_qghn", Email = "qg@vnu.edu.vn", Name = "Đoàn ĐH Quốc Gia Hà Nội", Pass = "Delegation@123", Roles = new[] { AppRoles.Delegation }, DonViId = (int?)dvQghn.Id, TrongTaiId = (int?)null },
+
+                // Trưởng ban & Trọng tài
+                new { Username = "taia", Email = "taia@sport.vn", Name = "Tài A (Trưởng ban trọng tài)", Pass = "123", Roles = new[] { AppRoles.HeadReferee, AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttA.Id },
+                new { Username = "taib", Email = "taib@sport.vn", Name = "Trọng tài B", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttB.Id },
+                new { Username = "taic", Email = "taic@sport.vn", Name = "Trọng tài C", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttC.Id },
+                new { Username = "taid", Email = "taid@sport.vn", Name = "Trọng tài D", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttD.Id },
+                new { Username = "taie", Email = "taie@sport.vn", Name = "Trọng tài E", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttE.Id },
+                new { Username = "taif", Email = "taif@sport.vn", Name = "Trọng tài F", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttF.Id },
+                new { Username = "trong", Email = "trong@sport.vn", Name = "Trần Văn Trọng", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttTrong.Id },
+                new { Username = "hanh", Email = "hanh@sport.vn", Name = "Lê Thị Bích Hạnh (Điều hành môn)", Pass = "123", Roles = new[] { AppRoles.SportCoordinator, AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttHanh.Id },
+            };
+
+            foreach (var u in seedUsers)
+            {
+                var userEntity = await userManager.FindByNameAsync(u.Username);
+                if (userEntity == null)
                 {
-                    var userEntity = new ApplicationUser
+                    userEntity = new ApplicationUser
                     {
                         UserName = u.Username,
                         Email = u.Email,
                         FullName = u.Name,
                         EmailConfirmed = true,
+                        DonViId = u.DonViId,
+                        TrongTaiId = u.TrongTaiId,
                         CreatedAt = DateTime.UtcNow
                     };
-
-                    var res = await userManager.CreateAsync(userEntity, u.Pass);
-                    if (res.Succeeded)
+                    var createResult = await userManager.CreateAsync(userEntity, u.Pass);
+                    if (createResult.Succeeded)
                     {
-                        await userManager.AddToRoleAsync(userEntity, u.Role);
+                        foreach (var role in u.Roles)
+                        {
+                            await userManager.AddToRoleAsync(userEntity, role);
+                        }
+                    }
+                }
+                else
+                {
+                    // Cập nhật lại mapping DonViId / TrongTaiId nếu chưa có
+                    userEntity.DonViId = u.DonViId;
+                    userEntity.TrongTaiId = u.TrongTaiId;
+                    userEntity.FullName = u.Name;
+                    await userManager.UpdateAsync(userEntity);
+
+                    foreach (var role in u.Roles)
+                    {
+                        if (!await userManager.IsInRoleAsync(userEntity, role))
+                        {
+                            await userManager.AddToRoleAsync(userEntity, role);
+                        }
                     }
                 }
             }
 
-            // Khởi tạo Menu Cha - Con mặc định nếu chưa có
-            if (!await context.Menus.AnyAsync())
+            // 6. Khởi tạo 20 Vận Động Viên cho MỖI đơn vị (Tổng cộng 80 VĐV cho 4 trường)
+            var existingVdvs = await context.VanDongViens.ToListAsync();
+            var units = new[]
             {
-                var homeMenu = new Menu { Title = "Trang chủ", Url = "/", Icon = "bi-house-door", SortOrder = 1, IsActive = true };
-                var serviceMenu = new Menu { Title = "Dịch vụ sửa chữa", Url = "#services", Icon = "bi-tools", SortOrder = 2, IsActive = true };
-                var pricingMenu = new Menu { Title = "Bảng giá dịch vụ", Url = "/#pricing", Icon = "bi-tags", SortOrder = 3, IsActive = true };
-                var tipsMenu = new Menu { Title = "Cẩm nang & Mẹo vặt", Url = "/tips", Icon = "bi-journal-text", SortOrder = 4, IsActive = true };
-                var contactMenu = new Menu { Title = "Liên hệ", Url = "/#contact", Icon = "bi-telephone", SortOrder = 5, IsActive = true };
-
-                await context.Menus.AddRangeAsync(homeMenu, serviceMenu, pricingMenu, tipsMenu, contactMenu);
-                await context.SaveChangesAsync();
-
-                // Menu con của "Dịch vụ sửa chữa"
-                var childServices = new List<Menu>
-                {
-                    new Menu { Title = "Bảo Dưỡng & Vệ Sinh Máy Lạnh", Url = "/repair/1", Icon = "bi-snow", SortOrder = 1, IsActive = true, ParentId = serviceMenu.Id },
-                    new Menu { Title = "Sửa Chữa Tủ Lạnh Inverter", Url = "/repair/2", Icon = "bi-patch-check", SortOrder = 2, IsActive = true, ParentId = serviceMenu.Id },
-                    new Menu { Title = "Sửa Chữa & Vệ Sinh Máy Giặt", Url = "/repair/3", Icon = "bi-water", SortOrder = 3, IsActive = true, ParentId = serviceMenu.Id },
-                    new Menu { Title = "Lắp Đặt & Di Dời Máy Lạnh", Url = "/repair/4", Icon = "bi-tools", SortOrder = 4, IsActive = true, ParentId = serviceMenu.Id },
-                };
-
-                // Menu con của "Cẩm nang & Mẹo vặt"
-                var childTips = new List<Menu>
-                {
-                    new Menu { Title = "5 Mẹo Dùng Máy Lạnh Tiết Kiệm Điện", Url = "/tips", Icon = "bi-lightning-charge", SortOrder = 1, IsActive = true, ParentId = tipsMenu.Id },
-                    new Menu { Title = "Nhận Biết Máy Lạnh Bị Thiếu Gas", Url = "/tips", Icon = "bi-exclamation-diamond", SortOrder = 2, IsActive = true, ParentId = tipsMenu.Id },
-                    new Menu { Title = "Tự Vệ Sinh Lưới Lọc Tại Nhà", Url = "/tips", Icon = "bi-brush", SortOrder = 3, IsActive = true, ParentId = tipsMenu.Id },
-                    new Menu { Title = "Xem Tất Cả Bài Viết Cẩm Nang", Url = "/tips", Icon = "bi-grid", SortOrder = 4, IsActive = true, ParentId = tipsMenu.Id },
-                };
-
-                await context.Menus.AddRangeAsync(childServices);
-                await context.Menus.AddRangeAsync(childTips);
-                await context.SaveChangesAsync();
-            }
-
-            // ==========================================
-            // SEED DỮ LIỆU THỂ THAO TOÀN DIỆN CHO TẤT CẢ 22 BẢNG
-            // ==========================================
-            if (!await context.GiaiDaus.AnyAsync() && !await context.DonVis.AnyAsync())
-            {
-                var now = DateTime.UtcNow;
-
-                // 1. Seed Loại Huy Chương
-                var lhcVang = new LoaiHuyChuong { Ma = "VANG", Ten = "Huy chương Vàng", ThuTu = 1 };
-                var lhcBac = new LoaiHuyChuong { Ma = "BAC", Ten = "Huy chương Bạc", ThuTu = 2 };
-                var lhcDong = new LoaiHuyChuong { Ma = "DONG", Ten = "Huy chương Đồng", ThuTu = 3 };
-                await context.LoaiHuyChuongs.AddRangeAsync(lhcVang, lhcBac, lhcDong);
-                await context.SaveChangesAsync();
-
-                // 2. Seed Khối
-                var khoiTruongHoc = new Khoi { Ma = "KHOI_TRUONG", Ten = "Khối Trường Học & Sinh Viên", MoTa = "Các trường ĐH, CĐ và THPT", TrangThai = true };
-                var khoiDoanhNghiep = new Khoi { Ma = "KHOI_DN", Ten = "Khối Cơ Quan & Doanh Nghiệp", MoTa = "Các cơ quan ban ngành và doanh nghiệp trên địa bàn", TrangThai = true };
-                var khoiCauLacBo = new Khoi { Ma = "KHOI_CLB", Ten = "Khối Câu Lạc Bộ Chuyên Nghiệp", MoTa = "Các câu lạc bộ thể thao mở rộng", TrangThai = true };
-                await context.Khois.AddRangeAsync(khoiTruongHoc, khoiDoanhNghiep, khoiCauLacBo);
-                await context.SaveChangesAsync();
-
-                // 3. Seed Đơn Vị (thuộc khối)
-                var dvBachKhoa = new DonVi { Ma = "DV_BK", Ten = "Đại học Bách Khoa", KhoiId = khoiTruongHoc.Id, LoaiDonVi = "TruongHoc", DiaChi = "268 Lý Thường Kiệt, Q.10, TP.HCM", NguoiDaiDien = "Nguyễn Văn Hùng", SoDienThoai = "0901234567", Email = "sport@hcmut.edu.vn", TrangThai = true };
-                var dvKinhTe = new DonVi { Ma = "DV_UEH", Ten = "Đại học Kinh Tế TP.HCM", KhoiId = khoiTruongHoc.Id, LoaiDonVi = "TruongHoc", DiaChi = "59C Nguyễn Đình Chiểu, Q.3, TP.HCM", NguoiDaiDien = "Trần Thị Mai", SoDienThoai = "0902345678", Email = "sport@ueh.edu.vn", TrangThai = true };
-                var dvFpt = new DonVi { Ma = "DV_FPT", Ten = "Tập đoàn FPT", KhoiId = khoiDoanhNghiep.Id, LoaiDonVi = "DoanhNghiep", DiaChi = "Khu Công nghệ cao, TP.Thủ Đức", NguoiDaiDien = "Lê Hoàng Quân", SoDienThoai = "0903456789", Email = "sport@fpt.com.vn", TrangThai = true };
-                var dvViettel = new DonVi { Ma = "DV_VTL", Ten = "Tập đoàn Viettel", KhoiId = khoiDoanhNghiep.Id, LoaiDonVi = "DoanhNghiep", DiaChi = "285 Cách Mạng Tháng 8, Q.10", NguoiDaiDien = "Phạm Quốc Tuấn", SoDienThoai = "0904567890", Email = "sport@viettel.vn", TrangThai = true };
-                await context.DonVis.AddRangeAsync(dvBachKhoa, dvKinhTe, dvFpt, dvViettel);
-                await context.SaveChangesAsync();
-
-                // 4. Seed Danh Mục Môn Thể Thao & Môn Thể Thao (10 môn thể thao)
-                var dmBong = new DanhMucMonTheThao { Ma = "DM_BONG", Ten = "Các môn bóng", MoTa = "Bóng đá, bóng chuyền, bóng rổ...", TrangThai = true };
-                var dmVot = new DanhMucMonTheThao { Ma = "DM_VOT", Ten = "Các môn dùng vợt", MoTa = "Cầu lông, bóng bàn, tennis, pickleball...", TrangThai = true };
-                var dmDienKinh = new DanhMucMonTheThao { Ma = "DM_DIENKINH", Ten = "Điền kinh & Dưới nước", MoTa = "Chạy cự ly, bơi tự do, bơi ếch...", TrangThai = true };
-                var dmTriTue = new DanhMucMonTheThao { Ma = "DM_TRITUE", Ten = "Thể thao trí tuệ", MoTa = "Cờ vua, cờ tướng...", TrangThai = true };
-                var dmVoThuat = new DanhMucMonTheThao { Ma = "DM_VOTHUAT", Ten = "Võ thuật & Đối kháng", MoTa = "Taekwondo, Karate, Vovinam...", TrangThai = true };
-                await context.DanhMucMonTheThaos.AddRangeAsync(dmBong, dmVot, dmDienKinh, dmTriTue, dmVoThuat);
-                await context.SaveChangesAsync();
-
-                // 10 môn thể thao phong phú
-                var monBongDa = new MonTheThao { DanhMucId = dmBong.Id, Ma = "BONG_DA", Ten = "Bóng đá sân 7", LaMonDongDoi = true, HinhThucThiDau = Dms.Domain.Enums.HinhThucThiDau.KetHopVongBangVaLoaiTrucTiep, MoTa = "Bóng đá mini cỏ nhân tạo 7 người (vòng bảng + knockout)", TrangThai = true };
-                var monBongChuyen = new MonTheThao { DanhMucId = dmBong.Id, Ma = "BONG_CHUYEN", Ten = "Bóng chuyền da", LaMonDongDoi = true, HinhThucThiDau = Dms.Domain.Enums.HinhThucThiDau.KetHopVongBangVaLoaiTrucTiep, MoTa = "Bóng chuyền 6 người tiêu chuẩn", TrangThai = true };
-                var monBongRo = new MonTheThao { DanhMucId = dmBong.Id, Ma = "BONG_RO", Ten = "Bóng rổ 3x3", LaMonDongDoi = true, HinhThucThiDau = Dms.Domain.Enums.HinhThucThiDau.LoaiTrucTiep, MoTa = "Bóng rổ nửa sân 3x3 nhịp độ cao", TrangThai = true };
-                var monCauLong = new MonTheThao { DanhMucId = dmVot.Id, Ma = "CAU_LONG", Ten = "Cầu lông", LaMonDongDoi = false, HinhThucThiDau = Dms.Domain.Enums.HinhThucThiDau.LoaiTrucTiep, MoTa = "Thi đấu đơn và đôi loại trực tiếp", TrangThai = true };
-                var monBongBan = new MonTheThao { DanhMucId = dmVot.Id, Ma = "BONG_BAN", Ten = "Bóng bàn", LaMonDongDoi = false, HinhThucThiDau = Dms.Domain.Enums.HinhThucThiDau.VongBang, MoTa = "Thi đấu vòng tròn tính điểm", TrangThai = true };
-                var monTennis = new MonTheThao { DanhMucId = dmVot.Id, Ma = "QUAN_VOT", Ten = "Quần vợt (Tennis)", LaMonDongDoi = false, HinhThucThiDau = Dms.Domain.Enums.HinhThucThiDau.LoaiTrucTiep, MoTa = "Thi đấu đơn nam, đôi nam phong trào", TrangThai = true };
-                var monPickleball = new MonTheThao { DanhMucId = dmVot.Id, Ma = "PICKLEBALL", Ten = "Pickleball", LaMonDongDoi = false, HinhThucThiDau = Dms.Domain.Enums.HinhThucThiDau.KetHopVongBangVaLoaiTrucTiep, MoTa = "Thi đấu đôi nam nữ pickleball hiện đại", TrangThai = true };
-                var monBoi = new MonTheThao { DanhMucId = dmDienKinh.Id, Ma = "BOI_LOI", Ten = "Bơi lội 50m", LaMonDongDoi = false, HinhThucThiDau = Dms.Domain.Enums.HinhThucThiDau.TinhDiemXepHang, MoTa = "Bơi tự do 50m bấm giờ xếp hạng", TrangThai = true };
-                var monChayDienKinh = new MonTheThao { DanhMucId = dmDienKinh.Id, Ma = "CHAY_100M", Ten = "Chạy cự ly ngắn 100m", LaMonDongDoi = false, HinhThucThiDau = Dms.Domain.Enums.HinhThucThiDau.TinhDiemXepHang, MoTa = "Điền kinh chạy nước rút 100m tính giây xếp hạng", TrangThai = true };
-                var monCoVua = new MonTheThao { DanhMucId = dmTriTue.Id, Ma = "CO_VUA", Ten = "Cờ vua tiêu chuẩn", LaMonDongDoi = false, HinhThucThiDau = Dms.Domain.Enums.HinhThucThiDau.HeThuySi, MoTa = "Thi đấu cờ vua hệ Thụy Sĩ 7 ván tính điểm", TrangThai = true };
-
-                await context.MonTheThaos.AddRangeAsync(
-                    monBongDa,
-                    monBongChuyen,
-                    monBongRo,
-                    monCauLong,
-                    monBongBan,
-                    monTennis,
-                    monPickleball,
-                    monBoi,
-                    monChayDienKinh,
-                    monCoVua
-                );
-                await context.SaveChangesAsync();
-
-                // 5. Seed Giải Đấu & Liên kết Khối (GiaiDauKhoi)
-                var giaiHoiThao = new GiaiDau
-                {
-                    Ma = "HSSV_2026",
-                    Ten = "Đại Hội Thể Thao Học Sinh Sinh Viên Mở Rộng 2026",
-                    Slug = "dai-hoi-the-thao-hoc-sinh-sinh-vien-mo-rong-2026",
-                    MoTa = "Giải đấu thường niên dành cho sinh viên và thanh niên các trường đại học, cao đẳng.",
-                    NgayBatDau = now.AddDays(-10),
-                    NgayKetThuc = now.AddDays(20),
-                    DiaDiem = "Trung tâm Văn hóa Thể thao Quận 10",
-                    PhamVi = Dms.Domain.Enums.PhamViGiaiDau.TheoKhoi,
-                    TrangThai = Dms.Domain.Enums.TrangThaiGiaiDau.DangDienRa
-                };
-
-                var giaiDoanhNghiep = new GiaiDau
-                {
-                    Ma = "CUP_DN_2026",
-                    Ten = "Giải Thể Thao Doanh Nghiệp Trẻ Thành Phố 2026",
-                    Slug = "giai-the-thao-doanh-nghiep-tre-thanh-pho-2026",
-                    MoTa = "Tranh cúp giao lưu giữa các doanh nghiệp và tập đoàn công nghệ hàng đầu.",
-                    NgayBatDau = now.AddDays(15),
-                    NgayKetThuc = now.AddDays(30),
-                    DiaDiem = "Nhà thi đấu Phú Thọ, TP.HCM",
-                    PhamVi = Dms.Domain.Enums.PhamViGiaiDau.TatCa,
-                    TrangThai = Dms.Domain.Enums.TrangThaiGiaiDau.SapDienRa
-                };
-                await context.GiaiDaus.AddRangeAsync(giaiHoiThao, giaiDoanhNghiep);
-                await context.SaveChangesAsync();
-
-                // Liên kết GiaiDau - Khoi
-                var gdk1 = new GiaiDauKhoi { GiaiDauId = giaiHoiThao.Id, KhoiId = khoiTruongHoc.Id };
-                var gdk2 = new GiaiDauKhoi { GiaiDauId = giaiDoanhNghiep.Id, KhoiId = khoiDoanhNghiep.Id };
-                await context.GiaiDauKhois.AddRangeAsync(gdk1, gdk2);
-                await context.SaveChangesAsync();
-
-                // 6. GiaiDauMonTheThao (Đưa môn thể thao vào giải đấu)
-                var gdmBongDa = new GiaiDauMonTheThao { GiaiDauId = giaiHoiThao.Id, MonTheThaoId = monBongDa.Id, MoTa = "Môn bóng đá nam sinh viên", TrangThai = true };
-                var gdmCauLong = new GiaiDauMonTheThao { GiaiDauId = giaiHoiThao.Id, MonTheThaoId = monCauLong.Id, MoTa = "Môn cầu lông nam nữ", TrangThai = true };
-                await context.GiaiDauMonTheThaos.AddRangeAsync(gdmBongDa, gdmCauLong);
-                await context.SaveChangesAsync();
-
-                // 7. Cụm Sân & Sân Đấu (CumSan, SanDau)
-                var cumSanPhuTho = new CumSan { Ma = "CS_PHUTHO", Ten = "Khu liên hợp thể thao Phú Thọ", DiaChi = "Số 1 Lữ Gia, P.15, Q.11, TP.HCM", SoLuongSan = 5, TrangThai = true };
-                await context.CumSans.AddAsync(cumSanPhuTho);
-                await context.SaveChangesAsync();
-
-                var sanBong1 = new SanDau { CumSanId = cumSanPhuTho.Id, Ma = "SAN_BONG_01", Ten = "Sân Bóng Đá 1 (Cỏ nhân tạo)", LoaiSan = "SanBongDa", SoSan = 1, TrangThai = true };
-                var sanCauLong1 = new SanDau { CumSanId = cumSanPhuTho.Id, Ma = "SAN_CL_01", Ten = "Sân Cầu Lông A1", LoaiSan = "SanCauLong", SoSan = 2, TrangThai = true };
-                await context.SanDaus.AddRangeAsync(sanBong1, sanCauLong1);
-                await context.SaveChangesAsync();
-
-                // 9. Trọng Tài (TrongTai)
-                var tt1 = new TrongTai { Ma = "TT_001", HoTen = "Trần Trọng Tài Quốc Gia", GioiTinh = "Nam", SoDienThoai = "0988112233", Email = "ref1@sport.vn", CapBac = "Trọng tài cấp 1", TrangThai = true };
-                var tt2 = new TrongTai { Ma = "TT_002", HoTen = "Lê Thị Bích Hạnh", GioiTinh = "Nu", SoDienThoai = "0988223344", Email = "ref2@sport.vn", CapBac = "Trọng tài FIFA", TrangThai = true };
-                await context.TrongTais.AddRangeAsync(tt1, tt2);
-                await context.SaveChangesAsync();
-
-                // 10. Vận động viên & Đội (VanDongVien, Doi, ThanhVienDoi)
-                var vdv1 = new VanDongVien { Ma = "VDV_001", HoTen = "Nguyễn Văn Quang", DonViId = dvBachKhoa.Id, GioiTinh = "Nam", NgaySinh = new DateTime(2002, 5, 27), SoDienThoai = "0911223344", Email = "quang@hcmut.edu.vn", TrangThai = true };
-                var vdv2 = new VanDongVien { Ma = "VDV_002", HoTen = "Lê Hồng Phát", DonViId = dvBachKhoa.Id, GioiTinh = "Nam", NgaySinh = new DateTime(2003, 8, 15), SoDienThoai = "0911223345", Email = "phat@hcmut.edu.vn", TrangThai = true };
-                var vdv3 = new VanDongVien { Ma = "VDV_003", HoTen = "Phạm Minh Triết", DonViId = dvKinhTe.Id, GioiTinh = "Nam", NgaySinh = new DateTime(2002, 11, 20), SoDienThoai = "0922334455", Email = "triet@ueh.edu.vn", TrangThai = true };
-                var vdv4 = new VanDongVien { Ma = "VDV_004", HoTen = "Võ Hoàng Nam", DonViId = dvKinhTe.Id, GioiTinh = "Nam", NgaySinh = new DateTime(2004, 3, 10), SoDienThoai = "0922334456", Email = "nam@ueh.edu.vn", TrangThai = true };
-                await context.VanDongViens.AddRangeAsync(vdv1, vdv2, vdv3, vdv4);
-                await context.SaveChangesAsync();
-
-                var doiBk = new Doi { Ma = "DOI_BK_FC", Ten = "FC Bách Khoa TP.HCM", DonViId = dvBachKhoa.Id, NguoiQuanLy = "Thầy Hùng", SoDienThoai = "0901234567", TrangThai = true };
-                var doiUeh = new Doi { Ma = "DOI_UEH_FC", Ten = "FC Kinh Tế UEH", DonViId = dvKinhTe.Id, NguoiQuanLy = "Cô Mai", SoDienThoai = "0902345678", TrangThai = true };
-                await context.Dois.AddRangeAsync(doiBk, doiUeh);
-                await context.SaveChangesAsync();
-
-                var tvd1 = new ThanhVienDoi { DoiId = doiBk.Id, VanDongVienId = vdv1.Id, SoAo = "10", ViTri = "Tiền đạo", LaDoiTruong = true, NgayThamGia = now.AddMonths(-3) };
-                var tvd2 = new ThanhVienDoi { DoiId = doiBk.Id, VanDongVienId = vdv2.Id, SoAo = "07", ViTri = "Tiền vệ", LaDoiTruong = false, NgayThamGia = now.AddMonths(-3) };
-                var tvd3 = new ThanhVienDoi { DoiId = doiUeh.Id, VanDongVienId = vdv3.Id, SoAo = "09", ViTri = "Tiền đạo", LaDoiTruong = true, NgayThamGia = now.AddMonths(-3) };
-                var tvd4 = new ThanhVienDoi { DoiId = doiUeh.Id, VanDongVienId = vdv4.Id, SoAo = "01", ViTri = "Thủ môn", LaDoiTruong = false, NgayThamGia = now.AddMonths(-3) };
-                await context.ThanhVienDois.AddRangeAsync(tvd1, tvd2, tvd3, tvd4);
-                await context.SaveChangesAsync();
-
-                // 11. Đăng ký thi đấu & Chi tiết đăng ký (DangKyThiDau, ChiTietDangKyThiDau)
-                var dkBk = new DangKyThiDau { GiaiDauMonTheThaoId = gdmBongDa.Id, DoiId = doiBk.Id, SoDangKy = "DK_BK_BD", TenDangKy = "Đội tuyển Bóng đá ĐH Bách Khoa", TrangThai = "DaDuyet", NgayDangKy = now.AddDays(-15) };
-                var dkUeh = new DangKyThiDau { GiaiDauMonTheThaoId = gdmBongDa.Id, DoiId = doiUeh.Id, SoDangKy = "DK_UEH_BD", TenDangKy = "Đội tuyển Bóng đá ĐH Kinh Tế", TrangThai = "DaDuyet", NgayDangKy = now.AddDays(-14) };
-                var dkCauLong1 = new DangKyThiDau { GiaiDauMonTheThaoId = gdmCauLong.Id, SoDangKy = "DK_CL_VDV1", TenDangKy = "Nguyễn Văn Quang (BK)", TrangThai = "DaDuyet", NgayDangKy = now.AddDays(-12) };
-                var dkCauLong2 = new DangKyThiDau { GiaiDauMonTheThaoId = gdmCauLong.Id, SoDangKy = "DK_CL_VDV3", TenDangKy = "Phạm Minh Triết (UEH)", TrangThai = "DaDuyet", NgayDangKy = now.AddDays(-12) };
-                await context.DangKyThiDaus.AddRangeAsync(dkBk, dkUeh, dkCauLong1, dkCauLong2);
-                await context.SaveChangesAsync();
-
-               
-
-                // 12. Bảng đấu & Thành viên bảng (BangDau, ThanhVienBang)
-                var bangA = new BangDau { GiaiDauMonTheThaoId = gdmBongDa.Id, Ma = "BANG_A", Ten = "Bảng A Bóng Đá", ThuTu = 1 };
-                await context.BangDaus.AddAsync(bangA);
-                await context.SaveChangesAsync();
-
-                var tvb1 = new ThanhVienBang { BangDauId = bangA.Id, DangKyThiDauId = dkBk.Id, HatGiong = 1, SoTran = 1, SoThang = 1, SoHoa = 0, SoThua = 0, DiemGhiDuoc = 3, DiemBiGhi = 1, Diem = 3, XepHang = 1 };
-                var tvb2 = new ThanhVienBang { BangDauId = bangA.Id, DangKyThiDauId = dkUeh.Id, HatGiong = 2, SoTran = 1, SoThang = 0, SoHoa = 0, SoThua = 1, DiemGhiDuoc = 1, DiemBiGhi = 3, Diem = 0, XepHang = 2 };
-                await context.ThanhVienBangs.AddRangeAsync(tvb1, tvb2);
-                await context.SaveChangesAsync();
-
-                // 13. Vòng đấu (VongDau)
-                var vongBang = new VongDau { GiaiDauMonTheThaoId = gdmBongDa.Id, Ten = "Vòng Bảng", LoaiVong = "VongBang", ThuTu = 1 };
-                var vongChungKet = new VongDau { GiaiDauMonTheThaoId = gdmBongDa.Id, Ten = "Trận Chung Kết", LoaiVong = "ChungKet", ThuTu = 2 };
-                await context.VongDaus.AddRangeAsync(vongBang, vongChungKet);
-                await context.SaveChangesAsync();
-
-                // 14. Trận đấu & Phân công trọng tài (TranDau, PhanCongTrongTai)
-                var tranBong1 = new TranDau
-                {
-                    GiaiDauMonTheThaoId = gdmBongDa.Id,
-                    VongDauId = vongBang.Id,
-                    BangDauId = bangA.Id,
-                    SanDauId = sanBong1.Id,
-                    SoTran = 1,
-                    TenTran = "Bách Khoa vs Kinh Tế (Lượt 1 Bảng A)",
-                    ThoiGianDuKien = now.AddDays(-2),
-                    ThoiGianBatDau = now.AddDays(-2).AddHours(8),
-                    ThoiGianKetThuc = now.AddDays(-2).AddHours(9).AddMinutes(30),
-                    TrangThai = "KetThuc",
-                    GhiChu = "Trận đấu sôi nổi, thời tiết đẹp"
-                };
-                await context.TranDaus.AddAsync(tranBong1);
-                await context.SaveChangesAsync();
-
-                var pc1 = new PhanCongTrongTai { TranDauId = tranBong1.Id, TrongTaiId = tt1.Id, VaiTro = "Trọng tài chính", GhiChu = "Điều hành tốt trận đấu" };
-                var pc2 = new PhanCongTrongTai { TranDauId = tranBong1.Id, TrongTaiId = tt2.Id, VaiTro = "Trọng tài bàn", GhiChu = "Ghi chép biên bản chính xác" };
-                await context.PhanCongTrongTais.AddRangeAsync(pc1, pc2);
-                await context.SaveChangesAsync();
-
-                // 15. Thành phần trận đấu (ThanhPhanTranDau)
-                var tp1 = new ThanhPhanTranDau { TranDauId = tranBong1.Id, DangKyThiDauId = dkBk.Id, ViTri = 1, TrangThai = "ThamGia" };
-                var tp2 = new ThanhPhanTranDau { TranDauId = tranBong1.Id, DangKyThiDauId = dkUeh.Id, ViTri = 2, TrangThai = "ThamGia" };
-                await context.ThanhPhanTranDaus.AddRangeAsync(tp1, tp2);
-                await context.SaveChangesAsync();
-
-                // 16. Hiệp đấu (HiepDau)
-                var hiep1 = new HiepDau { TranDauId = tranBong1.Id, SoHiep = 1, ThoiGianBatDau = tranBong1.ThoiGianBatDau, ThoiGianKetThuc = tranBong1.ThoiGianBatDau?.AddMinutes(35), TrangThai = "KetThuc" };
-                var hiep2 = new HiepDau { TranDauId = tranBong1.Id, SoHiep = 2, ThoiGianBatDau = tranBong1.ThoiGianBatDau?.AddMinutes(45), ThoiGianKetThuc = tranBong1.ThoiGianKetThuc, TrangThai = "KetThuc" };
-                await context.HiepDaus.AddRangeAsync(hiep1, hiep2);
-                await context.SaveChangesAsync();
-
-                // 17. Kết quả hiệp đấu (KetQuaHiepDau)
-                var kqHiep1_Tp1 = new KetQuaHiepDau { HiepDauId = hiep1.Id, ThanhPhanTranDauId = tp1.Id, Diem = 2, GhiChu = "Ghi 2 bàn trong hiệp 1" };
-                var kqHiep1_Tp2 = new KetQuaHiepDau { HiepDauId = hiep1.Id, ThanhPhanTranDauId = tp2.Id, Diem = 0 };
-                var kqHiep2_Tp1 = new KetQuaHiepDau { HiepDauId = hiep2.Id, ThanhPhanTranDauId = tp1.Id, Diem = 1, GhiChu = "Ghi thêm 1 bàn trong hiệp 2" };
-                var kqHiep2_Tp2 = new KetQuaHiepDau { HiepDauId = hiep2.Id, ThanhPhanTranDauId = tp2.Id, Diem = 1, GhiChu = "Gỡ lại 1 bàn danh dự" };
-                await context.KetQuaHiepDaus.AddRangeAsync(kqHiep1_Tp1, kqHiep1_Tp2, kqHiep2_Tp1, kqHiep2_Tp2);
-                await context.SaveChangesAsync();
-
-                // 18. Kết quả chung cuộc trận đấu (KetQuaTranDau)
-                var kqTran_Tp1 = new KetQuaTranDau { ThanhPhanTranDauId = tp1.Id, LoaiKetQua = "Thang", Diem = 3, XepHang = 1, KetQuaText = "Thắng 3 - 1" };
-                var kqTran_Tp2 = new KetQuaTranDau { ThanhPhanTranDauId = tp2.Id, LoaiKetQua = "Thua", Diem = 1, XepHang = 2, KetQuaText = "Thua 1 - 3" };
-                await context.KetQuaTranDaus.AddRangeAsync(kqTran_Tp1, kqTran_Tp2);
-                await context.SaveChangesAsync();
-
-                // 19. Trao Huy Chương (HuyChuong)
-                var huyChuongVang = new HuyChuong
-                {
-                    GiaiDauId = giaiHoiThao.Id,
-                    GiaiDauMonTheThaoId = gdmBongDa.Id,
-                    DangKyThiDauId = dkBk.Id,
-                    LoaiHuyChuongId = lhcVang.Id,
-                    XepHang = 1,
-                    NgayTrao = now,
-                    GhiChu = "Nhà vô địch Bóng đá nam SV 2026"
-                };
-                var huyChuongBac = new HuyChuong
-                {
-                    GiaiDauId = giaiHoiThao.Id,
-                    GiaiDauMonTheThaoId = gdmBongDa.Id,
-                    DangKyThiDauId = dkUeh.Id,
-                    LoaiHuyChuongId = lhcBac.Id,
-                    XepHang = 2,
-                    NgayTrao = now,
-                    GhiChu = "Á quân Bóng đá nam SV 2026"
-                };
-                await context.HuyChuongs.AddRangeAsync(huyChuongVang, huyChuongBac);
-                await context.SaveChangesAsync();
-
-                // 20. Lịch sử chuyển đội thi đấu (LichSuChuyenDoi)
-                var lsChuyenDoi1 = new LichSuChuyenDoi
-                {
-                    VanDongVienId = vdv2.Id,
-                    DoiCuId = doiBk.Id,
-                    DoiMoiId = doiUeh.Id,
-                    NgayChuyen = now.AddDays(-5),
-                    LyDo = "Chuyển đơn vị học tập và giao lưu thi đấu theo thỏa thuận",
-                    NguoiXacNhan = "Ban Tổ Chức Giải",
-                    GhiChu = "Đã hoàn tất hồ sơ và thủ tục chuyển nhượng hợp lệ"
-                };
-                await context.LichSuChuyenDois.AddAsync(lsChuyenDoi1);
-                await context.SaveChangesAsync();
-
-                // 21. Điều lệ giải đấu (DieuLeGiaiDau)
-                var dlGiai1 = new DieuLeGiaiDau
-                {
-                    GiaiDauId = giaiHoiThao.Id,
-                    TieuDe = "Quy định đối tượng và điều kiện tham gia",
-                    NoiDung = "Vận động viên phải là sinh viên đang theo học chính quy tại các trường đại học, cao đẳng trên địa bàn TP.HCM, có thẻ sinh viên hợp lệ và đủ điều kiện sức khỏe tham gia thi đấu.",
-                    ThuTu = 1,
-                    TrangThai = true
-                };
-                var dlGiai2 = new DieuLeGiaiDau
-                {
-                    GiaiDauId = giaiHoiThao.Id,
-                    TieuDe = "Quy định khen thưởng và kỷ luật",
-                    NoiDung = "Ban Tổ chức trao cờ, huy chương Vàng, Bạc, Đồng và tiền thưởng cho các đội đạt thứ hạng Nhất, Nhì, Ba. Vận động viên hoặc đội bóng vi phạm tinh thần thể thao sẽ bị xử lý kỷ luật theo quy định.",
-                    ThuTu = 2,
-                    TrangThai = true
-                };
-                await context.DieuLeGiaiDaus.AddRangeAsync(dlGiai1, dlGiai2);
-                await context.SaveChangesAsync();
-
-                // 22. Điều lệ môn thể thao (DieuLeMonTheThao)
-                var dlMonBongDa = new DieuLeMonTheThao
-                {
-                    MonTheThaoId = monBongDa.Id,
-                    TieuDe = "Luật thi đấu Bóng đá mini 7 người",
-                    NoiDung = "Áp dụng Luật thi đấu bóng đá 7 người do Liên đoàn Bóng đá Việt Nam (VFF) ban hành. Mỗi trận gồm 2 hiệp, mỗi hiệp 25 phút, nghỉ giữa hiệp 10 phút. Không áp dụng luật việt vị.",
-                    ThuTu = 1,
-                    TrangThai = true
-                };
-                var dlMonCauLong = new DieuLeMonTheThao
-                {
-                    MonTheThaoId = monCauLong.Id,
-                    TieuDe = "Luật thi đấu Cầu lông hiện hành",
-                    NoiDung = "Áp dụng theo Luật Cầu lông hiện hành của Liên đoàn Cầu lông Thế giới (BWF). Thi đấu theo thể thức 3 hiệp thắng 2, mỗi hiệp 21 điểm (rallies point scoring system).",
-                    ThuTu = 1,
-                    TrangThai = true
-                };
-                await context.DieuLeMonTheThaos.AddRangeAsync(dlMonBongDa, dlMonCauLong);
-                await context.SaveChangesAsync();
-            }
-
-            // 23. Cấu hình thể thức thi đấu (CauHinhTheThucThiDau) mặc định cho các môn thể thao
-            if (!context.CauHinhTheThucThiDaus.Any())
-            {
-                var mons = context.MonTheThaos.ToList();
-                var configs = new List<CauHinhTheThucThiDau>();
-
-                foreach (var mon in mons)
-                {
-                    switch (mon.Ma)
-                    {
-                        case "BONG_DA":
-                            configs.Add(new CauHinhTheThucThiDau
-                            {
-                                MonTheThaoId = mon.Id,
-                                LoaiTheThuc = "ThoiGianHiep",
-                                SoHiepToiDa = 2,
-                                ThoiGianHiepChinhPhut = 25,
-                                ChoPhepHoaVongBang = true,
-                                ChoPhepHoaKnockout = false,
-                                CoHiepPhu = false,
-                                CoPenalty = true,
-                                SoLuotPenaltyMoiDoi = 5,
-                                CoThePhat = true,
-                                DiemThang = 3,
-                                DiemHoa = 1,
-                                DiemThua = 0,
-                                CachTinhDiemTheoSet = false,
-                                TieuChiXepHangJson = "[\"Diem\",\"HieuSo\",\"DiemGhiDuoc\",\"DoiDau\",\"SoTranThang\"]"
-                            });
-                            break;
-
-                        case "CAU_LONG":
-                            configs.Add(new CauHinhTheThucThiDau
-                            {
-                                MonTheThaoId = mon.Id,
-                                LoaiTheThuc = "SetDiem",
-                                SoHiepToiDa = 3,
-                                SoHiepThangDeThangTran = 2,
-                                DiemMoiHiep = 21,
-                                DiemHiepQuyetDinh = 21,
-                                CachBietDiemToiThieu = 2,
-                                DiemToiDaMoiHiep = 30,
-                                ChoPhepHoaVongBang = false,
-                                ChoPhepHoaKnockout = false,
-                                DiemThang = 2,
-                                DiemHoa = 0,
-                                DiemThua = 0,
-                                CachTinhDiemTheoSet = false,
-                                TieuChiXepHangJson = "[\"Diem\",\"HieuSo\",\"DoiDau\",\"DiemGhiDuoc\"]"
-                            });
-                            break;
-
-                        case "BONG_CHUYEN":
-                            configs.Add(new CauHinhTheThucThiDau
-                            {
-                                MonTheThaoId = mon.Id,
-                                LoaiTheThuc = "SetDiem",
-                                SoHiepToiDa = 5,
-                                SoHiepThangDeThangTran = 3,
-                                DiemMoiHiep = 25,
-                                DiemHiepQuyetDinh = 15,
-                                CachBietDiemToiThieu = 2,
-                                DiemToiDaMoiHiep = null,
-                                ChoPhepHoaVongBang = false,
-                                ChoPhepHoaKnockout = false,
-                                CachTinhDiemTheoSet = true,
-                                DiemThang = 3,
-                                DiemHoa = 0,
-                                DiemThua = 0,
-                                TieuChiXepHangJson = "[\"Diem\",\"HieuSo\",\"DoiDau\",\"SoTranThang\"]"
-                            });
-                            break;
-
-                        case "BONG_BAN":
-                        case "QUAN_VOT":
-                        case "PICKLEBALL":
-                            configs.Add(new CauHinhTheThucThiDau
-                            {
-                                MonTheThaoId = mon.Id,
-                                LoaiTheThuc = "SetDiem",
-                                SoHiepToiDa = 5,
-                                SoHiepThangDeThangTran = 3,
-                                DiemMoiHiep = 11,
-                                DiemHiepQuyetDinh = 11,
-                                CachBietDiemToiThieu = 2,
-                                ChoPhepHoaVongBang = false,
-                                ChoPhepHoaKnockout = false,
-                                DiemThang = 2,
-                                DiemHoa = 0,
-                                DiemThua = 0,
-                                TieuChiXepHangJson = "[\"Diem\",\"HieuSo\",\"DoiDau\"]"
-                            });
-                            break;
-
-                        case "BOI_LOI":
-                            configs.Add(new CauHinhTheThucThiDau
-                            {
-                                MonTheThaoId = mon.Id,
-                                LoaiTheThuc = "TinhDiemXepHang",
-                                LoaiDoThanhTich = "ThoiGian",
-                                DonViThanhTich = "giay",
-                                TieuChiXepHangThanhTich = "CangNhoCangTot",
-                                SoVdvMoiLuotThi = 8,
-                                QuyCachTienVaoChungKet = "TopNToanVong",
-                                SoVdvVaoChungKet = 8,
-                                KyLucHienTai = 24.50m,
-                                KyLucHienTaiText = "24.50s",
-                                TieuChiXepHangJson = "[\"ThoiGian\"]"
-                            });
-                            break;
-
-                        case "CHAY_100M":
-                            configs.Add(new CauHinhTheThucThiDau
-                            {
-                                MonTheThaoId = mon.Id,
-                                LoaiTheThuc = "TinhDiemXepHang",
-                                LoaiDoThanhTich = "ThoiGian",
-                                DonViThanhTich = "giay",
-                                TieuChiXepHangThanhTich = "CangNhoCangTot",
-                                SoVdvMoiLuotThi = 8,
-                                QuyCachTienVaoChungKet = "TopNToanVong",
-                                SoVdvVaoChungKet = 8,
-                                KyLucHienTai = 10.15m,
-                                KyLucHienTaiText = "10.15s",
-                                TieuChiXepHangJson = "[\"ThoiGian\"]"
-                            });
-                            break;
-
-                        default:
-                            configs.Add(new CauHinhTheThucThiDau
-                            {
-                                MonTheThaoId = mon.Id,
-                                LoaiTheThuc = "SetDiem",
-                                SoHiepToiDa = 3,
-                                SoHiepThangDeThangTran = 2,
-                                DiemMoiHiep = 21,
-                                CachBietDiemToiThieu = 2,
-                                ChoPhepHoaVongBang = false,
-                                ChoPhepHoaKnockout = false,
-                                DiemThang = 2,
-                                DiemHoa = 0,
-                                DiemThua = 0,
-                                TieuChiXepHangJson = "[\"Diem\",\"HieuSo\",\"DoiDau\"]"
-                            });
-                            break;
+                new {
+                    DonVi = dvBk, Prefix = "BK",
+                    Names = new[] {
+                        "Nguyễn Văn Quang", "Lê Hồng Phát", "Đặng Hoàng Long", "Trần Minh Đức", "Vũ Quốc Bảo",
+                        "Hoàng Tuấn Anh", "Đỗ Trọng Hiếu", "Bùi Đức Huy", "Phạm Gia Khiêm", "Nguyễn Hải Nam",
+                        "Trương Minh Trí", "Phan Đình Luật", "Đinh Hữu Phước", "Lê Công Hoàng", "Ngô Thành Nam",
+                        "Dương Anh Tuấn", "Vũ Khắc Việt", "Hồ Trọng Tấn", "Đỗ Viết Cường", "Tạ Quang Bách"
                     }
-                }
+                },
+                new {
+                    DonVi = dvHvtc, Prefix = "TC",
+                    Names = new[] {
+                        "Phạm Minh Triết", "Võ Hoàng Nam", "Đinh Trọng Đạt", "Lê Khắc Thịnh", "Nguyễn Đình Quân",
+                        "Vũ Tiến Đạt", "Phan Nhật Minh", "Chu Trọng Đại", "Trần Hữu Thắng", "Hoàng Quốc Việt",
+                        "Lê Anh Tuấn", "Đỗ Thành Chung", "Phạm Hải Đăng", "Bùi Khắc Tiệp", "Nguyễn Hoàng Giang",
+                        "Vũ Minh Hiếu", "Trần Quốc Toản", "Đặng Đình Bách", "Ngô Văn Hậu", "Lý Gia Hưng"
+                    }
+                },
+                new {
+                    DonVi = dvSphn, Prefix = "SP",
+                    Names = new[] {
+                        "Nguyễn Tiến Dũng", "Hoàng Văn Khang", "Lê Minh Tuấn", "Trần Đình Duy", "Vũ Xuân Bách",
+                        "Đoàn Công Vinh", "Nguyễn Quang Huy", "Bùi Xuân Trường", "Đỗ Việt Hoàng", "Trương Tuấn Kiệt",
+                        "Phan Văn Đức", "Võ Nhật Anh", "Đặng Minh Tâm", "Hồ Văn Quân", "Trần Bảo Lâm",
+                        "Lê Quốc Thái", "Bùi Hữu Đạt", "Nguyễn Duy Hưng", "Phạm Hoàng Sơn", "Vũ Anh Khoa"
+                    }
+                },
+                new {
+                    DonVi = dvQghn, Prefix = "QG",
+                    Names = new[] {
+                        "Trần Quang Minh", "Nguyễn Thành Đạt", "Lê Tuấn Hưng", "Vũ Hoàng Long", "Phạm Quốc Huy",
+                        "Nguyễn Duy Anh", "Trịnh Đình Phong", "Đặng Tuấn Khang", "Hoàng Mạnh Hùng", "Lưu Việt Cường",
+                        "Đỗ Quốc Bảo", "Phan Gia Huy", "Tô Văn Vũ", "Vũ Minh Quân", "Nguyễn Hữu Tài",
+                        "Lê Đại Hành", "Trần Thế Bảo", "Đinh Văn Thanh", "Phạm Minh Đức", "Bùi Tuấn Ngọc"
+                    }
+                },
+            };
 
-                if (configs.Any())
+            var allVdvs = new List<VanDongVien>();
+            foreach (var u in units)
+            {
+                for (int i = 0; i < u.Names.Length; i++)
                 {
-                    await context.CauHinhTheThucThiDaus.AddRangeAsync(configs);
+                    string maVdv = $"VDV_{u.Prefix}_{i + 1:D2}";
+                    var vdv = existingVdvs.FirstOrDefault(v => v.Ma == maVdv);
+                    if (vdv == null)
+                    {
+                        vdv = new VanDongVien
+                        {
+                            Ma = maVdv,
+                            HoTen = u.Names[i],
+                            DonViId = u.DonVi.Id,
+                            GioiTinh = "Nam",
+                            NgaySinh = new DateTime(2003, 1 + (i % 12), 1 + (i * 2 % 28)),
+                            SoDienThoai = $"09{u.DonVi.Id:D2}{i + 1:D2}{i + 1:D4}",
+                            Email = $"{u.Prefix.ToLower()}{i + 1}@student.edu.vn",
+                            TrangThai = true
+                        };
+                        await context.VanDongViens.AddAsync(vdv);
+                    }
+                    allVdvs.Add(vdv);
+                }
+            }
+            await context.SaveChangesAsync();
+
+            // 7. Tạo 1 Danh mục Môn & 1 Môn "Bóng đá 3 người"
+            var dmBongDa = await context.DanhMucMonTheThaos.FirstOrDefaultAsync(d => d.Ma == "DM_BONGDA");
+            if (dmBongDa == null)
+            {
+                dmBongDa = new DanhMucMonTheThao
+                {
+                    Ma = "DM_BONGDA",
+                    Ten = "Bóng đá",
+                    MoTa = "Bóng đá mini và các thể thức bóng đá phong trào",
+                    TrangThai = true
+                };
+                await context.DanhMucMonTheThaos.AddAsync(dmBongDa);
+                await context.SaveChangesAsync();
+            }
+
+            var monBongDa3 = await context.MonTheThaos.FirstOrDefaultAsync(m => m.Ma == "BONG_DA_3");
+            if (monBongDa3 == null)
+            {
+                monBongDa3 = new MonTheThao
+                {
+                    DanhMucId = dmBongDa.Id,
+                    Ma = "BONG_DA_3",
+                    Ten = "Bóng đá sân 3 nam",
+                    LaMonDongDoi = true,
+                    LoaiThiDau = "DongDoi",
+                    GioiTinh = "Nam",
+                    SoLuongVanDongVienToiThieu = 3,
+                    SoLuongVanDongVienToiDa = 5,
+                    HinhThucThiDau = HinhThucThiDau.KetHopVongBangVaLoaiTrucTiep,
+                    MoTa = "Bóng đá mini 3 người, thi đấu vòng bảng và loại trực tiếp",
+                    TrangThai = true
+                };
+                await context.MonTheThaos.AddAsync(monBongDa3);
+                await context.SaveChangesAsync();
+            }
+
+            // 8. Tạo Cấu hình thể thức thi đấu cho Bóng đá sân 3 nam
+            var cauHinhTheThuc = await context.CauHinhTheThucThiDaus.FirstOrDefaultAsync(c => c.MonTheThaoId == monBongDa3.Id);
+            if (cauHinhTheThuc == null)
+            {
+                cauHinhTheThuc = new CauHinhTheThucThiDau
+                {
+                    MonTheThaoId = monBongDa3.Id,
+                    LoaiTheThuc = "ThoiGianHiep",
+                    SoHiepToiDa = 2,
+                    ThoiGianHiepChinhPhut = 15,
+                    ChoPhepHoaVongBang = true,
+                    ChoPhepHoaKnockout = false,
+                    CoHiepPhu = false,
+                    CoPenalty = true,
+                    SoLuotPenaltyMoiDoi = 3,
+                    CoThePhat = true,
+                    DiemThang = 3,
+                    DiemHoa = 1,
+                    DiemThua = 0,
+                    CachTinhDiemTheoSet = false,
+                    TieuChiXepHangJson = "[\"Diem\",\"HieuSo\",\"DiemGhiDuoc\",\"DoiDau\",\"SoTranThang\"]"
+                };
+                await context.CauHinhTheThucThiDaus.AddAsync(cauHinhTheThuc);
+                await context.SaveChangesAsync();
+            }
+
+            // 9. Tạo 1 Cụm Sân & Các Sân Đấu
+            var cumSan = await context.CumSans.FirstOrDefaultAsync(c => c.Ma == "CS_MYDINH");
+            if (cumSan == null)
+            {
+                cumSan = new CumSan
+                {
+                    Ma = "CS_MYDINH",
+                    Ten = "Khu liên hợp thể thao Quốc gia Mỹ Đình",
+                    DiaChi = "Đường Lê Đức Thọ, Nam Từ Liêm, Hà Nội",
+                    SoLuongSan = 2,
+                    TrangThai = true
+                };
+                await context.CumSans.AddAsync(cumSan);
+                await context.SaveChangesAsync();
+            }
+
+            var san1 = await context.SanDaus.FirstOrDefaultAsync(s => s.Ma == "SAN_BD3_01");
+            if (san1 == null)
+            {
+                san1 = new SanDau { CumSanId = cumSan.Id, Ma = "SAN_BD3_01", Ten = "Sân Bóng Đá 3 Người Số 1", LoaiSan = "SanBongDa", SoSan = 1, TrangThai = true };
+                await context.SanDaus.AddAsync(san1);
+            }
+
+            var san2 = await context.SanDaus.FirstOrDefaultAsync(s => s.Ma == "SAN_BD3_02");
+            if (san2 == null)
+            {
+                san2 = new SanDau { CumSanId = cumSan.Id, Ma = "SAN_BD3_02", Ten = "Sân Bóng Đá 3 Người Số 2", LoaiSan = "SanBongDa", SoSan = 2, TrangThai = true };
+                await context.SanDaus.AddAsync(san2);
+            }
+            await context.SaveChangesAsync();
+
+            // 10. Tạo 1 GIẢI ĐẤU & Gán Trưởng Ban Trọng Tài (ttA)
+            var giaiDau = await context.GiaiDaus.FirstOrDefaultAsync(g => g.Ma == "GIAI_SV_BD3_2026");
+            var nowTime = DateTime.UtcNow;
+            if (giaiDau == null)
+            {
+                giaiDau = new GiaiDau
+                {
+                    Ma = "GIAI_SV_BD3_2026",
+                    Ten = "Giải Vô Địch Bóng Đá 3 Người Sinh Viên Toàn Quốc 2026",
+                    Slug = "giai-vo-dich-bong-da-3-nguoi-sinh-vien-toan-quoc-2026",
+                    MoTa = "Giải đấu bóng đá mini 3 người đỉnh cao dành cho sinh viên các trường đại học hàng đầu tranh tài.",
+                    NgayBatDau = nowTime.Date,
+                    NgayKetThuc = nowTime.Date.AddDays(10),
+                    HanDangKy = nowTime.Date.AddDays(-2),
+                    DiaDiem = "Khu liên hợp thể thao Mỹ Đình, Hà Nội",
+                    PhamVi = PhamViGiaiDau.TheoKhoi,
+                    TrangThai = TrangThaiGiaiDau.DangDienRa,
+                    TruongBanTrongTaiId = ttA.Id // Gán Trưởng Ban Trọng Tài Tài A
+                };
+                await context.GiaiDaus.AddAsync(giaiDau);
+                await context.SaveChangesAsync();
+
+                // Gán giải đấu vào Khối
+                await context.GiaiDauKhois.AddAsync(new GiaiDauKhoi { GiaiDauId = giaiDau.Id, KhoiId = khoiTruong.Id });
+                await context.SaveChangesAsync();
+            }
+            else
+            {
+                giaiDau.TruongBanTrongTaiId = ttA.Id;
+                await context.SaveChangesAsync();
+            }
+
+            // 11. Đưa môn Bóng đá 3 người vào giải đấu (GiaiDauMonTheThao)
+            var gdm = await context.GiaiDauMonTheThaos.FirstOrDefaultAsync(g => g.GiaiDauId == giaiDau.Id && g.MonTheThaoId == monBongDa3.Id);
+            if (gdm == null)
+            {
+                gdm = new GiaiDauMonTheThao
+                {
+                    GiaiDauId = giaiDau.Id,
+                    MonTheThaoId = monBongDa3.Id,
+                    MoTa = "Môn bóng đá 3 người nam sinh viên tranh tài 2026",
+                    TrangThai = true,
+                    NguoiDieuHanhId = ttHanh.Id // Gán người điều hành môn Lê Thị Bích Hạnh
+                };
+                await context.GiaiDauMonTheThaos.AddAsync(gdm);
+                await context.SaveChangesAsync();
+            }
+
+            // 12. TẠO 16 ĐỘI THI ĐẤU (Mỗi đơn vị cử 4 đội, mỗi đội 5 VĐV đầy đủ vị trí)
+            var vdvsBk = await context.VanDongViens.Where(v => v.DonViId == dvBk.Id).OrderBy(v => v.Ma).ToListAsync();
+            var vdvsHvtc = await context.VanDongViens.Where(v => v.DonViId == dvHvtc.Id).OrderBy(v => v.Ma).ToListAsync();
+            var vdvsSphn = await context.VanDongViens.Where(v => v.DonViId == dvSphn.Id).OrderBy(v => v.Ma).ToListAsync();
+            var vdvsQghn = await context.VanDongViens.Where(v => v.DonViId == dvQghn.Id).OrderBy(v => v.Ma).ToListAsync();
+
+            var teamConfigs = new[]
+            {
+                // Bảng A (4 trường khác nhau)
+                new { Ma = "DOI_BK_01", Ten = "Bách Khoa 1 (BK Warriors)", DonViId = dvBk.Id, Vdvs = vdvsBk.Skip(0).Take(5).ToList(), Bang = "A" },
+                new { Ma = "DOI_TC_01", Ten = "Tài Chính 1 (AOF Kings)", DonViId = dvHvtc.Id, Vdvs = vdvsHvtc.Skip(0).Take(5).ToList(), Bang = "A" },
+                new { Ma = "DOI_SP_01", Ten = "Sư Phạm 1 (HNUE Stars)", DonViId = dvSphn.Id, Vdvs = vdvsSphn.Skip(0).Take(5).ToList(), Bang = "A" },
+                new { Ma = "DOI_QG_01", Ten = "Quốc Gia 1 (VNU Thunder)", DonViId = dvQghn.Id, Vdvs = vdvsQghn.Skip(0).Take(5).ToList(), Bang = "A" },
+
+                // Bảng B (4 trường khác nhau)
+                new { Ma = "DOI_BK_02", Ten = "Bách Khoa 2 (BK Phoenix)", DonViId = dvBk.Id, Vdvs = vdvsBk.Skip(5).Take(5).ToList(), Bang = "B" },
+                new { Ma = "DOI_TC_02", Ten = "Tài Chính 2 (AOF Tigers)", DonViId = dvHvtc.Id, Vdvs = vdvsHvtc.Skip(5).Take(5).ToList(), Bang = "B" },
+                new { Ma = "DOI_SP_02", Ten = "Sư Phạm 2 (HNUE Eagles)", DonViId = dvSphn.Id, Vdvs = vdvsSphn.Skip(5).Take(5).ToList(), Bang = "B" },
+                new { Ma = "DOI_QG_02", Ten = "Quốc Gia 2 (VNU Storm)", DonViId = dvQghn.Id, Vdvs = vdvsQghn.Skip(5).Take(5).ToList(), Bang = "B" },
+
+                // Bảng C (4 trường khác nhau)
+                new { Ma = "DOI_BK_03", Ten = "Bách Khoa 3 (BK Titans)", DonViId = dvBk.Id, Vdvs = vdvsBk.Skip(10).Take(5).ToList(), Bang = "C" },
+                new { Ma = "DOI_TC_03", Ten = "Tài Chính 3 (AOF Stars)", DonViId = dvHvtc.Id, Vdvs = vdvsHvtc.Skip(10).Take(5).ToList(), Bang = "C" },
+                new { Ma = "DOI_SP_03", Ten = "Sư Phạm 3 (HNUE Lions)", DonViId = dvSphn.Id, Vdvs = vdvsSphn.Skip(10).Take(5).ToList(), Bang = "C" },
+                new { Ma = "DOI_QG_03", Ten = "Quốc Gia 3 (VNU Lightning)", DonViId = dvQghn.Id, Vdvs = vdvsQghn.Skip(10).Take(5).ToList(), Bang = "C" },
+
+                // Bảng D (4 trường khác nhau)
+                new { Ma = "DOI_BK_04", Ten = "Bách Khoa 4 (BK Dragons)", DonViId = dvBk.Id, Vdvs = vdvsBk.Skip(15).Take(5).ToList(), Bang = "D" },
+                new { Ma = "DOI_TC_04", Ten = "Tài Chính 4 (AOF Wolves)", DonViId = dvHvtc.Id, Vdvs = vdvsHvtc.Skip(15).Take(5).ToList(), Bang = "D" },
+                new { Ma = "DOI_SP_04", Ten = "Sư Phạm 4 (HNUE Hawks)", DonViId = dvSphn.Id, Vdvs = vdvsSphn.Skip(15).Take(5).ToList(), Bang = "D" },
+                new { Ma = "DOI_QG_04", Ten = "Quốc Gia 4 (VNU Cyclones)", DonViId = dvQghn.Id, Vdvs = vdvsQghn.Skip(15).Take(5).ToList(), Bang = "D" },
+            };
+
+            var doiMap = new Dictionary<string, Doi>();
+            var dkMap = new Dictionary<string, DangKyThiDau>();
+
+            foreach (var tc in teamConfigs)
+            {
+                var doi = await context.Dois.FirstOrDefaultAsync(d => d.Ma == tc.Ma);
+                if (doi == null)
+                {
+                    doi = new Doi
+                    {
+                        Ma = tc.Ma,
+                        Ten = tc.Ten,
+                        DonViId = tc.DonViId,
+                        TrangThai = true,
+                        NguoiQuanLy = "Ban Thể Thao Đoàn",
+                        SoDienThoai = "0988123456"
+                    };
+                    await context.Dois.AddAsync(doi);
                     await context.SaveChangesAsync();
+
+                    // Thêm 5 thành viên đội (ThanhVienDoi)
+                    string[] viTris = { "Tiền đạo", "Hậu vệ", "Thủ môn", "Dự bị", "Dự bị" };
+                    string[] soAos = { "10", "04", "01", "07", "09" };
+                    for (int vi = 0; vi < tc.Vdvs.Count; vi++)
+                    {
+                        var tvd = new ThanhVienDoi
+                        {
+                            DoiId = doi.Id,
+                            VanDongVienId = tc.Vdvs[vi].Id,
+                            SoAo = soAos[vi],
+                            ViTri = viTris[vi],
+                            LaDoiTruong = (vi == 0),
+                            NgayThamGia = nowTime.AddDays(-10)
+                        };
+                        await context.ThanhVienDois.AddAsync(tvd);
+                    }
+                    await context.SaveChangesAsync();
+                }
+                doiMap[tc.Ma] = doi;
+
+                // Tạo hồ sơ Đăng Ký Thi Đấu (DangKyThiDau) cho đội
+                string soDk = $"DK_{tc.Ma}";
+                var dk = await context.DangKyThiDaus.FirstOrDefaultAsync(d => d.SoDangKy == soDk);
+                if (dk == null)
+                {
+                    dk = new DangKyThiDau
+                    {
+                        GiaiDauMonTheThaoId = gdm.Id,
+                        DoiId = doi.Id,
+                        SoDangKy = soDk,
+                        TenDangKy = tc.Ten,
+                        TrangThai = "DaDuyet",
+                        NgayDangKy = nowTime.AddDays(-5),
+                        GhiChu = "Đã phê duyệt hồ sơ tham gia giải đấu"
+                    };
+                    await context.DangKyThiDaus.AddAsync(dk);
+                    await context.SaveChangesAsync();
+                }
+                dkMap[tc.Ma] = dk;
+            }
+
+            // 13. TẠO 4 BẢNG ĐẤU: Bảng A, Bảng B, Bảng C, Bảng D
+            var bangA = await context.BangDaus.FirstOrDefaultAsync(b => b.GiaiDauMonTheThaoId == gdm.Id && b.Ma == "BANG_A");
+            if (bangA == null)
+            {
+                bangA = new BangDau { GiaiDauMonTheThaoId = gdm.Id, Ma = "BANG_A", Ten = "Bảng A", ThuTu = 1 };
+                await context.BangDaus.AddAsync(bangA);
+            }
+
+            var bangB = await context.BangDaus.FirstOrDefaultAsync(b => b.GiaiDauMonTheThaoId == gdm.Id && b.Ma == "BANG_B");
+            if (bangB == null)
+            {
+                bangB = new BangDau { GiaiDauMonTheThaoId = gdm.Id, Ma = "BANG_B", Ten = "Bảng B", ThuTu = 2 };
+                await context.BangDaus.AddAsync(bangB);
+            }
+
+            var bangC = await context.BangDaus.FirstOrDefaultAsync(b => b.GiaiDauMonTheThaoId == gdm.Id && b.Ma == "BANG_C");
+            if (bangC == null)
+            {
+                bangC = new BangDau { GiaiDauMonTheThaoId = gdm.Id, Ma = "BANG_C", Ten = "Bảng C", ThuTu = 3 };
+                await context.BangDaus.AddAsync(bangC);
+            }
+
+            var bangD = await context.BangDaus.FirstOrDefaultAsync(b => b.GiaiDauMonTheThaoId == gdm.Id && b.Ma == "BANG_D");
+            if (bangD == null)
+            {
+                bangD = new BangDau { GiaiDauMonTheThaoId = gdm.Id, Ma = "BANG_D", Ten = "Bảng D", ThuTu = 4 };
+                await context.BangDaus.AddAsync(bangD);
+            }
+            await context.SaveChangesAsync();
+
+            // Xếp các đội vào 4 Bảng đấu (ThanhVienBang)
+            var existingTvb = await context.ThanhVienBangs.ToListAsync();
+            var bangMap = new Dictionary<string, BangDau>
+            {
+                { "A", bangA },
+                { "B", bangB },
+                { "C", bangC },
+                { "D", bangD }
+            };
+
+            foreach (var tc in teamConfigs)
+            {
+                var targetBang = bangMap[tc.Bang];
+                var dk = dkMap[tc.Ma];
+                if (!existingTvb.Any(tv => tv.BangDauId == targetBang.Id && tv.DangKyThiDauId == dk.Id))
+                {
+                    await context.ThanhVienBangs.AddAsync(new ThanhVienBang
+                    {
+                        BangDauId = targetBang.Id,
+                        DangKyThiDauId = dk.Id,
+                        HatGiong = null,
+                        SoTran = 0,
+                        SoThang = 0,
+                        SoHoa = 0,
+                        SoThua = 0,
+                        DiemGhiDuoc = 0,
+                        DiemBiGhi = 0,
+                        Diem = 0
+                    });
+                }
+            }
+            await context.SaveChangesAsync();
+
+            // 14. TẠO CÁC VÒNG ĐẤU (VongDau)
+            var vongBang = await context.VongDaus.FirstOrDefaultAsync(v => v.GiaiDauMonTheThaoId == gdm.Id && v.LoaiVong == "VongBang");
+            if (vongBang == null)
+            {
+                vongBang = new VongDau { GiaiDauMonTheThaoId = gdm.Id, Ten = "Vòng Bảng", LoaiVong = "VongBang", ThuTu = 1 };
+                await context.VongDaus.AddAsync(vongBang);
+            }
+
+            var vongTuKet = await context.VongDaus.FirstOrDefaultAsync(v => v.GiaiDauMonTheThaoId == gdm.Id && v.LoaiVong == "TuKet");
+            if (vongTuKet == null)
+            {
+                vongTuKet = new VongDau { GiaiDauMonTheThaoId = gdm.Id, Ten = "Vòng Tứ Kết", LoaiVong = "TuKet", ThuTu = 2 };
+                await context.VongDaus.AddAsync(vongTuKet);
+            }
+
+            var vongBanKet = await context.VongDaus.FirstOrDefaultAsync(v => v.GiaiDauMonTheThaoId == gdm.Id && v.LoaiVong == "BanKet");
+            if (vongBanKet == null)
+            {
+                vongBanKet = new VongDau { GiaiDauMonTheThaoId = gdm.Id, Ten = "Vòng Bán Kết", LoaiVong = "BanKet", ThuTu = 3 };
+                await context.VongDaus.AddAsync(vongBanKet);
+            }
+
+            var vongTranh3 = await context.VongDaus.FirstOrDefaultAsync(v => v.GiaiDauMonTheThaoId == gdm.Id && v.LoaiVong == "TranhHangBa");
+            if (vongTranh3 == null)
+            {
+                vongTranh3 = new VongDau { GiaiDauMonTheThaoId = gdm.Id, Ten = "Tranh Hạng 3 - 4", LoaiVong = "TranhHangBa", ThuTu = 4 };
+                await context.VongDaus.AddAsync(vongTranh3);
+            }
+
+            var vongChungKet = await context.VongDaus.FirstOrDefaultAsync(v => v.GiaiDauMonTheThaoId == gdm.Id && v.LoaiVong == "ChungKet");
+            if (vongChungKet == null)
+            {
+                vongChungKet = new VongDau { GiaiDauMonTheThaoId = gdm.Id, Ten = "Trận Chung Kết", LoaiVong = "ChungKet", ThuTu = 5 };
+                await context.VongDaus.AddAsync(vongChungKet);
+            }
+            await context.SaveChangesAsync();
+
+            // 15. TẠO 24 TRẬN ĐẤU VÒNG BẢNG Ở TRẠNG THÁI "CHƯA ĐẤU" (CHƯA CÓ TỈ SỐ) & PHÂN CÔNG TOÀN BỘ TRỌNG TÀI
+            // Tỉ số sẽ được các trọng tài cập nhật trực tiếp sau khi điều hành trận đấu!
+            if (!await context.TranDaus.AnyAsync(t => t.GiaiDauMonTheThaoId == gdm.Id))
+            {
+                var refList = new[] { ttA, ttB, ttC, ttD, ttE, ttF, ttTrong, ttHanh };
+
+                // Định nghĩa 6 trận cho mỗi bảng 4 đội (thi đấu vòng tròn 1 lượt: Lượt 1, Lượt 2, Lượt 3)
+                // Thứ tự đội trong bảng: [0] BK, [1] TC, [2] SP, [3] QG
+                var bangDefinitions = new[]
+                {
+                    new { Bang = bangA, Char = "A", Teams = new[] { dkMap["DOI_BK_01"], dkMap["DOI_TC_01"], dkMap["DOI_SP_01"], dkMap["DOI_QG_01"] } },
+                    new { Bang = bangB, Char = "B", Teams = new[] { dkMap["DOI_BK_02"], dkMap["DOI_TC_02"], dkMap["DOI_SP_02"], dkMap["DOI_QG_02"] } },
+                    new { Bang = bangC, Char = "C", Teams = new[] { dkMap["DOI_BK_03"], dkMap["DOI_TC_03"], dkMap["DOI_SP_03"], dkMap["DOI_QG_03"] } },
+                    new { Bang = bangD, Char = "D", Teams = new[] { dkMap["DOI_BK_04"], dkMap["DOI_TC_04"], dkMap["DOI_SP_04"], dkMap["DOI_QG_04"] } },
+                };
+
+                int matchIndex = 1;
+                var startDate = nowTime.Date.AddDays(1); // Bắt đầu từ ngày mai
+
+                foreach (var bDef in bangDefinitions)
+                {
+                    var t = bDef.Teams;
+                    // 6 cặp đấu vòng tròn:
+                    // Lượt 1: (0 vs 1), (2 vs 3)
+                    // Lượt 2: (0 vs 2), (1 vs 3)
+                    // Lượt 3: (0 vs 3), (1 vs 2)
+                    var roundMatches = new[]
+                    {
+                        new { D1 = t[0], D2 = t[1], Luot = 1, DayOffset = 0, Hour = 8, San = san1 },
+                        new { D1 = t[2], D2 = t[3], Luot = 1, DayOffset = 0, Hour = 9, San = san2 },
+                        new { D1 = t[0], D2 = t[2], Luot = 2, DayOffset = 1, Hour = 8, San = san1 },
+                        new { D1 = t[1], D2 = t[3], Luot = 2, DayOffset = 1, Hour = 9, San = san2 },
+                        new { D1 = t[0], D2 = t[3], Luot = 3, DayOffset = 2, Hour = 8, San = san1 },
+                        new { D1 = t[1], D2 = t[2], Luot = 3, DayOffset = 2, Hour = 9, San = san2 },
+                    };
+
+                    foreach (var rm in roundMatches)
+                    {
+                        var scheduledTime = startDate.AddDays(rm.DayOffset).AddHours(rm.Hour);
+                        string matchName = $"{rm.D1.TenDangKy} vs {rm.D2.TenDangKy} (Lượt {rm.Luot} Bảng {bDef.Char})";
+
+                        var tran = new TranDau
+                        {
+                            GiaiDauMonTheThaoId = gdm.Id,
+                            VongDauId = vongBang.Id,
+                            BangDauId = bDef.Bang.Id,
+                            SanDauId = rm.San.Id,
+                            SoTran = matchIndex,
+                            TenTran = matchName,
+                            ThoiGianDuKien = scheduledTime,
+                            ThoiGianBatDau = null,
+                            ThoiGianKetThuc = null,
+                            TrangThai = "ChuaDau", // Chưa đấu, chờ trọng tài cập nhật tỉ số
+                            TySoDoi1 = null,
+                            TySoDoi2 = null,
+                            DoiThangDangKyId = null,
+                            DoiThuaDangKyId = null,
+                            IsHoa = false,
+                            GhiChu = null
+                        };
+                        await context.TranDaus.AddAsync(tran);
+                        await context.SaveChangesAsync();
+
+                        // Thành phần tham gia trận đấu (2 đội)
+                        await context.ThanhPhanTranDaus.AddAsync(new ThanhPhanTranDau { TranDauId = tran.Id, DangKyThiDauId = rm.D1.Id, ViTri = 1, TrangThai = "ThamGia" });
+                        await context.ThanhPhanTranDaus.AddAsync(new ThanhPhanTranDau { TranDauId = tran.Id, DangKyThiDauId = rm.D2.Id, ViTri = 2, TrangThai = "ThamGia" });
+
+                        // Phân công Trọng tài chính và Trọng tài bàn luân phiên xoay vòng giữa 8 trọng tài
+                        var refMain = refList[(matchIndex - 1) % refList.Length];
+                        var refAss = refList[(matchIndex) % refList.Length];
+
+                        await context.PhanCongTrongTais.AddAsync(new PhanCongTrongTai
+                        {
+                            TranDauId = tran.Id,
+                            TrongTaiId = refMain.Id,
+                            VaiTro = "Trọng tài chính",
+                            GhiChu = "Bắt chính điều hành trận đấu"
+                        });
+
+                        await context.PhanCongTrongTais.AddAsync(new PhanCongTrongTai
+                        {
+                            TranDauId = tran.Id,
+                            TrongTaiId = refAss.Id,
+                            VaiTro = "Trọng tài bàn",
+                            GhiChu = "Ghi biên bản và hỗ trợ điều hành"
+                        });
+
+                        await context.SaveChangesAsync();
+                        matchIndex++;
+                    }
                 }
             }
         }
     }
 }
-
-

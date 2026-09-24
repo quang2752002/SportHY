@@ -23,6 +23,17 @@ namespace Dms.Application.Services
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// Lấy danh sách hồ sơ đăng ký thi đấu có phân trang theo các điều kiện lọc (từ khóa, giải đấu, môn, đơn vị, trạng thái).
+        /// </summary>
+        /// <param name="pageIndex">Số trang hiện tại (bắt đầu từ 1)</param>
+        /// <param name="pageSize">Số lượng bản ghi trên một trang</param>
+        /// <param name="keyword">Từ khóa tìm kiếm theo số đăng ký hoặc tên đăng ký</param>
+        /// <param name="giaiDauId">Lọc theo mã định danh giải đấu</param>
+        /// <param name="giaiDauMonTheThaoId">Lọc theo môn thi đấu trong giải</param>
+        /// <param name="donViId">Lọc theo đơn vị / đoàn</param>
+        /// <param name="trangThai">Lọc theo trạng thái hồ sơ</param>
+        /// <returns>Danh sách phân trang các hồ sơ đăng ký thi đấu kèm thông tin chi tiết</returns>
         public async Task<PagedResult<DangKyThiDauDto>> GetPagedAsync(
             int pageIndex,
             int pageSize,
@@ -45,13 +56,21 @@ namespace Dms.Application.Services
                 d => d.GiaiDauMonTheThao,
                 d => d.GiaiDauMonTheThao.GiaiDau,
                 d => d.GiaiDauMonTheThao.MonTheThao,
-                d => d.Doi!
+                d => d.Doi!,
+                d => d.Doi!.DonVi!
             );
 
             var dtos = await MapToRichDtosAsync(pagedEntities.Items);
             return new PagedResult<DangKyThiDauDto>(dtos, pagedEntities.TotalCount, pageIndex, pageSize);
         }
 
+        /// <summary>
+        /// Lấy tất cả danh sách hồ sơ đăng ký thi đấu theo giải đấu, môn và đơn vị.
+        /// </summary>
+        /// <param name="giaiDauId">Mã định danh giải đấu</param>
+        /// <param name="giaiDauMonTheThaoId">Mã định danh môn thi đấu trong giải</param>
+        /// <param name="donViId">Mã định danh đơn vị / đoàn</param>
+        /// <returns>Tập hợp các hồ sơ đăng ký thi đấu</returns>
         public async Task<IEnumerable<DangKyThiDauDto>> GetAllAsync(int? giaiDauId = null, int? giaiDauMonTheThaoId = null, int? donViId = null)
         {
             var paged = await _unitOfWork.DangKyThiDaus.GetPagedAsync(
@@ -65,12 +84,18 @@ namespace Dms.Application.Services
                 d => d.GiaiDauMonTheThao,
                 d => d.GiaiDauMonTheThao.GiaiDau,
                 d => d.GiaiDauMonTheThao.MonTheThao,
-                d => d.Doi!
+                d => d.Doi!,
+                d => d.Doi!.DonVi!
             );
 
             return await MapToRichDtosAsync(paged.Items);
         }
 
+        /// <summary>
+        /// Lấy thông tin chi tiết một hồ sơ đăng ký thi đấu theo Id.
+        /// </summary>
+        /// <param name="id">Mã định danh hồ sơ đăng ký thi đấu</param>
+        /// <returns>Chi tiết hồ sơ đăng ký thi đấu hoặc null nếu không tồn tại</returns>
         public async Task<DangKyThiDauDto?> GetByIdAsync(int id)
         {
             var paged = await _unitOfWork.DangKyThiDaus.GetPagedAsync(
@@ -81,7 +106,8 @@ namespace Dms.Application.Services
                 d => d.GiaiDauMonTheThao,
                 d => d.GiaiDauMonTheThao.GiaiDau,
                 d => d.GiaiDauMonTheThao.MonTheThao,
-                d => d.Doi!
+                d => d.Doi!,
+                d => d.Doi!.DonVi!
             );
 
             var entity = paged.Items.FirstOrDefault();
@@ -484,6 +510,11 @@ namespace Dms.Application.Services
             return true;
         }
 
+        /// <summary>
+        /// Chuyển đổi danh sách entity DangKyThiDau sang DTO giàu thông tin (nạp thông tin môn, giải, đội, đơn vị/đoàn và danh sách VĐV).
+        /// </summary>
+        /// <param name="items">Danh sách entity đăng ký thi đấu</param>
+        /// <returns>Danh sách DangKyThiDauDto kèm tên đơn vị và danh sách VĐV</returns>
         private async Task<List<DangKyThiDauDto>> MapToRichDtosAsync(IEnumerable<DangKyThiDau> items)
         {
             var list = items.ToList();
@@ -498,8 +529,22 @@ namespace Dms.Application.Services
             var vdvEntities = allVdvIds2.Any()
                 ? (await _unitOfWork.VanDongViens.FindAsync(v => allVdvIds2.Contains(v.Id))).ToList()
                 : new List<VanDongVien>();
+            var vdvObjDict = vdvEntities.ToDictionary(v => v.Id, v => v);
             var vdvDict = vdvEntities.ToDictionary(v => v.Id, v => v.HoTen);
             var vdvDonViDict = vdvEntities.Where(v => v.DonViId.HasValue).ToDictionary(v => v.Id, v => v.DonViId!.Value);
+
+            // Nạp danh sách đơn vị để ánh xạ TenDonVi chính xác
+            var allDonViIds = list
+                .Where(d => d.Doi?.DonViId.HasValue == true)
+                .Select(d => d.Doi!.DonViId!.Value)
+                .Concat(vdvDonViDict.Values)
+                .Distinct()
+                .ToList();
+
+            var donViDict = allDonViIds.Any()
+                ? (await _unitOfWork.DonVis.FindAsync(dv => allDonViIds.Contains(dv.Id) && dv.IsDeleted != true))
+                    .ToDictionary(dv => dv.Id, dv => dv.Ten)
+                : new Dictionary<int, string>();
 
             var result = new List<DangKyThiDauDto>();
             foreach (var d in list)
@@ -508,13 +553,27 @@ namespace Dms.Application.Services
                 var mon = d.GiaiDauMonTheThao?.MonTheThao;
 
                 // Lấy VDV từ thành viên đội
-                var vdvsInEntry = d.DoiId.HasValue
-                    ? allThanhViens.Where(tv => tv.DoiId == d.DoiId.Value).Select(tv => tv.VanDongVienId).ToList()
-                    : new List<int>();
-                var vdvNames = vdvsInEntry
-                    .Where(id => vdvDict.ContainsKey(id))
-                    .Select(id => vdvDict[id])
-                    .ToList();
+                var membersInEntry = d.DoiId.HasValue
+                    ? allThanhViens.Where(tv => tv.DoiId == d.DoiId.Value).ToList()
+                    : new List<ThanhVienDoi>();
+
+                var memberDtos = membersInEntry.Select(tv => {
+                    vdvObjDict.TryGetValue(tv.VanDongVienId, out var vdv);
+                    return new ThanhVienDoiChiTietDto
+                    {
+                        Id = tv.Id,
+                        VanDongVienId = tv.VanDongVienId,
+                        TenVanDongVien = vdv?.HoTen,
+                        HoTen = vdv?.HoTen,
+                        MaVanDongVien = vdv?.Ma,
+                        SoAo = tv.SoAo,
+                        ViTri = tv.ViTri,
+                        LaDoiTruong = tv.LaDoiTruong
+                    };
+                }).ToList();
+
+                var vdvsInEntry = membersInEntry.Select(tv => tv.VanDongVienId).ToList();
+                var vdvNames = memberDtos.Select(m => m.HoTen ?? string.Empty).Where(n => !string.IsNullOrEmpty(n)).ToList();
 
                 int? resolvedDonViId = d.Doi?.DonViId;
                 if (!resolvedDonViId.HasValue && vdvsInEntry.Any())
@@ -524,6 +583,16 @@ namespace Dms.Application.Services
                     {
                         resolvedDonViId = vdvDonViDict[firstMatch];
                     }
+                }
+
+                string? resolvedTenDonVi = null;
+                if (resolvedDonViId.HasValue && donViDict.TryGetValue(resolvedDonViId.Value, out var tenDv))
+                {
+                    resolvedTenDonVi = tenDv;
+                }
+                else if (d.Doi?.DonVi != null)
+                {
+                    resolvedTenDonVi = d.Doi.DonVi.Ten;
                 }
 
                 result.Add(new DangKyThiDauDto
@@ -537,6 +606,7 @@ namespace Dms.Application.Services
                     DoiId = d.DoiId,
                     TenDoi = d.Doi?.Ten,
                     DonViId = resolvedDonViId,
+                    TenDonVi = resolvedTenDonVi,
                     SoDangKy = d.SoDangKy,
                     TenDangKy = d.TenDangKy ?? d.SoDangKy,
                     TrangThai = d.TrangThai,
@@ -545,6 +615,7 @@ namespace Dms.Application.Services
                     SoVdv = vdvsInEntry.Count,
                     VanDongVienIds = vdvsInEntry,
                     VanDongVienNames = vdvNames,
+                    ThanhVienDois = memberDtos,
                     Created = d.Created,
                     LastModified = d.LastModified
                 });
