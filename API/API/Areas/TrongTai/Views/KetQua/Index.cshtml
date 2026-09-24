@@ -352,6 +352,98 @@
         {
             <!-- ===================== GIAO DIỆN BÓNG ĐÁ / CẦU LÔNG / BÓNG CHUYỀN (MATCH 1V1) ===================== -->
             <!-- Bảng Điểm Điện Tử Trực Tiếp (Live Digital Scoreboard) -->
+            <style>
+                .score-adjustment {
+                    margin-top: .85rem;
+                }
+
+                .score-adjustment-caption {
+                    display: block;
+                    margin-bottom: .45rem;
+                    color: #64748b;
+                    font-size: .7rem;
+                    font-weight: 700;
+                    letter-spacing: .07em;
+                    text-align: center;
+                    text-transform: uppercase;
+                }
+
+                .score-adjustment-actions {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: .65rem;
+                }
+
+                .score-adjustment-divider {
+                    width: 1px;
+                    height: 30px;
+                    background: #cbd5e1;
+                }
+
+                .score-adjustment-button {
+                    display: inline-flex;
+                    min-width: 58px;
+                    min-height: 48px;
+                    align-items: center;
+                    justify-content: center;
+                    gap: .35rem;
+                    border: 1px solid transparent;
+                    border-radius: 12px;
+                    font-size: 1rem;
+                    font-weight: 750;
+                    line-height: 1;
+                    touch-action: manipulation;
+                    transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+                }
+
+                .score-adjustment-button:hover:not(:disabled) {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 10px rgba(30, 64, 175, .16);
+                }
+
+                .score-adjustment-button:active:not(:disabled) {
+                    transform: translateY(0);
+                    box-shadow: none;
+                }
+
+                .score-adjustment-button:focus-visible {
+                    outline: 3px solid rgba(59, 130, 246, .35);
+                    outline-offset: 2px;
+                }
+
+                .score-adjustment-button:disabled {
+                    cursor: not-allowed;
+                    opacity: .42;
+                }
+
+                .score-adjustment-subtract {
+                    min-width: 68px;
+                    border-color: #fecaca;
+                    background: #fff1f2;
+                    color: #b91c1c;
+                }
+
+                .score-adjustment-add-primary {
+                    min-width: 76px;
+                    background: #1d4ed8;
+                    color: #fff;
+                    box-shadow: 0 2px 5px rgba(29, 78, 216, .2);
+                }
+
+                .score-adjustment-add-secondary {
+                    border-color: #bfdbfe;
+                    background: #fff;
+                    color: #1d4ed8;
+                }
+
+                @@media (max-width: 575.98px) {
+                    .score-adjustment-actions { gap: .45rem; }
+                    .score-adjustment-button { min-width: 54px; }
+                    .score-adjustment-subtract { min-width: 62px; }
+                    .score-adjustment-add-primary { min-width: 68px; }
+                }
+            </style>
             <div class="card-custom p-4 overflow-hidden position-relative"
                  style="background: linear-gradient(135deg, #e8f0fb 0%, #dce8f8 55%, #d1e1f4 100%); border-color: #b8cfea;">
 
@@ -386,11 +478,19 @@
                             <div class="display-2 fw-bold font-monospace text-primary my-2" id="displayScore1">@(isSetSport ? initLiveSetScore1 : initScore1)</div>
                             <small class="text-secondary d-block mb-2" id="subLabelScore1">@(isSetSport ? "Điểm set hiện tại" : "Bàn thắng / Điểm")</small>
 
-                            <div class="d-flex justify-content-center gap-1.5 mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1" id="btnSubtractScore1" title="Trừ 1 điểm" aria-label="Trừ 1 điểm đội 1" onclick="adjustScore(1, -1)">−1</button>
-                                <button type="button" class="btn btn-sm btn-primary fw-bold px-3 py-1" onclick="adjustScore(1, 1)">+1</button>
-                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-2 py-1" onclick="adjustScore(1, 2)">+2</button>
-                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-2 py-1" onclick="adjustScore(1, 3)">+3</button>
+                            <div class="score-adjustment" role="group" aria-label="Điều chỉnh điểm đội 1">
+                                <span class="score-adjustment-caption">Điều chỉnh điểm</span>
+                                <div class="score-adjustment-actions">
+                                    <button type="button" class="score-adjustment-button score-adjustment-subtract" id="btnSubtractScore1" title="Trừ 1 điểm đội 1" aria-label="Trừ 1 điểm đội 1" onclick="adjustScore(1, -1)">
+                                        <i class="fa-solid fa-minus" aria-hidden="true"></i><span>1</span>
+                                    </button>
+                                    <span class="score-adjustment-divider" aria-hidden="true"></span>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-primary" title="Cộng 1 điểm đội 1" aria-label="Cộng 1 điểm đội 1" onclick="adjustScore(1, 1)">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i><span>1</span>
+                                    </button>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 2 điểm đội 1" aria-label="Cộng 2 điểm đội 1" onclick="adjustScore(1, 2)">+2</button>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 3 điểm đội 1" aria-label="Cộng 3 điểm đội 1" onclick="adjustScore(1, 3)">+3</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -429,11 +529,19 @@
                             <div class="display-2 fw-bold font-monospace text-primary my-2" id="displayScore2">@(isSetSport ? initLiveSetScore2 : initScore2)</div>
                             <small class="text-secondary d-block mb-2" id="subLabelScore2">@(isSetSport ? "Điểm set hiện tại" : "Bàn thắng / Điểm")</small>
 
-                            <div class="d-flex justify-content-center gap-1.5 mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1" id="btnSubtractScore2" title="Trừ 1 điểm" aria-label="Trừ 1 điểm đội 2" onclick="adjustScore(2, -1)">−1</button>
-                                <button type="button" class="btn btn-sm btn-primary fw-bold px-3 py-1" onclick="adjustScore(2, 1)">+1</button>
-                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-2 py-1" onclick="adjustScore(2, 2)">+2</button>
-                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-2 py-1" onclick="adjustScore(2, 3)">+3</button>
+                            <div class="score-adjustment" role="group" aria-label="Điều chỉnh điểm đội 2">
+                                <span class="score-adjustment-caption">Điều chỉnh điểm</span>
+                                <div class="score-adjustment-actions">
+                                    <button type="button" class="score-adjustment-button score-adjustment-subtract" id="btnSubtractScore2" title="Trừ 1 điểm đội 2" aria-label="Trừ 1 điểm đội 2" onclick="adjustScore(2, -1)">
+                                        <i class="fa-solid fa-minus" aria-hidden="true"></i><span>1</span>
+                                    </button>
+                                    <span class="score-adjustment-divider" aria-hidden="true"></span>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-primary" title="Cộng 1 điểm đội 2" aria-label="Cộng 1 điểm đội 2" onclick="adjustScore(2, 1)">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i><span>1</span>
+                                    </button>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 2 điểm đội 2" aria-label="Cộng 2 điểm đội 2" onclick="adjustScore(2, 2)">+2</button>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 3 điểm đội 2" aria-label="Cộng 3 điểm đội 2" onclick="adjustScore(2, 3)">+3</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -712,6 +820,9 @@
                 if (setScoresList.length === 0 && isSetSport) {
                     setScoresList.push({ setNumber: 1, score1: 0, score2: 0 });
                 }
+                if (!isSetSport) {
+                    reconcileCurrentPeriodScores();
+                }
                 renderSets();
                 renderEvents();
                 checkTieBreakCondition();
@@ -765,7 +876,7 @@
 
                 const tr = `
                     <tr>
-                        <td class="fw-bold text-secondary">Set ${s.setNumber}</td>
+                        <td class="fw-bold text-secondary">${isSetSport ? 'Set' : 'Hiệp'} ${s.setNumber}</td>
                         <td>${score1Cell}</td>
                         <td>${score2Cell}</td>
                         <td>${badge}</td>
@@ -843,6 +954,18 @@
             $('#btnSubtractScore2').prop('disabled', currentScore2 <= 0);
         }
 
+        function reconcileCurrentPeriodScores() {
+            if (setScoresList.length === 0) {
+                setScoresList.push({ setNumber: 1, score1: 0, score2: 0 });
+            }
+
+            const recordedScore1 = setScoresList.reduce((sum, period) => sum + period.score1, 0);
+            const recordedScore2 = setScoresList.reduce((sum, period) => sum + period.score2, 0);
+            const currentPeriod = setScoresList[setScoresList.length - 1];
+            currentPeriod.score1 += Math.max(0, score1 - recordedScore1);
+            currentPeriod.score2 += Math.max(0, score2 - recordedScore2);
+        }
+
         function recalculateSetsWon() {
             let won1 = 0, won2 = 0;
             setScoresList.forEach(s => {
@@ -913,6 +1036,14 @@
                 renderSets();
                 recalculateSetsWon();
             } else {
+                // Với môn tính tỷ số theo hiệp, ghi điểm vào hiệp hiện tại đồng thời cập nhật tỷ số chung.
+                if (setScoresList.length === 0) {
+                    setScoresList.push({ setNumber: 1, score1: 0, score2: 0 });
+                }
+                const currentPeriod = setScoresList[setScoresList.length - 1];
+                if (team === 1) currentPeriod.score1 = Math.max(0, currentPeriod.score1 + delta);
+                else currentPeriod.score2 = Math.max(0, currentPeriod.score2 + delta);
+
                 if (team === 1) {
                     score1 = Math.max(0, score1 + delta);
                     $('#displayScore1').text(score1);
@@ -920,6 +1051,7 @@
                     score2 = Math.max(0, score2 + delta);
                     $('#displayScore2').text(score2);
                 }
+                renderSets();
                 updateScoreSubtractButtons();
                 checkTieBreakCondition();
             }
