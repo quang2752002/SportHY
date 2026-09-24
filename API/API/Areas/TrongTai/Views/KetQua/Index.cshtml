@@ -11,6 +11,8 @@
     string initWinner = ViewBag.Winner as string ?? (Model?.DoiThangDangKyId.HasValue == true ? (Model.DoiThangDangKyId == Model.Doi1DangKyId ? "1" : "2") : (Model?.IsHoa == true ? "draw" : ""));
     string initNotes = ViewBag.Notes as string ?? "";
     var setScores = ViewBag.SetScores as List<SetScoreDto> ?? new();
+    int initLiveSetScore1 = setScores.LastOrDefault()?.Score1 ?? 0;
+    int initLiveSetScore2 = setScores.LastOrDefault()?.Score2 ?? 0;
     var events = ViewBag.Events as List<MatchEventItemDto> ?? new();
     var savedHeatResults = ViewBag.HeatResults as List<HeatParticipantResultDto> ?? new();
     var heatResultByParticipantId = savedHeatResults.ToDictionary(result => result.ThanhPhanTranDauId);
@@ -362,8 +364,8 @@
                             <h4 class="fw-bold text-white mb-1 text-truncate" id="labelTeam1">@(Model.TenDoi1 ?? "Đội 1")</h4>
                             <small class="text-warning text-truncate d-block mb-3">@(Model.DonViDoi1 ?? "Đơn vị chủ quản")</small>
 
-                            <div class="display-2 fw-bold font-monospace text-warning my-2" id="displayScore1">@initScore1</div>
-                            <small class="text-white-50 d-block mb-2" id="subLabelScore1">@(isSetSport ? "Tổng số set thắng" : "Bàn thắng / Điểm")</small>
+                            <div class="display-2 fw-bold font-monospace text-warning my-2" id="displayScore1">@(isSetSport ? initLiveSetScore1 : initScore1)</div>
+                            <small class="text-white-50 d-block mb-2" id="subLabelScore1">@(isSetSport ? "Điểm set hiện tại" : "Bàn thắng / Điểm")</small>
 
                             <div class="d-flex justify-content-center gap-1.5 mt-2">
                                 <button class="btn btn-sm btn-outline-light px-2 py-1" onclick="adjustScore(1, -1)">-1</button>
@@ -377,6 +379,10 @@
                     <!-- Dấu phân cách & Trạng thái giữa -->
                     <div class="col-md-2 my-2 my-md-0">
                         <div class="display-3 fw-bold text-white-50 font-monospace">:</div>
+                        @if (isSetSport)
+                        {
+                            <div class="badge bg-primary rounded-pill px-3 py-1" id="displayMatchSetScore">Set thắng @initScore1 - @initScore2</div>
+                        }
                         <div class="mt-2" id="badgeMatchStatus">
                             @if (Model.TrangThai == "DangDau")
                             {
@@ -401,8 +407,8 @@
                             <h4 class="fw-bold text-white mb-1 text-truncate" id="labelTeam2">@(Model.TenDoi2 ?? "Đội 2")</h4>
                             <small class="text-warning text-truncate d-block mb-3">@(Model.DonViDoi2 ?? "Đơn vị chủ quản")</small>
 
-                            <div class="display-2 fw-bold font-monospace text-warning my-2" id="displayScore2">@initScore2</div>
-                            <small class="text-white-50 d-block mb-2" id="subLabelScore2">@(isSetSport ? "Tổng số set thắng" : "Bàn thắng / Điểm")</small>
+                            <div class="display-2 fw-bold font-monospace text-warning my-2" id="displayScore2">@(isSetSport ? initLiveSetScore2 : initScore2)</div>
+                            <small class="text-white-50 d-block mb-2" id="subLabelScore2">@(isSetSport ? "Điểm set hiện tại" : "Bàn thắng / Điểm")</small>
 
                             <div class="d-flex justify-content-center gap-1.5 mt-2">
                                 <button class="btn btn-sm btn-outline-light px-2 py-1" onclick="adjustScore(2, -1)">-1</button>
@@ -489,7 +495,7 @@
                                         <th>@(Model.TenDoi1 ?? "Đội 1")</th>
                                         <th>@(Model.TenDoi2 ?? "Đội 2")</th>
                                         <th style="width: 60px;">Kết quả</th>
-                                        <th style="width: 45px;">Xóa</th>
+                                        <th style="width: 145px;">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="bodySets">
@@ -667,6 +673,14 @@
         const tenDoi2 = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.TenDoi2 ?? "Đội 2"));
 
         let setScoresList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(setScores));
+        setScoresList = setScoresList.map(function (set) {
+            return {
+                setNumber: set.setNumber ?? set.SetNumber ?? 1,
+                score1: set.score1 ?? set.Score1 ?? 0,
+                score2: set.score2 ?? set.Score2 ?? 0
+            };
+        });
+        let editingSetIndex = null;
         let eventsList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(events));
         let eventModal = null;
 
@@ -704,6 +718,7 @@
             tbody.empty();
 
             setScoresList.forEach((s, idx) => {
+                const isEditing = editingSetIndex === idx;
                 let badge = '<span class="badge bg-secondary-subtle text-secondary font-monospace">-</span>';
                 if (sportConfig && sportConfig.LoaiTheThuc === 'SetDiem') {
                     const evalSet = evaluateSingleSet(s.setNumber, s.score1, s.score2);
@@ -716,19 +731,25 @@
                     }
                 }
 
+                const score1Cell = isEditing
+                    ? `<input type="number" id="editSetScore1_${idx}" class="form-control form-control-sm text-center font-monospace fw-bold" min="0" step="1" value="${s.score1}" aria-label="Điểm đội 1 set ${s.setNumber}" />`
+                    : `<span class="font-monospace fw-bold">${s.score1}</span>`;
+                const score2Cell = isEditing
+                    ? `<input type="number" id="editSetScore2_${idx}" class="form-control form-control-sm text-center font-monospace fw-bold" min="0" step="1" value="${s.score2}" aria-label="Điểm đội 2 set ${s.setNumber}" />`
+                    : `<span class="font-monospace fw-bold">${s.score2}</span>`;
+                const actionButtons = isEditing
+                    ? `<button type="button" class="btn btn-sm btn-success" title="Lưu điểm set" onclick="saveSetEdit(${idx})"><i class="fa-solid fa-check"></i></button>
+                       <button type="button" class="btn btn-sm btn-outline-secondary" title="Hủy sửa" onclick="cancelSetEdit()"><i class="fa-solid fa-xmark"></i></button>`
+                    : `<button type="button" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa điểm set" onclick="beginSetEdit(${idx})"><i class="fa-solid fa-pen-to-square me-1"></i>Sửa</button>
+                       <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa set" onclick="removeSet(${idx})"><i class="fa-solid fa-trash-can"></i></button>`;
+
                 const tr = `
                     <tr>
                         <td class="fw-bold text-secondary">Set ${s.setNumber}</td>
-                        <td>
-                            <input type="number" class="form-control form-control-sm text-center font-monospace fw-bold" min="0" value="${s.score1}" onchange="updateSetScore(${idx}, 1, this.value)" />
-                        </td>
-                        <td>
-                            <input type="number" class="form-control form-control-sm text-center font-monospace fw-bold" min="0" value="${s.score2}" onchange="updateSetScore(${idx}, 2, this.value)" />
-                        </td>
+                        <td>${score1Cell}</td>
+                        <td>${score2Cell}</td>
                         <td>${badge}</td>
-                        <td>
-                            <button type="button" class="btn btn-sm text-danger p-0" onclick="removeSet(${idx})"><i class="fa-solid fa-trash-can"></i></button>
-                        </td>
+                        <td><div class="d-flex justify-content-center gap-1">${actionButtons}</div></td>
                     </tr>
                 `;
                 tbody.append(tr);
@@ -754,15 +775,42 @@
             return { isSetWon: false, winner: 0, isDeuce: isDeuce };
         }
 
-        function updateSetScore(idx, team, val) {
-            const num = parseInt(val) || 0;
-            if (team === 1) setScoresList[idx].score1 = num;
-            else setScoresList[idx].score2 = num;
-
-            if (isSetSport) {
-                recalculateSetsWon();
+        function beginSetEdit(idx) {
+            if (editingSetIndex !== null) {
+                Swal.fire('Đang chỉnh sửa set', 'Hãy lưu hoặc hủy set đang sửa trước.', 'info');
+                return;
             }
+            editingSetIndex = idx;
             renderSets();
+            $(`#editSetScore1_${idx}`).trigger('focus').trigger('select');
+        }
+
+        function saveSetEdit(idx) {
+            const rawScore1 = $(`#editSetScore1_${idx}`).val();
+            const rawScore2 = $(`#editSetScore2_${idx}`).val();
+            const newScore1 = Number(rawScore1);
+            const newScore2 = Number(rawScore2);
+            if (rawScore1 === '' || rawScore2 === '' || !Number.isInteger(newScore1) || !Number.isInteger(newScore2) || newScore1 < 0 || newScore2 < 0) {
+                Swal.fire('Điểm không hợp lệ', 'Điểm mỗi đội phải là số nguyên không âm.', 'warning');
+                return;
+            }
+
+            setScoresList[idx].score1 = newScore1;
+            setScoresList[idx].score2 = newScore2;
+            editingSetIndex = null;
+            renderSets();
+            if (isSetSport) recalculateSetsWon();
+        }
+
+        function cancelSetEdit() {
+            editingSetIndex = null;
+            renderSets();
+        }
+
+        function ensureNoSetEdit() {
+            if (editingSetIndex === null) return true;
+            Swal.fire('Đang chỉnh sửa set', 'Hãy lưu hoặc hủy set đang sửa trước khi tiếp tục nhập điểm.', 'info');
+            return false;
         }
 
         function recalculateSetsWon() {
@@ -777,8 +825,12 @@
 
             score1 = won1;
             score2 = won2;
-            $('#displayScore1').text(score1);
-            $('#displayScore2').text(score2);
+            const currentSet = setScoresList.length > 0
+                ? setScoresList[setScoresList.length - 1]
+                : { score1: 0, score2: 0 };
+            $('#displayScore1').text(currentSet.score1 ?? currentSet.Score1 ?? 0);
+            $('#displayScore2').text(currentSet.score2 ?? currentSet.Score2 ?? 0);
+            $('#displayMatchSetScore').text(`Set thắng ${won1} - ${won2}`);
 
             const setsToWin = sportConfig?.SoHiepThangDeThangTran || 2;
             if (won1 >= setsToWin) {
@@ -799,6 +851,7 @@
         }
 
         function addNewSet() {
+            if (!ensureNoSetEdit()) return;
             const nextNum = setScoresList.length + 1;
             const maxSets = sportConfig?.SoHiepToiDa || 5;
             if (nextNum > maxSets) {
@@ -807,9 +860,11 @@
             }
             setScoresList.push({ setNumber: nextNum, score1: 0, score2: 0 });
             renderSets();
+            recalculateSetsWon();
         }
 
         function removeSet(idx) {
+            if (!ensureNoSetEdit()) return;
             setScoresList.splice(idx, 1);
             setScoresList.forEach((s, i) => s.setNumber = i + 1);
             if (isSetSport) recalculateSetsWon();
@@ -817,6 +872,7 @@
         }
 
         function adjustScore(team, delta) {
+            if (!ensureNoSetEdit()) return;
             if (isSetSport) {
                 // Với môn set điểm, tăng điểm của set cuối cùng đang đấu
                 if (setScoresList.length === 0) setScoresList.push({ setNumber: 1, score1: 0, score2: 0 });
@@ -1152,6 +1208,7 @@
         }
 
         function saveDraftResult() {
+            if (!ensureNoSetEdit()) return;
             const payload = {
                 tranDauId: matchId,
                 score1: score1,
@@ -1196,6 +1253,7 @@
         }
 
         function completeMatchFinal() {
+            if (!ensureNoSetEdit()) return;
             let winnerVal = $('#selectWinner').val();
 
             if (!isHeatMatch && !isSetSport) {
