@@ -3,7 +3,9 @@
     ViewData["Title"] = "Ghi Nhận Kết Quả & Diễn Biến Trận Đấu";
     var tournaments = ViewBag.Tournaments as List<GiaiDauDto> ?? new();
     var matches = ViewBag.Matches as List<TranDauDto> ?? new();
+    var sports = ViewBag.Sports as List<KeyValuePair<int, string>> ?? new();
     int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
+    int? selectedGiaiDauMonTheThaoId = ViewBag.SelectedGiaiDauMonTheThaoId as int?;
     var matchFormat = ViewBag.MatchFormat as CauHinhTheThucDto;
 
     int initScore1 = ViewBag.Score1 is int s1 ? s1 : (Model?.TySoDoi1 ?? 0);
@@ -11,6 +13,8 @@
     string initWinner = ViewBag.Winner as string ?? (Model?.DoiThangDangKyId.HasValue == true ? (Model.DoiThangDangKyId == Model.Doi1DangKyId ? "1" : "2") : (Model?.IsHoa == true ? "draw" : ""));
     string initNotes = ViewBag.Notes as string ?? "";
     var setScores = ViewBag.SetScores as List<SetScoreDto> ?? new();
+    int initLiveSetScore1 = setScores.LastOrDefault()?.Score1 ?? 0;
+    int initLiveSetScore2 = setScores.LastOrDefault()?.Score2 ?? 0;
     var events = ViewBag.Events as List<MatchEventItemDto> ?? new();
     var savedHeatResults = ViewBag.HeatResults as List<HeatParticipantResultDto> ?? new();
     var heatResultByParticipantId = savedHeatResults.ToDictionary(result => result.ThanhPhanTranDauId);
@@ -60,10 +64,10 @@
     <!-- Match Picker Card -->
     <div class="card-custom p-3">
         <form method="get" action="/TrongTai/KetQua" id="pickerForm">
-            <div class="row g-2 align-items-center">
-                <div class="col-md-5">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
                     <label class="form-label small fw-semibold mb-1">1. Chọn Giải Đấu</label>
-                    <select name="giaiDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <select name="giaiDauId" class="form-select form-select-sm" onchange="document.getElementById('sportSelect').value=''; document.getElementById('matchSelect').value=''; this.form.submit()">
                         @if (tournaments.Count == 0)
                         {
                             <option value="">-- Chưa có giải được phân công --</option>
@@ -81,9 +85,26 @@
                         }
                     </select>
                 </div>
-                <div class="col-md-7">
-                    <label class="form-label small fw-semibold mb-1">2. Chọn Trận Đấu Cần Điều Hành</label>
-                    <select name="tranDauId" class="form-select form-select-sm" onchange="this.form.submit()">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold mb-1">2. Lọc theo môn thi đấu</label>
+                    <select id="sportSelect" name="giaiDauMonTheThaoId" class="form-select form-select-sm" onchange="document.getElementById('matchSelect').value=''; this.form.submit()">
+                        <option value="">-- Tất cả môn --</option>
+                        @foreach (var sport in sports)
+                        {
+                            if (selectedGiaiDauMonTheThaoId == sport.Key)
+                            {
+                                <option value="@sport.Key" selected="selected">@sport.Value</option>
+                            }
+                            else
+                            {
+                                <option value="@sport.Key">@sport.Value</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold mb-1">3. Chọn Trận Đấu Cần Điều Hành</label>
+                    <select id="matchSelect" name="tranDauId" class="form-select form-select-sm" onchange="this.form.submit()">
                         @if (matches.Count == 0)
                         {
                             <option value="">@(tournaments.Count == 0 ? "-- Chưa có trận được phân công --" : "-- Giải này chưa có trận đấu được phân công --")</option>
@@ -331,16 +352,108 @@
         {
             <!-- ===================== GIAO DIỆN BÓNG ĐÁ / CẦU LÔNG / BÓNG CHUYỀN (MATCH 1V1) ===================== -->
             <!-- Bảng Điểm Điện Tử Trực Tiếp (Live Digital Scoreboard) -->
-            <div class="card-custom p-4 text-white overflow-hidden position-relative"
-                 style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #020617 100%);">
+            <style>
+                .score-adjustment {
+                    margin-top: .85rem;
+                }
 
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4 pb-3 border-bottom border-white border-opacity-10">
+                .score-adjustment-caption {
+                    display: block;
+                    margin-bottom: .45rem;
+                    color: #64748b;
+                    font-size: .7rem;
+                    font-weight: 700;
+                    letter-spacing: .07em;
+                    text-align: center;
+                    text-transform: uppercase;
+                }
+
+                .score-adjustment-actions {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: .65rem;
+                }
+
+                .score-adjustment-divider {
+                    width: 1px;
+                    height: 30px;
+                    background: #cbd5e1;
+                }
+
+                .score-adjustment-button {
+                    display: inline-flex;
+                    min-width: 58px;
+                    min-height: 48px;
+                    align-items: center;
+                    justify-content: center;
+                    gap: .35rem;
+                    border: 1px solid transparent;
+                    border-radius: 12px;
+                    font-size: 1rem;
+                    font-weight: 750;
+                    line-height: 1;
+                    touch-action: manipulation;
+                    transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+                }
+
+                .score-adjustment-button:hover:not(:disabled) {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 10px rgba(30, 64, 175, .16);
+                }
+
+                .score-adjustment-button:active:not(:disabled) {
+                    transform: translateY(0);
+                    box-shadow: none;
+                }
+
+                .score-adjustment-button:focus-visible {
+                    outline: 3px solid rgba(59, 130, 246, .35);
+                    outline-offset: 2px;
+                }
+
+                .score-adjustment-button:disabled {
+                    cursor: not-allowed;
+                    opacity: .42;
+                }
+
+                .score-adjustment-subtract {
+                    min-width: 68px;
+                    border-color: #fecaca;
+                    background: #fff1f2;
+                    color: #b91c1c;
+                }
+
+                .score-adjustment-add-primary {
+                    min-width: 76px;
+                    background: #1d4ed8;
+                    color: #fff;
+                    box-shadow: 0 2px 5px rgba(29, 78, 216, .2);
+                }
+
+                .score-adjustment-add-secondary {
+                    border-color: #bfdbfe;
+                    background: #fff;
+                    color: #1d4ed8;
+                }
+
+                @@media (max-width: 575.98px) {
+                    .score-adjustment-actions { gap: .45rem; }
+                    .score-adjustment-button { min-width: 54px; }
+                    .score-adjustment-subtract { min-width: 62px; }
+                    .score-adjustment-add-primary { min-width: 68px; }
+                }
+            </style>
+            <div class="card-custom p-4 overflow-hidden position-relative"
+                 style="background: linear-gradient(135deg, #e8f0fb 0%, #dce8f8 55%, #d1e1f4 100%); border-color: #b8cfea;">
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4 pb-3 border-bottom" style="border-color: #b8cfea !important;">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-warning text-dark font-monospace px-2.5 py-1">Trận @Model.SoTran</span>
-                        <span class="fw-bold text-white fs-6">@Model.TenMonTheThao</span>
+                        <span class="badge bg-primary-subtle text-primary font-monospace px-2.5 py-1">Trận @Model.SoTran</span>
+                        <span class="fw-bold text-dark fs-6">@Model.TenMonTheThao</span>
                         @if (!string.IsNullOrEmpty(Model.TenVongDau))
                         {
-                            <span class="badge bg-white bg-opacity-10 text-white-50">@Model.TenVongDau</span>
+                            <span class="badge bg-white text-secondary border">@Model.TenVongDau</span>
                         }
                         @if (!string.IsNullOrEmpty(Model.TenBangDau))
                         {
@@ -348,9 +461,9 @@
                         }
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="text-white-50 small"><i class="fa-solid fa-location-dot me-1"></i>@(Model.TenSanDau ?? "Sân đấu")</span>
-                        <span class="text-white-50 small">•</span>
-                        <span class="text-white-50 small"><i class="fa-solid fa-clock me-1"></i>@(Model.ThoiGianDuKien?.ToString("HH:mm - dd/MM/yyyy") ?? "--")</span>
+                        <span class="text-secondary small"><i class="fa-solid fa-location-dot me-1 text-primary"></i>@(Model.TenSanDau ?? "Sân đấu")</span>
+                        <span class="text-secondary small">•</span>
+                        <span class="text-secondary small"><i class="fa-solid fa-clock me-1 text-primary"></i>@(Model.ThoiGianDuKien?.ToString("HH:mm - dd/MM/yyyy") ?? "--")</span>
                     </div>
                 </div>
 
@@ -358,25 +471,37 @@
                 <div class="row g-3 align-items-center text-center my-3">
                     <!-- Đội 1 -->
                     <div class="col-md-5">
-                        <div class="p-3 rounded-4 bg-white bg-opacity-5 border border-white border-opacity-10 position-relative">
-                            <h4 class="fw-bold text-white mb-1 text-truncate" id="labelTeam1">@(Model.TenDoi1 ?? "Đội 1")</h4>
-                            <small class="text-warning text-truncate d-block mb-3">@(Model.DonViDoi1 ?? "Đơn vị chủ quản")</small>
+                        <div class="p-3 rounded-4 bg-white border position-relative" style="border-color: #b8cfea !important;">
+                            <h4 class="fw-bold text-dark mb-1 text-truncate" id="labelTeam1">@(Model.TenDoi1 ?? "Đội 1")</h4>
+                            <small class="text-secondary text-truncate d-block mb-3">@(Model.DonViDoi1 ?? "Đơn vị chủ quản")</small>
 
-                            <div class="display-2 fw-bold font-monospace text-warning my-2" id="displayScore1">@initScore1</div>
-                            <small class="text-white-50 d-block mb-2" id="subLabelScore1">@(isSetSport ? "Tổng số set thắng" : "Bàn thắng / Điểm")</small>
+                            <div class="display-2 fw-bold font-monospace text-primary my-2" id="displayScore1">@(isSetSport ? initLiveSetScore1 : initScore1)</div>
+                            <small class="text-secondary d-block mb-2" id="subLabelScore1">@(isSetSport ? "Điểm set hiện tại" : "Bàn thắng / Điểm")</small>
 
-                            <div class="d-flex justify-content-center gap-1.5 mt-2">
-                                <button class="btn btn-sm btn-outline-light px-2 py-1" onclick="adjustScore(1, -1)">-1</button>
-                                <button class="btn btn-sm btn-warning fw-bold px-3 py-1" onclick="adjustScore(1, 1)">+1</button>
-                                <button class="btn btn-sm btn-outline-warning fw-bold px-2 py-1" onclick="adjustScore(1, 2)">+2</button>
-                                <button class="btn btn-sm btn-outline-warning fw-bold px-2 py-1" onclick="adjustScore(1, 3)">+3</button>
+                            <div class="score-adjustment" role="group" aria-label="Điều chỉnh điểm đội 1">
+                                <span class="score-adjustment-caption">Điều chỉnh điểm</span>
+                                <div class="score-adjustment-actions">
+                                    <button type="button" class="score-adjustment-button score-adjustment-subtract" id="btnSubtractScore1" title="Trừ 1 điểm đội 1" aria-label="Trừ 1 điểm đội 1" onclick="adjustScore(1, -1)">
+                                        <i class="fa-solid fa-minus" aria-hidden="true"></i><span>1</span>
+                                    </button>
+                                    <span class="score-adjustment-divider" aria-hidden="true"></span>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-primary" title="Cộng 1 điểm đội 1" aria-label="Cộng 1 điểm đội 1" onclick="adjustScore(1, 1)">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i><span>1</span>
+                                    </button>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 2 điểm đội 1" aria-label="Cộng 2 điểm đội 1" onclick="adjustScore(1, 2)">+2</button>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 3 điểm đội 1" aria-label="Cộng 3 điểm đội 1" onclick="adjustScore(1, 3)">+3</button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Dấu phân cách & Trạng thái giữa -->
                     <div class="col-md-2 my-2 my-md-0">
-                        <div class="display-3 fw-bold text-white-50 font-monospace">:</div>
+                        <div class="display-3 fw-bold text-secondary font-monospace">:</div>
+                        @if (isSetSport)
+                        {
+                            <div class="badge bg-primary rounded-pill px-3 py-1" id="displayMatchSetScore">Set thắng @initScore1 - @initScore2</div>
+                        }
                         <div class="mt-2" id="badgeMatchStatus">
                             @if (Model.TrangThai == "DangDau")
                             {
@@ -397,18 +522,26 @@
 
                     <!-- Đội 2 -->
                     <div class="col-md-5">
-                        <div class="p-3 rounded-4 bg-white bg-opacity-5 border border-white border-opacity-10 position-relative">
-                            <h4 class="fw-bold text-white mb-1 text-truncate" id="labelTeam2">@(Model.TenDoi2 ?? "Đội 2")</h4>
-                            <small class="text-warning text-truncate d-block mb-3">@(Model.DonViDoi2 ?? "Đơn vị chủ quản")</small>
+                        <div class="p-3 rounded-4 bg-white border position-relative" style="border-color: #b8cfea !important;">
+                            <h4 class="fw-bold text-dark mb-1 text-truncate" id="labelTeam2">@(Model.TenDoi2 ?? "Đội 2")</h4>
+                            <small class="text-secondary text-truncate d-block mb-3">@(Model.DonViDoi2 ?? "Đơn vị chủ quản")</small>
 
-                            <div class="display-2 fw-bold font-monospace text-warning my-2" id="displayScore2">@initScore2</div>
-                            <small class="text-white-50 d-block mb-2" id="subLabelScore2">@(isSetSport ? "Tổng số set thắng" : "Bàn thắng / Điểm")</small>
+                            <div class="display-2 fw-bold font-monospace text-primary my-2" id="displayScore2">@(isSetSport ? initLiveSetScore2 : initScore2)</div>
+                            <small class="text-secondary d-block mb-2" id="subLabelScore2">@(isSetSport ? "Điểm set hiện tại" : "Bàn thắng / Điểm")</small>
 
-                            <div class="d-flex justify-content-center gap-1.5 mt-2">
-                                <button class="btn btn-sm btn-outline-light px-2 py-1" onclick="adjustScore(2, -1)">-1</button>
-                                <button class="btn btn-sm btn-warning fw-bold px-3 py-1" onclick="adjustScore(2, 1)">+1</button>
-                                <button class="btn btn-sm btn-outline-warning fw-bold px-2 py-1" onclick="adjustScore(2, 2)">+2</button>
-                                <button class="btn btn-sm btn-outline-warning fw-bold px-2 py-1" onclick="adjustScore(2, 3)">+3</button>
+                            <div class="score-adjustment" role="group" aria-label="Điều chỉnh điểm đội 2">
+                                <span class="score-adjustment-caption">Điều chỉnh điểm</span>
+                                <div class="score-adjustment-actions">
+                                    <button type="button" class="score-adjustment-button score-adjustment-subtract" id="btnSubtractScore2" title="Trừ 1 điểm đội 2" aria-label="Trừ 1 điểm đội 2" onclick="adjustScore(2, -1)">
+                                        <i class="fa-solid fa-minus" aria-hidden="true"></i><span>1</span>
+                                    </button>
+                                    <span class="score-adjustment-divider" aria-hidden="true"></span>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-primary" title="Cộng 1 điểm đội 2" aria-label="Cộng 1 điểm đội 2" onclick="adjustScore(2, 1)">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i><span>1</span>
+                                    </button>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 2 điểm đội 2" aria-label="Cộng 2 điểm đội 2" onclick="adjustScore(2, 2)">+2</button>
+                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 3 điểm đội 2" aria-label="Cộng 3 điểm đội 2" onclick="adjustScore(2, 3)">+3</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -489,7 +622,7 @@
                                         <th>@(Model.TenDoi1 ?? "Đội 1")</th>
                                         <th>@(Model.TenDoi2 ?? "Đội 2")</th>
                                         <th style="width: 60px;">Kết quả</th>
-                                        <th style="width: 45px;">Xóa</th>
+                                        <th style="width: 145px;">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="bodySets">
@@ -667,6 +800,14 @@
         const tenDoi2 = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.TenDoi2 ?? "Đội 2"));
 
         let setScoresList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(setScores));
+        setScoresList = setScoresList.map(function (set) {
+            return {
+                setNumber: set.setNumber ?? set.SetNumber ?? 1,
+                score1: set.score1 ?? set.Score1 ?? 0,
+                score2: set.score2 ?? set.Score2 ?? 0
+            };
+        });
+        let editingSetIndex = null;
         let eventsList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(events));
         let eventModal = null;
 
@@ -679,6 +820,9 @@
                 if (setScoresList.length === 0 && isSetSport) {
                     setScoresList.push({ setNumber: 1, score1: 0, score2: 0 });
                 }
+                if (!isSetSport) {
+                    reconcileCurrentPeriodScores();
+                }
                 renderSets();
                 renderEvents();
                 checkTieBreakCondition();
@@ -688,6 +832,7 @@
             } else {
                 recalculateHeatRanks();
             }
+            updateScoreSubtractButtons();
 
             $('#eventForm').on('submit', function (e) {
                 e.preventDefault();
@@ -704,6 +849,7 @@
             tbody.empty();
 
             setScoresList.forEach((s, idx) => {
+                const isEditing = editingSetIndex === idx;
                 let badge = '<span class="badge bg-secondary-subtle text-secondary font-monospace">-</span>';
                 if (sportConfig && sportConfig.LoaiTheThuc === 'SetDiem') {
                     const evalSet = evaluateSingleSet(s.setNumber, s.score1, s.score2);
@@ -716,19 +862,25 @@
                     }
                 }
 
+                const score1Cell = isEditing
+                    ? `<input type="number" id="editSetScore1_${idx}" class="form-control form-control-sm text-center font-monospace fw-bold" min="0" step="1" value="${s.score1}" aria-label="Điểm đội 1 set ${s.setNumber}" />`
+                    : `<span class="font-monospace fw-bold">${s.score1}</span>`;
+                const score2Cell = isEditing
+                    ? `<input type="number" id="editSetScore2_${idx}" class="form-control form-control-sm text-center font-monospace fw-bold" min="0" step="1" value="${s.score2}" aria-label="Điểm đội 2 set ${s.setNumber}" />`
+                    : `<span class="font-monospace fw-bold">${s.score2}</span>`;
+                const actionButtons = isEditing
+                    ? `<button type="button" class="btn btn-sm btn-success" title="Lưu điểm set" onclick="saveSetEdit(${idx})"><i class="fa-solid fa-check"></i></button>
+                       <button type="button" class="btn btn-sm btn-outline-secondary" title="Hủy sửa" onclick="cancelSetEdit()"><i class="fa-solid fa-xmark"></i></button>`
+                    : `<button type="button" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa điểm set" onclick="beginSetEdit(${idx})"><i class="fa-solid fa-pen-to-square me-1"></i>Sửa</button>
+                       <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa set" onclick="removeSet(${idx})"><i class="fa-solid fa-trash-can"></i></button>`;
+
                 const tr = `
                     <tr>
-                        <td class="fw-bold text-secondary">Set ${s.setNumber}</td>
-                        <td>
-                            <input type="number" class="form-control form-control-sm text-center font-monospace fw-bold" min="0" value="${s.score1}" onchange="updateSetScore(${idx}, 1, this.value)" />
-                        </td>
-                        <td>
-                            <input type="number" class="form-control form-control-sm text-center font-monospace fw-bold" min="0" value="${s.score2}" onchange="updateSetScore(${idx}, 2, this.value)" />
-                        </td>
+                        <td class="fw-bold text-secondary">${isSetSport ? 'Set' : 'Hiệp'} ${s.setNumber}</td>
+                        <td>${score1Cell}</td>
+                        <td>${score2Cell}</td>
                         <td>${badge}</td>
-                        <td>
-                            <button type="button" class="btn btn-sm text-danger p-0" onclick="removeSet(${idx})"><i class="fa-solid fa-trash-can"></i></button>
-                        </td>
+                        <td><div class="d-flex justify-content-center gap-1">${actionButtons}</div></td>
                     </tr>
                 `;
                 tbody.append(tr);
@@ -754,15 +906,64 @@
             return { isSetWon: false, winner: 0, isDeuce: isDeuce };
         }
 
-        function updateSetScore(idx, team, val) {
-            const num = parseInt(val) || 0;
-            if (team === 1) setScoresList[idx].score1 = num;
-            else setScoresList[idx].score2 = num;
-
-            if (isSetSport) {
-                recalculateSetsWon();
+        function beginSetEdit(idx) {
+            if (editingSetIndex !== null) {
+                Swal.fire('Đang chỉnh sửa set', 'Hãy lưu hoặc hủy set đang sửa trước.', 'info');
+                return;
             }
+            editingSetIndex = idx;
             renderSets();
+            $(`#editSetScore1_${idx}`).trigger('focus').trigger('select');
+        }
+
+        function saveSetEdit(idx) {
+            const rawScore1 = $(`#editSetScore1_${idx}`).val();
+            const rawScore2 = $(`#editSetScore2_${idx}`).val();
+            const newScore1 = Number(rawScore1);
+            const newScore2 = Number(rawScore2);
+            if (rawScore1 === '' || rawScore2 === '' || !Number.isInteger(newScore1) || !Number.isInteger(newScore2) || newScore1 < 0 || newScore2 < 0) {
+                Swal.fire('Điểm không hợp lệ', 'Điểm mỗi đội phải là số nguyên không âm.', 'warning');
+                return;
+            }
+
+            setScoresList[idx].score1 = newScore1;
+            setScoresList[idx].score2 = newScore2;
+            editingSetIndex = null;
+            renderSets();
+            if (isSetSport) recalculateSetsWon();
+        }
+
+        function cancelSetEdit() {
+            editingSetIndex = null;
+            renderSets();
+        }
+
+        function ensureNoSetEdit() {
+            if (editingSetIndex === null) return true;
+            Swal.fire('Đang chỉnh sửa set', 'Hãy lưu hoặc hủy set đang sửa trước khi tiếp tục nhập điểm.', 'info');
+            return false;
+        }
+
+        function updateScoreSubtractButtons() {
+            const currentSet = setScoresList.length > 0
+                ? setScoresList[setScoresList.length - 1]
+                : { score1: 0, score2: 0 };
+            const currentScore1 = isSetSport ? currentSet.score1 : score1;
+            const currentScore2 = isSetSport ? currentSet.score2 : score2;
+            $('#btnSubtractScore1').prop('disabled', currentScore1 <= 0);
+            $('#btnSubtractScore2').prop('disabled', currentScore2 <= 0);
+        }
+
+        function reconcileCurrentPeriodScores() {
+            if (setScoresList.length === 0) {
+                setScoresList.push({ setNumber: 1, score1: 0, score2: 0 });
+            }
+
+            const recordedScore1 = setScoresList.reduce((sum, period) => sum + period.score1, 0);
+            const recordedScore2 = setScoresList.reduce((sum, period) => sum + period.score2, 0);
+            const currentPeriod = setScoresList[setScoresList.length - 1];
+            currentPeriod.score1 += Math.max(0, score1 - recordedScore1);
+            currentPeriod.score2 += Math.max(0, score2 - recordedScore2);
         }
 
         function recalculateSetsWon() {
@@ -777,8 +978,13 @@
 
             score1 = won1;
             score2 = won2;
-            $('#displayScore1').text(score1);
-            $('#displayScore2').text(score2);
+            const currentSet = setScoresList.length > 0
+                ? setScoresList[setScoresList.length - 1]
+                : { score1: 0, score2: 0 };
+            $('#displayScore1').text(currentSet.score1 ?? currentSet.Score1 ?? 0);
+            $('#displayScore2').text(currentSet.score2 ?? currentSet.Score2 ?? 0);
+            $('#displayMatchSetScore').text(`Set thắng ${won1} - ${won2}`);
+            updateScoreSubtractButtons();
 
             const setsToWin = sportConfig?.SoHiepThangDeThangTran || 2;
             if (won1 >= setsToWin) {
@@ -799,6 +1005,7 @@
         }
 
         function addNewSet() {
+            if (!ensureNoSetEdit()) return;
             const nextNum = setScoresList.length + 1;
             const maxSets = sportConfig?.SoHiepToiDa || 5;
             if (nextNum > maxSets) {
@@ -807,9 +1014,11 @@
             }
             setScoresList.push({ setNumber: nextNum, score1: 0, score2: 0 });
             renderSets();
+            recalculateSetsWon();
         }
 
         function removeSet(idx) {
+            if (!ensureNoSetEdit()) return;
             setScoresList.splice(idx, 1);
             setScoresList.forEach((s, i) => s.setNumber = i + 1);
             if (isSetSport) recalculateSetsWon();
@@ -817,6 +1026,7 @@
         }
 
         function adjustScore(team, delta) {
+            if (!ensureNoSetEdit()) return;
             if (isSetSport) {
                 // Với môn set điểm, tăng điểm của set cuối cùng đang đấu
                 if (setScoresList.length === 0) setScoresList.push({ setNumber: 1, score1: 0, score2: 0 });
@@ -826,6 +1036,14 @@
                 renderSets();
                 recalculateSetsWon();
             } else {
+                // Với môn tính tỷ số theo hiệp, ghi điểm vào hiệp hiện tại đồng thời cập nhật tỷ số chung.
+                if (setScoresList.length === 0) {
+                    setScoresList.push({ setNumber: 1, score1: 0, score2: 0 });
+                }
+                const currentPeriod = setScoresList[setScoresList.length - 1];
+                if (team === 1) currentPeriod.score1 = Math.max(0, currentPeriod.score1 + delta);
+                else currentPeriod.score2 = Math.max(0, currentPeriod.score2 + delta);
+
                 if (team === 1) {
                     score1 = Math.max(0, score1 + delta);
                     $('#displayScore1').text(score1);
@@ -833,6 +1051,8 @@
                     score2 = Math.max(0, score2 + delta);
                     $('#displayScore2').text(score2);
                 }
+                renderSets();
+                updateScoreSubtractButtons();
                 checkTieBreakCondition();
             }
         }
@@ -1152,6 +1372,7 @@
         }
 
         function saveDraftResult() {
+            if (!ensureNoSetEdit()) return;
             const payload = {
                 tranDauId: matchId,
                 score1: score1,
@@ -1196,6 +1417,7 @@
         }
 
         function completeMatchFinal() {
+            if (!ensureNoSetEdit()) return;
             let winnerVal = $('#selectWinner').val();
 
             if (!isHeatMatch && !isSetSport) {
