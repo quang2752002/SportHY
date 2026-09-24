@@ -33,7 +33,6 @@ namespace Dms.Domain.Entities
         [MaxLength(1000)]
         public string? GhiChu { get; set; }
 
-        public virtual ICollection<ChiTietDangKyThiDau> ChiTietDangKyThiDaus { get; set; } = new List<ChiTietDangKyThiDau>();
         public virtual ICollection<ThanhVienBang> ThanhVienBangs { get; set; } = new List<ThanhVienBang>();
         public virtual ICollection<ThanhPhanTranDau> ThanhPhanTranDaus { get; set; } = new List<ThanhPhanTranDau>();
         public virtual HuyChuong? HuyChuong { get; set; }

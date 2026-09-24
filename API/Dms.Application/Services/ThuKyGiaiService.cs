@@ -472,9 +472,10 @@ namespace Dms.Application.Services
             var donVis = (await _unitOfWork.DonVis.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
             var dois = (await _unitOfWork.Dois.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
 
-            var dkIds = dangKys.Select(d => d.Id).ToList();
-            var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => dkIds.Contains(c.DangKyThiDauId) && c.IsDeleted != true)).ToList();
-            var vdvIds = chiTiets.Select(c => c.VanDongVienId).Distinct().ToList();
+            // Lấy thành viên đội thay vì ChiTietDangKyThiDau
+            var doiIds = dangKys.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
+            var thanhViens = (await _unitOfWork.ThanhVienDois.FindAsync(tv => doiIds.Contains(tv.DoiId) && tv.IsDeleted != true)).ToList();
+            var vdvIds = thanhViens.Select(tv => tv.VanDongVienId).Distinct().ToList();
             var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id) && v.IsDeleted != true)).ToDictionary(v => v.Id);
 
             var dangKyList = new List<NoiDungDangKyItemDto>();
@@ -492,11 +493,14 @@ namespace Dms.Application.Services
                     }
                 }
 
-                var myChiTiets = chiTiets.Where(c => c.DangKyThiDauId == dk.Id).ToList();
+                // Lấy VĐV từ thành viên đội
+                var myThanhViens = dk.DoiId.HasValue
+                    ? thanhViens.Where(tv => tv.DoiId == dk.DoiId.Value).ToList()
+                    : new List<ThanhVienDoi>();
                 var vdvNames = new List<string>();
-                foreach (var ct in myChiTiets)
+                foreach (var tv in myThanhViens)
                 {
-                    if (vdvs.TryGetValue(ct.VanDongVienId, out var vdv))
+                    if (vdvs.TryGetValue(tv.VanDongVienId, out var vdv))
                     {
                         vdvNames.Add(vdv.HoTen);
                         if (string.IsNullOrEmpty(tenDonVi) && vdv.DonViId.HasValue && donVis.TryGetValue(vdv.DonViId.Value, out var dvVdv))
@@ -926,24 +930,32 @@ namespace Dms.Application.Services
 
             var parsed = ParseMatchGhiChu(match.GhiChu, match.TrangThai);
 
-            // Đọc danh sách VĐV Đội 1
+            // Đọc danh sách VĐV Đội 1 qua ThanhVienDoi (đăng ký theo đội)
             var vdv1List = new List<VanDongVienDto>();
             if (match.Doi1DangKyId.HasValue)
             {
-                var cts1 = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => c.DangKyThiDauId == match.Doi1DangKyId.Value && c.IsDeleted != true)).ToList();
-                var vdv1Ids = cts1.Select(c => c.VanDongVienId).ToList();
-                var rawVdvs1 = (await _unitOfWork.VanDongViens.FindAsync(v => vdv1Ids.Contains(v.Id) && v.IsDeleted != true)).ToList();
-                vdv1List = _mapper.Map<List<VanDongVienDto>>(rawVdvs1);
+                var dk1 = await _unitOfWork.DangKyThiDaus.GetByIdAsync(match.Doi1DangKyId.Value);
+                if (dk1?.DoiId != null)
+                {
+                    var tvs1 = (await _unitOfWork.ThanhVienDois.FindAsync(tv => tv.DoiId == dk1.DoiId.Value && tv.IsDeleted != true)).ToList();
+                    var vdv1Ids = tvs1.Select(tv => tv.VanDongVienId).ToList();
+                    var rawVdvs1 = (await _unitOfWork.VanDongViens.FindAsync(v => vdv1Ids.Contains(v.Id) && v.IsDeleted != true)).ToList();
+                    vdv1List = _mapper.Map<List<VanDongVienDto>>(rawVdvs1);
+                }
             }
 
-            // Đọc danh sách VĐV Đội 2
+            // Đọc danh sách VĐV Đội 2 qua ThanhVienDoi (đăng ký theo đội)
             var vdv2List = new List<VanDongVienDto>();
             if (match.Doi2DangKyId.HasValue)
             {
-                var cts2 = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => c.DangKyThiDauId == match.Doi2DangKyId.Value && c.IsDeleted != true)).ToList();
-                var vdv2Ids = cts2.Select(c => c.VanDongVienId).ToList();
-                var rawVdvs2 = (await _unitOfWork.VanDongViens.FindAsync(v => vdv2Ids.Contains(v.Id) && v.IsDeleted != true)).ToList();
-                vdv2List = _mapper.Map<List<VanDongVienDto>>(rawVdvs2);
+                var dk2 = await _unitOfWork.DangKyThiDaus.GetByIdAsync(match.Doi2DangKyId.Value);
+                if (dk2?.DoiId != null)
+                {
+                    var tvs2 = (await _unitOfWork.ThanhVienDois.FindAsync(tv => tv.DoiId == dk2.DoiId.Value && tv.IsDeleted != true)).ToList();
+                    var vdv2Ids = tvs2.Select(tv => tv.VanDongVienId).ToList();
+                    var rawVdvs2 = (await _unitOfWork.VanDongViens.FindAsync(v => vdv2Ids.Contains(v.Id) && v.IsDeleted != true)).ToList();
+                    vdv2List = _mapper.Map<List<VanDongVienDto>>(rawVdvs2);
+                }
             }
 
             return new ThuKyBienBanDto
@@ -1079,9 +1091,10 @@ namespace Dms.Application.Services
             var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
             var dois = (await _unitOfWork.Dois.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
 
-            var dkIds = dangKys.Keys.ToList();
-            var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => dkIds.Contains(c.DangKyThiDauId) && c.IsDeleted != true)).ToList();
-            var vdvIds = chiTiets.Select(c => c.VanDongVienId).Distinct().ToList();
+            // Lấy thành viên đội thay vì ChiTietDangKyThiDau
+            var doiIdsForMedal = dangKys.Values.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
+            var chiTiets = (await _unitOfWork.ThanhVienDois.FindAsync(tv => doiIdsForMedal.Contains(tv.DoiId) && tv.IsDeleted != true)).ToList();
+            var vdvIds = chiTiets.Select(tv => tv.VanDongVienId).Distinct().ToList();
             var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id) && v.IsDeleted != true)).ToDictionary(v => v.Id);
 
             // Lọc huy chương theo danh mục môn hoặc môn thể thao nếu được chỉ định
@@ -1154,9 +1167,10 @@ namespace Dms.Application.Services
             var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
             var dois = (await _unitOfWork.Dois.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
 
-            var dkIds = dangKys.Keys.ToList();
-            var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => dkIds.Contains(c.DangKyThiDauId) && c.IsDeleted != true)).ToList();
-            var vdvIds = chiTiets.Select(c => c.VanDongVienId).Distinct().ToList();
+            // Lấy thành viên đội thay vì ChiTietDangKyThiDau
+            var doiIdsForDanhMuc = dangKys.Values.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
+            var chiTiets = (await _unitOfWork.ThanhVienDois.FindAsync(tv => doiIdsForDanhMuc.Contains(tv.DoiId) && tv.IsDeleted != true)).ToList();
+            var vdvIds = chiTiets.Select(tv => tv.VanDongVienId).Distinct().ToList();
             var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id) && v.IsDeleted != true)).ToDictionary(v => v.Id);
 
             var gdmDict = gdms.ToDictionary(g => g.Id);
@@ -1228,8 +1242,10 @@ namespace Dms.Application.Services
             var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => dkIds.Contains(d.Id) && d.IsDeleted != true)).ToDictionary(d => d.Id);
             var doiIds = dangKys.Values.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
             var dois = (await _unitOfWork.Dois.FindAsync(d => doiIds.Contains(d.Id) && d.IsDeleted != true)).ToDictionary(d => d.Id);
-            var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => dkIds.Contains(c.DangKyThiDauId) && c.IsDeleted != true)).ToList();
-            var vdvIds = chiTiets.Select(c => c.VanDongVienId).Distinct().ToList();
+            // Lấy thành viên đội thay vì ChiTietDangKyThiDau
+            var doiIdsForMon = dois.Keys.ToList();
+            var chiTiets = (await _unitOfWork.ThanhVienDois.FindAsync(tv => doiIdsForMon.Contains(tv.DoiId) && tv.IsDeleted != true)).ToList();
+            var vdvIds = chiTiets.Select(tv => tv.VanDongVienId).Distinct().ToList();
             var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id) && v.IsDeleted != true)).ToDictionary(v => v.Id);
             var donViIds = dois.Values.Where(d => d.DonViId.HasValue).Select(d => d.DonViId!.Value)
                 .Concat(vdvs.Values.Where(v => v.DonViId.HasValue).Select(v => v.DonViId!.Value))
@@ -1283,7 +1299,7 @@ namespace Dms.Application.Services
         /// <param name="loaiHcs">Map danh mục loại huy chương.</param>
         /// <param name="dangKys">Map đăng ký thi đấu.</param>
         /// <param name="dois">Map đội tham gia.</param>
-        /// <param name="chiTiets">Danh sách chi tiết đăng ký thi đấu.</param>
+        /// <param name="chiTiets">Danh sách thành viên đội (thay thế chi tiết đăng ký thi đấu).</param>
         /// <param name="vdvs">Map vận động viên.</param>
         /// <param name="chiLayDonViCoHuyChuong">True nếu chỉ muốn lấy các đơn vị có ít nhất 1 huy chương.</param>
         /// <returns>Bộ tuple gồm danh sách xếp hạng đã sắp xếp và tổng số lượng từng loại huy chương.</returns>
@@ -1293,7 +1309,7 @@ namespace Dms.Application.Services
             Dictionary<int, LoaiHuyChuong> loaiHcs,
             Dictionary<int, DangKyThiDau> dangKys,
             Dictionary<int, Doi> dois,
-            List<ChiTietDangKyThiDau> chiTiets,
+            List<ThanhVienDoi> chiTiets,
             Dictionary<int, VanDongVien> vdvs,
             bool chiLayDonViCoHuyChuong)
         {
@@ -1320,10 +1336,11 @@ namespace Dms.Application.Services
                     {
                         donViId = doi.DonViId;
                     }
-                    if (!donViId.HasValue)
+                    if (!donViId.HasValue && dk.DoiId.HasValue)
                     {
-                        var ct = chiTiets.FirstOrDefault(c => c.DangKyThiDauId == dk.Id);
-                        if (ct != null && vdvs.TryGetValue(ct.VanDongVienId, out var vdv))
+                        // Fallback: lấy đơn vị qua thành viên đội đầu tiên
+                        var tv = chiTiets.FirstOrDefault(c => c.DoiId == dk.DoiId.Value);
+                        if (tv != null && vdvs.TryGetValue(tv.VanDongVienId, out var vdv))
                         {
                             donViId = vdv.DonViId;
                         }
@@ -1401,7 +1418,7 @@ namespace Dms.Application.Services
         /// <param name="loaiHcs">Map loại huy chương để xác định tên và số lượng từng huy chương.</param>
         /// <param name="dangKys">Map đăng ký thi đấu nhận huy chương.</param>
         /// <param name="dois">Map đội đăng ký thi đấu còn hoạt động.</param>
-        /// <param name="chiTiets">Danh sách vận động viên thuộc đăng ký thi đấu.</param>
+        /// <param name="chiTiets">Danh sách thành viên đội (thay thế chi tiết đăng ký thi đấu).</param>
         /// <param name="vdvs">Map vận động viên còn hoạt động.</param>
         /// <param name="donVis">Map đơn vị để hiển thị đơn vị trực thuộc người hoặc đội nhận giải.</param>
         /// <returns>Các dòng kết quả theo thứ hạng cùng tổng số huy chương vàng, bạc và đồng trong môn.</returns>
@@ -1411,7 +1428,7 @@ namespace Dms.Application.Services
             Dictionary<int, LoaiHuyChuong> loaiHcs,
             Dictionary<int, DangKyThiDau> dangKys,
             Dictionary<int, Doi> dois,
-            List<ChiTietDangKyThiDau> chiTiets,
+            List<ThanhVienDoi> chiTiets,
             Dictionary<int, VanDongVien> vdvs,
             Dictionary<int, DonVi> donVis)
         {
@@ -1424,14 +1441,16 @@ namespace Dms.Application.Services
             {
                 if (!dangKys.TryGetValue(medal.DangKyThiDauId, out var dangKy)) continue;
 
-                var vdv = chiTiets
-                    .Where(detail => detail.DangKyThiDauId == medal.DangKyThiDauId)
-                    .OrderBy(detail => detail.SoThuTu ?? int.MaxValue)
-                    .ThenBy(detail => detail.Id)
-                    .Select(detail => detail.VanDongVienId)
-                    .Where(vdvs.ContainsKey)
-                    .Select(vdvId => vdvs[vdvId])
-                    .FirstOrDefault();
+                // Lấy VĐV đầu tiên trong đội qua ThanhVienDoi
+                VanDongVien? vdv = null;
+                if (dangKy.DoiId.HasValue)
+                {
+                    var tvFirst = chiTiets
+                        .Where(tv => tv.DoiId == dangKy.DoiId.Value)
+                        .OrderBy(tv => tv.Id)
+                        .FirstOrDefault();
+                    if (tvFirst != null) vdvs.TryGetValue(tvFirst.VanDongVienId, out vdv);
+                }
 
                 loaiHcs.TryGetValue(medal.LoaiHuyChuongId, out var loai);
                 string loaiTen = (loai?.Ten ?? "").ToLowerInvariant();
@@ -1485,9 +1504,10 @@ namespace Dms.Application.Services
             var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => gdmIds.Contains(d.GiaiDauMonTheThaoId) && d.IsDeleted != true)).ToList();
             var donVis = (await _unitOfWork.DonVis.FindAsync(d => d.IsDeleted != true)).ToList();
 
-            var dkIds = dangKys.Select(d => d.Id).ToList();
-            var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => dkIds.Contains(c.DangKyThiDauId) && c.IsDeleted != true)).ToList();
-            var vdvIds = chiTiets.Select(c => c.VanDongVienId).Distinct().ToList();
+            // Lấy VĐV từ thành viên đội thay vì ChiTietDangKyThiDau
+            var doiIdsForBaoCao = dangKys.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
+            var thanhViensBaoCao = (await _unitOfWork.ThanhVienDois.FindAsync(tv => doiIdsForBaoCao.Contains(tv.DoiId) && tv.IsDeleted != true)).ToList();
+            var vdvIds = thanhViensBaoCao.Select(tv => tv.VanDongVienId).Distinct().ToList();
 
             var bangTongSap = await GetBangTongSapHuyChuongAsync(gId);
             var tienDoMonList = await GetTienDoCacMonAsync(gId);
@@ -1549,8 +1569,10 @@ namespace Dms.Application.Services
 
                 var donVis = (await _unitOfWork.DonVis.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
                 var vdvIds = vdvs.Select(v => v.Id).ToList();
-                var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => vdvIds.Contains(c.VanDongVienId) && c.IsDeleted != true)).ToList();
-                var dkIds = chiTiets.Select(c => c.DangKyThiDauId).Distinct().ToList();
+                // Lấy đội của VĐV qua ThanhVienDoi thay vì ChiTietDangKyThiDau
+                var thanhViensTraCuu = (await _unitOfWork.ThanhVienDois.FindAsync(tv => vdvIds.Contains(tv.VanDongVienId) && tv.IsDeleted != true)).ToList();
+                var doiIdsTraCuu = thanhViensTraCuu.Select(tv => tv.DoiId).Distinct().ToList();
+                var dkIds = (await _unitOfWork.DangKyThiDaus.FindAsync(d => d.DoiId.HasValue && doiIdsTraCuu.Contains(d.DoiId!.Value) && d.IsDeleted != true)).Select(d => d.Id).Distinct().ToList();
                 var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(d => dkIds.Contains(d.Id) && d.IsDeleted != true)).ToDictionary(d => d.Id);
                 var gdmIds = dangKys.Values.Select(d => d.GiaiDauMonTheThaoId).Distinct().ToList();
                 var gdms = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(g => gdmIds.Contains(g.Id) && g.IsDeleted != true)).ToDictionary(g => g.Id);
@@ -1563,7 +1585,9 @@ namespace Dms.Application.Services
                 foreach (var v in vdvs)
                 {
                     donVis.TryGetValue(v.DonViId ?? 0, out var dv);
-                    var myCts = chiTiets.Where(c => c.VanDongVienId == v.Id).Select(c => c.DangKyThiDauId).ToList();
+                    // Lấy các đăng ký liên quan qua đội của VĐV
+                    var myDoiIds = thanhViensTraCuu.Where(tv => tv.VanDongVienId == v.Id).Select(tv => tv.DoiId).ToList();
+                    var myCts = dangKys.Values.Where(d => d.DoiId.HasValue && myDoiIds.Contains(d.DoiId!.Value)).Select(d => d.Id).ToList();
                     var monNames = new HashSet<string>();
                     var medalNames = new List<string>();
 

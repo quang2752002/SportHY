@@ -18,12 +18,10 @@ namespace Dms.Infrastructure.Repositories
         private IGenericRepository<DanhMucMonTheThao>? _danhMucMonTheThaos;
         private IGenericRepository<MonTheThao>? _monTheThaos;
         private IGenericRepository<GiaiDauMonTheThao>? _giaiDauMonTheThaos;
-        private IGenericRepository<NoiDungThiDau>? _noiDungThiDaus;
         private IGenericRepository<VanDongVien>? _vanDongViens;
         private IGenericRepository<Doi>? _dois;
         private IGenericRepository<ThanhVienDoi>? _thanhVienDois;
         private IGenericRepository<DangKyThiDau>? _dangKyThiDaus;
-        private IGenericRepository<ChiTietDangKyThiDau>? _chiTietDangKyThiDaus;
         private IGenericRepository<BangDau>? _bangDaus;
         private IGenericRepository<ThanhVienBang>? _thanhVienBangs;
         private IGenericRepository<VongDau>? _vongDaus;
@@ -78,8 +76,7 @@ namespace Dms.Infrastructure.Repositories
         public IGenericRepository<GiaiDauMonTheThao> GiaiDauMonTheThaos => 
             _giaiDauMonTheThaos ??= new GenericRepository<GiaiDauMonTheThao>(_context);
 
-        public IGenericRepository<NoiDungThiDau> NoiDungThiDaus => 
-            _noiDungThiDaus ??= new GenericRepository<NoiDungThiDau>(_context);
+      
 
         public IGenericRepository<VanDongVien> VanDongViens => 
             _vanDongViens ??= new GenericRepository<VanDongVien>(_context);
@@ -93,8 +90,7 @@ namespace Dms.Infrastructure.Repositories
         public IGenericRepository<DangKyThiDau> DangKyThiDaus => 
             _dangKyThiDaus ??= new GenericRepository<DangKyThiDau>(_context);
 
-        public IGenericRepository<ChiTietDangKyThiDau> ChiTietDangKyThiDaus => 
-            _chiTietDangKyThiDaus ??= new GenericRepository<ChiTietDangKyThiDau>(_context);
+     
 
         public IGenericRepository<BangDau> BangDaus => 
             _bangDaus ??= new GenericRepository<BangDau>(_context);

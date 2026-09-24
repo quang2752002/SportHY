@@ -136,12 +136,16 @@ namespace Dms.Application.Services
                 predicate: d => allDkIds.Contains(d.Id),
                 orderBy: null,
                 d => d.Doi!,
-                d => d.Doi!.DonVi!,
-                d => d.ChiTietDangKyThiDaus
+                d => d.Doi!.DonVi!
             )).Items.ToList();
             var dangKyMap = dangKyList.ToDictionary(d => d.Id);
 
-            var allVdvIds = dangKyList.SelectMany(d => d.ChiTietDangKyThiDaus.Where(ct => ct.IsDeleted != true).Select(ct => ct.VanDongVienId)).Distinct().ToList();
+            // Lấy VDV từ ThanhVienDoi thay vì ChiTietDangKyThiDau
+            var allDoiIds = dangKyList.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
+            var allThanhViens = allDoiIds.Any()
+                ? (await _unitOfWork.ThanhVienDois.FindAsync(tv => allDoiIds.Contains(tv.DoiId) && tv.IsDeleted != true)).ToList()
+                : new List<ThanhVienDoi>();
+            var allVdvIds = allThanhViens.Select(tv => tv.VanDongVienId).Distinct().ToList();
             var vdvMap = (await _unitOfWork.VanDongViens.FindAsync(v => allVdvIds.Contains(v.Id))).ToDictionary(v => v.Id, v => v.HoTen);
 
             var allTtIds = tranList.SelectMany(t => t.PhanCongTrongTais.Where(pc => pc.IsDeleted != true).Select(pc => pc.TrongTaiId)).Distinct().ToList();
@@ -167,8 +171,13 @@ namespace Dms.Application.Services
                     }
                     else
                     {
-                        var firstVdvId = dk?.ChiTietDangKyThiDaus.FirstOrDefault(ct => ct.IsDeleted != true)?.VanDongVienId;
-                        if (firstVdvId.HasValue && vdvMap.TryGetValue(firstVdvId.Value, out var vdvName))
+                        // Lấy VĐV đầu tiên từ thành viên đội
+                        var firstVdvId = dk?.DoiId.HasValue == true
+                            ? allThanhViens.Where(tv => tv.DoiId == dk!.DoiId!.Value && tv.IsDeleted != true).Select(tv => (int?)tv.VanDongVienId).FirstOrDefault()
+                            : null;
+                        string? vdvName = null;
+                        if (firstVdvId.HasValue) vdvMap.TryGetValue(firstVdvId.Value, out vdvName);
+                        if (!string.IsNullOrEmpty(vdvName))
                         {
                             displayName = vdvName;
                         }
@@ -2657,10 +2666,11 @@ namespace Dms.Application.Services
                 d => d.Doi!
             )).Items.ToList();
 
-            // 2. Lấy ChiTietDangKyThiDau
-            var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(
-                c => dkIdList.Contains(c.DangKyThiDauId) && c.IsDeleted != true
-            )).ToList();
+            // 2. Lấy ThanhVienDoi thay vì ChiTietDangKyThiDau
+            var doiIds2661 = dangKys.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
+            var chiTiets = doiIds2661.Any()
+                ? (await _unitOfWork.ThanhVienDois.FindAsync(tv => doiIds2661.Contains(tv.DoiId) && tv.IsDeleted != true)).ToList()
+                : new List<ThanhVienDoi>();
 
             // 3. Lấy ThanhVienDoi cho các DoiId liên quan
             var doiIds = dangKys.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
@@ -2684,8 +2694,10 @@ namespace Dms.Application.Services
                 var list = new List<VdvParticipantInfo>();
                 var seenVdv = new HashSet<int>();
 
-                // Từ ChiTietDangKyThiDau
-                var ctList = chiTiets.Where(c => c.DangKyThiDauId == dk.Id);
+                // Từ ThanhVienDoi (thay vì ChiTietDangKyThiDau)
+                var ctList = dk.DoiId.HasValue
+                    ? chiTiets.Where(tv => tv.DoiId == dk.DoiId.Value)
+                    : Enumerable.Empty<ThanhVienDoi>();
                 foreach (var ct in ctList)
                 {
                     if (vdvDict.TryGetValue(ct.VanDongVienId, out var vdv) && seenVdv.Add(vdv.Id))
@@ -2983,12 +2995,15 @@ namespace Dms.Application.Services
                 orderBy: q => q.OrderBy(d => d.Id),
                 d => d.Doi!,
                 d => d.Doi!.DonVi!,
-                d => d.ChiTietDangKyThiDaus,
                 d => d.ThanhVienBangs
             );
 
-            // Tải thông tin Vận động viên cho các ChiTietDangKyThiDau
-            var allVdvIds = pagedDangKy.Items.SelectMany(d => d.ChiTietDangKyThiDaus.Where(ct => ct.IsDeleted != true).Select(ct => ct.VanDongVienId)).Distinct().ToList();
+            // Lấy VDV từ ThanhVienDoi thay vì ChiTietDangKyThiDau
+            var doiIdsPairing = pagedDangKy.Items.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
+            var thanhViensPairing = doiIdsPairing.Any()
+                ? (await _unitOfWork.ThanhVienDois.FindAsync(tv => doiIdsPairing.Contains(tv.DoiId) && tv.IsDeleted != true)).ToList()
+                : new List<ThanhVienDoi>();
+            var allVdvIds = thanhViensPairing.Select(tv => tv.VanDongVienId).Distinct().ToList();
             var vdvMap = (await _unitOfWork.VanDongViens.FindAsync(v => allVdvIds.Contains(v.Id))).ToDictionary(v => v.Id, v => v.HoTen);
 
             var bangMap = bangDaus.ToDictionary(b => b.Id, b => b.Ten);
@@ -2996,11 +3011,14 @@ namespace Dms.Application.Services
             var allTeams = new List<ManualPairingTeamDto>();
             foreach (var d in pagedDangKy.Items)
             {
-                var vdvNames = d.ChiTietDangKyThiDaus
-                    .Where(ct => ct.IsDeleted != true)
-                    .Select(ct => vdvMap.GetValueOrDefault(ct.VanDongVienId, ""))
-                    .Where(name => !string.IsNullOrEmpty(name))
-                    .ToList();
+                // Lấy tên VDV từ thành viên đội
+                var vdvNames = d.DoiId.HasValue
+                    ? thanhViensPairing
+                        .Where(tv => tv.DoiId == d.DoiId.Value && tv.IsDeleted != true)
+                        .Select(tv => vdvMap.GetValueOrDefault(tv.VanDongVienId, ""))
+                        .Where(name => !string.IsNullOrEmpty(name))
+                        .ToList()
+                    : new List<string>();
 
                 var activeTvBang = d.ThanhVienBangs.FirstOrDefault(tv => tv.IsDeleted != true);
                 int? bId = activeTvBang?.BangDauId;

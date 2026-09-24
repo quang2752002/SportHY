@@ -29,7 +29,6 @@ namespace Dms.Infrastructure.Persistence
         public DbSet<Doi> Dois => Set<Doi>();
         public DbSet<ThanhVienDoi> ThanhVienDois => Set<ThanhVienDoi>();
         public DbSet<DangKyThiDau> DangKyThiDaus => Set<DangKyThiDau>();
-        public DbSet<ChiTietDangKyThiDau> ChiTietDangKyThiDaus => Set<ChiTietDangKyThiDau>();
         public DbSet<BangDau> BangDaus => Set<BangDau>();
         public DbSet<ThanhVienBang> ThanhVienBangs => Set<ThanhVienBang>();
         public DbSet<VongDau> VongDaus => Set<VongDau>();
