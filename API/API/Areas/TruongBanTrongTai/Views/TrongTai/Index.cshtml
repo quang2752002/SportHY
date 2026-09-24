@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Danh Sách Trọng Tài";
     var matchCountMap = ViewBag.MatchCountMap as Dictionary<int, int> ?? new();
+    var canManageRefereeDirectory = ViewBag.HasManagedTournament == true || User.IsInRole("Manager") || User.IsInRole("Admin");
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
@@ -11,9 +12,12 @@
         </h4>
         <p class="text-muted small mb-0">Huy động, quản lý hồ sơ và theo dõi khối lượng công việc của đội ngũ trọng tài</p>
     </div>
-    <button class="btn btn-primary fw-semibold px-3 shadow-sm" onclick="openModalCreate()">
-        <i class="fa-solid fa-user-plus me-1"></i> Thêm Trọng Tài Mới
-    </button>
+    @if (canManageRefereeDirectory)
+    {
+        <button class="btn btn-primary fw-semibold px-3 shadow-sm" onclick="openModalCreate()">
+            <i class="fa-solid fa-user-plus me-1"></i> Thêm Trọng Tài Mới
+        </button>
+    }
 </div>
 
 <!-- Bộ lọc tìm kiếm -->
@@ -76,7 +80,7 @@
                         <tr>
                             <td class="fw-bold text-secondary">@item.Ma</td>
                             <td>
-                                <a href="/TruongBanTrongTai/TrongTai/Details/@item.Id" class="fw-bold text-primary text-decoration-none">
+                                <a href="/TruongBanTrongTai/TrongTai/Details/@item.Id?giaiDauId=@ViewBag.SelectedGiaiDauId" class="fw-bold text-primary text-decoration-none">
                                     @item.HoTen
                                 </a>
                             </td>
@@ -113,7 +117,7 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
-                                    <a href="/TruongBanTrongTai/TrongTai/Details/@item.Id" class="btn btn-light border" title="Xem lịch sử phân công">
+                                    <a href="/TruongBanTrongTai/TrongTai/Details/@item.Id?giaiDauId=@ViewBag.SelectedGiaiDauId" class="btn btn-light border" title="Xem lịch sử phân công">
                                         <i class="fa-solid fa-eye text-primary"></i>
                                     </a>
                                     <button class="btn btn-light border" onclick="openModalEdit(@item.Id, '@item.Ma', '@item.HoTen', '@item.GioiTinh', '@item.SoDienThoai', '@item.Email', '@item.CapBac', @item.TrangThai.ToString().ToLower())" title="Sửa thông tin">
@@ -138,6 +142,8 @@
     </div>
 </div>
 
+@if (canManageRefereeDirectory)
+{
 <!-- Modal Thêm / Cập Nhật Trọng Tài -->
 <div class="modal fade" id="modalTrongTai" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -203,6 +209,7 @@
         </div>
     </div>
 </div>
+}
 
 @section Scripts {
     <script>

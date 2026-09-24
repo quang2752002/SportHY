@@ -22,9 +22,16 @@ namespace API.Areas.TruongBanTrongTai.Controllers
             ViewBag.ManagedTournaments = managedTournaments;
             ViewBag.CurrentReferee = currentReferee;
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
+            ViewBag.ManagedTournaments = managedTournaments;
             ViewBag.Keyword = keyword;
             ViewBag.CapBac = capBac;
             ViewBag.TrangThai = trangThai;
+
+            if (!selectedGiaiDauId.HasValue && !IsAdminOrManager())
+            {
+                ViewBag.MatchCountMap = new Dictionary<int, int>();
+                return View(new List<TrongTaiEntity>());
+            }
 
             var result = await _truongBanService.GetRefereeListAsync(selectedGiaiDauId, keyword, capBac, trangThai);
             ViewBag.MatchCountMap = result.MatchCountMap;
@@ -35,12 +42,23 @@ namespace API.Areas.TruongBanTrongTai.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(int id, int? giaiDauId)
         {
-            var details = await _truongBanService.GetRefereeDetailsAsync(id);
+            var managedTournaments = await GetManagedTournamentsAsync();
+            ViewBag.ManagedTournaments = managedTournaments;
+
+            int? effectiveGiaiDauId = giaiDauId;
+            if (!IsAdminOrManager())
+            {
+                effectiveGiaiDauId = GetSelectedTournamentId(giaiDauId, managedTournaments);
+                if (!effectiveGiaiDauId.HasValue) return Forbid();
+            }
+
+            var details = await _truongBanService.GetRefereeDetailsAsync(id, effectiveGiaiDauId);
             if (details == null)
             {
                 return NotFound();
             }
 
+            ViewBag.SelectedGiaiDauId = effectiveGiaiDauId;
             ViewBag.History = details.History;
             return View(details.Referee);
         }
@@ -48,6 +66,8 @@ namespace API.Areas.TruongBanTrongTai.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateOrUpdate(TrongTaiEntity model)
         {
+            if (!await CanManageAnyTournamentAsync()) return Forbid();
+
             var (success, message) = await _truongBanService.CreateOrUpdateRefereeAsync(model);
             return Json(new { success = success, message = message });
         }

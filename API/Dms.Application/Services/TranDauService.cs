@@ -3079,8 +3079,9 @@ namespace Dms.Application.Services
 
             foreach (var t in pagedTranDau.Items)
             {
-                var tp1 = t.ThanhPhanTranDaus.FirstOrDefault(tp => tp.ViTri == 1 && tp.IsDeleted != true);
-                var tp2 = t.ThanhPhanTranDaus.FirstOrDefault(tp => tp.ViTri == 2 && tp.IsDeleted != true);
+                var activeTps = t.ThanhPhanTranDaus?.Where(tp => tp.IsDeleted != true).OrderBy(tp => tp.ViTri ?? tp.SoLane ?? 0).ToList() ?? new List<ThanhPhanTranDau>();
+                var tp1 = activeTps.FirstOrDefault(tp => tp.ViTri == 1) ?? activeTps.ElementAtOrDefault(0);
+                var tp2 = activeTps.FirstOrDefault(tp => tp.ViTri == 2) ?? (activeTps.Count > 1 ? activeTps.ElementAtOrDefault(1) : null);
 
                 ManualPairingTeamDto? doi1 = null;
                 if (tp1 != null && teamLookup.TryGetValue(tp1.DangKyThiDauId, out var found1))
@@ -3096,9 +3097,9 @@ namespace Dms.Application.Services
                     assignedTeamIds.Add(found2.DangKyThiDauId);
                 }
 
-                bool isHeatMatch = (t.ThanhPhanTranDaus != null && t.ThanhPhanTranDaus.Count > 2)
-                    || (!string.IsNullOrEmpty(t.TenTran) && t.TenTran.Contains("Lượt"))
-                    || result.HinhThucThiDau == "TinhDiemXepHang";
+                bool isHeatSport = result.HinhThucThiDau == "TinhDiemXepHang" || result.HinhThucThiDau == "6";
+                bool isMultiParticipant = activeTps.Count > 2;
+                bool isHeatMatch = isHeatSport || isMultiParticipant;
 
                 var danhSachVdv = new List<ManualPairingParticipantDto>();
                 if (t.ThanhPhanTranDaus != null)

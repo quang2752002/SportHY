@@ -39,6 +39,7 @@ namespace Dms.Application
             services.AddScoped<Dms.Application.Interfaces.IGroupStandingsEngine, Dms.Application.Services.GroupStandingsEngine>();
             services.AddScoped<Dms.Application.Interfaces.IKnockoutProgressionEngine, Dms.Application.Services.KnockoutProgressionEngine>();
             services.AddScoped<Dms.Application.Interfaces.IAthleticsProgressionEngine, Dms.Application.Services.AthleticsProgressionEngine>();
+            services.AddScoped<Dms.Application.Interfaces.ISystemSettingService, Dms.Application.Services.SystemSettingService>();
             
             return services;
         }

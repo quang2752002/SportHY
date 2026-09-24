@@ -29,6 +29,29 @@ namespace Dms.Application.Interfaces
         Task<List<GiaiDau>> GetManagedTournamentsAsync(int? refereeId, bool isAdminOrManager);
 
         /// <summary>
+        /// Lấy các giải đấu đang có ít nhất một trận được phân công cho trọng tài.
+        /// </summary>
+        /// <param name="refereeId">ID hồ sơ trọng tài liên kết với tài khoản.</param>
+        /// <returns>Danh sách ID giải đấu có phân công trọng tài còn hiệu lực.</returns>
+        Task<List<int>> GetRefereeTournamentIdsAsync(int refereeId);
+
+        /// <summary>
+        /// Kiểm tra trọng tài có được phân công điều hành một trận đấu cụ thể hay không.
+        /// </summary>
+        /// <param name="refereeId">ID hồ sơ trọng tài.</param>
+        /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
+        /// <returns>True nếu trọng tài có phân công còn hiệu lực trong trận đấu.</returns>
+        Task<bool> IsRefereeAssignedToMatchAsync(int refereeId, int tranDauId);
+
+        /// <summary>
+        /// Kiểm tra trận đấu có thuộc giải đấu được chỉ định hay không.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
+        /// <param name="giaiDauId">ID giải đấu cần đối chiếu.</param>
+        /// <returns>True nếu trận đấu thuộc giải đấu và các bản ghi liên quan chưa bị xóa mềm.</returns>
+        Task<bool> IsMatchInTournamentAsync(int tranDauId, int giaiDauId);
+
+        /// <summary>
         /// Lấy thông tin thống kê tổng quan (Dashboard) cho Trưởng ban trọng tài trong một giải đấu
         /// </summary>
         /// <param name="giaiDauId">ID giải đấu</param>
@@ -46,11 +69,12 @@ namespace Dms.Application.Interfaces
         Task<RefereeListDto> GetRefereeListAsync(int? giaiDauId, string? keyword, string? capBac, bool? trangThai);
 
         /// <summary>
-        /// Lấy chi tiết thông tin hồ sơ và toàn bộ lịch sử phân công điều hành trận đấu của một trọng tài
+        /// Lấy thông tin hồ sơ và lịch sử phân công của trọng tài, có thể giới hạn lịch sử theo một giải.
         /// </summary>
-        /// <param name="id">ID trọng tài</param>
-        /// <returns>Thông tin trọng tài và danh sách các trận đã điều hành</returns>
-        Task<RefereeDetailsDto?> GetRefereeDetailsAsync(int id);
+        /// <param name="id">ID hồ sơ trọng tài.</param>
+        /// <param name="giaiDauId">ID giải cần giới hạn lịch sử; null để lấy lịch sử của mọi giải.</param>
+        /// <returns>Thông tin trọng tài và lịch sử phù hợp, hoặc null nếu không tìm thấy hồ sơ.</returns>
+        Task<RefereeDetailsDto?> GetRefereeDetailsAsync(int id, int? giaiDauId = null);
 
         /// <summary>
         /// Thêm mới hoặc cập nhật thông tin trọng tài trong hệ thống

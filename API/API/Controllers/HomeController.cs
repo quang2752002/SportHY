@@ -116,7 +116,7 @@ namespace API.Controllers
         }
 
         /// <summary>
-        /// Lấy danh sách bảng xếp hạng huy chương gom nhóm theo từng môn thể thao cụ thể
+        /// Lấy kết quả huy chương theo từng môn trong từng giải đấu
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetRankingsByMonTheThao(int? giaiDauId = null, int? danhMucId = null)
