@@ -23,19 +23,26 @@
     <style>
         :root {
             --trongtai-sidebar-width: 270px;
-            --trongtai-sidebar-bg: #0f172a;
-            --trongtai-sidebar-dark: #020617;
-            --trongtai-sidebar-hover: #1e293b;
-            --trongtai-sidebar-active: #d97706;
+            --trongtai-sidebar-bg: #ffffff;
+            --trongtai-sidebar-dark: #f8fbff;
+            --trongtai-sidebar-hover: #e9f1fc;
+            --trongtai-sidebar-active: #3473bc;
             --trongtai-header-height: 64px;
-            --trongtai-primary: #d97706;
-            --trongtai-accent: #f59e0b;
+            --trongtai-primary: #2f6db5;
+            --trongtai-accent: #5d8fce;
+            --bs-primary: #2f6db5;
+            --bs-primary-rgb: 47, 109, 181;
+            --bs-primary-text-emphasis: #244f86;
+            --bs-primary-bg-subtle: #dce9f8;
+            --bs-primary-border-subtle: #b8cfea;
+            --bs-link-color: #2f6db5;
+            --bs-link-hover-color: #244f86;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #334155;
+            background-color: #f2f6fb;
+            color: #33445c;
             overflow-x: hidden;
         }
 
@@ -47,12 +54,12 @@
             top: 0;
             left: 0;
             background: linear-gradient(180deg, var(--trongtai-sidebar-bg) 0%, var(--trongtai-sidebar-dark) 100%);
-            color: #fde68a;
+            color: #33445c;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1040;
             overflow-y: auto;
-            border-right: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.25);
+            border-right: 1px solid #e4ebf4;
+            box-shadow: 3px 0 14px rgba(42, 72, 112, 0.06);
         }
 
         .trongtai-brand {
@@ -60,12 +67,12 @@
             display: flex;
             align-items: center;
             padding: 0 1.25rem;
-            color: #fff;
+            color: #263a55;
             font-weight: 700;
             font-size: 1.1rem;
             letter-spacing: 0.5px;
-            background: rgba(0,0,0,0.3);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: #ffffff;
+            border-bottom: 1px solid #e8eef6;
             text-decoration: none;
         }
 
@@ -73,13 +80,13 @@
             width: 38px;
             height: 38px;
             border-radius: 10px;
-            background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+            background: linear-gradient(135deg, #4b83c5 0%, #2f64a5 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
             font-size: 1.15rem;
-            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.35);
+            box-shadow: 0 4px 10px rgba(47, 109, 181, 0.28);
             margin-right: 0.75rem;
             flex-shrink: 0;
         }
@@ -93,8 +100,8 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: #fcd34d;
-            opacity: 0.85;
+            color: #71849e;
+            opacity: 1;
             padding: 0.75rem 0.85rem 0.35rem;
         }
 
@@ -103,7 +110,7 @@
             align-items: center;
             padding: 0.75rem 0.85rem;
             border-radius: 8px;
-            color: #cbd5e1;
+            color: #4a5f79;
             text-decoration: none;
             font-size: 0.88rem;
             font-weight: 500;
@@ -115,26 +122,26 @@
             width: 24px;
             font-size: 1.1rem;
             margin-right: 0.75rem;
-            color: #fbbf24;
+            color: #5e83b3;
             text-align: center;
             transition: transform 0.2s;
         }
 
         .trongtai-nav-link:hover {
-            background: rgba(255,255,255,0.08);
-            color: #ffffff;
+            background: var(--trongtai-sidebar-hover);
+            color: var(--trongtai-primary);
             transform: translateX(3px);
         }
 
         .trongtai-nav-link:hover i {
-            color: #fde68a;
+            color: var(--trongtai-primary);
         }
 
         .trongtai-nav-link.active {
-            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            background: linear-gradient(135deg, #3d7bc1 0%, #2e67aa 100%);
             color: #ffffff;
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+            box-shadow: 0 4px 11px rgba(47, 109, 181, 0.24);
         }
 
         .trongtai-nav-link.active i {
@@ -143,8 +150,8 @@
 
         /* Referee Card in Sidebar */
         .trongtai-user-card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: #f7faff;
+            border: 1px solid #e2eaf5;
             border-radius: 10px;
             padding: 0.75rem 0.9rem;
             margin: 0.5rem 0.75rem 1rem;
@@ -158,13 +165,17 @@
             right: 0;
             left: var(--trongtai-sidebar-width);
             background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e3eaf3;
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 1.5rem;
             z-index: 1030;
             transition: left 0.3s ease;
+        }
+
+        .trongtai-topbar .text-warning {
+            color: var(--trongtai-primary) !important;
         }
 
         /* Main Content */
@@ -206,7 +217,7 @@
 
         /* Cards & Buttons */
         .card-custom {
-            border: 1px solid #e2e8f0;
+            border: 1px solid #e2eaf4;
             border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.03);
             background-color: #fff;
@@ -217,27 +228,131 @@
         }
 
         .btn-referee-primary {
-            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            background: linear-gradient(135deg, #4b83c5 0%, #2f64a5 100%);
             border: none;
             color: #ffffff;
             font-weight: 500;
-            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+            box-shadow: 0 2px 6px rgba(47, 109, 181, 0.26);
         }
         .btn-referee-primary:hover {
-            background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+            background: linear-gradient(135deg, #3a75b9 0%, #285a98 100%);
             color: #ffffff;
-            box-shadow: 0 4px 10px rgba(217, 119, 6, 0.35);
+            box-shadow: 0 4px 10px rgba(47, 109, 181, 0.32);
         }
 
         .badge-soft-amber {
-            background-color: #fffbeb;
-            color: #b45309;
-            border: 1px solid #fde68a;
+            background-color: #e4eefb;
+            color: #244f86;
+            border: 1px solid #c4d7ef;
+        }
+
+        .trongtai-sidebar .text-white {
+            color: #263a55 !important;
+        }
+
+        .trongtai-sidebar .text-white-50 {
+            color: #718198 !important;
+        }
+
+        .trongtai-sidebar .text-warning {
+            color: #2f6db5 !important;
+        }
+
+        .trongtai-sidebar .badge.bg-warning {
+            background-color: #e1ecfa !important;
+            color: #244f86 !important;
+        }
+
+        .trongtai-sidebar .border-white {
+            border-color: #dfe8f4 !important;
+        }
+
+        .trongtai-sidebar .form-select {
+            background-color: #ffffff !important;
+            color: #33445c !important;
+            border-color: #d7e1ee !important;
+        }
+
+        .trongtai-main .text-warning {
+            color: #2f6db5 !important;
+        }
+
+        .trongtai-theme .btn-warning {
+            --bs-btn-color: #ffffff;
+            --bs-btn-bg: #3e79bd;
+            --bs-btn-border-color: #3e79bd;
+            --bs-btn-hover-color: #ffffff;
+            --bs-btn-hover-bg: #2f6db5;
+            --bs-btn-hover-border-color: #2f6db5;
+            --bs-btn-active-bg: #285d9c;
+            --bs-btn-active-border-color: #285d9c;
+        }
+
+        .trongtai-theme .btn-outline-warning {
+            --bs-btn-color: #2f6db5;
+            --bs-btn-border-color: #7ea5d3;
+            --bs-btn-hover-color: #ffffff;
+            --bs-btn-hover-bg: #3e79bd;
+            --bs-btn-hover-border-color: #3e79bd;
+        }
+
+        .trongtai-main .bg-warning-subtle {
+            background-color: #e8f0fb !important;
+        }
+
+        .trongtai-main .border-warning {
+            border-color: #b8cfea !important;
+        }
+
+        .trongtai-main .badge.bg-warning {
+            background-color: #dce9f8 !important;
+            color: #244f86 !important;
+        }
+
+        .trongtai-main .bg-dark {
+            background-color: #dce9f8 !important;
+            color: #244f86 !important;
+        }
+
+        .trongtai-theme .modal-header.bg-dark,
+        .trongtai-theme .modal-header.bg-warning,
+        .trongtai-theme .modal-header.bg-success {
+            background: #2f6db5 !important;
+            color: #ffffff !important;
+        }
+
+        .trongtai-theme .modal-header.bg-warning .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        .trongtai-theme .modal-header.bg-warning .text-dark {
+            color: #ffffff !important;
+        }
+
+        .trongtai-main .form-control:focus,
+        .trongtai-main .form-select:focus {
+            border-color: #6f9bcc;
+            box-shadow: 0 0 0 0.2rem rgba(47, 109, 181, 0.18);
+        }
+
+        .trongtai-main .table thead th {
+            background-color: #e7effa;
+            color: #2f496b;
+        }
+
+        .trongtai-main .table {
+            --bs-table-border-color: #e2eaf4;
+        }
+
+        .referee-hero {
+            background: linear-gradient(120deg, #3269aa 0%, #3976b9 58%, #2e629f 100%);
+            border: 1px solid #2d62a0;
+            color: #ffffff;
         }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
+<body class="trongtai-theme">
     <div class="trongtai-backdrop" id="trongtaiBackdrop" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->

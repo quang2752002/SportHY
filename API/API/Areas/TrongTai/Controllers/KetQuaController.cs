@@ -61,7 +61,7 @@ namespace API.Areas.TrongTai.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null)
+        public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null, int? giaiDauMonTheThaoId = null)
         {
             var currentReferee = await GetCurrentRefereeAsync();
             var canBrowseAll = CanBrowseAllMatches();
@@ -80,9 +80,38 @@ namespace API.Areas.TrongTai.Controllers
             if (tournaments.Count == 0) selectedGiaiDauId = null;
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
 
-            var matches = selectedGiaiDauId.HasValue
+            var accessibleMatches = selectedGiaiDauId.HasValue
                 ? (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentReferee?.Id, canBrowseAll))?.ToList() ?? new()
                 : new List<TranDauDto>();
+
+            var availableSports = accessibleMatches
+                .GroupBy(match => match.GiaiDauMonTheThaoId)
+                .Select(group => new KeyValuePair<int, string>(
+                    group.Key,
+                    group.Select(match => match.TenMonTheThao).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name))
+                        ?? group.Select(match => match.TenDanhMucMonTheThao).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name))
+                        ?? $"Môn thi đấu #{group.Key}"))
+                .OrderBy(sport => sport.Value)
+                .ToList();
+            if (giaiDauMonTheThaoId.HasValue && availableSports.All(sport => sport.Key != giaiDauMonTheThaoId.Value))
+            {
+                giaiDauMonTheThaoId = null;
+            }
+
+            var requestedMatch = tranDauId.HasValue
+                ? accessibleMatches.FirstOrDefault(match => match.Id == tranDauId.Value)
+                : null;
+            if (tranDauId.HasValue && requestedMatch == null) return Forbid();
+            if (requestedMatch != null && requestedMatch.GiaiDauMonTheThaoId != giaiDauMonTheThaoId)
+            {
+                giaiDauMonTheThaoId = requestedMatch.GiaiDauMonTheThaoId;
+            }
+
+            ViewBag.Sports = availableSports;
+            ViewBag.SelectedGiaiDauMonTheThaoId = giaiDauMonTheThaoId;
+            var matches = giaiDauMonTheThaoId.HasValue
+                ? accessibleMatches.Where(match => match.GiaiDauMonTheThaoId == giaiDauMonTheThaoId.Value).ToList()
+                : accessibleMatches;
             ViewBag.Matches = matches;
 
             TranDauDto? currentMatch = null;

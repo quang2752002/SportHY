@@ -10,17 +10,16 @@
 
 <div class="d-flex flex-column gap-4">
     <!-- Banner Chào Mừng -->
-    <div class="rounded-4 p-4 p-md-5 text-white position-relative overflow-hidden shadow-sm"
-         style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #451a03 100%);">
+    <div class="referee-hero rounded-4 p-4 p-md-5 position-relative overflow-hidden shadow-sm">
         <div class="position-absolute end-0 top-0 bottom-0 d-none d-md-flex align-items-center justify-content-end pe-5 opacity-10"
              style="pointer-events: none;">
-            <i class="fa-solid fa-flag" style="font-size: 180px; color: #fbbf24;"></i>
+            <i class="fa-solid fa-flag" style="font-size: 180px; color: #ffffff;"></i>
         </div>
 
         <div class="position-relative" style="z-index: 2;">
             <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3 border"
-                 style="background-color: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); font-size: 12px;">
-                <i class="fa-solid fa-shield-halved text-warning"></i>
+                 style="background-color: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.32); font-size: 12px;">
+                <i class="fa-solid fa-shield-halved text-white"></i>
                 <span class="fw-semibold text-white">Phân hệ Điều Hành & Trọng Tài Thi Đấu</span>
             </div>
 
@@ -28,7 +27,7 @@
                 Xin chào, Trọng tài @(currentRef?.HoTen ?? User.Identity?.Name)!
             </h2>
             <p class="text-white-50 mb-0 small" style="max-width: 680px; line-height: 1.6;">
-                Cấp bậc: <strong class="text-warning">@(currentRef?.CapBac ?? "Trọng tài Quốc gia")</strong> • Theo dõi các trận đấu được ban tổ chức phân công, cập nhật tỷ số trực tiếp và lập biên bản thi đấu chính thức.
+                Cấp bậc: <strong class="text-white">@(currentRef?.CapBac ?? "Trọng tài Quốc gia")</strong> • Theo dõi các trận đấu được ban tổ chức phân công, cập nhật tỷ số trực tiếp và lập biên bản thi đấu chính thức.
             </p>
         </div>
     </div>
@@ -38,7 +37,7 @@
         <div class="col-6 col-md-3">
             <div class="card-custom p-3.5 p-3 d-flex align-items-center gap-3">
                 <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-                     style="width: 48px; height: 48px; background-color: #fffbeb; color: #d97706;">
+                     style="width: 48px; height: 48px; background-color: #dce9f8; color: #2f6db5;">
                     <i class="fa-solid fa-calendar-check fs-4"></i>
                 </div>
                 <div>
@@ -200,7 +199,7 @@
                         <!-- Card Header -->
                         <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-dark rounded-pill px-2 py-1 font-monospace" style="font-size: 11px;">
+                                <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-1 font-monospace" style="font-size: 11px;">
                                     Trận @m.SoTran
                                 </span>
                                 <span class="fw-bold text-dark small">@m.TenMonTheThao</span>
@@ -239,7 +238,7 @@
                                 }
                                 else
                                 {
-                                    <div class="badge bg-dark fs-5 font-monospace px-2.5 py-1">
+                                    <div class="badge bg-primary-subtle text-primary fs-5 font-monospace px-2.5 py-1">
                                         @s1 - @s2
                                     </div>
                                 }
@@ -299,7 +298,7 @@
 <div class="modal fade" id="quickScoreModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-warning text-dark py-2.5 px-3">
+            <div class="modal-header bg-primary text-white py-2.5 px-3">
                 <h6 class="modal-title fw-bold">
                     <i class="fa-solid fa-bolt me-1"></i> Cập Nhật Nhanh Tỷ Số Trận Đấu
                 </h6>
