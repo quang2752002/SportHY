@@ -45,7 +45,6 @@ namespace Dms.Domain.Entities
         public bool TrangThai { get; set; } = true;
 
         public virtual ICollection<ThanhVienDoi> ThanhVienDois { get; set; } = new List<ThanhVienDoi>();
-        public virtual ICollection<ChiTietDangKyThiDau> ChiTietDangKyThiDaus { get; set; } = new List<ChiTietDangKyThiDau>();
         public virtual ICollection<LichSuChuyenDoi> LichSuChuyenDois { get; set; } = new List<LichSuChuyenDoi>();
     }
 }

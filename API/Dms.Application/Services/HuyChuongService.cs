@@ -50,8 +50,11 @@ namespace Dms.Application.Services
 
             var dois = (await _unitOfWork.Dois.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
             var donVis = (await _unitOfWork.DonVis.FindAsync(d => d.IsDeleted != true)).ToDictionary(d => d.Id);
-            var chiTiets = (await _unitOfWork.ChiTietDangKyThiDaus.FindAsync(c => dkIds.Contains(c.DangKyThiDauId) && c.IsDeleted != true)).ToList();
-            var vdvIds = chiTiets.Select(c => c.VanDongVienId).Distinct().ToList();
+
+            // Lấy thành viên đội theo DoiId thay vì ChiTietDangKyThiDau
+            var doiIds = dks.Values.Where(d => d.DoiId.HasValue).Select(d => d.DoiId!.Value).Distinct().ToList();
+            var thanhViens = (await _unitOfWork.ThanhVienDois.FindAsync(tv => doiIds.Contains(tv.DoiId) && tv.IsDeleted != true)).ToList();
+            var vdvIds = thanhViens.Select(tv => tv.VanDongVienId).Distinct().ToList();
             var vdvs = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id))).ToDictionary(v => v.Id);
 
             var result = new List<HuyChuongDto>();
@@ -80,21 +83,25 @@ namespace Dms.Application.Services
                         }
                     }
 
-                    var ctList = chiTiets.Where(c => c.DangKyThiDauId == dk.Id).ToList();
-                    if (ctList.Any())
+                    // Lấy tên VĐV và đơn vị từ thành viên đội
+                    if (dk.DoiId.HasValue)
                     {
-                        var vdvNames = ctList
-                            .Select(c => vdvs.TryGetValue(c.VanDongVienId, out var v) ? v.HoTen : "")
-                            .Where(s => !string.IsNullOrEmpty(s))
-                            .ToList();
-                        tenVdv = string.Join(", ", vdvNames);
-
-                        if (string.IsNullOrEmpty(tenDonVi))
+                        var tvList = thanhViens.Where(tv => tv.DoiId == dk.DoiId.Value).ToList();
+                        if (tvList.Any())
                         {
-                            var firstVdvId = ctList.First().VanDongVienId;
-                            if (vdvs.TryGetValue(firstVdvId, out var fVdv) && fVdv.DonViId.HasValue && donVis.TryGetValue(fVdv.DonViId.Value, out var dvVdv))
+                            var vdvNames = tvList
+                                .Select(tv => vdvs.TryGetValue(tv.VanDongVienId, out var v) ? v.HoTen : "")
+                                .Where(s => !string.IsNullOrEmpty(s))
+                                .ToList();
+                            tenVdv = string.Join(", ", vdvNames);
+
+                            if (string.IsNullOrEmpty(tenDonVi))
                             {
-                                tenDonVi = dvVdv.Ten;
+                                var firstVdvId = tvList.First().VanDongVienId;
+                                if (vdvs.TryGetValue(firstVdvId, out var fVdv) && fVdv.DonViId.HasValue && donVis.TryGetValue(fVdv.DonViId.Value, out var dvVdv))
+                                {
+                                    tenDonVi = dvVdv.Ten;
+                                }
                             }
                         }
                     }

@@ -436,14 +436,7 @@ WHERE LoaiThiDau IS NULL OR LoaiThiDau = '';
                 await context.DangKyThiDaus.AddRangeAsync(dkBk, dkUeh, dkCauLong1, dkCauLong2);
                 await context.SaveChangesAsync();
 
-                var ctdk1 = new ChiTietDangKyThiDau { DangKyThiDauId = dkBk.Id, VanDongVienId = vdv1.Id, SoThuTu = 1, VaiTro = "Đội trưởng" };
-                var ctdk2 = new ChiTietDangKyThiDau { DangKyThiDauId = dkBk.Id, VanDongVienId = vdv2.Id, SoThuTu = 2, VaiTro = "Cầu thủ" };
-                var ctdk3 = new ChiTietDangKyThiDau { DangKyThiDauId = dkUeh.Id, VanDongVienId = vdv3.Id, SoThuTu = 1, VaiTro = "Đội trưởng" };
-                var ctdk4 = new ChiTietDangKyThiDau { DangKyThiDauId = dkUeh.Id, VanDongVienId = vdv4.Id, SoThuTu = 2, VaiTro = "Thủ môn" };
-                var ctdk5 = new ChiTietDangKyThiDau { DangKyThiDauId = dkCauLong1.Id, VanDongVienId = vdv1.Id, SoThuTu = 1, VaiTro = "Vận động viên đơn" };
-                var ctdk6 = new ChiTietDangKyThiDau { DangKyThiDauId = dkCauLong2.Id, VanDongVienId = vdv3.Id, SoThuTu = 1, VaiTro = "Vận động viên đơn" };
-                await context.ChiTietDangKyThiDaus.AddRangeAsync(ctdk1, ctdk2, ctdk3, ctdk4, ctdk5, ctdk6);
-                await context.SaveChangesAsync();
+               
 
                 // 12. Bảng đấu & Thành viên bảng (BangDau, ThanhVienBang)
                 var bangA = new BangDau { GiaiDauMonTheThaoId = gdmBongDa.Id, Ma = "BANG_A", Ten = "Bảng A Bóng Đá", ThuTu = 1 };

@@ -38,8 +38,7 @@ namespace Dms.Application.Services
                 1, 1000,
                 predicate: d => d.IsDeleted != true && (!giaiDauMonTheThaoId.HasValue || d.GiaiDauMonTheThaoId == giaiDauMonTheThaoId.Value),
                 orderBy: null,
-                d => d.Doi!,
-                d => d.ChiTietDangKyThiDaus
+                d => d.Doi!
             );
             var dangKyMap = dangKyList.Items.ToDictionary(d => d.Id);
 

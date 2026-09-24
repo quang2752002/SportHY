@@ -15,12 +15,10 @@ namespace Dms.Domain.Interfaces
         IGenericRepository<DanhMucMonTheThao> DanhMucMonTheThaos { get; }
         IGenericRepository<MonTheThao> MonTheThaos { get; }
         IGenericRepository<GiaiDauMonTheThao> GiaiDauMonTheThaos { get; }
-        IGenericRepository<NoiDungThiDau> NoiDungThiDaus { get; }
         IGenericRepository<VanDongVien> VanDongViens { get; }
         IGenericRepository<Doi> Dois { get; }
         IGenericRepository<ThanhVienDoi> ThanhVienDois { get; }
         IGenericRepository<DangKyThiDau> DangKyThiDaus { get; }
-        IGenericRepository<ChiTietDangKyThiDau> ChiTietDangKyThiDaus { get; }
         IGenericRepository<BangDau> BangDaus { get; }
         IGenericRepository<ThanhVienBang> ThanhVienBangs { get; }
         IGenericRepository<VongDau> VongDaus { get; }

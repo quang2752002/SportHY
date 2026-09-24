@@ -88,7 +88,8 @@ namespace Dms.Application.Services
 
             var gdmIds = assignment.GiaiDauMonTheThaoIds;
 
-            var noiDungList = (await _unitOfWork.NoiDungThiDaus.FindAsync(nd => gdmIds.Contains(nd.GiaiDauMonTheThaoId) && nd.IsDeleted != true)).ToList();
+            // Dùng GiaiDauMonTheThao thay vì NoiDungThiDau
+            var gdmList = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(g => gdmIds.Contains(g.Id) && g.IsDeleted != true)).ToList();
             var matches = (await _unitOfWork.TranDaus.FindAsync(t => gdmIds.Contains(t.GiaiDauMonTheThaoId) && t.IsDeleted != true)).ToList();
             var matchIds = matches.Select(m => m.Id).ToList();
 
@@ -101,7 +102,7 @@ namespace Dms.Application.Services
             int upcomingMatches = matches.Count(m => m.TrangThai == "ChuaDau" || string.IsNullOrEmpty(m.TrangThai));
 
             var allMons = assignment.MonTheThaos.ToDictionary(m => m.Id);
-            var gdms = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(g => gdmIds.Contains(g.Id))).ToDictionary(g => g.Id);
+            var gdmMap = gdmList.ToDictionary(g => g.Id);
             var allRefs = (await _unitOfWork.TrongTais.FindAsync(t => assignedRefereeIds.Contains(t.Id))).ToDictionary(t => t.Id);
 
             var recentMatches = matches
@@ -110,7 +111,7 @@ namespace Dms.Application.Services
                 .Take(10)
                 .Select(m =>
                 {
-                    var gdm = gdms.TryGetValue(m.GiaiDauMonTheThaoId, out var g) ? g : null;
+                    var gdm = gdmMap.TryGetValue(m.GiaiDauMonTheThaoId, out var g) ? g : null;
                     var mon = (gdm != null && allMons.TryGetValue(gdm.MonTheThaoId, out var s)) ? s : null;
                     var pcs = phanCongs.Where(pc => pc.TranDauId == m.Id).ToList();
                     var ttChinh = pcs.FirstOrDefault(p => p.VaiTro == "Trọng tài chính");
@@ -134,7 +135,7 @@ namespace Dms.Application.Services
             {
                 Assignment = assignment,
                 TotalSports = assignment.MonTheThaos.Count,
-                TotalEvents = noiDungList.Count,
+                TotalEvents = gdmList.Count, // Số nội dung thi đấu = số GiaiDauMonTheThao
                 TotalMatches = totalMatches,
                 CompletedMatches = completedMatches,
                 OngoingMatches = ongoingMatches,
@@ -157,35 +158,35 @@ namespace Dms.Application.Services
 
             var targetGdmIds = gdmList.Select(g => g.Id).ToList();
 
-            var noiDungList = (await _unitOfWork.NoiDungThiDaus.FindAsync(nd => targetGdmIds.Contains(nd.GiaiDauMonTheThaoId) && nd.IsDeleted != true)).ToList();
+            // Dùng GiaiDauMonTheThao + MonTheThao thay vì NoiDungThiDau
+            var monIds = gdmList.Select(g => g.MonTheThaoId).Distinct().ToList();
+            var monMap2 = (await _unitOfWork.MonTheThaos.FindAsync(m => monIds.Contains(m.Id) && m.IsDeleted != true)).ToDictionary(m => m.Id);
             var dangKys = (await _unitOfWork.DangKyThiDaus.FindAsync(dk => targetGdmIds.Contains(dk.GiaiDauMonTheThaoId) && dk.IsDeleted != true)).ToList();
             var matches = (await _unitOfWork.TranDaus.FindAsync(t => targetGdmIds.Contains(t.GiaiDauMonTheThaoId) && t.IsDeleted != true)).ToList();
 
-            var gdmMap = gdmList.ToDictionary(g => g.Id);
-            var monMap = assignment.MonTheThaos.ToDictionary(m => m.Id);
+            var gdmMap2 = gdmList.ToDictionary(g => g.Id);
 
-            return noiDungList.Select(nd =>
+            return gdmList.Select(gdm =>
             {
-                var gdm = gdmMap.TryGetValue(nd.GiaiDauMonTheThaoId, out var g) ? g : null;
-                var mon = (gdm != null && monMap.TryGetValue(gdm.MonTheThaoId, out var m)) ? m : null;
+                monMap2.TryGetValue(gdm.MonTheThaoId, out var mon);
 
-                int regCount = dangKys.Count(dk => dk.GiaiDauMonTheThaoId == nd.GiaiDauMonTheThaoId);
-                int matchCount = matches.Count(t => t.GiaiDauMonTheThaoId == nd.GiaiDauMonTheThaoId);
-                int finishedCount = matches.Count(t => t.GiaiDauMonTheThaoId == nd.GiaiDauMonTheThaoId && (t.TrangThai == "KetThuc" || t.TrangThai == "DaDau"));
+                int regCount = dangKys.Count(dk => dk.GiaiDauMonTheThaoId == gdm.Id);
+                int matchCount = matches.Count(t => t.GiaiDauMonTheThaoId == gdm.Id);
+                int finishedCount = matches.Count(t => t.GiaiDauMonTheThaoId == gdm.Id && (t.TrangThai == "KetThuc" || t.TrangThai == "DaDau"));
 
                 return new CoordinatorEventDto
                 {
-                    Id = nd.Id,
-                    Ma = nd.Ma,
-                    Ten = nd.Ten,
+                    Id = gdm.Id,
+                    Ma = mon?.Ma ?? gdm.Id.ToString(),
+                    Ten = mon?.Ten ?? "Nội dung thi đấu",
                     TenMon = mon?.Ten ?? "Môn",
-                    TheThuc = nd.HinhThucThiDau?.ToString() ?? nd.LoaiThiDau,
-                    GioiTinh = nd.GioiTinh,
-                    SoVdvToiDa = nd.SoLuongToiDa,
+                    TheThuc = mon?.HinhThucThiDau.ToString(),
+                    GioiTinh = mon?.GioiTinh,
+                    SoVdvToiDa = mon?.SoLuongVanDongVienToiDa,
                     SoDangKy = regCount,
                     SoTranDau = matchCount,
                     SoTranDaDau = finishedCount,
-                    TrangThai = nd.TrangThai ? "Hoạt động" : "Tạm ngưng"
+                    TrangThai = "Hoạt động"
                 };
             }).OrderBy(x => x.TenMon).ThenBy(x => x.Ten).ToList();
         }
