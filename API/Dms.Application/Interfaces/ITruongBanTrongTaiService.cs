@@ -114,8 +114,9 @@ namespace Dms.Application.Interfaces
 
         /// <summary>
         /// Lập bản nháp tự động phân công các vị trí trọng tài cho những trận đấu đã có lịch trong phạm vi yêu cầu.
-        /// Hàm không ghi dữ liệu; chỉ trả về các vị trí được đề xuất sau khi kiểm tra trùng giờ,
-        /// thời gian nghỉ tối thiểu, giới hạn số trận mỗi ngày và danh sách trọng tài được chọn.
+        /// Ưu tiên phân công trọng tài chính cho toàn bộ trận trước các vị trí phụ. Hàm không ghi dữ liệu;
+        /// chỉ trả về các vị trí được đề xuất sau khi kiểm tra trùng giờ, thời gian nghỉ tối thiểu,
+        /// giới hạn số trận mỗi ngày và danh sách trọng tài được chọn.
         /// </summary>
         /// <param name="request">Phạm vi giải đấu, môn, ngày, vai trò, trọng tài được chọn và các thay đổi nháp hiện có.</param>
         /// <returns>Kết quả nháp, danh sách vị trí được đề xuất và các vị trí chưa thể gán.</returns>
