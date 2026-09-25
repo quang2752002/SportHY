@@ -1,29 +1,36 @@
 @model List<Dms.Application.DTOs.CoordinatorResultItemDto>
 @{
-    ViewData["Title"] = "Kiểm Tra Kết Quả & Biên Bản";
+    ViewData["Title"] = "Kiểm tra kết quả trận đấu";
     var sportList = ViewBag.SportList as List<MonTheThao> ?? new();
+    var selectedMonId = ViewBag.SelectedMonId as int?;
+    var waitingCount = Model?.Count(x => x.TrangThaiDuyet != "DaDuyet" && (x.TrangThai == "KetThuc" || x.TrangThai == "DaDau")) ?? 0;
+    var approvedCount = Model?.Count(x => x.TrangThaiDuyet == "DaDuyet") ?? 0;
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-        <h4 class="fw-bold mb-1 text-dark">
-            <i class="fa-solid fa-square-poll-vertical text-teal me-2" style="color: #0d9488;"></i> Kiểm Tra Kết Quả & Biên Bản
+        <h4 class="fw-bold mb-1 dh-page-heading">
+            <i class="fa-solid fa-square-poll-vertical me-2"></i> Kiểm tra kết quả trận đấu
         </h4>
-        <p class="text-muted small mb-0">Rà soát, đối chiếu tỉ số, biên bản trận đấu và phê duyệt kết quả chính thức cho môn thi đấu</p>
+        <p class="dh-page-subtitle small mb-0">Đối chiếu kết quả các trận thuộc danh mục được giao trước khi xác nhận chính thức.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-2"><i class="fa-regular fa-clock me-1"></i>@waitingCount chờ duyệt</span>
+        <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3 py-2"><i class="fa-solid fa-circle-check me-1"></i>@approvedCount đã duyệt</span>
     </div>
 </div>
 
 <!-- Tabs môn -->
 <div class="card card-custom mb-3 p-2 bg-white">
     <div class="d-flex align-items-center overflow-auto py-1 gap-2">
-        <span class="text-muted small fw-bold text-uppercase px-2 text-nowrap"><i class="fa-solid fa-filter me-1 text-teal" style="color: #0d9488;"></i> Môn:</span>
-        <a href="/DieuHanhMon/KetQua" class="btn btn-sm text-nowrap rounded-pill @(!ViewBag.SelectedMonId.HasValue ? "btn-primary fw-bold" : "btn-light border")">
+        <span class="text-muted small fw-bold text-uppercase px-2 text-nowrap"><i class="fa-solid fa-filter me-1 text-primary"></i> Lọc môn:</span>
+        <a href="/DieuHanhMon/KetQua?giaiDauId=@ViewBag.SelectedGiaiDauId&danhMucId=@ViewBag.SelectedDanhMucId" class="btn btn-sm text-nowrap rounded-pill @(!selectedMonId.HasValue ? "btn-primary fw-bold" : "btn-light border")">
             Tất cả
         </a>
         @foreach (var sp in sportList)
         {
-            bool isActive = ViewBag.SelectedMonId == sp.Id;
-            <a href="/DieuHanhMon/KetQua?monTheThaoId=@sp.Id" class="btn btn-sm text-nowrap rounded-pill @(isActive ? "btn-primary fw-bold" : "btn-light border")">
+            bool isActive = selectedMonId == sp.Id;
+            <a href="/DieuHanhMon/KetQua?giaiDauId=@ViewBag.SelectedGiaiDauId&danhMucId=@ViewBag.SelectedDanhMucId&monTheThaoId=@sp.Id" class="btn btn-sm text-nowrap rounded-pill @(isActive ? "btn-primary fw-bold" : "btn-light border")">
                 @sp.Ten
             </a>
         }
@@ -50,7 +57,9 @@
                 {
                     foreach (var item in Model)
                     {
-                        bool isApproved = item.GhiChu != null && item.GhiChu.Contains("[Đã kiểm tra & duyệt");
+                        bool isApproved = item.TrangThaiDuyet == "DaDuyet";
+                        bool needsCorrection = item.TrangThaiDuyet == "YeuCauDieuChinh";
+                        bool isFinished = item.TrangThai == "KetThuc" || item.TrangThai == "DaDau";
                         <tr>
                             <td class="fw-bold text-center">#@item.SoTran</td>
                             <td>
@@ -74,19 +83,30 @@
                                         <i class="fa-solid fa-circle-check me-1"></i> Đã duyệt kết quả
                                     </span>
                                 }
+                                else if (needsCorrection)
+                                {
+                                    <span class="badge bg-danger bg-opacity-10 text-danger fw-bold px-2 py-1"><i class="fa-solid fa-rotate-left me-1"></i> Trọng tài cần chỉnh sửa</span>
+                                    @if (!string.IsNullOrWhiteSpace(item.GhiChuDuyet)) { <div class="small text-muted mt-1">@item.GhiChuDuyet</div> }
+                                }
                                 else
                                 {
                                     <span class="badge bg-warning bg-opacity-10 text-dark fw-medium px-2 py-1">
-                                        <i class="fa-regular fa-clock me-1"></i> Chờ duyệt biên bản
+                                        <i class="fa-regular fa-clock me-1"></i> Chờ kiểm tra kết quả
                                     </span>
                                 }
+                                @if (item.ThoiGianDuyet.HasValue) { <div class="small text-muted mt-1">@(item.NguoiDuyet ?? "") · @item.ThoiGianDuyet.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div> }
                             </td>
                             <td class="text-end">
-                                @if (!isApproved)
+                                @if (isFinished && !isApproved)
                                 {
-                                    <button class="btn btn-sm btn-primary fw-semibold" style="background-color: #0d9488; border-color: #0d9488;" onclick="approveMatchResult(@item.TranDauId)">
-                                        <i class="fa-solid fa-check-double me-1"></i> Duyệt kết quả
-                                    </button>
+                                    <div class="d-flex flex-column flex-lg-row gap-1 justify-content-end">
+                                        <button class="btn btn-sm btn-primary fw-semibold" onclick="reviewMatchResult(@item.TranDauId, 'Duyet')"><i class="fa-solid fa-check-double me-1"></i>Duyệt</button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="reviewMatchResult(@item.TranDauId, 'YeuCauDieuChinh')"><i class="fa-solid fa-rotate-left me-1"></i>Yêu cầu sửa</button>
+                                    </div>
+                                }
+                                else if (!isFinished)
+                                {
+                                    <span class="small text-muted">Chờ trận kết thúc</span>
                                 }
                                 else
                                 {
@@ -101,8 +121,8 @@
                 else
                 {
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
-                            <i class="fa-regular fa-folder-open fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                        <td colspan="7" class="dh-empty-state">
+                            <i class="fa-regular fa-folder-open"></i>
                             Chưa có kết quả trận đấu nào được ghi nhận.
                         </td>
                     </tr>
@@ -114,33 +134,26 @@
 
 @section Scripts {
     <script>
-        function approveMatchResult(tranId) {
-            Swal.fire({
-                title: 'Xác nhận duyệt kết quả?',
-                text: 'Bạn xác nhận kết quả và biên bản trận đấu này đã chính xác?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Xác nhận duyệt',
-                cancelButtonText: 'Đóng'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.post('/DieuHanhMon/KetQua/ApproveResult', { tranDauId: tranId }, function (res) {
-                        if (res.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Thành công',
-                                text: res.message,
-                                timer: 1200,
-                                showConfirmButton: false
-                            }).then(() => {
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire('Lỗi', res.message, 'error');
-                        }
-                    });
-                }
+        async function reviewMatchResult(tranId, action) {
+            const isCorrection = action === 'YeuCauDieuChinh';
+            const dialog = await Swal.fire({
+                title: isCorrection ? 'Yêu cầu trọng tài chỉnh sửa?' : 'Duyệt kết quả trận đấu?',
+                input: isCorrection ? 'textarea' : undefined,
+                inputLabel: isCorrection ? 'Lý do cần chỉnh sửa (bắt buộc)' : undefined,
+                inputPlaceholder: isCorrection ? 'Nêu rõ điểm/kết quả cần kiểm tra lại...' : undefined,
+                inputValidator: isCorrection ? value => !value || !value.trim() ? 'Vui lòng nhập lý do.' : undefined : undefined,
+                text: isCorrection ? undefined : 'Xác nhận kết quả đã được đối chiếu và chính xác?',
+                icon: 'question', showCancelButton: true,
+                confirmButtonText: isCorrection ? 'Gửi yêu cầu' : 'Xác nhận duyệt', cancelButtonText: 'Đóng'
             });
+            if (!dialog.isConfirmed) return;
+            const response = await fetch('/DieuHanhMon/KetQua/ReviewResult', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tranDauId: tranId, hanhDong: action, ghiChu: dialog.value || null })
+            });
+            const result = await response.json();
+            if (result.success) Swal.fire({ icon: 'success', title: 'Thành công', text: result.message, timer: 1200, showConfirmButton: false }).then(() => location.reload());
+            else Swal.fire('Không thể thực hiện', result.message, 'error');
         }
     </script>
 }

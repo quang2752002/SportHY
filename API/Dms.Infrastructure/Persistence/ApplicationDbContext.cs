@@ -50,6 +50,7 @@ namespace Dms.Infrastructure.Persistence
         public DbSet<DieuLeMonTheThao> DieuLeMonTheThaos => Set<DieuLeMonTheThao>();
         public DbSet<CauHinhLichThiDau> CauHinhLichThiDaus => Set<CauHinhLichThiDau>();
         public DbSet<CauHinhTheThucThiDau> CauHinhTheThucThiDaus => Set<CauHinhTheThucThiDau>();
+        public DbSet<SuCoDieuHanhMon> SuCoDieuHanhMons => Set<SuCoDieuHanhMon>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -83,6 +84,9 @@ namespace Dms.Infrastructure.Persistence
             modelBuilder.Entity<PhanCongThuKy>()
                 .HasIndex(p => new { p.GiaiDauId, p.ThuKyId })
                 .IsUnique();
+
+            modelBuilder.Entity<SuCoDieuHanhMon>()
+                .HasIndex(s => new { s.GiaiDauMonTheThaoId, s.TrangThai });
 
             // Cấu hình lưu Enum của MonTheThao dưới dạng chuỗi (VARCHAR) trong DB
             modelBuilder.Entity<MonTheThao>()

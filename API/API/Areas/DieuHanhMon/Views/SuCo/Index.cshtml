@@ -1,0 +1,172 @@
+@model List<Dms.Application.DTOs.CoordinatorIssueDto>
+@{
+    ViewData["Title"] = "Sự cố điều hành môn";
+    var targets = ViewBag.IssueTargets as List<Dms.Application.DTOs.CoordinatorEventDto> ?? new();
+    var matches = ViewBag.IssueMatches as List<Dms.Application.DTOs.CoordinatorScheduleMatchDto> ?? new();
+    string SeverityClass(string value) => value switch { "KhanCap" => "bg-danger", "Cao" => "bg-warning text-dark", _ => "bg-primary" };
+    string SeverityText(string value) => value switch { "KhanCap" => "Khẩn cấp", "Cao" => "Cao", _ => "Bình thường" };
+    string StatusText(string value) => value switch { "DangXuLy" => "Đang xử lý", "DaGiaiQuyet" => "Đã giải quyết", "Dong" => "Đã đóng", _ => "Mới" };
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1 dh-page-heading"><i class="fa-solid fa-triangle-exclamation me-2"></i>Sự cố & vấn đề phát sinh</h4>
+        <p class="dh-page-subtitle small mb-0">Ghi nhận sự cố theo môn/trận, giao người phụ trách và theo dõi đến khi giải quyết xong.</p>
+    </div>
+    @if (targets.Count > 0)
+    {
+        <button class="btn btn-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#createIssueModal"><i class="fa-solid fa-plus me-2"></i>Ghi nhận sự cố</button>
+    }
+</div>
+
+<div class="card card-custom p-3 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <input type="hidden" name="giaiDauId" value="@ViewBag.SelectedGiaiDauId" />
+        <input type="hidden" name="danhMucId" value="@ViewBag.SelectedDanhMucId" />
+        <div class="col-md-5">
+            <label class="form-label small fw-semibold">Môn thi đấu</label>
+            <select name="giaiDauMonTheThaoId" class="form-select">
+                <option value="">Tất cả môn được phân công</option>
+                @foreach (var target in targets)
+                {
+                    <option value="@target.Id" selected="@(ViewBag.SelectedEventId == target.Id)">@target.TenMon — @target.Ten</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold">Tình trạng</label>
+            <select name="status" class="form-select">
+                <option value="">Tất cả trạng thái</option>
+                <option value="Moi" selected="@(ViewBag.SelectedStatus == "Moi")">Mới</option>
+                <option value="DangXuLy" selected="@(ViewBag.SelectedStatus == "DangXuLy")">Đang xử lý</option>
+                <option value="DaGiaiQuyet" selected="@(ViewBag.SelectedStatus == "DaGiaiQuyet")">Đã giải quyết</option>
+                <option value="Dong" selected="@(ViewBag.SelectedStatus == "Dong")">Đã đóng</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button class="btn btn-primary flex-fill"><i class="fa-solid fa-filter me-1"></i>Lọc</button>
+            <a class="btn btn-light border" href="/DieuHanhMon/SuCo?giaiDauId=@ViewBag.SelectedGiaiDauId&danhMucId=@ViewBag.SelectedDanhMucId"><i class="fa-solid fa-rotate-left"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="card card-custom">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr><th>Sự cố</th><th>Môn / Trận</th><th>Mức độ</th><th>Trạng thái</th><th>Người phụ trách</th><th>Ghi chú xử lý</th><th class="text-end">Thao tác</th></tr>
+            </thead>
+            <tbody>
+                @if (Model.Count > 0)
+                {
+                    foreach (var issue in Model)
+                    {
+                        <tr>
+                            <td style="min-width:260px">
+                                <div class="fw-bold">@issue.TieuDe</div>
+                                <div class="small text-muted text-break">@issue.MoTa</div>
+                                <div class="small text-secondary mt-1">Báo bởi @(issue.NguoiBaoCao ?? "không rõ") · @issue.NgayTao?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                            </td>
+                            <td><div class="fw-semibold">@issue.TenMon</div><div class="small text-muted">@(issue.TenTran ?? "Toàn môn")</div></td>
+                            <td><span class="badge @SeverityClass(issue.MucDo)">@SeverityText(issue.MucDo)</span></td>
+                            <td><span class="badge bg-light text-dark border">@StatusText(issue.TrangThai)</span></td>
+                            <td>@(issue.NguoiPhuTrach ?? "Chưa giao")</td>
+                            <td class="small text-muted" style="max-width:240px">@(issue.GhiChuXuLy ?? "—")</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary" data-issue="@System.Text.Json.JsonSerializer.Serialize(issue)" onclick="openIssueEditor(this)"><i class="fa-solid fa-pen-to-square me-1"></i>Cập nhật</button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="7" class="dh-empty-state"><i class="fa-regular fa-circle-check"></i>Chưa có sự cố phù hợp bộ lọc.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (targets.Count > 0)
+{
+    <div class="modal fade" id="createIssueModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content border-0 shadow">
+            <div class="modal-header dh-modal-header"><h5 class="modal-title"><i class="fa-solid fa-flag me-2"></i>Ghi nhận vấn đề phát sinh</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label fw-semibold">Môn thi đấu</label><select id="newIssueEvent" class="form-select" onchange="filterIssueMatches()">
+                    @foreach (var target in targets) { <option value="@target.Id">@target.TenMon — @target.Ten</option> }
+                </select></div>
+                <div class="mb-3"><label class="form-label">Trận liên quan (không bắt buộc)</label><select id="newIssueMatch" class="form-select"><option value="">Toàn môn / không gắn trận cụ thể</option>
+                    @foreach (var match in matches) { <option value="@match.TranDauId" data-event="@match.GiaiDauMonTheThaoId">Trận @match.SoTran — @match.TenTran</option> }
+                </select></div>
+                <div class="mb-3"><label class="form-label fw-semibold">Tiêu đề</label><input id="newIssueTitle" maxlength="200" class="form-control" placeholder="Ví dụ: Trận đấu bị gián đoạn do thời tiết" /></div>
+                <div class="mb-3"><label class="form-label fw-semibold">Mô tả</label><textarea id="newIssueDescription" rows="4" class="form-control" placeholder="Mô tả diễn biến, ảnh hưởng và hỗ trợ cần thiết..."></textarea></div>
+                <div><label class="form-label">Mức độ</label><select id="newIssueSeverity" class="form-select"><option value="BinhThuong">Bình thường</option><option value="Cao">Cao</option><option value="KhanCap">Khẩn cấp</option></select></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-light border" data-bs-dismiss="modal">Hủy</button><button class="btn btn-primary" onclick="createIssue()"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu sự cố</button></div>
+        </div></div>
+    </div>
+}
+
+<div class="modal fade" id="editIssueModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content border-0 shadow">
+        <div class="modal-header dh-modal-header"><h5 class="modal-title"><i class="fa-solid fa-screwdriver-wrench me-2"></i>Cập nhật xử lý sự cố</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
+        <div class="modal-body">
+            <input id="editIssueId" type="hidden" />
+            <div class="mb-3"><label class="form-label">Trạng thái</label><select id="editIssueStatus" class="form-select"><option value="Moi">Mới</option><option value="DangXuLy">Đang xử lý</option><option value="DaGiaiQuyet">Đã giải quyết</option><option value="Dong">Đã đóng</option></select></div>
+            <div class="mb-3"><label class="form-label">Người phụ trách</label><input id="editIssueAssignee" maxlength="256" class="form-control" /></div>
+            <div><label class="form-label">Ghi chú xử lý</label><textarea id="editIssueNote" rows="4" class="form-control"></textarea></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-light border" data-bs-dismiss="modal">Hủy</button><button class="btn btn-primary" onclick="saveIssue()">Lưu cập nhật</button></div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterIssueMatches() {
+            const eventId = String($('#newIssueEvent').val());
+            $('#newIssueMatch option').each(function () {
+                const optionEvent = $(this).data('event');
+                $(this).prop('hidden', optionEvent !== undefined && String(optionEvent) !== eventId);
+            });
+            const selected = $('#newIssueMatch option:selected');
+            if (selected.prop('hidden')) $('#newIssueMatch').val('');
+        }
+
+        $('#createIssueModal').on('show.bs.modal', filterIssueMatches);
+
+        async function createIssue() {
+            const payload = {
+                giaiDauMonTheThaoId: Number($('#newIssueEvent').val()),
+                tranDauId: $('#newIssueMatch').val() ? Number($('#newIssueMatch').val()) : null,
+                tieuDe: $('#newIssueTitle').val(),
+                moTa: $('#newIssueDescription').val(),
+                mucDo: $('#newIssueSeverity').val()
+            };
+            const response = await fetch('/DieuHanhMon/SuCo/Create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const result = await response.json();
+            if (result.success) location.reload(); else Swal.fire('Không thể lưu', result.message, 'error');
+        }
+
+        function openIssueEditor(button) {
+            const issue = JSON.parse(button.dataset.issue);
+            $('#editIssueId').val(issue.Id);
+            $('#editIssueStatus').val(issue.TrangThai);
+            $('#editIssueAssignee').val(issue.NguoiPhuTrach || '');
+            $('#editIssueNote').val(issue.GhiChuXuLy || '');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editIssueModal')).show();
+        }
+
+        async function saveIssue() {
+            const payload = {
+                id: Number($('#editIssueId').val()),
+                trangThai: $('#editIssueStatus').val(),
+                nguoiPhuTrach: $('#editIssueAssignee').val(),
+                ghiChuXuLy: $('#editIssueNote').val()
+            };
+            const response = await fetch('/DieuHanhMon/SuCo/Update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const result = await response.json();
+            if (result.success) location.reload(); else Swal.fire('Không thể cập nhật', result.message, 'error');
+        }
+    </script>
+}

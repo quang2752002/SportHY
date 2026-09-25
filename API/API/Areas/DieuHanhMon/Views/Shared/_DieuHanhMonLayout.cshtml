@@ -1,3 +1,10 @@
+@{
+    var selectedGiaiDauId = ViewBag.SelectedGiaiDauId is int giaiDauId ? giaiDauId : (int?)null;
+    var selectedDanhMucId = ViewBag.SelectedDanhMucId is int danhMucId ? danhMucId : (int?)null;
+    var selectedAssignmentQuery = selectedGiaiDauId.HasValue && selectedDanhMucId.HasValue
+        ? $"?giaiDauId={selectedGiaiDauId.Value}&danhMucId={selectedDanhMucId.Value}"
+        : string.Empty;
+}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -23,18 +30,21 @@
     <style>
         :root {
             --dh-sidebar-width: 270px;
-            --dh-sidebar-bg: #042f2e;
-            --dh-sidebar-dark: #021a19;
-            --dh-sidebar-hover: #115e59;
-            --dh-sidebar-active: #14b8a6;
+            --dh-sidebar-bg: #14264f;
+            --dh-sidebar-dark: #0a1530;
+            --dh-sidebar-hover: #203b73;
+            --dh-sidebar-active: #3b82f6;
             --dh-header-height: 64px;
-            --dh-primary: #0d9488;
-            --dh-accent: #2dd4bf;
+            --dh-primary: #1d4ed8;
+            --dh-primary-dark: #1e40af;
+            --dh-accent: #60a5fa;
+            --dh-border: #dbe4f0;
+            --dh-surface: #f4f7fb;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0fdfa;
+            background-color: var(--dh-surface);
             color: #1e293b;
             overflow-x: hidden;
         }
@@ -46,7 +56,7 @@
             top: 0;
             left: 0;
             background: linear-gradient(180deg, var(--dh-sidebar-bg) 0%, var(--dh-sidebar-dark) 100%);
-            color: #ccfbf1;
+            color: #dbeafe;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1040;
             overflow-y: auto;
@@ -67,14 +77,14 @@
             width: 40px;
             height: 40px;
             border-radius: 10px;
-            background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.25rem;
             color: #ffffff;
             margin-right: 0.75rem;
-            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35);
         }
 
         .dh-brand-text {
@@ -87,7 +97,7 @@
 
         .dh-brand-subtext {
             font-size: 0.72rem;
-            color: #2dd4bf;
+            color: #93c5fd;
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 600;
@@ -99,7 +109,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1.2px;
-            color: #5eead4;
+            color: #93c5fd;
             opacity: 0.6;
         }
 
@@ -111,7 +121,7 @@
             display: flex;
             align-items: center;
             padding: 0.75rem 1rem;
-            color: #99f6e4;
+            color: #cbd5e1;
             text-decoration: none;
             border-radius: 10px;
             font-weight: 500;
@@ -135,13 +145,13 @@
 
         .dh-nav-link.active {
             color: #ffffff;
-            background: linear-gradient(90deg, rgba(20, 184, 166, 0.35) 0%, rgba(20, 184, 166, 0.1) 100%);
-            border-left: 3.5px solid #2dd4bf;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.35) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border-left: 3.5px solid #60a5fa;
             font-weight: 600;
         }
 
         .dh-nav-link.active i {
-            color: #2dd4bf;
+            color: #93c5fd;
         }
 
         .dh-main-wrapper {
@@ -155,7 +165,7 @@
         .dh-header {
             height: var(--dh-header-height);
             background: #ffffff;
-            border-bottom: 1px solid #ccfbf1;
+            border-bottom: 1px solid var(--dh-border);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -167,21 +177,107 @@
         }
 
         .dh-content {
-            padding: 1.5rem;
+            padding: clamp(1rem, 2vw, 1.75rem);
             flex: 1;
         }
 
         .card-custom {
-            border: 1px solid #ccfbf1;
+            border: 1px solid var(--dh-border);
             border-radius: 14px;
-            box-shadow: 0 1px 4px rgba(13, 148, 136, 0.05);
+            box-shadow: 0 2px 8px rgba(15, 35, 75, 0.045);
             background: #ffffff;
             transition: all 0.2s ease;
         }
 
         .card-custom:hover {
-            box-shadow: 0 6px 18px rgba(13, 148, 136, 0.1);
+            box-shadow: 0 8px 22px rgba(15, 35, 75, 0.08);
         }
+
+        .dh-sidebar-backdrop {
+            display: none;
+        }
+
+        .dh-page-heading {
+            color: #14264f;
+            letter-spacing: -0.025em;
+        }
+
+        .dh-page-heading > i {
+            color: var(--dh-primary) !important;
+        }
+
+        .dh-page-subtitle {
+            color: #64748b;
+            max-width: 780px;
+            line-height: 1.55;
+        }
+
+        .text-teal { color: var(--dh-primary) !important; }
+        .bg-teal { background-color: var(--dh-primary) !important; }
+        .border-teal { border-color: var(--dh-primary) !important; }
+        .btn-outline-teal { color: var(--dh-primary); border-color: var(--dh-primary); }
+        .btn-outline-teal:hover { color: #fff; background: var(--dh-primary); border-color: var(--dh-primary); }
+
+        .btn-primary {
+            --bs-btn-bg: var(--dh-primary);
+            --bs-btn-border-color: var(--dh-primary);
+            --bs-btn-hover-bg: var(--dh-primary-dark);
+            --bs-btn-hover-border-color: var(--dh-primary-dark);
+            --bs-btn-active-bg: #1e3a8a;
+            --bs-btn-active-border-color: #1e3a8a;
+            --bs-btn-focus-shadow-rgb: 29, 78, 216;
+        }
+
+        .btn-outline-primary {
+            --bs-btn-color: var(--dh-primary);
+            --bs-btn-border-color: #93b4f5;
+            --bs-btn-hover-bg: var(--dh-primary);
+            --bs-btn-hover-border-color: var(--dh-primary);
+            --bs-btn-active-bg: var(--dh-primary-dark);
+            --bs-btn-active-border-color: var(--dh-primary-dark);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #7aa4f5;
+            box-shadow: 0 0 0 .2rem rgba(29, 78, 216, .13);
+        }
+
+        .table thead th {
+            background: #eef3fb;
+            color: #475569 !important;
+            border-bottom-color: var(--dh-border);
+            white-space: nowrap;
+        }
+
+        .table tbody tr:last-child > * { border-bottom: 0; }
+
+        .dh-empty-state {
+            padding: 3.25rem 1.25rem !important;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .dh-empty-state i {
+            display: block;
+            color: #94a3b8;
+            font-size: 2rem;
+            margin-bottom: .8rem;
+        }
+
+        .dh-modal-header {
+            color: white;
+            background: linear-gradient(110deg, #1d4ed8, #1e40af);
+        }
+
+        .dh-sidebar .badge.bg-info {
+            color: #dbeafe !important;
+            background: rgba(59, 130, 246, .2) !important;
+            border: 1px solid rgba(147, 197, 253, .28);
+        }
+
+        .dh-sidebar .text-info { color: #93c5fd !important; }
+
+        .dh-header .border-teal { border-color: #b6c9ea !important; }
 
         @@media (max-width: 991.98px) {
             .dh-sidebar {
@@ -193,6 +289,37 @@
             .dh-main-wrapper {
                 margin-left: 0;
             }
+            .dh-sidebar-backdrop {
+                display: block;
+                position: fixed;
+                inset: 0;
+                z-index: 1035;
+                border: 0;
+                background: rgba(8, 18, 40, .5);
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity .2s ease, visibility .2s ease;
+            }
+            .dh-sidebar-backdrop.show {
+                opacity: 1;
+                visibility: visible;
+            }
+            .dh-header {
+                padding: 0 .75rem;
+                gap: .5rem;
+            }
+            .dh-content {
+                padding: 1rem .75rem;
+            }
+        }
+
+        @@media (max-width: 575.98px) {
+            .dh-header form#formSelectAssignment { max-width: min(56vw, 250px); }
+            .dh-header form#formSelectAssignment select { min-width: 0 !important; width: 100%; }
+            .dh-header .dropdown > button { padding: .25rem .4rem; }
+            .dh-header .dropdown > button .fw-medium { max-width: 70px !important; }
+            .dh-page-heading { font-size: 1.2rem; }
+            .dh-content .modal-dialog { margin: .5rem; }
         }
     </style>
 </head>
@@ -221,33 +348,39 @@
 
         <div class="dh-nav-section">Chức Năng Điều Hành</div>
         <div class="dh-nav-item">
-            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" href="/DieuHanhMon/Home">
+            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" href="/DieuHanhMon/Home@(selectedAssignmentQuery)">
                 <i class="fa-solid fa-gauge"></i>
                 <span>Tổng Quan Môn</span>
             </a>
         </div>
         <div class="dh-nav-item">
-            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "NoiDung" ? "active" : "")" href="/DieuHanhMon/NoiDung">
+            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "NoiDung" ? "active" : "")" href="/DieuHanhMon/NoiDung@(selectedAssignmentQuery)">
                 <i class="fa-solid fa-layer-group"></i>
-                <span>Nội Dung Thuộc Môn</span>
+                <span>Danh mục & Môn thể thao</span>
             </a>
         </div>
         <div class="dh-nav-item">
-            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "LichThiDau" ? "active" : "")" href="/DieuHanhMon/LichThiDau">
+            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "LichThiDau" ? "active" : "")" href="/DieuHanhMon/LichThiDau@(selectedAssignmentQuery)">
                 <i class="fa-solid fa-calendar-check"></i>
                 <span>Lịch Thi Đấu & Tiến Độ</span>
             </a>
         </div>
         <div class="dh-nav-item">
-            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "KetQua" ? "active" : "")" href="/DieuHanhMon/KetQua">
+            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "KetQua" ? "active" : "")" href="/DieuHanhMon/KetQua@(selectedAssignmentQuery)">
                 <i class="fa-solid fa-square-poll-vertical"></i>
                 <span>Kiểm Tra Kết Quả</span>
             </a>
         </div>
         <div class="dh-nav-item">
-            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TrongTai" ? "active" : "")" href="/DieuHanhMon/TrongTai">
+            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TrongTai" ? "active" : "")" href="/DieuHanhMon/TrongTai@(selectedAssignmentQuery)">
                 <i class="fa-solid fa-user-shield"></i>
                 <span>Theo Dõi Trọng Tài</span>
+            </a>
+        </div>
+        <div class="dh-nav-item">
+            <a class="dh-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SuCo" ? "active" : "")" href="/DieuHanhMon/SuCo@(selectedAssignmentQuery)">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Sự Cố & Phát Sinh</span>
             </a>
         </div>
 
@@ -271,6 +404,7 @@
             </a>
         </div>
     </aside>
+    <button type="button" class="dh-sidebar-backdrop" id="sidebarBackdrop" aria-label="Đóng menu"></button>
 
     <!-- Main Wrapper -->
     <div class="dh-main-wrapper">
@@ -280,7 +414,7 @@
                     <i class="fa-solid fa-bars"></i>
                 </button>
                 <div class="d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-volleyball text-teal fs-5" style="color: #0d9488;"></i>
+                    <i class="fa-solid fa-volleyball text-primary fs-5"></i>
                     <span class="fw-semibold text-muted d-none d-sm-inline" style="font-size:0.88rem;">Môn phụ trách:</span>
                     <form method="get" id="formSelectAssignment" class="m-0">
                         <select name="selectedOption" class="form-select form-select-sm fw-bold border-teal bg-light" style="min-width: 260px; max-width: 420px;" onchange="onAssignmentChange(this)">
@@ -305,7 +439,7 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="dropdown">
                     <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
-                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center" style="background-color: #0d9488; width: 28px; height: 28px; font-size: 0.8rem;">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.8rem;">
                             <i class="fa-solid fa-user"></i>
                         </div>
                         <span class="fw-medium text-truncate" style="max-width: 140px;">
@@ -336,11 +470,22 @@
         $(document).ready(function () {
             $('#sidebarToggle').on('click', function () {
                 $('#sidebar').toggleClass('show');
+                $('#sidebarBackdrop').toggleClass('show');
+            });
+            $('#sidebarBackdrop').on('click', closeMobileSidebar);
+            $('.dh-nav-link').on('click', closeMobileSidebar);
+            $(document).on('keydown', function (event) {
+                if (event.key === 'Escape') closeMobileSidebar();
             });
             $('.select2').select2({
                 theme: 'bootstrap-5'
             });
         });
+
+        function closeMobileSidebar() {
+            $('#sidebar').removeClass('show');
+            $('#sidebarBackdrop').removeClass('show');
+        }
 
         function onAssignmentChange(selectElem) {
             var val = selectElem.value;

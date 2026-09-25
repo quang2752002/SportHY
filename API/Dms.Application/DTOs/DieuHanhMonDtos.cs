@@ -58,6 +58,8 @@ namespace Dms.Application.DTOs
     public class CoordinatorScheduleMatchDto
     {
         public int TranDauId { get; set; }
+        public int GiaiDauMonTheThaoId { get; set; }
+        public int? SanDauId { get; set; }
         public int SoTran { get; set; }
         public string TenTran { get; set; } = string.Empty;
         public string TenMon { get; set; } = string.Empty;
@@ -67,9 +69,45 @@ namespace Dms.Application.DTOs
         public DateTime? ThoiGianBatDau { get; set; }
         public DateTime? ThoiGianKetThuc { get; set; }
         public string TrangThai { get; set; } = "ChuaDau";
+        public bool IsLichCoDinh { get; set; }
         public string TenTrongTaiChinh { get; set; } = string.Empty;
         public string TenTrongTaiBan { get; set; } = string.Empty;
         public string? GhiChu { get; set; }
+    }
+
+    public class CoordinatorScheduleCourtDto
+    {
+        public int Id { get; set; }
+        public string Ten { get; set; } = string.Empty;
+        public string? TenCumSan { get; set; }
+    }
+
+    public class CoordinatorAutoScheduleRequestDto
+    {
+        public int GiaiDauMonTheThaoId { get; set; }
+        public DateTime NgayBatDau { get; set; }
+        public DateTime NgayKetThuc { get; set; }
+        public string GioBatDau { get; set; } = "08:00";
+        public string GioKetThuc { get; set; } = "17:00";
+        public int ThoiLuongTranPhut { get; set; } = 60;
+        public int NghiGiuaTranPhut { get; set; } = 15;
+        public List<int> SanDauIds { get; set; } = new();
+    }
+
+    public class CoordinatorSchedulePlanResultDto
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int SoTranDaXep { get; set; }
+        public int SoTranDuocGiuLich { get; set; }
+        public List<string> CanhBao { get; set; } = new();
+    }
+
+    public class CoordinatorUpdateScheduleRequestDto
+    {
+        public int TranDauId { get; set; }
+        public DateTime? ThoiGianDuKien { get; set; }
+        public int? SanDauId { get; set; }
     }
 
     public class CoordinatorResultItemDto
@@ -82,6 +120,52 @@ namespace Dms.Application.DTOs
         public string TrangThai { get; set; } = "ChuaDau";
         public string KetQuaTySo { get; set; } = string.Empty;
         public string? GhiChu { get; set; }
+        public string TrangThaiDuyet { get; set; } = "ChoDuyet";
+        public DateTime? ThoiGianDuyet { get; set; }
+        public string? NguoiDuyet { get; set; }
+        public string? GhiChuDuyet { get; set; }
+    }
+
+    public class CoordinatorReviewResultRequestDto
+    {
+        public int TranDauId { get; set; }
+        public string HanhDong { get; set; } = "Duyet";
+        public string? GhiChu { get; set; }
+    }
+
+    public class CoordinatorIssueDto
+    {
+        public int Id { get; set; }
+        public int GiaiDauMonTheThaoId { get; set; }
+        public string TenMon { get; set; } = string.Empty;
+        public int? TranDauId { get; set; }
+        public string? TenTran { get; set; }
+        public string TieuDe { get; set; } = string.Empty;
+        public string MoTa { get; set; } = string.Empty;
+        public string MucDo { get; set; } = "BinhThuong";
+        public string TrangThai { get; set; } = "Moi";
+        public string? NguoiPhuTrach { get; set; }
+        public string? GhiChuXuLy { get; set; }
+        public string? NguoiBaoCao { get; set; }
+        public DateTime? NgayTao { get; set; }
+        public DateTime? ThoiGianGiaiQuyet { get; set; }
+    }
+
+    public class CreateCoordinatorIssueRequestDto
+    {
+        public int GiaiDauMonTheThaoId { get; set; }
+        public int? TranDauId { get; set; }
+        public string TieuDe { get; set; } = string.Empty;
+        public string MoTa { get; set; } = string.Empty;
+        public string MucDo { get; set; } = "BinhThuong";
+    }
+
+    public class UpdateCoordinatorIssueRequestDto
+    {
+        public int Id { get; set; }
+        public string TrangThai { get; set; } = "Moi";
+        public string? NguoiPhuTrach { get; set; }
+        public string? GhiChuXuLy { get; set; }
     }
 
     public class CoordinatorRefereeItemDto

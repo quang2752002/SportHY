@@ -1,49 +1,62 @@
 @model List<Dms.Application.DTOs.CoordinatorEventDto>
 @{
-    ViewData["Title"] = "Nội Dung Thuộc Môn Thể Thao";
+    ViewData["Title"] = "Danh mục & Môn thể thao";
     var sportList = ViewBag.SportList as List<MonTheThao> ?? new();
+    var selectedMonId = ViewBag.SelectedMonId as int?;
+    var currentAssignment = ViewBag.CurrentAssignment as Dms.Application.DTOs.CoordinatorAssignmentDto;
+    string FormatFormat(string? format) => format switch
+    {
+        "LoaiTrucTiep" => "Loại trực tiếp",
+        "VongBang" => "Vòng bảng",
+        "KetHopVongBangVaLoaiTrucTiep" => "Vòng bảng + loại trực tiếp",
+        "NhanhThangNhanhThua" => "Nhánh thắng - nhánh thua",
+        "HeThuySi" => "Hệ Thụy Sĩ",
+        "TinhDiemXepHang" => "Xếp hạng thành tích",
+        _ => "Chưa cấu hình"
+    };
+    string FormatGender(string? gender) => gender switch { "Nam" => "Nam", "Nu" => "Nữ", "HonHop" => "Nam & nữ", _ => "Không giới hạn" };
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-        <h4 class="fw-bold mb-1 text-dark">
-            <i class="fa-solid fa-layer-group text-teal me-2" style="color: #0d9488;"></i> Danh Sách Nội Dung Thuộc Môn
+        <h4 class="fw-bold mb-1 text-dark dh-page-heading">
+            <i class="fa-solid fa-layer-group text-primary me-2"></i> Danh mục & Môn thể thao
         </h4>
-        <p class="text-muted small mb-0">Theo dõi chi tiết các thể thức, số lượng VĐV / đoàn đăng ký và số lượng trận đấu thuộc môn phụ trách</p>
+        <p class="text-muted small mb-0 dh-page-subtitle">Theo dõi các môn thể thao trong danh mục được giao, hình thức thi đấu, đăng ký và tiến độ các trận.</p>
     </div>
 </div>
 
 <!-- Tabs môn cụ thể -->
 <div class="card card-custom mb-3 p-2 bg-white">
     <div class="d-flex align-items-center overflow-auto py-1 gap-2">
-        <span class="text-muted small fw-bold text-uppercase px-2 text-nowrap"><i class="fa-solid fa-filter me-1 text-teal" style="color: #0d9488;"></i> Môn:</span>
-        <a href="/DieuHanhMon/NoiDung" class="btn btn-sm text-nowrap rounded-pill @(!ViewBag.SelectedMonId.HasValue ? "btn-primary fw-bold" : "btn-light border")">
+        <span class="text-muted small fw-bold text-uppercase px-2 text-nowrap"><i class="fa-solid fa-filter me-1 text-primary"></i> Lọc môn:</span>
+        <a href="/DieuHanhMon/NoiDung?giaiDauId=@ViewBag.SelectedGiaiDauId&danhMucId=@ViewBag.SelectedDanhMucId" class="btn btn-sm text-nowrap rounded-pill @(!selectedMonId.HasValue ? "btn-primary fw-bold" : "btn-light border")">
             Tất cả môn con
         </a>
         @foreach (var sp in sportList)
         {
-            bool isActive = ViewBag.SelectedMonId == sp.Id;
-            <a href="/DieuHanhMon/NoiDung?monTheThaoId=@sp.Id" class="btn btn-sm text-nowrap rounded-pill @(isActive ? "btn-primary fw-bold" : "btn-light border")">
+            bool isActive = selectedMonId == sp.Id;
+            <a href="/DieuHanhMon/NoiDung?giaiDauId=@ViewBag.SelectedGiaiDauId&danhMucId=@ViewBag.SelectedDanhMucId&monTheThaoId=@sp.Id" class="btn btn-sm text-nowrap rounded-pill @(isActive ? "btn-primary fw-bold" : "btn-light border")">
                 @sp.Ten
             </a>
         }
     </div>
 </div>
 
-<!-- Bảng nội dung -->
+<!-- Danh sách môn thể thao; không phụ thuộc bảng NộiDungThiDau -->
 <div class="card card-custom">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light text-muted small text-uppercase">
                 <tr>
-                    <th style="width: 80px;">Mã</th>
-                    <th>Nội Dung Thi Đấu</th>
-                    <th>Môn</th>
-                    <th>Thể Thức</th>
-                    <th>Giới Tính</th>
-                    <th class="text-center">Số Lượng Đăng Ký</th>
-                    <th class="text-center">Số Trận Đấu</th>
-                    <th>Tiến Độ Trận</th>
+                    <th style="width: 110px;">Mã môn</th>
+                    <th>Danh mục môn thể thao</th>
+                    <th>Môn thể thao</th>
+                    <th>Thể thức</th>
+                    <th>Đối tượng</th>
+                    <th class="text-center">Đăng ký</th>
+                    <th class="text-center">Số trận</th>
+                    <th style="min-width:180px;">Tiến độ</th>
                 </tr>
             </thead>
             <tbody>
@@ -53,35 +66,35 @@
                     {
                         double percent = item.SoTranDau > 0 ? (double)item.SoTranDaDau / item.SoTranDau * 100 : 0;
                         <tr>
-                            <td class="fw-bold text-secondary">@item.Ma</td>
                             <td>
-                                <span class="fw-bold text-dark">@item.Ten</span>
+                                <span class="badge bg-light text-secondary border fw-semibold px-2 py-2">@item.Ma</span>
                             </td>
                             <td>
-                                <span class="badge bg-light text-dark border px-2 py-1">@item.TenMon</span>
+                                <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-2">@(currentAssignment?.TenDanhMuc ?? "Danh mục")</span>
                             </td>
                             <td>
-                                <span class="badge bg-info bg-opacity-10 text-info fw-semibold px-2 py-1">
-                                    @(item.TheThuc ?? "Loại trực tiếp")
-                                </span>
+                                <div class="fw-bold text-dark">@item.TenMon</div>
                             </td>
                             <td>
-                                @(item.GioiTinh ?? "Tất cả")
+                                <span class="badge bg-light text-dark border">@FormatFormat(item.TheThuc)</span>
+                            </td>
+                            <td>
+                                <span class="text-muted">@FormatGender(item.GioiTinh)</span>
                             </td>
                             <td class="text-center">
-                                <span class="badge rounded-pill bg-primary px-3 py-2 fs-6">
-                                    @item.SoDangKy VĐV/Đội
+                                <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-2">
+                                    @item.SoDangKy
                                 </span>
                             </td>
                             <td class="text-center fw-bold">
                                 @item.SoTranDau trận
                             </td>
-                            <td style="min-width: 140px;">
+                            <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="progress flex-fill" style="height: 6px;">
-                                        <div class="progress-bar bg-success" role="progressbar" style="width: @percent%;"></div>
+                                    <div class="progress flex-fill" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100" style="width: @percent%;"></div>
                                     </div>
-                                    <small class="text-muted text-nowrap">@item.SoTranDaDau/@item.SoTranDau</small>
+                                    <small class="text-muted text-nowrap">@item.SoTranDaDau/@item.SoTranDau · @percent.ToString("0")%</small>
                                 </div>
                             </td>
                         </tr>
@@ -90,9 +103,9 @@
                 else
                 {
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
-                            <i class="fa-regular fa-folder-open fs-1 d-block mb-2 text-secondary opacity-50"></i>
-                            Chưa có nội dung thi đấu nào được thiết lập cho môn này.
+                        <td colspan="8" class="dh-empty-state">
+                            <i class="fa-regular fa-folder-open"></i>
+                            Chưa có môn thể thao nào được thiết lập trong danh mục này.
                         </td>
                     </tr>
                 }

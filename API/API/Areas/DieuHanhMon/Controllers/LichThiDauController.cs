@@ -37,6 +37,8 @@ namespace API.Areas.DieuHanhMon.Controllers
             if (currentAssignment == null) return View(new List<CoordinatorScheduleMatchDto>());
 
             ViewBag.SportList = currentAssignment.MonTheThaos;
+            ViewBag.ScheduleTargets = await _dieuHanhService.GetEventsAsync(
+                selectedGiaiDauId.Value, selectedDanhMucId.Value, null, assignments);
 
             var list = await _dieuHanhService.GetScheduleAsync(selectedGiaiDauId.Value, selectedDanhMucId.Value, monTheThaoId, status, date, assignments);
 
@@ -46,8 +48,39 @@ namespace API.Areas.DieuHanhMon.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdateStatus(int tranDauId, string status)
         {
-            var (success, message) = await _dieuHanhService.UpdateMatchStatusAsync(tranDauId, status);
+            var assignments = await GetAssignedAssignmentsAsync();
+            var allowedIds = assignments.SelectMany(a => a.GiaiDauMonTheThaoIds).Distinct().ToList();
+            var (success, message) = await _dieuHanhService.UpdateMatchStatusAsync(
+                tranDauId, status, allowedIds, User.Identity?.Name ?? "System");
             return Json(new { success = success, message = message });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> AvailableCourts(int giaiDauMonTheThaoId)
+        {
+            var assignments = await GetAssignedAssignmentsAsync();
+            var allowedIds = assignments.SelectMany(a => a.GiaiDauMonTheThaoIds).Distinct().ToList();
+            var courts = await _dieuHanhService.GetAvailableCourtsAsync(giaiDauMonTheThaoId, allowedIds);
+            return Json(courts);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> PlanSchedule([FromBody] CoordinatorAutoScheduleRequestDto request)
+        {
+            var assignments = await GetAssignedAssignmentsAsync();
+            var allowedIds = assignments.SelectMany(a => a.GiaiDauMonTheThaoIds).Distinct().ToList();
+            var result = await _dieuHanhService.PlanScheduleAsync(request, allowedIds, User.Identity?.Name ?? "System");
+            return Json(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateSchedule([FromBody] CoordinatorUpdateScheduleRequestDto request)
+        {
+            var assignments = await GetAssignedAssignmentsAsync();
+            var allowedIds = assignments.SelectMany(a => a.GiaiDauMonTheThaoIds).Distinct().ToList();
+            var (success, message) = await _dieuHanhService.UpdateMatchScheduleAsync(
+                request, allowedIds, User.Identity?.Name ?? "System");
+            return Json(new { success, message });
         }
     }
 }

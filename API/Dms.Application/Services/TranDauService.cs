@@ -396,6 +396,10 @@ namespace Dms.Application.Services
             entity.IsHoa = dto.TrangThai == "KetThuc" && dto.IsHoa;
             entity.DoiThangDangKyId = dto.TrangThai == "KetThuc" ? dto.DoiThangDangKyId : null;
             entity.DoiThuaDangKyId = dto.TrangThai == "KetThuc" ? dto.DoiThuaDangKyId : null;
+            entity.TrangThaiDuyetKetQua = "ChoDuyet";
+            entity.ThoiGianDuyetKetQua = null;
+            entity.NguoiDuyetKetQua = null;
+            entity.GhiChuDuyetKetQua = null;
             entity.LastModified = nowUtc;
             entity.LastModifiedBy = updatedBy;
 
@@ -3571,6 +3575,17 @@ namespace Dms.Application.Services
                 {
                     response.Message += " " + athleticsResult.RecordBreakerNotice;
                 }
+                if (athleticsResult.Success)
+                {
+                    match.TrangThaiDuyetKetQua = "ChoDuyet";
+                    match.ThoiGianDuyetKetQua = null;
+                    match.NguoiDuyetKetQua = null;
+                    match.GhiChuDuyetKetQua = null;
+                    match.LastModified = DateTime.UtcNow;
+                    match.LastModifiedBy = username;
+                    _unitOfWork.TranDaus.Update(match);
+                    await _unitOfWork.CompleteAsync();
+                }
                 return response;
             }
 
@@ -3622,6 +3637,10 @@ namespace Dms.Application.Services
             match.ThoiGianKetThuc = DateTime.UtcNow;
             match.DoiThangDangKyId = winnerDangKyId > 0 ? winnerDangKyId : null;
             match.DoiThuaDangKyId = loserDangKyId > 0 ? loserDangKyId : null;
+            match.TrangThaiDuyetKetQua = "ChoDuyet";
+            match.ThoiGianDuyetKetQua = null;
+            match.NguoiDuyetKetQua = null;
+            match.GhiChuDuyetKetQua = null;
 
             // Lưu điểm chi tiết / events vào GhiChu JSON
             var scoreData = new

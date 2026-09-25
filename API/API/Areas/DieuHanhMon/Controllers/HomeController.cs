@@ -13,8 +13,16 @@ namespace API.Areas.DieuHanhMon.Controllers
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index(int? giaiDauId, int? danhMucId)
         {
+            var assignments = await GetAssignedAssignmentsAsync();
+            var currentReferee = await GetCurrentRefereeAsync();
+            var (selectedGiaiDauId, selectedDanhMucId) = GetSelectedAssignment(giaiDauId, danhMucId, assignments);
+
+            ViewBag.Assignments = assignments;
+            ViewBag.CurrentReferee = currentReferee;
+            ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
+            ViewBag.SelectedDanhMucId = selectedDanhMucId;
             return View();
         }
 

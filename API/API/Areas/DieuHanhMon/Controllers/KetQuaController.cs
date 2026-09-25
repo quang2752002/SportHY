@@ -42,9 +42,12 @@ namespace API.Areas.DieuHanhMon.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ApproveResult(int tranDauId)
+        public async Task<IActionResult> ReviewResult([FromBody] CoordinatorReviewResultRequestDto request)
         {
-            var (success, message) = await _dieuHanhService.ApproveResultAsync(tranDauId);
+            var assignments = await GetAssignedAssignmentsAsync();
+            var allowedIds = assignments.SelectMany(a => a.GiaiDauMonTheThaoIds).Distinct().ToList();
+            var (success, message) = await _dieuHanhService.ReviewMatchResultAsync(
+                request, allowedIds, User.Identity?.Name ?? "System");
             return Json(new { success = success, message = message });
         }
     }
