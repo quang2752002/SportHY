@@ -215,7 +215,7 @@ namespace API.Controllers
             var sports = selectedTournament?.MonTheThaos ?? new();
             ViewBag.Sports = sports;
 
-            int selectedGmtId = giaiDauMonTheThaoId ?? sports.FirstOrDefault()?.Id ?? 0;
+            int selectedGmtId = giaiDauMonTheThaoId ?? 0;
             ViewBag.SelectedGmtId = selectedGmtId;
 
             return View();

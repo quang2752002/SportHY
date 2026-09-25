@@ -47,42 +47,9 @@
             box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);
         }
 
-        /* Sport Selection Pills */
-        .sport-pill-bar {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            overflow-x: auto;
-            scrollbar-width: none;
-            padding-bottom: 4px;
-        }
-        .sport-pill-bar::-webkit-scrollbar {
-            display: none;
-        }
-        .sport-pill-item {
-            border-radius: 9999px;
-            padding: 6px 16px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            border: 1px solid #e2e8f0;
-            background: #ffffff;
-            color: #475569;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.15s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .sport-pill-item:hover {
-            border-color: #cbd5e1;
-            background: #f8fafc;
-        }
-        .sport-pill-item.active {
-            background: #0284c7;
-            color: #ffffff;
-            border-color: #0284c7;
-            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+        .sport-filter-select { min-width: 280px; max-width: 460px; }
+        @@media (max-width: 576px) {
+            .sport-filter-select { min-width: 0; max-width: none; width: 100%; }
         }
 
         /* Match Card */
@@ -192,6 +159,462 @@
             padding-bottom: 6px;
             border-bottom: 2px solid #e2e8f0;
         }
+
+        .schedule-search-input {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            height: 38px;
+            border: 1px solid #ced4da;
+            border-radius: 0.5rem;
+            background: #fff;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .schedule-search-input:focus-within {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+        }
+        .schedule-search-input > i {
+            flex: 0 0 auto;
+            margin-left: 0.75rem;
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        .schedule-search-input > input {
+            width: 100%;
+            min-width: 0;
+            height: 100%;
+            padding: 0.375rem 0.75rem 0.375rem 0.5rem;
+            border: 0;
+            outline: 0;
+            border-radius: inherit;
+            background: transparent;
+            color: #212529;
+            font: inherit;
+            box-shadow: none;
+        }
+        .schedule-search-input > input::placeholder { color: #6c757d; opacity: 1; }
+
+        /* Horizontal knockout bracket: one column per round, shifted down by stage. */
+        .bracket-sport-section {
+            margin-bottom: 1.75rem;
+            padding: 1.1rem 1.1rem 0.35rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.035);
+        }
+        .bracket-sport-heading {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin: 0 0 1rem;
+            color: #172b46;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .bracket-sport-heading i {
+            display: grid;
+            width: 32px;
+            height: 32px;
+            place-items: center;
+            border-radius: 9px;
+            background: #e8f3ff;
+            color: #087bd0;
+        }
+        .bracket-sport-heading small {
+            margin-left: auto;
+            color: #64758b;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .bracket-stage-tabs {
+            display: flex;
+            gap: 0.45rem;
+            margin: -0.1rem 0 1rem;
+            border-bottom: 1px solid #d9e2ee;
+        }
+        .bracket-stage-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            margin-bottom: -1px;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid transparent;
+            border-bottom: 2px solid transparent;
+            border-radius: 0.55rem 0.55rem 0 0;
+            background: transparent;
+            color: #64758b;
+            font-size: 0.83rem;
+            font-weight: 600;
+        }
+        .bracket-stage-tab.active {
+            border-color: #d9e2ee;
+            border-bottom-color: #087bd0;
+            background: #fff;
+            color: #087bd0;
+        }
+        .bracket-stage-tab-count {
+            padding: 0.08rem 0.45rem;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #64758b;
+            font-size: 0.68rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .bracket-stage-tab.active .bracket-stage-tab-count {
+            background: #e8f3ff;
+            color: #087bd0;
+        }
+        .bracket-stage-empty {
+            padding: 2.25rem 1rem;
+            border: 1px dashed #d9e2ee;
+            border-radius: 0.75rem;
+            color: #64758b;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        .qualifying-round-list { display: flex; flex-direction: column; gap: 0.7rem; }
+        .qualifying-round {
+            overflow: hidden;
+            border: 1px solid #d9e2ee;
+            border-radius: 0.75rem;
+            background: #fff;
+        }
+        .qualifying-round-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.7rem 0.8rem;
+            background: #f8fafc;
+            color: #172b46;
+            cursor: pointer;
+            list-style: none;
+        }
+        .qualifying-round-summary::-webkit-details-marker { display: none; }
+        .qualifying-round-summary::before {
+            content: "›";
+            display: inline-block;
+            color: #64758b;
+            font-size: 1.1rem;
+            line-height: 1;
+            transition: transform 0.15s ease;
+        }
+        .qualifying-round[open] > .qualifying-round-summary::before { transform: rotate(90deg); }
+        .qualifying-round-name { font-size: 0.86rem; font-weight: 700; }
+        .qualifying-round-count { margin-left: auto; color: #64758b; font-size: 0.73rem; white-space: nowrap; }
+        .qualifying-round-body { padding: 0.65rem; }
+        .qualifying-round-matches { display: flex; flex-direction: column; gap: 0.8rem; }
+        .qualifying-round-match { min-width: 0; }
+        .qualifying-round-date {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin: 0 0 0.3rem 0.2rem;
+            color: #64758b;
+            font-size: 0.7rem;
+        }
+        .qualifying-round-date i { color: #0284c7; }
+        .qualifying-show-more {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            width: 100%;
+            margin-top: 0.65rem;
+            padding: 0.55rem;
+            border: 1px solid #d9e2ee;
+            border-radius: 0.55rem;
+            background: #f8fafc;
+            color: #087bd0;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+        .qualifying-show-more:hover { background: #eef6ff; }
+        .bracket-board-scroll {
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            padding: 0 0.2rem 1rem;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        .bracket-board {
+            position: relative;
+            display: grid;
+            align-items: start;
+            gap: 1.25rem;
+            isolation: isolate;
+            padding: 0.1rem 0.15rem 0.8rem;
+        }
+        .bracket-connections {
+            position: absolute;
+            z-index: 0;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+        .bracket-connection {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 2;
+            vector-effect: non-scaling-stroke;
+        }
+        .bracket-connection-winner { stroke: #0284c7; }
+        .bracket-connection-loser {
+            stroke: #ea580c;
+            stroke-dasharray: 5 4;
+        }
+        .bracket-round {
+            position: relative;
+            z-index: 1;
+            min-width: 0;
+        }
+        .bracket-round-heading {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 36px;
+            margin: 0 0 0.75rem;
+            padding: 0 0.15rem 0.55rem;
+            border-bottom: 1px solid #d9e2ee;
+            color: #172b46;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        .bracket-round-index {
+            display: grid;
+            width: 23px;
+            height: 23px;
+            flex: 0 0 23px;
+            place-items: center;
+            border: 1px solid #cfe3f8;
+            border-radius: 7px;
+            background: #f2f8ff;
+            color: #087bd0;
+            font-size: 0.72rem;
+        }
+        .bracket-round-count {
+            margin-left: auto;
+            color: #64758b;
+            font-size: 0.72rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .bracket-round-matches {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .bracket-round-match {
+            min-width: 0;
+        }
+        .bracket-round-date {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin: 0 0 0.35rem 0.25rem;
+            color: #64758b;
+            font-size: 0.72rem;
+        }
+        .bracket-round-date i { color: #0284c7; }
+        .bracket-round-match .match-card {
+            border-radius: 0.75rem;
+        }
+        .bracket-round-match .match-header-row {
+            gap: 0.5rem;
+            padding: 0.55rem 0.65rem;
+        }
+        .bracket-round-match .match-header-row > div:first-child {
+            min-width: 0;
+            overflow: hidden;
+        }
+        .bracket-round-match .match-header-row > div:last-child { flex: 0 0 auto; }
+        .bracket-round-match .match-header-row .badge-live-pulse,
+        .bracket-round-match .match-header-row .badge { white-space: nowrap; }
+        .bracket-round-match .match-card > .p-3 {
+            min-height: 104px;
+            padding: 0.75rem !important;
+        }
+        .bracket-round-match .team-box {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center !important;
+            gap: 0.25rem;
+            min-width: 0;
+            text-align: center !important;
+        }
+        .bracket-round-match .team-box.justify-content-end { flex-direction: column-reverse; }
+        .bracket-round-match .team-box > .text-truncate { width: 100%; }
+        .bracket-round-match .team-logo-circle { width: 30px; height: 30px; font-size: 0.76rem; }
+        .bracket-round-match .score-box { min-width: 76px; padding: 0.4rem 0.5rem; }
+        .bracket-round-match .match-card > .bg-light {
+            gap: 0.5rem;
+            padding: 0.5rem 0.65rem !important;
+            font-size: 0.7rem !important;
+        }
+        .bracket-round-match .match-card > .bg-light > div:first-child { min-width: 0; }
+        .bracket-round-match .match-card > .bg-light > div:last-child {
+            max-width: 42%;
+            text-align: right;
+        }
+        .bracket-outcomes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin: 0.4rem 0.1rem 0;
+        }
+        .bracket-outcome {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 999px;
+            background: #eaf5fc;
+            color: #0369a1;
+            font-size: 0.66rem;
+            line-height: 1.35;
+        }
+        .bracket-outcome-loser { background: #fff3e9; color: #c2410c; }
+        .group-stage-section {
+            margin-bottom: 1.75rem;
+            padding: 1.1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.035);
+        }
+        .group-stage-heading {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            margin-bottom: 1rem;
+        }
+        .group-stage-heading-icon {
+            display: grid;
+            width: 34px;
+            height: 34px;
+            flex: 0 0 34px;
+            place-items: center;
+            border-radius: 9px;
+            background: #e8f3ff;
+            color: #087bd0;
+        }
+        .group-stage-heading-copy { min-width: 0; flex: 1; }
+        .group-stage-heading h2 {
+            margin: 0;
+            color: #172b46;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .group-stage-heading p {
+            margin: 0.1rem 0 0;
+            color: #64758b;
+            font-size: 0.75rem;
+        }
+        .group-stage-heading > small {
+            color: #64758b;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+        .group-stage-grid {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+        }
+        .pool-card {
+            width: 100%;
+            min-width: 0;
+            flex: 0 0 auto;
+            max-width: none;
+            overflow: hidden;
+            border: 1px solid #d9e2ee;
+            border-radius: 0.85rem;
+            background: #fff;
+        }
+        .pool-card-heading {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.65rem 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+        .pool-card-mark {
+            display: grid;
+            width: 28px;
+            height: 28px;
+            flex: 0 0 28px;
+            place-items: center;
+            border-radius: 7px;
+            background: #e8f3ff;
+            color: #087bd0;
+        }
+        .pool-card-heading strong { min-width: 0; flex: 1; color: #172b46; font-size: 0.88rem; }
+        .pool-card-heading small { color: #64758b; font-size: 0.7rem; white-space: nowrap; }
+        .pool-card-body { padding: 0.65rem; }
+        .pool-round + .pool-round { margin-top: 0.75rem; }
+        .pool-round-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin: 0 0 0.55rem;
+            padding: 0 0.1rem 0.4rem;
+            border-bottom: 1px solid #d9e2ee;
+            color: #334155;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .pool-round-heading small { color: #64758b; font-size: 0.68rem; font-weight: 400; }
+        .pool-round-matches { display: flex; flex-direction: column; gap: 0.8rem; }
+        .pool-match { min-width: 0; }
+        .pool-match-date {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin: 0 0 0.3rem 0.2rem;
+            color: #64758b;
+            font-size: 0.68rem;
+        }
+        .pool-match-date i { color: #0284c7; }
+        .pool-match .match-card { border-radius: 0.7rem; }
+        .pool-match .match-header-row { gap: 0.4rem; padding: 0.5rem 0.55rem; }
+        .pool-match .match-header-row > div:first-child { min-width: 0; overflow: hidden; }
+        .pool-match .match-header-row > div:last-child { flex: 0 0 auto; }
+        .pool-match .match-header-row .badge-live-pulse,
+        .pool-match .match-header-row .badge { white-space: nowrap; }
+        .pool-match .match-card > .p-3 { min-height: 100px; padding: 0.65rem !important; }
+        .pool-match .team-box {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center !important;
+            gap: 0.2rem;
+            min-width: 0;
+            text-align: center !important;
+        }
+        .pool-match .team-box.justify-content-end { flex-direction: column-reverse; }
+        .pool-match .team-box > .text-truncate { width: 100%; }
+        .pool-match .team-logo-circle { width: 28px; height: 28px; font-size: 0.72rem; }
+        .pool-match .score-box { min-width: 72px; padding: 0.35rem 0.4rem; }
+        .pool-match .match-card > .bg-light {
+            gap: 0.4rem;
+            padding: 0.45rem 0.55rem !important;
+            font-size: 0.66rem !important;
+        }
+        .pool-match .match-card > .bg-light > div:first-child { min-width: 0; }
+        .pool-match .match-card > .bg-light > div:last-child { max-width: 43%; text-align: right; }
+        @@media (max-width: 576px) {
+            .bracket-sport-section { padding: 0.9rem 0.75rem 0.2rem; }
+            .group-stage-section { padding: 0.85rem 0.7rem; }
+            .group-stage-heading > small { font-size: 0.68rem; }
+            .bracket-stage-tabs { gap: 0.15rem; }
+            .bracket-stage-tab { gap: 0.3rem; padding: 0.5rem 0.45rem; font-size: 0.74rem; }
+            .qualifying-round-body { padding: 0.5rem; }
+            .bracket-round-match .match-card > .p-3 { min-height: 92px; }
+        }
     </style>
 }
 
@@ -244,14 +667,18 @@
                 </div>
             </div>
 
-            <!-- Thanh chọn Môn Thi Đấu Trong Giải -->
+            <!-- Bộ lọc Môn Thi Đấu Trong Giải -->
             <div class="mt-3 pt-3 border-top">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="small fw-bold text-uppercase text-muted" style="letter-spacing: 0.5px;">Môn thi đấu trong giải:</span>
-                    <span class="small text-muted" id="sportCountBadge">Đang nạp môn...</span>
-                </div>
-                <div class="sport-pill-bar" id="sportPillsContainer">
-                    <!-- Dynamic Pills -->
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <label for="sportSelect" class="small fw-bold text-uppercase text-muted mb-0" style="letter-spacing: 0.5px;">Môn thi đấu trong giải:</label>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-5">
+                        <select id="sportSelect" class="form-select rounded-3 shadow-none border-secondary-subtle sport-filter-select" style="height: 38px;" onchange="selectSport(this.value)" aria-label="Lọc theo môn thi đấu">
+                            <option value="">-- Chọn môn thi đấu --</option>
+                        </select>
+                    </div>
+                    <div class="col small text-muted text-md-end" id="sportCountBadge">Đang nạp môn...</div>
                 </div>
             </div>
         </div>
@@ -260,7 +687,7 @@
         <div class="card border-0 shadow-sm rounded-4 mb-4 p-3 bg-white" id="filterToolbar">
             <div class="row g-2 align-items-center justify-content-between">
                 <div class="col-md-6 col-lg-5">
-                    <div class="search-input-group">
+                    <div class="schedule-search-input">
                         <i class="bi bi-search"></i>
                         <input type="text" id="searchKeyword" placeholder="Tìm đội, VĐV, sân, vòng đấu..." oninput="handleFilterChange()">
                     </div>
@@ -363,13 +790,17 @@
         function onTournamentChange(gId) {
             currentTournamentId = parseInt(gId) || 0;
             currentGmtId = 0; // Đặt lại môn
+            $('#sportSelect').val('');
+            showNoSportSelected();
             loadSportsAndData(currentTournamentId, 0);
         }
 
         function selectSport(gmtId) {
             currentGmtId = parseInt(gmtId) || 0;
-            $('.sport-pill-item').removeClass('active');
-            $(`.sport-pill-item[data-gmt-id="${currentGmtId}"]`).addClass('active');
+            if (currentGmtId <= 0) {
+                showNoSportSelected();
+                return;
+            }
             loadScheduleAndBrackets();
         }
 
@@ -379,47 +810,48 @@
             $.get(`/Home/GetSportsByTournament?giaiDauId=${giaiDauId}`, function (res) {
                 if (res && res.success && Array.isArray(res.data)) {
                     currentSports = res.data;
-                    renderSportPills(currentSports, targetGmtId);
+                    renderSportSelect(currentSports, targetGmtId);
                 } else {
                     currentSports = [];
-                    renderSportPills([], 0);
+                    renderSportSelect([], 0);
                 }
-                loadScheduleAndBrackets();
+                if (currentGmtId > 0) loadScheduleAndBrackets();
+                else showNoSportSelected();
             }).fail(function () {
                 currentSports = [];
-                renderSportPills([], 0);
-                loadScheduleAndBrackets();
+                renderSportSelect([], 0);
+                showNoSportSelected();
             });
         }
 
-        function renderSportPills(sports, selectedId) {
-            let html = `
-                <button type="button" class="sport-pill-item ${selectedId === 0 ? 'active' : ''}" data-gmt-id="0" onclick="selectSport(0)">
-                    <i class="bi bi-grid-fill"></i>
-                    <span>Tất cả môn (${sports.length})</span>
-                </button>
-            `;
+        function renderSportSelect(sports, selectedId) {
+            const availableSports = Array.isArray(sports) ? sports : [];
+            const requestedSportId = Number(selectedId) || 0;
+            const selectedSportId = availableSports.some(sport => Number(sport.id) === requestedSportId)
+                ? requestedSportId
+                : 0;
+            currentGmtId = selectedSportId;
 
-            if (sports && sports.length > 0) {
-                $('#sportCountBadge').text(`${sports.length} môn thi đấu`);
-                sports.forEach(s => {
-                    const isAct = s.id === selectedId;
-                    html += `
-                        <button type="button" class="sport-pill-item ${isAct ? 'active' : ''}" data-gmt-id="${s.id}" onclick="selectSport(${s.id})">
-                            <i class="bi bi-activity"></i>
-                            <span>${escapeHtml(s.ten)}</span>
-                            ${s.laMonDongDoi ? '<span class="badge rounded-pill bg-light text-secondary border px-1.5 py-0.5 ms-1" style="font-size:0.65rem;">Đồng đội</span>' : ''}
-                        </button>
-                    `;
-                });
-            } else {
-                $('#sportCountBadge').text('Chưa có môn thi đấu');
-            }
+            const options = ['<option value="">-- Chọn môn thi đấu --</option>'];
+            availableSports.forEach(sport => {
+                options.push(`<option value="${Number(sport.id)}">${escapeHtml(sport.ten)}</option>`);
+            });
 
-            $('#sportPillsContainer').html(html);
+            $('#sportSelect')
+                .html(options.join(''))
+                .val(selectedSportId > 0 ? String(selectedSportId) : '')
+                .prop('disabled', availableSports.length === 0);
+            $('#sportCountBadge').text(availableSports.length > 0
+                ? `${availableSports.length} môn thi đấu`
+                : 'Chưa có môn thi đấu');
         }
 
         function loadScheduleAndBrackets() {
+            if (currentGmtId <= 0) {
+                showNoSportSelected();
+                return;
+            }
+
             $('#mainLoadingState').removeClass('d-none');
             $('#mainEmptyState').addClass('d-none');
             $('#scheduleViewArea').addClass('d-none');
@@ -458,6 +890,10 @@
         }
 
         function handleFilterChange() {
+            if (currentGmtId <= 0) {
+                showNoSportSelected();
+                return;
+            }
             loadScheduleAndBrackets();
         }
 
@@ -468,8 +904,22 @@
             loadScheduleAndBrackets();
         }
 
+        function showNoSportSelected() {
+            allMatches = [];
+            allGroups = [];
+            $('#mainLoadingState').addClass('d-none');
+            $('#scheduleViewArea').addClass('d-none');
+            $('#bracketsViewArea').addClass('d-none');
+            showEmpty('Chưa chọn môn', 'Vui lòng chọn một môn thi đấu để xem lịch và bảng đấu.');
+        }
+
         // ==================== HIỂN THỊ LỊCH THI ĐẤU ====================
         function renderMatches() {
+            if (currentGmtId <= 0) {
+                showNoSportSelected();
+                return;
+            }
+
             if (!allMatches || allMatches.length === 0) {
                 showEmpty('Chưa có lịch thi đấu', 'Chưa có trận đấu nào được lên lịch cho môn/giải này.');
                 return;
@@ -478,43 +928,451 @@
             $('#mainEmptyState').addClass('d-none');
             $('#scheduleViewArea').removeClass('d-none');
 
-            // Nhóm trận đấu theo ngày
-            const grouped = {};
-            allMatches.forEach(m => {
-                const dateKey = m.thoiGianDuKien ? m.thoiGianDuKien.split('T')[0] : 'Chưa xếp ngày';
-                if (!grouped[dateKey]) grouped[dateKey] = [];
-                grouped[dateKey].push(m);
+            // Nhóm theo môn thi trong giải để không bao giờ nối nhánh giữa hai môn khác nhau.
+            const matchesBySport = new Map();
+            allMatches.forEach(match => {
+                const sportId = Number(match.giaiDauMonTheThaoId) || 0;
+                if (!matchesBySport.has(sportId)) matchesBySport.set(sportId, []);
+                matchesBySport.get(sportId).push(match);
             });
 
             let html = '';
-            for (const [dateStr, matches] of Object.entries(grouped)) {
-                const displayDate = dateStr !== 'Chưa xếp ngày' ? formatDisplayDate(dateStr) : 'Chưa xếp ngày thi đấu';
+            let boardIndex = 0;
+            for (const [sportId, sportMatches] of matchesBySport) {
+                const sport = currentSports.find(item => Number(item.id) === sportId);
+                const sportName = sport?.ten || sportMatches[0]?.tenMonTheThao || 'Môn thi đấu';
+                const groupStageMatches = sportMatches.filter(isGroupStageMatch);
+                const knockoutMatches = sportMatches.filter(match => !isGroupStageMatch(match));
+
+                if (groupStageMatches.length) {
+                    html += renderGroupStageBoard(sportName, groupStageMatches);
+                }
+
+                if (!knockoutMatches.length) continue;
+
+                const rounds = buildBracketRounds(knockoutMatches);
+                const qualifyingRounds = rounds.filter(round => round.rank < 70);
+                const finalRounds = rounds.filter(round => round.rank >= 70);
+                const qualifyingMatchCount = qualifyingRounds.reduce((total, round) => total + round.matches.length, 0);
+                const finalMatchCount = finalRounds.reduce((total, round) => total + round.matches.length, 0);
+                const matchById = new Map(knockoutMatches.map(match => [Number(match.id), match]));
+                const stageTabPrefix = `bracket-stage-${boardIndex}`;
+                const bracketTitle = groupStageMatches.length ? `${sportName} · Loại trực tiếp` : sportName;
 
                 html += `
-                    <div class="mb-4">
-                        <div class="date-section-header">
-                            <i class="bi bi-calendar-event text-primary"></i>
-                            <span>${displayDate}</span>
-                            <span class="badge rounded-pill bg-light text-secondary border fw-normal" style="font-size: 0.75rem;">${matches.length} trận</span>
+                    <section class="bracket-sport-section" aria-label="Nhánh loại trực tiếp môn ${escapeHtml(sportName)}">
+                        <h2 class="bracket-sport-heading">
+                            <i class="bi bi-diagram-3" aria-hidden="true"></i>
+                            <span>${escapeHtml(bracketTitle)}</span>
+                            <small>${knockoutMatches.length} trận · ${rounds.length} vòng</small>
+                        </h2>
+                        <div class="bracket-stage-tabs" role="tablist" aria-label="Giai đoạn ${escapeHtml(sportName)}">
+                            <button type="button" class="bracket-stage-tab active" id="${stageTabPrefix}-qualifying-tab"
+                                    role="tab" aria-controls="${stageTabPrefix}-qualifying-panel" aria-selected="true"
+                                    onclick="switchBracketStage(this)">
+                                Vòng loại <span class="bracket-stage-tab-count">${qualifyingMatchCount} trận</span>
+                            </button>
+                            <button type="button" class="bracket-stage-tab" id="${stageTabPrefix}-finals-tab"
+                                    role="tab" aria-controls="${stageTabPrefix}-finals-panel" aria-selected="false"
+                                    onclick="switchBracketStage(this)">
+                                Tứ kết trở đi <span class="bracket-stage-tab-count">${finalMatchCount} trận</span>
+                            </button>
                         </div>
-                        <div class="row g-3">
+                        <div class="bracket-stage-panel" id="${stageTabPrefix}-qualifying-panel" role="tabpanel" aria-labelledby="${stageTabPrefix}-qualifying-tab">
+                            ${renderQualifyingRounds(qualifyingRounds)}
+                        </div>
+                        <div class="bracket-stage-panel" id="${stageTabPrefix}-finals-panel" role="tabpanel" aria-labelledby="${stageTabPrefix}-finals-tab" hidden>
+                            ${renderFinalBracket(finalRounds, matchById, boardIndex)}
+                        </div>
+                    </section>
+                `;
+                boardIndex++;
+            }
+
+            $('#matchesListContainer').html(html);
+            requestAnimationFrame(() => requestAnimationFrame(drawBracketConnections));
+            observeBracketBoards();
+        }
+
+        function renderQualifyingRounds(rounds) {
+            if (!rounds.length) {
+                return '<div class="bracket-stage-empty">Chưa có trận đấu trước tứ kết cho môn này.</div>';
+            }
+
+            return `
+                <div class="qualifying-round-list">
+                    ${rounds.map((round, roundIndex) => {
+                        const visibleMatchCount = Math.min(2, round.matches.length);
+                        const hiddenMatchCount = round.matches.length - visibleMatchCount;
+                        return `
+                            <details class="qualifying-round" ${roundIndex === 0 ? 'open' : ''}>
+                                <summary class="qualifying-round-summary">
+                                    <span class="qualifying-round-name">${escapeHtml(round.name)}</span>
+                                    <span class="qualifying-round-count">${round.matches.length} trận</span>
+                                </summary>
+                                <div class="qualifying-round-body">
+                                    <div class="qualifying-round-matches">
+                                        ${round.matches.map((match, matchIndex) => {
+                                            const dateLabel = match.thoiGianDuKien
+                                                ? formatDisplayDate(match.thoiGianDuKien.split('T')[0])
+                                                : 'Chưa xếp ngày';
+                                            return `
+                                                <article class="qualifying-round-match ${matchIndex >= visibleMatchCount ? 'd-none qualifying-round-match-extra' : ''}">
+                                                    <div class="qualifying-round-date"><i class="bi bi-calendar-event" aria-hidden="true"></i>${escapeHtml(dateLabel)}</div>
+                                                    ${renderMatchCard(match)}
+                                                </article>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                    ${hiddenMatchCount > 0 ? `
+                                        <button type="button" class="qualifying-show-more" aria-expanded="false"
+                                                onclick="toggleQualifyingMatches(this)">
+                                            <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                                            Xem ${hiddenMatchCount} trận còn lại
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </details>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function renderFinalBracket(rounds, matchById, boardIndex) {
+            if (!rounds.length) {
+                return '<div class="bracket-stage-empty">Chưa có trận đấu từ tứ kết trở đi cho môn này.</div>';
+            }
+
+            const minBoardWidth = Math.max(300 * rounds.length + 20 * (rounds.length - 1), 0);
+            const columns = `repeat(${rounds.length}, minmax(270px, 1fr))`;
+            let html = `
+                <div class="bracket-board-scroll">
+                    <div class="bracket-board" data-bracket-board="${boardIndex}" style="grid-template-columns:${columns};min-width:max(100%, ${minBoardWidth}px)">
+                        <svg class="bracket-connections" aria-hidden="true" focusable="false"></svg>
+            `;
+
+            rounds.forEach((round, roundIndex) => {
+                const offset = Math.min(roundIndex * 42, 126);
+                html += `
+                    <section class="bracket-round" aria-label="${escapeHtml(round.name)}" style="margin-top:${offset}px">
+                        <h3 class="bracket-round-heading">
+                            <span class="bracket-round-index">${roundIndex + 1}</span>
+                            <span>${escapeHtml(round.name)}</span>
+                            <span class="bracket-round-count">${round.matches.length} trận</span>
+                        </h3>
+                        <div class="bracket-round-matches">
                 `;
 
-                matches.forEach(m => {
+                round.matches.forEach(match => {
+                    const dateLabel = match.thoiGianDuKien
+                        ? formatDisplayDate(match.thoiGianDuKien.split('T')[0])
+                        : 'Chưa xếp ngày';
+                    const winnerNext = Number(match.nextTranDauId) || 0;
+                    const loserNext = Number(match.loserNextTranDauId) || 0;
+                    const winnerTarget = matchById.get(winnerNext);
+                    const loserTarget = matchById.get(loserNext);
+                    const outcomeLabels = [];
+
+                    if (winnerNext) {
+                        const targetName = winnerTarget
+                            ? `${winnerTarget.tenVongDau || 'Vòng sau'}${winnerTarget.soTran ? ` · Trận #${winnerTarget.soTran}` : ''}`
+                            : `Trận #${winnerNext}`;
+                        outcomeLabels.push(`<span class="bracket-outcome"><i class="bi bi-arrow-up-right" aria-hidden="true"></i> Thắng → ${escapeHtml(targetName)}</span>`);
+                    }
+                    if (loserNext) {
+                        const targetName = loserTarget
+                            ? `${loserTarget.tenVongDau || 'Vòng xếp hạng'}${loserTarget.soTran ? ` · Trận #${loserTarget.soTran}` : ''}`
+                            : `Trận #${loserNext}`;
+                        outcomeLabels.push(`<span class="bracket-outcome bracket-outcome-loser"><i class="bi bi-arrow-down-right" aria-hidden="true"></i> Thua → ${escapeHtml(targetName)}</span>`);
+                    }
+
                     html += `
-                        <div class="col-lg-6">
-                            ${renderMatchCard(m)}
-                        </div>
+                        <article class="bracket-round-match"
+                            data-match-id="${Number(match.id) || 0}"
+                            data-winner-next="${winnerNext}"
+                            data-loser-next="${loserNext}">
+                            <div class="bracket-round-date"><i class="bi bi-calendar-event" aria-hidden="true"></i>${escapeHtml(dateLabel)}</div>
+                            ${renderMatchCard(match)}
+                            ${outcomeLabels.length ? `<div class="bracket-outcomes">${outcomeLabels.join('')}</div>` : ''}
+                        </article>
                     `;
                 });
 
                 html += `
                         </div>
-                    </div>
+                    </section>
                 `;
+            });
+
+            return `${html}</div></div>`;
+        }
+
+        function switchBracketStage(tab) {
+            const section = tab.closest('.bracket-sport-section');
+            if (!section) return;
+
+            section.querySelectorAll('[role="tab"]').forEach(stageTab => {
+                const isSelected = stageTab === tab;
+                stageTab.classList.toggle('active', isSelected);
+                stageTab.setAttribute('aria-selected', String(isSelected));
+            });
+
+            section.querySelectorAll('[role="tabpanel"]').forEach(panel => {
+                panel.hidden = panel.id !== tab.getAttribute('aria-controls');
+            });
+
+            requestAnimationFrame(() => requestAnimationFrame(drawBracketConnections));
+        }
+
+        function toggleQualifyingMatches(button) {
+            const round = button.closest('.qualifying-round');
+            if (!round) return;
+
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+            const extraMatches = round.querySelectorAll('.qualifying-round-match-extra');
+            extraMatches.forEach(match => match.classList.toggle('d-none', isExpanded));
+            button.setAttribute('aria-expanded', String(!isExpanded));
+            button.innerHTML = isExpanded
+                ? `<i class="bi bi-chevron-down" aria-hidden="true"></i> Xem ${extraMatches.length} trận còn lại`
+                : '<i class="bi bi-chevron-up" aria-hidden="true"></i> Thu gọn vòng này';
+        }
+
+        function isGroupStageMatch(match) {
+            const roundName = normalizeRoundName(match.tenVongDau || '');
+            return Number(match.bangDauId) > 0 ||
+                Boolean((match.tenBangDau || '').trim()) ||
+                roundName.includes('vong bang') ||
+                /\bbang\s+([a-z]|\d+)\b/.test(roundName);
+        }
+
+        function renderGroupStageBoard(sportName, matches) {
+            const groups = new Map();
+            matches.forEach(match => {
+                const groupName = getPoolName(match);
+                const groupId = Number(match.bangDauId) || 0;
+                const groupKey = groupId > 0 ? `id:${groupId}` : `name:${normalizeRoundName(groupName)}`;
+                if (!groups.has(groupKey)) groups.set(groupKey, { name: groupName, matches: [] });
+                groups.get(groupKey).matches.push(match);
+            });
+
+            const groupCards = Array.from(groups.values())
+                .sort((left, right) => left.name.localeCompare(right.name, 'vi'))
+                .map(group => {
+                    const rounds = new Map();
+                    group.matches.forEach(match => {
+                        const roundLabel = getPoolRoundLabel(match);
+                        if (!rounds.has(roundLabel)) rounds.set(roundLabel, []);
+                        rounds.get(roundLabel).push(match);
+                    });
+
+                    const orderedRounds = Array.from(rounds.entries()).sort(([leftLabel, leftMatches], [rightLabel, rightMatches]) => {
+                        const leftOrder = Number(leftLabel.match(/\d+/)?.[0]) || Number.MAX_SAFE_INTEGER;
+                        const rightOrder = Number(rightLabel.match(/\d+/)?.[0]) || Number.MAX_SAFE_INTEGER;
+                        if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+                        const leftDate = leftMatches.find(match => match.thoiGianDuKien)?.thoiGianDuKien || '';
+                        const rightDate = rightMatches.find(match => match.thoiGianDuKien)?.thoiGianDuKien || '';
+                        return leftDate.localeCompare(rightDate);
+                    });
+
+                    const roundMarkup = orderedRounds.map(([roundLabel, roundMatches]) => `
+                        <section class="pool-round" aria-label="${escapeHtml(group.name)} · ${escapeHtml(roundLabel)}">
+                            <h4 class="pool-round-heading">
+                                <span>${escapeHtml(roundLabel)}</span>
+                                <small>${roundMatches.length} trận</small>
+                            </h4>
+                            <div class="pool-round-matches">
+                                ${roundMatches.map(match => {
+                                    const dateLabel = match.thoiGianDuKien
+                                        ? formatDisplayDate(match.thoiGianDuKien.split('T')[0])
+                                        : 'Chưa xếp ngày';
+                                    return `
+                                        <article class="pool-match">
+                                            <div class="pool-match-date"><i class="bi bi-calendar-event" aria-hidden="true"></i>${escapeHtml(dateLabel)}</div>
+                                            ${renderMatchCard(match)}
+                                        </article>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </section>
+                    `).join('');
+
+                    return `
+                        <article class="pool-card">
+                            <header class="pool-card-heading">
+                                <span class="pool-card-mark"><i class="bi bi-grid-1x2" aria-hidden="true"></i></span>
+                                <strong>${escapeHtml(group.name)}</strong>
+                                <small>${group.matches.length} trận</small>
+                            </header>
+                            <div class="pool-card-body">${roundMarkup}</div>
+                        </article>
+                    `;
+                }).join('');
+
+            return `
+                <section class="group-stage-section" aria-label="Vòng bảng môn ${escapeHtml(sportName)}">
+                    <header class="group-stage-heading">
+                        <div class="group-stage-heading-icon"><i class="bi bi-grid-3x3-gap" aria-hidden="true"></i></div>
+                        <div class="group-stage-heading-copy">
+                            <h2>${escapeHtml(sportName)} · Vòng bảng</h2>
+                            <p>Các trận được nhóm theo bảng đấu và lượt</p>
+                        </div>
+                        <small>${matches.length} trận · ${groups.size} bảng</small>
+                    </header>
+                    <div class="group-stage-grid">${groupCards}</div>
+                </section>
+            `;
+        }
+
+        function getPoolName(match) {
+            const explicitName = (match.tenBangDau || '').trim();
+            if (explicitName) return explicitName;
+
+            const roundName = (match.tenVongDau || '').trim();
+            const matchFromRound = roundName.match(/bảng\s+(.+?)(?:\s*[-–]\s*lượt|\s+lượt|$)/i);
+            return matchFromRound ? `Bảng ${matchFromRound[1].trim()}` : 'Vòng bảng';
+        }
+
+        function getPoolRoundLabel(match) {
+            const roundName = (match.tenVongDau || '').trim();
+            const roundNumber = roundName.match(/lượt\s*(\d+)/i);
+            if (roundNumber) return `Lượt ${roundNumber[1]}`;
+            return roundName || 'Các trận trong bảng';
+        }
+
+        function buildBracketRounds(matches) {
+            const groupedRounds = new Map();
+            matches.forEach(match => {
+                const roundName = (match.tenVongDau || '').trim();
+                const roundId = Number(match.vongDauId) || 0;
+                const key = roundId > 0 ? `id:${roundId}` : `name:${normalizeRoundName(roundName) || 'chua-phan-vong'}`;
+                if (!groupedRounds.has(key)) {
+                    groupedRounds.set(key, {
+                        name: roundName || (roundId > 0 ? `Vòng ${roundId}` : 'Chưa phân vòng'),
+                        orderId: roundId,
+                        rank: getBracketRoundRank(roundName),
+                        matches: []
+                    });
+                }
+                groupedRounds.get(key).matches.push(match);
+            });
+
+            let rounds = Array.from(groupedRounds.values());
+
+            // Chung kết và tranh hạng ba là hai nhánh song song của cùng giai đoạn cuối.
+            const finalRounds = rounds.filter(round => round.rank >= 100);
+            if (finalRounds.length > 1) {
+                rounds = rounds.filter(round => round.rank < 100);
+                rounds.push({
+                    name: 'Chung kết & tranh hạng',
+                    orderId: Math.max(...finalRounds.map(round => round.orderId)),
+                    rank: 100,
+                    matches: finalRounds.flatMap(round => round.matches)
+                });
             }
 
-            $('#matchesListContainer').html(html);
+            rounds.forEach(round => {
+                round.matches.sort((left, right) => {
+                    const timeCompare = new Date(left.thoiGianDuKien || 0) - new Date(right.thoiGianDuKien || 0);
+                    return timeCompare || (Number(left.soTran) || Number(left.id)) - (Number(right.soTran) || Number(right.id));
+                });
+            });
+
+            return rounds.sort((left, right) => {
+                if (left.rank !== right.rank) return left.rank - right.rank;
+                const leftTime = left.matches.find(match => match.thoiGianDuKien)?.thoiGianDuKien || '';
+                const rightTime = right.matches.find(match => match.thoiGianDuKien)?.thoiGianDuKien || '';
+                if (leftTime && rightTime && leftTime !== rightTime) return leftTime.localeCompare(rightTime);
+                return left.orderId - right.orderId;
+            });
+        }
+
+        function normalizeRoundName(value) {
+            return (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        function getBracketRoundRank(roundName) {
+            const name = normalizeRoundName(roundName);
+            if (name.includes('chung ket') || name.includes('tranh hang')) return 100;
+            if (name.includes('ban ket') || /1\s*\/\s*2\b/.test(name)) return 80;
+            if (name.includes('tu ket') || /1\s*\/\s*4\b/.test(name)) return 70;
+            const roundOfMatch = name.match(/1\s*\/\s*(\d+)/);
+            if (roundOfMatch) {
+                const participants = Number(roundOfMatch[1]);
+                const rankByParticipants = { 8: 60, 16: 50, 32: 40, 64: 30, 128: 20, 256: 15 };
+                if (rankByParticipants[participants]) return rankByParticipants[participants];
+            }
+            if (name.includes('vong bang')) return 10;
+            if (name.includes('so loai')) return 20;
+            const qualifyingRound = name.match(/(?:vong loai|so loai)\s*(\d+)/);
+            if (qualifyingRound) return 20 + Number(qualifyingRound[1]);
+            if (name.includes('vong loai')) return 25;
+            const numberedRound = name.match(/vong\s*(?:thu\s*)?(\d+)/);
+            if (numberedRound) return 30 + Number(numberedRound[1]);
+            return 40;
+        }
+
+        function drawBracketConnections() {
+            document.querySelectorAll('.bracket-board').forEach((board, boardIndex) => {
+                const svg = board.querySelector('.bracket-connections');
+                const boardRect = board.getBoundingClientRect();
+                const width = Math.max(board.scrollWidth, boardRect.width);
+                const height = Math.max(board.scrollHeight, boardRect.height);
+                svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+                svg.setAttribute('width', width);
+                svg.setAttribute('height', height);
+
+                const winnerMarker = `bracket-winner-arrow-${boardIndex}`;
+                const loserMarker = `bracket-loser-arrow-${boardIndex}`;
+                svg.innerHTML = `
+                    <defs>
+                        <marker id="${winnerMarker}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+                            <path d="M0,0 L8,4 L0,8 Z" fill="#0284c7"></path>
+                        </marker>
+                        <marker id="${loserMarker}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+                            <path d="M0,0 L8,4 L0,8 Z" fill="#ea580c"></path>
+                        </marker>
+                    </defs>
+                `;
+
+                const matchElements = Array.from(board.querySelectorAll('.bracket-round-match[data-match-id]'));
+                const matchesById = new Map(matchElements.map(element => [Number(element.dataset.matchId), element]));
+                matchElements.forEach(source => {
+                    [
+                        { id: Number(source.dataset.winnerNext), kind: 'winner', marker: winnerMarker },
+                        { id: Number(source.dataset.loserNext), kind: 'loser', marker: loserMarker }
+                    ].forEach(connection => {
+                        if (!connection.id || connection.id === Number(source.dataset.matchId)) return;
+                        const target = matchesById.get(connection.id);
+                        if (!target) return;
+
+                        const sourceRect = source.getBoundingClientRect();
+                        const targetRect = target.getBoundingClientRect();
+                        const x1 = sourceRect.right - boardRect.left;
+                        const y1 = sourceRect.top + sourceRect.height / 2 - boardRect.top;
+                        const x2 = targetRect.left - boardRect.left;
+                        const y2 = targetRect.top + targetRect.height / 2 - boardRect.top;
+                        const bend = x1 + Math.max(18, (x2 - x1) / 2);
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('class', `bracket-connection bracket-connection-${connection.kind}`);
+                        path.setAttribute('d', `M ${x1} ${y1} C ${bend} ${y1}, ${bend} ${y2}, ${x2 - 5} ${y2}`);
+                        path.setAttribute('marker-end', `url(#${connection.marker})`);
+                        svg.appendChild(path);
+                    });
+                });
+            });
+        }
+
+        let bracketBoardObserver;
+        function observeBracketBoards() {
+            if (!window.ResizeObserver) {
+                window.addEventListener('resize', drawBracketConnections, { passive: true });
+                return;
+            }
+
+            if (bracketBoardObserver) bracketBoardObserver.disconnect();
+            bracketBoardObserver = new ResizeObserver(() => requestAnimationFrame(drawBracketConnections));
+            document.querySelectorAll('.bracket-board-scroll').forEach(container => bracketBoardObserver.observe(container));
         }
 
         function renderMatchCard(m) {
@@ -626,6 +1484,11 @@
 
         // ==================== HIỂN THỊ BẢNG ĐẤU ====================
         function renderGroups() {
+            if (currentGmtId <= 0) {
+                showNoSportSelected();
+                return;
+            }
+
             if (!allGroups || allGroups.length === 0) {
                 showEmpty('Chưa có bảng đấu', 'Chưa có bảng đấu hoặc sơ đồ thi đấu nào được thiết lập cho môn/giải này.');
                 return;
