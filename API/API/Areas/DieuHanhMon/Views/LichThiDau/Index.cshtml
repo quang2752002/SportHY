@@ -2,15 +2,27 @@
 @{
     ViewData["Title"] = "Lịch Thi Đấu & Tiến Độ Môn";
     var sportList = ViewBag.SportList as List<MonTheThao> ?? new();
+    var scheduleTargets = ViewBag.ScheduleTargets as List<Dms.Application.DTOs.CoordinatorEventDto> ?? new();
+    var currentAssignment = ViewBag.CurrentAssignment as Dms.Application.DTOs.CoordinatorAssignmentDto;
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-        <h4 class="fw-bold mb-1 text-dark">
-            <i class="fa-solid fa-calendar-check text-teal me-2" style="color: #0d9488;"></i> Lịch Thi Đấu & Tiến Độ Môn
+        <h4 class="fw-bold mb-1 text-dark dh-page-heading">
+            <i class="fa-solid fa-calendar-check text-primary me-2"></i> Lịch thi đấu & tiến độ
         </h4>
-        <p class="text-muted small mb-0">Theo dõi toàn diện lịch trình, sân bãi và tiến độ tổ chức các trận đấu thuộc môn phụ trách</p>
+        <p class="text-muted small mb-0 dh-page-subtitle">Theo dõi lịch, sân, trọng tài và trạng thái trận thuộc môn được phân công. Có thể lập lịch cho trận chưa xếp hoặc chỉnh lịch trận chưa bắt đầu.</p>
+        @if (currentAssignment != null)
+        {
+            <span class="badge bg-primary bg-opacity-10 text-primary mt-2"><i class="fa-solid fa-trophy me-1"></i>@currentAssignment.TenGiaiDau · @currentAssignment.TenDanhMuc</span>
+        }
     </div>
+    @if (scheduleTargets.Count > 0)
+    {
+        <button type="button" class="btn btn-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#planScheduleModal">
+            <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Lập lịch các trận chưa xếp
+        </button>
+    }
 </div>
 
 <!-- Bộ lọc -->
@@ -20,6 +32,7 @@
         <input type="hidden" name="danhMucId" value="@ViewBag.SelectedDanhMucId" />
 
         <div class="col-md-3">
+            <label class="form-label small fw-semibold">Môn thể thao</label>
             <select name="monTheThaoId" class="form-select">
                 <option value="">-- Tất cả môn con --</option>
                 @foreach (var sp in sportList)
@@ -30,10 +43,12 @@
         </div>
 
         <div class="col-md-3">
+            <label class="form-label small fw-semibold">Ngày thi đấu</label>
             <input type="date" name="date" value="@ViewBag.SelectedDate" class="form-control" />
         </div>
 
         <div class="col-md-3">
+            <label class="form-label small fw-semibold">Trạng thái trận</label>
             <select name="status" class="form-select">
                 <option value="">-- Trạng thái trận đấu --</option>
                 <option value="ChuaDau" selected="@(ViewBag.SelectedStatus == "ChuaDau")">Chưa đấu</option>
@@ -43,10 +58,10 @@
         </div>
 
         <div class="col-md-3 d-flex gap-2">
-            <button type="submit" class="btn btn-primary flex-fill fw-semibold" style="background-color: #0d9488; border-color: #0d9488;">
+            <button type="submit" class="btn btn-primary flex-fill fw-semibold">
                 <i class="fa-solid fa-filter me-1"></i> Lọc
             </button>
-            <a href="/DieuHanhMon/LichThiDau" class="btn btn-light border"><i class="fa-solid fa-rotate-left"></i></a>
+            <a href="/DieuHanhMon/LichThiDau?giaiDauId=@ViewBag.SelectedGiaiDauId&danhMucId=@ViewBag.SelectedDanhMucId" class="btn btn-light border"><i class="fa-solid fa-rotate-left"></i></a>
         </div>
     </form>
 </div>
@@ -64,7 +79,7 @@
                     <th>Trọng Tài Chính</th>
                     <th>Trọng Tài Bàn</th>
                     <th>Trạng Thái</th>
-                    <th class="text-end" style="width: 160px;">Cập Nhật Tiến Độ</th>
+                    <th class="text-end" style="width: 230px;">Lịch & Tiến Độ</th>
                 </tr>
             </thead>
             <tbody>
@@ -134,19 +149,25 @@
                                 <div class="btn-group btn-group-sm">
                                     @if (item.TrangThai == "ChuaDau" || string.IsNullOrEmpty(item.TrangThai))
                                     {
-                                        <button class="btn btn-outline-danger" onclick="updateMatchStatus(@item.TranDauId, 'DangDau')" title="Bắt đầu thi đấu">
+                                    @if (!item.IsLichCoDinh)
+                                        {
+                                            <button class="btn btn-outline-primary" onclick="openScheduleEditor(@item.TranDauId, @item.GiaiDauMonTheThaoId, '@(item.ThoiGianDuKien?.ToString("yyyy-MM-dd") ?? "")', '@(item.ThoiGianDuKien?.ToString("HH:mm") ?? "")', @(item.SanDauId?.ToString() ?? "null"))" title="Sửa giờ và sân">
+                                                <i class="fa-solid fa-calendar-pen"></i>
+                                            </button>
+                                        }
+                                        <button class="btn btn-primary" onclick="updateMatchStatus(@item.TranDauId, 'DangDau')" title="Bắt đầu thi đấu">
                                             <i class="fa-solid fa-play"></i> Bắt đầu
                                         </button>
                                     }
                                     else if (item.TrangThai == "DangDau")
                                     {
-                                        <button class="btn btn-outline-success" onclick="updateMatchStatus(@item.TranDauId, 'KetThuc')" title="Kết thúc trận">
+                                        <button class="btn btn-outline-primary" onclick="updateMatchStatus(@item.TranDauId, 'KetThuc')" title="Kết thúc trận">
                                             <i class="fa-solid fa-flag-checkered"></i> Kết thúc
                                         </button>
                                     }
                                     else
                                     {
-                                        <a href="/DieuHanhMon/KetQua" class="btn btn-light border" title="Xem kết quả">
+                                        <a href="/DieuHanhMon/KetQua?giaiDauId=@ViewBag.SelectedGiaiDauId&danhMucId=@ViewBag.SelectedDanhMucId" class="btn btn-light border" title="Xem kết quả">
                                             <i class="fa-solid fa-file-invoice"></i> Kết quả
                                         </a>
                                     }
@@ -158,8 +179,8 @@
                 else
                 {
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
-                            <i class="fa-regular fa-calendar-xmark fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                        <td colspan="8" class="dh-empty-state">
+                            <i class="fa-regular fa-calendar-xmark"></i>
                             Không có trận đấu nào theo điều kiện lọc.
                         </td>
                     </tr>
@@ -169,8 +190,156 @@
     </div>
 </div>
 
+@if (scheduleTargets.Count > 0)
+{
+    <div class="modal fade" id="planScheduleModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header dh-modal-header">
+                    <h5 class="modal-title"><i class="fa-solid fa-calendar-plus me-2"></i>Lập lịch cho các trận chưa xếp</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">Chỉ lập lịch cho trận chưa đấu, chưa có giờ và chưa khóa lịch. Trận đã xếp, đang đấu hoặc đã kết thúc sẽ được giữ nguyên. Hệ thống kiểm tra trùng sân, đội/VĐV và trọng tài.</p>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Môn thi đấu</label>
+                            <select id="planEventId" class="form-select" onchange="loadCourts(this.value, '#planCourtIds')">
+                                @foreach (var target in scheduleTargets)
+                                {
+                                    <option value="@target.Id">@target.TenMon — @target.Ten (@target.SoTranDau trận)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Từ ngày</label><input id="planStartDate" type="date" class="form-control" /></div>
+                        <div class="col-md-6"><label class="form-label">Đến ngày</label><input id="planEndDate" type="date" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Giờ bắt đầu</label><input id="planStartTime" type="time" value="08:00" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Giờ kết thúc</label><input id="planEndTime" type="time" value="17:00" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Phút mỗi trận</label><input id="planDuration" type="number" min="5" max="600" value="60" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Nghỉ giữa trận</label><input id="planBreak" type="number" min="0" max="300" value="15" class="form-control" /></div>
+                        <div class="col-12"><label class="form-label fw-semibold">Sân sử dụng <span class="text-muted fw-normal">(giữ Ctrl để chọn nhiều sân; không chọn sẽ dùng tất cả sân phù hợp)</span></label><select id="planCourtIds" class="form-select" multiple size="5"></select></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary" onclick="planSchedule()"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>Lập lịch</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="editScheduleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header dh-modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-calendar-pen me-2"></i>Điều chỉnh lịch trận</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input id="editMatchId" type="hidden" />
+                <input id="editEventId" type="hidden" />
+                <div class="mb-3"><label class="form-label">Ngày thi đấu</label><input id="editScheduleDate" type="date" class="form-control" /></div>
+                <div class="mb-3"><label class="form-label">Giờ bắt đầu</label><input id="editScheduleTime" type="time" class="form-control" /></div>
+                <div class="mb-3"><label class="form-label">Sân thi đấu</label><select id="editCourtId" class="form-select"></select></div>
+                <small class="text-muted">Lưu sẽ kiểm tra trùng lịch; chỉ trận chưa đấu và chưa khóa mới được điều chỉnh.</small>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-outline-danger" onclick="clearMatchSchedule()"><i class="fa-solid fa-calendar-xmark me-1"></i>Bỏ lịch</button>
+                <div class="d-flex gap-2"><button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button><button type="button" class="btn btn-primary" onclick="saveMatchSchedule()">Lưu lịch</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
+        function localDateString(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        $('#planScheduleModal').on('show.bs.modal', function () {
+            const today = new Date();
+            const nextWeek = new Date();
+            nextWeek.setDate(today.getDate() + 7);
+            $('#planStartDate').val(localDateString(today));
+            $('#planEndDate').val(localDateString(nextWeek));
+            if ($('#planEventId').val()) loadCourts($('#planEventId').val(), '#planCourtIds');
+        });
+
+        async function loadCourts(eventId, selector, selectedId) {
+            const response = await fetch('/DieuHanhMon/LichThiDau/AvailableCourts?giaiDauMonTheThaoId=' + encodeURIComponent(eventId));
+            const courts = await response.json();
+            const select = $(selector).empty();
+            courts.forEach(court => {
+                const label = court.tenCumSan ? `${court.ten} — ${court.tenCumSan}` : court.ten;
+                const option = new Option(label, court.id, false, selector === '#planCourtIds' || String(court.id) === String(selectedId));
+                select.append(option);
+            });
+            if (selector === '#editCourtId' && courts.length === 0) select.append(new Option('Không có sân phù hợp', '', true, true));
+        }
+
+        async function planSchedule() {
+            const selectedCourts = $('#planCourtIds').val() || [];
+            const payload = {
+                giaiDauMonTheThaoId: Number($('#planEventId').val()),
+                ngayBatDau: $('#planStartDate').val(),
+                ngayKetThuc: $('#planEndDate').val(),
+                gioBatDau: $('#planStartTime').val(),
+                gioKetThuc: $('#planEndTime').val(),
+                thoiLuongTranPhut: Number($('#planDuration').val()),
+                nghiGiuaTranPhut: Number($('#planBreak').val()),
+                sanDauIds: selectedCourts.map(Number)
+            };
+            const response = await fetch('/DieuHanhMon/LichThiDau/PlanSchedule', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (!result.success) {
+                const warnings = (result.canhBao || []).join('\n');
+                Swal.fire({ icon: 'warning', title: 'Chưa lập được lịch', text: result.message + (warnings ? '\n' + warnings : '') });
+                return;
+            }
+            const preserveText = result.soTranDuocGiuLich ? ` Đã giữ nguyên ${result.soTranDuocGiuLich} trận có lịch/trạng thái trước đó.` : '';
+            Swal.fire({ icon: 'success', title: 'Đã lập lịch', text: result.message + preserveText }).then(() => location.reload());
+        }
+
+        async function openScheduleEditor(matchId, eventId, date, time, courtId) {
+            $('#editMatchId').val(matchId);
+            $('#editEventId').val(eventId);
+            $('#editScheduleDate').val(date);
+            $('#editScheduleTime').val(time);
+            await loadCourts(eventId, '#editCourtId', courtId);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editScheduleModal')).show();
+        }
+
+        async function postSchedule(payload) {
+            const response = await fetch('/DieuHanhMon/LichThiDau/UpdateSchedule', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            return await response.json();
+        }
+
+        async function saveMatchSchedule() {
+            const date = $('#editScheduleDate').val();
+            const time = $('#editScheduleTime').val();
+            if (!date || !time) { Swal.fire('Thiếu thông tin', 'Hãy chọn cả ngày và giờ thi đấu.', 'warning'); return; }
+            const result = await postSchedule({
+                tranDauId: Number($('#editMatchId').val()),
+                thoiGianDuKien: `${date}T${time}:00`,
+                sanDauId: $('#editCourtId').val() ? Number($('#editCourtId').val()) : null
+            });
+            if (result.success) location.reload(); else Swal.fire('Không thể lưu lịch', result.message, 'error');
+        }
+
+        async function clearMatchSchedule() {
+            const result = await postSchedule({ tranDauId: Number($('#editMatchId').val()), thoiGianDuKien: null, sanDauId: null });
+            if (result.success) location.reload(); else Swal.fire('Không thể bỏ lịch', result.message, 'error');
+        }
+
         function updateMatchStatus(tranId, newStatus) {
             Swal.fire({
                 title: 'Xác nhận cập nhật tiến độ?',

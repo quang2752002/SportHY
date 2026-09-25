@@ -1954,6 +1954,73 @@ namespace Dms.Infrastructure.Migrations
                     b.ToTable("ThuKy");
                 });
 
+            modelBuilder.Entity("Dms.Domain.Entities.SuCoDieuHanhMon", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<DateTime?>("Created")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("GiaiDauMonTheThaoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GhiChuXuLy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MucDo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("MoTa")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NguoiPhuTrach")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime?>("ThoiGianGiaiQuyet")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TieuDe")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TrangThai")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int?>("TranDauId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TranDauId");
+
+                    b.HasIndex("GiaiDauMonTheThaoId", "TrangThai");
+
+                    b.ToTable("SuCoDieuHanhMon");
+                });
+
             modelBuilder.Entity("Dms.Domain.Entities.TranDau", b =>
                 {
                     b.Property<int>("Id")
@@ -2004,6 +2071,10 @@ namespace Dms.Infrastructure.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("GhiChuDuyetKetQua")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<int?>("LoserNextTranDauId")
                         .HasColumnType("int");
 
@@ -2030,6 +2101,10 @@ namespace Dms.Infrastructure.Migrations
                     b.Property<int>("SoTran")
                         .HasColumnType("int");
 
+                    b.Property<string>("NguoiDuyetKetQua")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.Property<string>("TenTran")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
@@ -2043,7 +2118,15 @@ namespace Dms.Infrastructure.Migrations
                     b.Property<DateTime?>("ThoiGianKetThuc")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("ThoiGianDuyetKetQua")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("TrangThai")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("TrangThaiDuyetKetQua")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
@@ -2828,6 +2911,24 @@ namespace Dms.Infrastructure.Migrations
                     b.Navigation("Doi");
 
                     b.Navigation("VanDongVien");
+                });
+
+            modelBuilder.Entity("Dms.Domain.Entities.SuCoDieuHanhMon", b =>
+                {
+                    b.HasOne("Dms.Domain.Entities.GiaiDauMonTheThao", "GiaiDauMonTheThao")
+                        .WithMany()
+                        .HasForeignKey("GiaiDauMonTheThaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Dms.Domain.Entities.TranDau", "TranDau")
+                        .WithMany()
+                        .HasForeignKey("TranDauId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("GiaiDauMonTheThao");
+
+                    b.Navigation("TranDau");
                 });
 
             modelBuilder.Entity("Dms.Domain.Entities.TranDau", b =>

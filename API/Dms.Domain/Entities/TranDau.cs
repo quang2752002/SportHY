@@ -40,6 +40,17 @@ namespace Dms.Domain.Entities
         [MaxLength(30)]
         public string TrangThai { get; set; } = "ChuaDau";
 
+        [MaxLength(30)]
+        public string TrangThaiDuyetKetQua { get; set; } = "ChoDuyet";
+
+        public DateTime? ThoiGianDuyetKetQua { get; set; }
+
+        [MaxLength(256)]
+        public string? NguoiDuyetKetQua { get; set; }
+
+        [MaxLength(1000)]
+        public string? GhiChuDuyetKetQua { get; set; }
+
         [Column(TypeName = "nvarchar(max)")]
         public string? GhiChu { get; set; }
 
