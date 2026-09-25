@@ -89,6 +89,12 @@ namespace API.Areas.Manager.Controllers
 
             try
             {
+                if (dto == null)
+                {
+                    var errors = string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage + " " + e.Exception?.Message));
+                    return Json(new { success = false, message = "Dữ liệu không hợp lệ: " + errors });
+                }
+
                 if (id.HasValue && id.Value > 0)
                 {
                     var updated = await _tranDauService.UpdateAsync(id.Value, dto, username);
@@ -180,6 +186,22 @@ namespace API.Areas.Manager.Controllers
             {
                 var result = await _tranDauService.SaveManualPairingAsync(request, username);
                 return Json(new { success = true, message = "Đã lưu xếp cặp thi đấu thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AdvanceGroupStage([FromBody] AdvanceGroupStageRequestDto request)
+        {
+            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Manager";
+
+            try
+            {
+                var result = await _tranDauService.AdvanceGroupStageWinnersAsync(request.GiaiDauMonTheThaoId, request.ForceAdvance, username);
+                return Json(new { success = result.Success, message = result.Message, data = result });
             }
             catch (Exception ex)
             {

@@ -170,7 +170,8 @@ namespace Dms.Application.Services
             if (gdm != null && (isFinal || isBronze))
             {
                 var loaiHcs = (await _unitOfWork.LoaiHuyChuongs.FindAsync(l => l.IsDeleted != true))
-                    .GroupBy(l => l.Ma.ToUpper())
+                    .Where(l => !string.IsNullOrEmpty(l.Ma))
+                    .GroupBy(l => l.Ma!.ToUpper())
                     .ToDictionary(g => g.Key, g => g.First());
                 loaiHcs.TryGetValue("VANG", out var lhcVang);
                 loaiHcs.TryGetValue("BAC", out var lhcBac);

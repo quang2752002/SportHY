@@ -209,6 +209,16 @@ namespace Dms.Application.Interfaces
         /// <param name="username">Tài khoản người thực hiện thao tác</param>
         /// <returns>Đối tượng CompleteMatchResponseDto chứa trạng thái và thông báo kết quả cập nhật</returns>
         Task<CompleteMatchResponseDto> CompleteMatchResultAsync(CompleteMatchRequestDto request, string username);
+
+        /// <summary>
+        /// Tự động quét và chốt thứ hạng các đội từ Vòng Bảng (Top 1, Top 2, Top 3...) 
+        /// và điền vào các vị trí tương ứng trong các trận đấu Vòng Loại Trực Tiếp (Knockout: Tứ kết, Bán kết, Chung kết).
+        /// </summary>
+        /// <param name="giaiDauMonTheThaoId">Mã định danh môn thi đấu trong giải</param>
+        /// <param name="forceAdvance">Nếu true, ép buộc chốt theo BXH hiện tại ngay cả khi các bảng chưa đấu xong 100%</param>
+        /// <param name="username">Tài khoản người thực hiện thao tác</param>
+        /// <returns>Đối tượng AdvanceGroupStageResultDto chứa kết quả, thông báo và danh sách bảng chưa hoàn thành</returns>
+        Task<AdvanceGroupStageResultDto> AdvanceGroupStageWinnersAsync(int giaiDauMonTheThaoId, bool forceAdvance = false, string? username = null);
     }
 
     public interface IBangDauService
