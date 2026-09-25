@@ -75,6 +75,11 @@ namespace Dms.Domain.Entities
         [MaxLength(50)]
         public string? MaTranBracket { get; set; } // Ví dụ: "QF1", "QF2", "SF1", "SF2", "FINAL", "BRONZE"
 
+        [MaxLength(50)]
+        public string? MaTranHienThi { get; set; } // Ví dụ: "M01", "BD-01", "CK"
+
+        public bool IsLichCoDinh { get; set; } = false;
+
         public virtual ICollection<ThanhPhanTranDau> ThanhPhanTranDaus { get; set; } = new List<ThanhPhanTranDau>();
         public virtual ICollection<HiepDau> HiepDaus { get; set; } = new List<HiepDau>();
         public virtual ICollection<PhanCongTrongTai> PhanCongTrongTais { get; set; } = new List<PhanCongTrongTai>();

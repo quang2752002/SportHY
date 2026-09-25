@@ -40,13 +40,15 @@ namespace Dms.Domain.Entities
         public string CaChieuKetThuc { get; set; } = "17:30";
 
         [MaxLength(5)]
-        public string? CaToBatDau { get; set; }
+        public string? CaToBatDau { get; set; } = "18:00";
 
         [MaxLength(5)]
-        public string? CaToKetThuc { get; set; }
+        public string? CaToKetThuc { get; set; } = "21:30";
 
         // ④ SÂN ĐẤU & TRỌNG TÀI
         public int ThoiGianDemDonSanPhut { get; set; } = 15;
+        public int ThoiGianDemHiepPhuLuonLuuPhut { get; set; } = 30; // Đệm hiệp phụ / penalty cho vòng Knockout
+        public int SoNgayNghiSauVongBang { get; set; } = 1; // Số ngày nghỉ sau vòng bảng trước khi vào Knockout
         public int SoTranToiDaMoiTrongTaiMoiNgay { get; set; } = 4;
         public int NghiToiThieuTrongTaiPhut { get; set; } = 15;
 

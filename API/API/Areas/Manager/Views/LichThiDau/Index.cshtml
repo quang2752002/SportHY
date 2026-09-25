@@ -264,6 +264,9 @@
         <p class="text-muted small mb-0">Theo dõi trực quan layout các cặp đấu, quản lý sân bãi, thời gian và cập nhật tỷ số trận đấu.</p>
     </div>
     <div class="d-flex flex-wrap align-items-center gap-2">
+        <button type="button" class="btn btn-outline-success btn-sm shadow-sm fw-semibold" onclick="triggerAdvanceGroupStage()" title="Chốt thứ hạng vòng bảng và tự động điền các đội vào vòng Knockout">
+            <i class="fa-solid fa-forward-step me-1 text-success"></i> Chốt Vòng Bảng Vào Knockout
+        </button>
         <button type="button" class="btn btn-outline-warning btn-sm shadow-sm" onclick="openConflictModal()">
             <i class="fa-solid fa-triangle-exclamation me-1"></i> Kiểm Tra Xung Đột
         </button>
@@ -1584,11 +1587,13 @@
             }
 
             let scoreText = '';
-            if (pair.diemDoi1 != null && pair.diemDoi2 != null) {
+            const sc1 = pair.tySoDoi1 ?? pair.diemDoi1;
+            const sc2 = pair.tySoDoi2 ?? pair.diemDoi2;
+            if (sc1 != null && sc2 != null) {
                 const penText = (pair.diemPenaltyDoi1 != null && pair.diemPenaltyDoi2 != null)
                     ? ` <small class="text-warning fw-normal" style="font-size: 0.75rem;">(Pen ${pair.diemPenaltyDoi1}-${pair.diemPenaltyDoi2})</small>`
                     : '';
-                scoreText = `<span class="badge bg-dark fs-6 px-2 py-1">${pair.diemDoi1} - ${pair.diemDoi2}${penText}</span>`;
+                scoreText = `<span class="badge bg-dark fs-6 px-2 py-1">${sc1} - ${sc2}${penText}</span>`;
             }
 
             const scoreBtnHtml = pair.tranDauId ? `
@@ -1710,7 +1715,27 @@
             if (knockoutPairs.length > 0 && groupPairs.length > 0) {
                 // Thể thức Kết Hợp: Vòng Bảng + Knockout
 
-                // 1. Render Section VÒNG LOẠI TRỰC TIẾP (KNOCKOUT)
+                // 1. Render Section VÒNG BẢNG (GROUP STAGE) LÊN TRÊN
+                let grHtml = `
+                    <div class="card border shadow-xs mb-3">
+                        <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-table-cells-large text-primary me-2 fs-5"></i>
+                                <div>
+                                    <strong class="text-primary small">LỊCH THI ĐẤU VÒNG BẢNG (${groupPairs.length} trận)</strong>
+                                    <div class="text-muted" style="font-size: 0.72rem;">Thi đấu vòng tròn tính điểm theo bảng xếp hạng bên trái</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                `;
+                groupPairs.forEach((pair, idx) => {
+                    grHtml += renderPairCardHtml(pair, idx, false);
+                });
+                grHtml += `</div></div>`;
+                container.append(grHtml);
+
+                // 2. Render Section VÒNG LOẠI TRỰC TIẾP (KNOCKOUT) XUỐNG DƯỚI
                 let koHtml = `
                     <div class="card border border-warning shadow-xs mb-3" style="background: #fffdf7;">
                         <div class="card-header bg-warning bg-opacity-25 py-2 px-3 d-flex justify-content-between align-items-center">
@@ -1732,29 +1757,15 @@
                 });
                 koHtml += `</div></div>`;
                 container.append(koHtml);
-
-                // 2. Render Section VÒNG BẢNG (GROUP STAGE)
-                let grHtml = `
-                    <div class="card border shadow-xs mb-3">
-                        <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <i class="fa-solid fa-table-cells-large text-primary me-2 fs-5"></i>
-                                <div>
-                                    <strong class="text-primary small">LỊCH THI ĐẤU VÒNG BẢNG (${groupPairs.length} trận)</strong>
-                                    <div class="text-muted" style="font-size: 0.72rem;">Thi đấu vòng tròn tính điểm theo bảng xếp hạng bên trái</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body p-3">
-                `;
-                groupPairs.forEach((pair, idx) => {
-                    grHtml += renderPairCardHtml(pair, idx, false);
-                });
-                grHtml += `</div></div>`;
-                container.append(grHtml);
             } else {
-                // Thuần Knockout hoặc Thuần Vòng Bảng
-                mainViewData.pairs.forEach((pair, idx) => {
+                // Thuần Knockout hoặc Thuần Vòng Bảng: Ưu tiên các trận vòng bảng lên trước
+                const sortedPairs = [...mainViewData.pairs].sort((a, b) => {
+                    const isKoA = isMatchKnockout(a) ? 1 : 0;
+                    const isKoB = isMatchKnockout(b) ? 1 : 0;
+                    if (isKoA !== isKoB) return isKoA - isKoB;
+                    return (a.soTran || 0) - (b.soTran || 0);
+                });
+                sortedPairs.forEach((pair, idx) => {
                     const isKO = isMatchKnockout(pair);
                     container.append(renderPairCardHtml(pair, idx, isKO));
                 });
@@ -2042,16 +2053,18 @@
                     const sanObj = mainViewData.sanDaus.find(s => s.id === pair.sanDauId);
                     const tenSan = sanObj ? escapeHtml(sanObj.ten) : 'Chưa gán sân';
 
-                    const isFinished = pair.trangThai === 'KetThuc' || (pair.diemDoi1 != null && pair.diemDoi2 != null);
+                    const sc1 = pair.tySoDoi1 ?? pair.diemDoi1;
+                    const sc2 = pair.tySoDoi2 ?? pair.diemDoi2;
+                    const isFinished = pair.trangThai === 'KetThuc' || (sc1 != null && sc2 != null);
                     let isDoi1Winner = false;
                     let isDoi2Winner = false;
 
                     if (pair.doiThangDangKyId) {
                         isDoi1Winner = pair.doi1 && pair.doi1.dangKyThiDauId === pair.doiThangDangKyId;
                         isDoi2Winner = pair.doi2 && pair.doi2.dangKyThiDauId === pair.doiThangDangKyId;
-                    } else if (isFinished && pair.diemDoi1 != null && pair.diemDoi2 != null) {
-                        if (pair.diemDoi1 > pair.diemDoi2) isDoi1Winner = true;
-                        else if (pair.diemDoi2 > pair.diemDoi1) isDoi2Winner = true;
+                    } else if (isFinished && sc1 != null && sc2 != null) {
+                        if (sc1 > sc2) isDoi1Winner = true;
+                        else if (sc2 > sc1) isDoi2Winner = true;
                         else if (pair.diemPenaltyDoi1 != null && pair.diemPenaltyDoi2 != null) {
                             if (pair.diemPenaltyDoi1 > pair.diemPenaltyDoi2) isDoi1Winner = true;
                             else if (pair.diemPenaltyDoi2 > pair.diemPenaltyDoi1) isDoi2Winner = true;
@@ -2064,12 +2077,12 @@
                     let extraCardClass = isFinalMatch ? 'card-final' : (isBronzeMatch ? 'card-bronze' : '');
 
                     // Điểm số & Penalty
-                    const score1Badge = pair.diemDoi1 != null
-                        ? `<span class="badge bg-light text-dark border px-2 py-1 badge-score fw-bold fs-6">${pair.diemDoi1}${pair.diemPenaltyDoi1 != null ? `<span class="small fw-normal text-warning ms-1">(${pair.diemPenaltyDoi1})</span>` : ''}</span>`
+                    const score1Badge = sc1 != null
+                        ? `<span class="badge bg-light text-dark border px-2 py-1 badge-score fw-bold fs-6">${sc1}${pair.diemPenaltyDoi1 != null ? `<span class="small fw-normal text-warning ms-1">(${pair.diemPenaltyDoi1})</span>` : ''}</span>`
                         : `<span class="text-muted fw-normal fs-6">-</span>`;
 
-                    const score2Badge = pair.diemDoi2 != null
-                        ? `<span class="badge bg-light text-dark border px-2 py-1 badge-score fw-bold fs-6">${pair.diemDoi2}${pair.diemPenaltyDoi2 != null ? `<span class="small fw-normal text-warning ms-1">(${pair.diemPenaltyDoi2})</span>` : ''}</span>`
+                    const score2Badge = sc2 != null
+                        ? `<span class="badge bg-light text-dark border px-2 py-1 badge-score fw-bold fs-6">${sc2}${pair.diemPenaltyDoi2 != null ? `<span class="small fw-normal text-warning ms-1">(${pair.diemPenaltyDoi2})</span>` : ''}</span>`
                         : `<span class="text-muted fw-normal fs-6">-</span>`;
 
                     // Đội 1
@@ -2322,8 +2335,10 @@
                 let items = '';
                 matches.forEach(m => {
                     const timeStr = m.thoiGianDuKien ? formatDate(m.thoiGianDuKien, true) : 'Chưa xếp giờ';
-                    const scoreText = (m.diemDoi1 != null && m.diemDoi2 != null)
-                        ? `<span class="badge bg-dark px-2 py-1">${m.diemDoi1} - ${m.diemDoi2}</span>`
+                    const sc1 = m.tySoDoi1 ?? m.diemDoi1;
+                    const sc2 = m.tySoDoi2 ?? m.diemDoi2;
+                    const scoreText = (sc1 != null && sc2 != null)
+                        ? `<span class="badge bg-dark px-2 py-1">${sc1} - ${sc2}</span>`
                         : `<span class="badge bg-light text-muted border">Chưa đấu</span>`;
                     const ph = getMatchPlaceholderTeams(m);
                     const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : escapeHtml(ph.t1);
@@ -2358,8 +2373,10 @@
                 const isFinal = isMatchFinal(fm);
                 const isBronze = isMatchBronze(fm);
 
-                if (isFinal && (fm.doiThangDangKyId || (fm.diemDoi1 != null && fm.diemDoi2 != null))) {
-                    const d1Won = fm.doiThangDangKyId ? (fm.doi1 && fm.doi1.dangKyThiDauId === fm.doiThangDangKyId) : (fm.diemDoi1 > fm.diemDoi2);
+                const sc1 = fm.tySoDoi1 ?? fm.diemDoi1;
+                const sc2 = fm.tySoDoi2 ?? fm.diemDoi2;
+                if (isFinal && (fm.doiThangDangKyId || (sc1 != null && sc2 != null))) {
+                    const d1Won = fm.doiThangDangKyId ? (fm.doi1 && fm.doi1.dangKyThiDauId === fm.doiThangDangKyId) : (sc1 > sc2);
                     if (d1Won) {
                         championTeam = fm.doi1;
                         runnerUpTeam = fm.doi2;
@@ -2368,8 +2385,8 @@
                         runnerUpTeam = fm.doi1;
                     }
                 }
-                if (isBronze && (fm.doiThangDangKyId || (fm.diemDoi1 != null && fm.diemDoi2 != null))) {
-                    const d1Won = fm.doiThangDangKyId ? (fm.doi1 && fm.doi1.dangKyThiDauId === fm.doiThangDangKyId) : (fm.diemDoi1 > fm.diemDoi2);
+                if (isBronze && (fm.doiThangDangKyId || (sc1 != null && sc2 != null))) {
+                    const d1Won = fm.doiThangDangKyId ? (fm.doi1 && fm.doi1.dangKyThiDauId === fm.doiThangDangKyId) : (sc1 > sc2);
                     thirdPlaceTeam = d1Won ? fm.doi1 : fm.doi2;
                 }
             });
@@ -2525,8 +2542,10 @@
                         const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : escapeHtml(ph.t1);
                         const d2 = m.doi2 ? escapeHtml(m.doi2.tenDangKy || m.doi2.tenDoi || 'Đội 2') : escapeHtml(ph.t2);
                         const timeStr = m.thoiGianDuKien ? formatDate(m.thoiGianDuKien, true) : 'Chưa xếp giờ';
-                        const scoreBadge = (m.diemDoi1 != null && m.diemDoi2 != null)
-                            ? `<span class="badge bg-dark fs-6 px-3 py-1">${m.diemDoi1} - ${m.diemDoi2}</span>`
+                        const sc1 = m.tySoDoi1 ?? m.diemDoi1;
+                        const sc2 = m.tySoDoi2 ?? m.diemDoi2;
+                        const scoreBadge = (sc1 != null && sc2 != null)
+                            ? `<span class="badge bg-dark fs-6 px-3 py-1">${sc1} - ${sc2}</span>`
                             : `<span class="badge bg-light text-muted border">Chưa đấu</span>`;
 
                         return `
@@ -2741,8 +2760,10 @@
                                     const d1 = m.doi1 ? escapeHtml(m.doi1.tenDangKy || m.doi1.tenDoi || 'Đội 1') : escapeHtml(ph.t1);
                                     const d2 = m.doi2 ? escapeHtml(m.doi2.tenDangKy || m.doi2.tenDoi || 'Đội 2') : escapeHtml(ph.t2);
                                     const timeStr = m.thoiGianDuKien ? formatDate(m.thoiGianDuKien, true) : 'Chưa xếp giờ';
-                                    const scoreBadge = (m.diemDoi1 != null && m.diemDoi2 != null)
-                                        ? `<span class="badge bg-dark fs-6 px-3 py-1">${m.diemDoi1} - ${m.diemDoi2}</span>`
+                                    const sc1 = m.tySoDoi1 ?? m.diemDoi1;
+                                    const sc2 = m.tySoDoi2 ?? m.diemDoi2;
+                                    const scoreBadge = (sc1 != null && sc2 != null)
+                                        ? `<span class="badge bg-dark fs-6 px-3 py-1">${sc1} - ${sc2}</span>`
                                         : `<span class="badge bg-light text-muted border">Chưa đấu</span>`;
 
                                     return `
@@ -3585,8 +3606,8 @@
                 const startTime = item.thoiGianBatDau ? formatDate(item.thoiGianBatDau, true) : 'Chưa xếp giờ';
                 const team1 = item.tenDoi1 || 'Đội 1';
                 const team2 = item.tenDoi2 || 'Đội 2';
-                const score1 = item.diemDoi1 ?? '-';
-                const score2 = item.diemDoi2 ?? '-';
+                const score1 = (item.tySoDoi1 !== null && item.tySoDoi1 !== undefined) ? item.tySoDoi1 : ((item.diemDoi1 !== null && item.diemDoi1 !== undefined) ? item.diemDoi1 : null);
+                const score2 = (item.tySoDoi2 !== null && item.tySoDoi2 !== undefined) ? item.tySoDoi2 : ((item.diemDoi2 !== null && item.diemDoi2 !== undefined) ? item.diemDoi2 : null);
 
                 let participantColHtml = '';
                 const isItemHeat = (item.thanhPhanTranDaus && item.thanhPhanTranDaus.length > 2) || (item.tenTran && item.tenTran.includes('Heat'));
@@ -3623,7 +3644,9 @@
 
                 const scoreDisplay = isItemHeat 
                     ? `<span class="badge bg-info-subtle text-info border">Tính giờ / Xếp hạng</span>` 
-                    : `<span class="fw-bold fs-6 text-dark">${score1} - ${score2}</span>`;
+                    : (score1 !== null && score2 !== null 
+                        ? `<span class="fw-bold fs-6 text-dark">${score1} - ${score2}</span>` 
+                        : `<span class="text-muted fw-semibold">---</span>`);
 
                 html += `
                     <tr>
@@ -3715,9 +3738,11 @@
                     $('#matchId').val(id);
                     $('#matchTeam1Name').text(currentMatchData.tenDoi1 || 'Đội 1');
                     $('#matchTeam2Name').text(currentMatchData.tenDoi2 || 'Đội 2');
-                    $('#matchScore1').val(currentMatchData.diemDoi1 ?? 0);
-                    $('#matchScore2').val(currentMatchData.diemDoi2 ?? 0);
-                    $('#matchStatus').val(currentMatchData.trangThai || 'ChuaDienRa');
+                    const sc1 = currentMatchData.tySoDoi1 ?? currentMatchData.diemDoi1 ?? 0;
+                    const sc2 = currentMatchData.tySoDoi2 ?? currentMatchData.diemDoi2 ?? 0;
+                    $('#matchScore1').val(sc1);
+                    $('#matchScore2').val(sc2);
+                    $('#matchStatus').val(currentMatchData.trangThai || 'ChuaDau');
                     $('#matchSanDauId').val(currentMatchData.sanDauId || '');
                     $('#matchStartTime').val(currentMatchData.thoiGianBatDau ? currentMatchData.thoiGianBatDau.substring(0, 16) : '');
                     $('#matchEndTime').val(currentMatchData.thoiGianKetThuc ? currentMatchData.thoiGianKetThuc.substring(0, 16) : '');
@@ -3732,16 +3757,28 @@
             const id = $('#matchId').val();
             if (!id || !currentMatchData) return;
 
+            const val1 = parseInt($('#matchScore1').val());
+            const val2 = parseInt($('#matchScore2').val());
+            const score1 = isNaN(val1) ? 0 : val1;
+            const score2 = isNaN(val2) ? 0 : val2;
+
+            const doi1 = currentMatchData.doi1DangKyId || currentMatchData.doi1Id || (currentMatchData.thanhPhanTranDaus && currentMatchData.thanhPhanTranDaus[0]?.dangKyThiDauId) || null;
+            const doi2 = currentMatchData.doi2DangKyId || currentMatchData.doi2Id || (currentMatchData.thanhPhanTranDaus && currentMatchData.thanhPhanTranDaus[1]?.dangKyThiDauId) || null;
+
             const payload = {
                 giaiDauMonTheThaoId: currentMatchData.giaiDauMonTheThaoId,
                 vongDauId: currentMatchData.vongDauId,
                 bangDauId: currentMatchData.bangDauId,
-                ma: currentMatchData.ma,
-                ten: currentMatchData.ten,
-                doi1Id: currentMatchData.doi1Id,
-                doi2Id: currentMatchData.doi2Id,
-                diemDoi1: parseInt($('#matchScore1').val()) || 0,
-                diemDoi2: parseInt($('#matchScore2').val()) || 0,
+                soTran: currentMatchData.soTran,
+                tenTran: currentMatchData.tenTran || currentMatchData.ten,
+                doi1DangKyId: doi1,
+                doi2DangKyId: doi2,
+                doi1Id: doi1,
+                doi2Id: doi2,
+                tySoDoi1: score1,
+                tySoDoi2: score2,
+                diemDoi1: score1,
+                diemDoi2: score2,
                 trangThai: $('#matchStatus').val(),
                 sanDauId: $('#matchSanDauId').val() ? parseInt($('#matchSanDauId').val()) : null,
                 thoiGianBatDau: $('#matchStartTime').val() || null,
@@ -3776,6 +3813,76 @@
                         Swal.fire('Lỗi', res.message || 'Không thể xóa.', 'error');
                     }
                 });
+            });
+        }
+
+        // ==================== CHỐT VÒNG BẢNG & TỰ ĐỘNG ĐẨY ĐỘI VÀO KNOCKOUT ====================
+        function triggerAdvanceGroupStage(forceAdvance = false) {
+            const monId = $('#mainGiaiDauMonSelect').val();
+            if (!monId) {
+                Swal.fire('Thông báo', 'Vui lòng chọn Môn thi đấu trước khi thực hiện thao tác.', 'warning');
+                return;
+            }
+
+            SportApp.loading(true, 'Đang phân tích thứ hạng vòng bảng và xếp đội vào Knockout...');
+
+            $.ajax({
+                url: '/Manager/LichThiDau/AdvanceGroupStage',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    giaiDauMonTheThaoId: parseInt(monId),
+                    forceAdvance: forceAdvance
+                }),
+                success: function (res) {
+                    SportApp.loading(false);
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Chốt Vòng Bảng Thành Công',
+                            html: `
+                                <div class="text-start">
+                                    <p class="mb-2"><strong>${escapeHtml(res.message || 'Đã đưa các đội vào vòng Knockout!')}</strong></p>
+                                    ${res.data?.details && res.data.details.length > 0 
+                                        ? `<ul class="small text-muted ps-3 mb-0">${res.data.details.map(d => `<li>${escapeHtml(d)}</li>`).join('')}</ul>` 
+                                        : ''}
+                                </div>
+                            `
+                        });
+                        loadMainData();
+                    } else {
+                        // Nếu chưa hoàn tất vòng bảng, hỏi người dùng có muốn ép chốt không
+                        if (res.data?.pendingGroups && res.data.pendingGroups.length > 0 && !forceAdvance) {
+                            const pendingHtml = res.data.pendingGroups.map(p => `<li>${escapeHtml(p)}</li>`).join('');
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Vòng Bảng Chưa Đấu Hết',
+                                html: `
+                                    <div class="text-start">
+                                        <p class="mb-2">Tiến độ các bảng hiện tại:</p>
+                                        <ul class="text-danger small ps-3 mb-3">${pendingHtml}</ul>
+                                        <p class="mb-0 text-muted small">Bạn có muốn <strong>CHỐT NGAY</strong> dựa trên BXH điểm số tạm thời hiện tại để điền các đội vào Tứ kết không?</p>
+                                    </div>
+                                `,
+                                showCancelButton: true,
+                                confirmButtonColor: '#2563eb',
+                                cancelButtonColor: '#6c757d',
+                                confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Chốt ngay theo BXH hiện tại',
+                                cancelButtonText: 'Để sau (chờ đấu hết)'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    triggerAdvanceGroupStage(true);
+                                }
+                            });
+                        } else {
+                            Swal.fire('Thông báo', res.message || 'Không thể chốt vòng bảng.', 'info');
+                        }
+                    }
+                },
+                error: function (xhr) {
+                    SportApp.loading(false);
+                    Swal.fire('Lỗi', xhr.responseJSON?.message || 'Có lỗi xảy ra khi xử lý.', 'error');
+                }
             });
         }
 

@@ -318,6 +318,10 @@ namespace Dms.Application.DTOs
         // Tỷ số và phân định
         public int? TySoDoi1 { get; set; }
         public int? TySoDoi2 { get; set; }
+        public int? DiemDoi1 => TySoDoi1;
+        public int? DiemDoi2 => TySoDoi2;
+        public int? Doi1Id => Doi1DangKyId;
+        public int? Doi2Id => Doi2DangKyId;
         public int? DiemPenaltyDoi1 { get; set; }
         public int? DiemPenaltyDoi2 { get; set; }
         public bool IsHoa { get; set; }
@@ -330,6 +334,8 @@ namespace Dms.Application.DTOs
         public int? LoserNextTranDauId { get; set; }
         public int? LoserNextTranDauViTri { get; set; }
         public string? MaTranBracket { get; set; }
+        public string? MaTranHienThi { get; set; }
+        public bool IsLichCoDinh { get; set; }
 
         public List<ThanhPhanTranDauItemDto> ThanhPhanTranDaus { get; set; } = new();
         public List<PhanCongTrongTaiItemDto> DanhSachTrongTai { get; set; } = new();
@@ -353,11 +359,21 @@ namespace Dms.Application.DTOs
         public string? GhiChu { get; set; }
 
         // Cặp đấu
-        public int? Doi1DangKyId { get; set; }
-        public int? Doi2DangKyId { get; set; }
+        private int? _doi1DangKyId;
+        public int? Doi1DangKyId { get => _doi1DangKyId; set { if (value.HasValue || !_doi1DangKyId.HasValue) _doi1DangKyId = value; } }
+        public int? Doi1Id { get => _doi1DangKyId; set { if (value.HasValue || !_doi1DangKyId.HasValue) _doi1DangKyId = value; } }
 
-        public int? TySoDoi1 { get; set; }
-        public int? TySoDoi2 { get; set; }
+        private int? _doi2DangKyId;
+        public int? Doi2DangKyId { get => _doi2DangKyId; set { if (value.HasValue || !_doi2DangKyId.HasValue) _doi2DangKyId = value; } }
+        public int? Doi2Id { get => _doi2DangKyId; set { if (value.HasValue || !_doi2DangKyId.HasValue) _doi2DangKyId = value; } }
+
+        private int? _tySoDoi1;
+        public int? TySoDoi1 { get => _tySoDoi1; set { if (value.HasValue || !_tySoDoi1.HasValue) _tySoDoi1 = value; } }
+        public int? DiemDoi1 { get => _tySoDoi1; set { if (value.HasValue || !_tySoDoi1.HasValue) _tySoDoi1 = value; } }
+
+        private int? _tySoDoi2;
+        public int? TySoDoi2 { get => _tySoDoi2; set { if (value.HasValue || !_tySoDoi2.HasValue) _tySoDoi2 = value; } }
+        public int? DiemDoi2 { get => _tySoDoi2; set { if (value.HasValue || !_tySoDoi2.HasValue) _tySoDoi2 = value; } }
         public int? DiemPenaltyDoi1 { get; set; }
         public int? DiemPenaltyDoi2 { get; set; }
         public bool IsHoa { get; set; }
@@ -369,6 +385,8 @@ namespace Dms.Application.DTOs
         public int? LoserNextTranDauId { get; set; }
         public int? LoserNextTranDauViTri { get; set; }
         public string? MaTranBracket { get; set; }
+        public string? MaTranHienThi { get; set; }
+        public bool IsLichCoDinh { get; set; } = false;
 
         // Phân công trọng tài
         public List<AssignTrongTaiDto>? DanhSachTrongTai { get; set; }
@@ -500,6 +518,23 @@ namespace Dms.Application.DTOs
         public Dictionary<string, int>? ThongKeSanDau { get; set; }
         public Dictionary<string, int>? ThongKeTrongTai { get; set; }
         public int SoNgayThiDau { get; set; } = 1;
+    }
+
+    public class AdvanceGroupStageRequestDto
+    {
+        public int GiaiDauMonTheThaoId { get; set; }
+        public bool ForceAdvance { get; set; } = false;
+    }
+
+    public class AdvanceGroupStageResultDto
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int TotalMatchesUpdated { get; set; }
+        public int TotalTeamsAdvanced { get; set; }
+        public List<string> Details { get; set; } = new();
+        public bool AllGroupsCompleted { get; set; }
+        public List<string> PendingGroups { get; set; } = new();
     }
 
     public class ConflictCheckRequestDto

@@ -653,6 +653,42 @@ namespace Dms.Application.Services
                 }
             }
 
+            // 3. Kiểm tra tính trung lập: Trọng tài không được cùng đơn vị/đoàn với đội thi đấu trong trận
+            var referee = (await _unitOfWork.TrongTais.FindAsync(t => t.Id == trongTaiId && t.IsDeleted != true)).FirstOrDefault();
+            if (referee?.DonViId.HasValue == true)
+            {
+                var matchTps = (await _unitOfWork.ThanhPhanTranDaus.FindAsync(tp => tp.TranDauId == tranDauId && tp.IsDeleted != true)).ToList();
+                var dkIds = matchTps.Select(tp => tp.DangKyThiDauId).Distinct().ToList();
+                if (dkIds.Any())
+                {
+                    var dks = (await _unitOfWork.DangKyThiDaus.FindAsync(dk => dkIds.Contains(dk.Id) && dk.IsDeleted != true)).ToList();
+                    var doiIds = dks.Where(dk => dk.DoiId.HasValue).Select(dk => dk.DoiId!.Value).Distinct().ToList();
+                    if (doiIds.Any())
+                    {
+                        var dois = (await _unitOfWork.Dois.FindAsync(d => doiIds.Contains(d.Id) && d.IsDeleted != true)).ToList();
+                        var conflictDoi = dois.FirstOrDefault(d => d.DonViId.HasValue && d.DonViId.Value == referee.DonViId.Value);
+                        if (conflictDoi != null)
+                        {
+                            var donVi = (await _unitOfWork.DonVis.FindAsync(dv => dv.Id == referee.DonViId.Value && dv.IsDeleted != true)).FirstOrDefault();
+                            string donViTen = donVi?.Ten ?? $"Đơn vị #{referee.DonViId.Value}";
+                            conflicts.Add(new ConflictItemDto
+                            {
+                                TranDauId = match.Id,
+                                SoTran = match.SoTran,
+                                TenTran = match.TenTran ?? $"Trận số {match.SoTran}",
+                                ThoiGian = match.ThoiGianDuKien.Value.ToString("HH:mm dd/MM/yyyy"),
+                                TenMon = mon?.Ten ?? "Môn thi đấu",
+                                VaiTro = "Trọng tài",
+                                DiffMinutes = 0,
+                                RequiredRestMinutes = 0,
+                                LoaiXungDot = "XungDotLoiIch",
+                                MoTa = $"Vi phạm tính trung lập: Trọng tài {referee.HoTen} cùng thuộc đơn vị '{donViTen}' với đội thi đấu '{conflictDoi.Ten}'!"
+                            });
+                        }
+                    }
+                }
+            }
+
             return new ConflictResultDto
             {
                 HasConflict = conflicts.Count > 0 || isOverloaded,
@@ -1031,11 +1067,41 @@ namespace Dms.Application.Services
                 plannedRefsByMatch[tranDauId] = refs;
             }
 
+            // Bản đồ kiểm tra tính trung lập: đơn vị của đội tham gia trận đấu
+            var targetMatchIds = targetMatchList.Select(m => m.Id).ToList();
+            var allThanhPhans = (await _unitOfWork.ThanhPhanTranDaus.FindAsync(tp => targetMatchIds.Contains(tp.TranDauId) && tp.IsDeleted != true)).ToList();
+            var allDkIds = allThanhPhans.Select(tp => tp.DangKyThiDauId).Distinct().ToList();
+            var allDks = (await _unitOfWork.DangKyThiDaus.FindAsync(dk => allDkIds.Contains(dk.Id) && dk.IsDeleted != true)).ToList();
+            var dkToDoiIdMap = allDks.Where(dk => dk.DoiId.HasValue).ToDictionary(dk => dk.Id, dk => dk.DoiId!.Value);
+            var allDoiIds = dkToDoiIdMap.Values.Distinct().ToList();
+            var allDois = (await _unitOfWork.Dois.FindAsync(d => allDoiIds.Contains(d.Id) && d.IsDeleted != true)).ToList();
+            var doiToDonViIdMap = allDois.Where(d => d.DonViId.HasValue).ToDictionary(d => d.Id, d => d.DonViId!.Value);
+
+            var matchTeamDonViMap = new Dictionary<int, HashSet<int>>();
+            foreach (var tp in allThanhPhans)
+            {
+                if (dkToDoiIdMap.TryGetValue(tp.DangKyThiDauId, out var doiId) && doiToDonViIdMap.TryGetValue(doiId, out var donViId))
+                {
+                    if (!matchTeamDonViMap.ContainsKey(tp.TranDauId)) matchTeamDonViMap[tp.TranDauId] = new HashSet<int>();
+                    matchTeamDonViMap[tp.TranDauId].Add(donViId);
+                }
+            }
+            var refereeDonViMap = activeReferees.ToDictionary(r => r.Id, r => r.DonViId);
+
             string? GetConflictReason(int refereeId, TranDau targetMatch)
             {
                 if (plannedRefsByMatch.TryGetValue(targetMatch.Id, out var assignedRefs) && assignedRefs.Contains(refereeId))
                 {
                     return "Trọng tài này đã có vị trí khác trong cùng trận.";
+                }
+
+                // Kiểm tra xung đột tính trung lập (Referee cùng đơn vị với 1 trong các đội thi đấu)
+                if (refereeDonViMap.TryGetValue(refereeId, out var refDonViId) && refDonViId.HasValue)
+                {
+                    if (matchTeamDonViMap.TryGetValue(targetMatch.Id, out var teamDonViIds) && teamDonViIds.Contains(refDonViId.Value))
+                    {
+                        return "Trọng tài cùng đơn vị với đội thi đấu trong trận (vi phạm tính trung lập).";
+                    }
                 }
 
                 var intervals = refereeIntervals.GetValueOrDefault(refereeId, new List<(int TranDauId, DateTime Start, DateTime End, string VaiTro)>())

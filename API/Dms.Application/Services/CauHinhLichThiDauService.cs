@@ -70,6 +70,8 @@ namespace Dms.Application.Services
                     CaToBatDau = dto.CaToBatDau,
                     CaToKetThuc = dto.CaToKetThuc,
                     ThoiGianDemDonSanPhut = dto.ThoiGianDemDonSanPhut,
+                    ThoiGianDemHiepPhuLuonLuuPhut = dto.ThoiGianDemHiepPhuLuonLuuPhut,
+                    SoNgayNghiSauVongBang = dto.SoNgayNghiSauVongBang,
                     SoTranToiDaMoiTrongTaiMoiNgay = dto.SoTranToiDaMoiTrongTaiMoiNgay,
                     NghiToiThieuTrongTaiPhut = dto.NghiToiThieuTrongTaiPhut,
                     ThoiGianDemDiChuyenPhut = dto.ThoiGianDemDiChuyenPhut,
@@ -98,6 +100,8 @@ namespace Dms.Application.Services
                 entity.CaToBatDau = dto.CaToBatDau;
                 entity.CaToKetThuc = dto.CaToKetThuc;
                 entity.ThoiGianDemDonSanPhut = dto.ThoiGianDemDonSanPhut;
+                entity.ThoiGianDemHiepPhuLuonLuuPhut = dto.ThoiGianDemHiepPhuLuonLuuPhut;
+                entity.SoNgayNghiSauVongBang = dto.SoNgayNghiSauVongBang;
                 entity.SoTranToiDaMoiTrongTaiMoiNgay = dto.SoTranToiDaMoiTrongTaiMoiNgay;
                 entity.NghiToiThieuTrongTaiPhut = dto.NghiToiThieuTrongTaiPhut;
                 entity.ThoiGianDemDiChuyenPhut = dto.ThoiGianDemDiChuyenPhut;

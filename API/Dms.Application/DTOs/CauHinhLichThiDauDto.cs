@@ -28,6 +28,8 @@ namespace Dms.Application.DTOs
 
         // ④ SÂN ĐẤU & TRỌNG TÀI
         public int ThoiGianDemDonSanPhut { get; set; } = 15;
+        public int ThoiGianDemHiepPhuLuonLuuPhut { get; set; } = 30;
+        public int SoNgayNghiSauVongBang { get; set; } = 1;
         public int SoTranToiDaMoiTrongTaiMoiNgay { get; set; } = 4;
         public int NghiToiThieuTrongTaiPhut { get; set; } = 15;
 
@@ -63,11 +65,13 @@ namespace Dms.Application.DTOs
         public string CaSangKetThuc { get; set; } = "11:30";
         public string CaChieuBatDau { get; set; } = "14:00";
         public string CaChieuKetThuc { get; set; } = "17:30";
-        public string? CaToBatDau { get; set; }
-        public string? CaToKetThuc { get; set; }
+        public string? CaToBatDau { get; set; } = "18:00";
+        public string? CaToKetThuc { get; set; } = "21:30";
 
         // ④ SÂN ĐẤU & TRỌNG TÀI
         public int ThoiGianDemDonSanPhut { get; set; } = 15;
+        public int ThoiGianDemHiepPhuLuonLuuPhut { get; set; } = 30;
+        public int SoNgayNghiSauVongBang { get; set; } = 1;
         public int SoTranToiDaMoiTrongTaiMoiNgay { get; set; } = 4;
         public int NghiToiThieuTrongTaiPhut { get; set; } = 15;
 

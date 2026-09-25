@@ -28,6 +28,10 @@ namespace Dms.Domain.Entities
         [MaxLength(100)]
         public string? CapBac { get; set; }
 
+        public int? DonViId { get; set; }
+        [ForeignKey(nameof(DonViId))]
+        public virtual DonVi? DonVi { get; set; }
+
         public bool TrangThai { get; set; } = true;
 
         public virtual ICollection<PhanCongTrongTai> PhanCongTrongTais { get; set; } = new List<PhanCongTrongTai>();
