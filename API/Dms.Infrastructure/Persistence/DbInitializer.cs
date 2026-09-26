@@ -197,7 +197,8 @@ namespace Dms.Infrastructure.Persistence
                 new { Username = "taie", Email = "taie@sport.vn", Name = "Trọng tài E", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttE.Id },
                 new { Username = "taif", Email = "taif@sport.vn", Name = "Trọng tài F", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttF.Id },
                 new { Username = "trong", Email = "trong@sport.vn", Name = "Trần Văn Trọng", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttTrong.Id },
-                new { Username = "hanh", Email = "hanh@sport.vn", Name = "Lê Thị Bích Hạnh (Điều hành môn)", Pass = "123", Roles = new[] { AppRoles.SportCoordinator, AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttHanh.Id },
+                new { Username = "hanh", Email = "hanh@sport.vn", Name = "Lê Thị Bích Hạnh (Trọng tài)", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttHanh.Id },
+                new { Username = "dieuhanh", Email = "dieuhanh@sport.vn", Name = "Người điều hành môn A", Pass = "123", Roles = new[] { AppRoles.SportCoordinator }, DonViId = (int?)null, TrongTaiId = (int?)null },
             };
 
             foreach (var u in seedUsers)
@@ -239,6 +240,48 @@ namespace Dms.Infrastructure.Persistence
                             await userManager.AddToRoleAsync(userEntity, role);
                         }
                     }
+                }
+            }
+
+            var refereeHanhAccount = await userManager.FindByNameAsync("hanh");
+            if (refereeHanhAccount != null && await userManager.IsInRoleAsync(refereeHanhAccount, AppRoles.SportCoordinator))
+            {
+                await userManager.RemoveFromRoleAsync(refereeHanhAccount, AppRoles.SportCoordinator);
+            }
+
+            // Bảo đảm mỗi tài khoản Người điều hành môn có hồ sơ nghiệp vụ riêng.
+            var coordinatorAccounts = await userManager.GetUsersInRoleAsync(AppRoles.SportCoordinator);
+            foreach (var coordinatorAccount in coordinatorAccounts)
+            {
+                var coordinatorProfile = coordinatorAccount.NguoiDieuHanhMonId.HasValue
+                    ? await context.NguoiDieuHanhMons.FirstOrDefaultAsync(profile => profile.Id == coordinatorAccount.NguoiDieuHanhMonId.Value)
+                    : null;
+
+                if (coordinatorProfile == null)
+                {
+                    coordinatorProfile = new NguoiDieuHanhMon
+                    {
+                        Ma = $"NDH-{coordinatorAccount.Id:D6}",
+                        HoTen = string.IsNullOrWhiteSpace(coordinatorAccount.FullName) ? coordinatorAccount.UserName ?? "Người điều hành môn" : coordinatorAccount.FullName,
+                        Email = coordinatorAccount.Email,
+                        SoDienThoai = coordinatorAccount.PhoneNumber,
+                        TrangThai = true,
+                        IsDeleted = false,
+                        CreatedBy = "DbInitializer"
+                    };
+                    await context.NguoiDieuHanhMons.AddAsync(coordinatorProfile);
+                    await context.SaveChangesAsync();
+                    coordinatorAccount.NguoiDieuHanhMonId = coordinatorProfile.Id;
+                    await userManager.UpdateAsync(coordinatorAccount);
+                }
+                else
+                {
+                    coordinatorProfile.HoTen = string.IsNullOrWhiteSpace(coordinatorAccount.FullName) ? coordinatorAccount.UserName ?? coordinatorProfile.HoTen : coordinatorAccount.FullName;
+                    coordinatorProfile.Email = coordinatorAccount.Email;
+                    coordinatorProfile.SoDienThoai = coordinatorAccount.PhoneNumber;
+                    coordinatorProfile.TrangThai = true;
+                    coordinatorProfile.IsDeleted = false;
+                    await context.SaveChangesAsync();
                 }
             }
 
@@ -445,8 +488,7 @@ namespace Dms.Infrastructure.Persistence
                     GiaiDauId = giaiDau.Id,
                     MonTheThaoId = monBongDa3.Id,
                     MoTa = "Môn bóng đá 3 người nam sinh viên tranh tài 2026",
-                    TrangThai = true,
-                    NguoiDieuHanhId = ttHanh.Id // Gán người điều hành môn Lê Thị Bích Hạnh
+                    TrangThai = true
                 };
                 await context.GiaiDauMonTheThaos.AddAsync(gdm);
                 await context.SaveChangesAsync();

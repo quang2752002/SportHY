@@ -81,8 +81,6 @@ namespace Dms.Application.DTOs
         public string? TenDanhMuc { get; set; }
         public string? HinhThucThiDau { get; set; }
         public string? GioiTinh { get; set; }
-        public int? NguoiDieuHanhId { get; set; }
-        public string? TenNguoiDieuHanh { get; set; }
     }
 
     public class CreateUpdateGiaiDauDto

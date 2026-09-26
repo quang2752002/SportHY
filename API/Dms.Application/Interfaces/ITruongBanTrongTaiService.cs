@@ -168,8 +168,10 @@ namespace Dms.Application.Interfaces
         /// </summary>
         /// <param name="giaiDauId">ID giải đấu</param>
         /// <param name="danhMucId">ID danh mục môn thể thao</param>
-        /// <param name="trongTaiId">ID trọng tài được chỉ định làm Người điều hành</param>
+        /// <param name="coordinatorProfileIds">Danh sách hồ sơ gắn với tài khoản có role SportCoordinator để xác thực hồ sơ được chọn.</param>
+        /// <param name="nguoiDieuHanhMonId">ID hồ sơ người điều hành môn được chọn; null để hủy phân công.</param>
+        /// <param name="assignedBy">Tên tài khoản Manager/Admin thực hiện thao tác.</param>
         /// <returns>Kết quả thực hiện</returns>
-        Task<(bool success, string message)> AssignSportCoordinatorForManagerAsync(int giaiDauId, int danhMucId, int? trongTaiId);
+        Task<(bool success, string message)> AssignSportCoordinatorForManagerAsync(int giaiDauId, int danhMucId, int? nguoiDieuHanhMonId, IReadOnlyCollection<int> coordinatorProfileIds, string? assignedBy);
     }
 }

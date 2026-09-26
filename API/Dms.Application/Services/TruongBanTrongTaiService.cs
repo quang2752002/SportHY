@@ -1709,8 +1709,16 @@ namespace Dms.Application.Services
             return conflicts;
         }
 
+        /// <summary>Lấy danh mục môn có tổ chức trong giải và tài khoản điều hành đang được phân công.</summary>
+        /// <param name="giaiDauId">ID giải đấu cần tải danh mục phân công.</param>
+        /// <returns>Danh sách danh mục, các môn trong danh mục và thông tin người điều hành hiện tại.</returns>
         public async Task<List<CategoryAssignmentViewModelDto>> GetCategoryAssignmentsForManagerAsync(int giaiDauId)
         {
+            var assignments = (await _unitOfWork.PhanCongDieuHanhMons.FindAsync(assignment =>
+                assignment.GiaiDauId == giaiDauId && assignment.IsDeleted != true)).ToList();
+            var assignedProfileIds = assignments.Select(assignment => assignment.NguoiDieuHanhMonId).Distinct().ToList();
+            var coordinatorProfiles = (await _unitOfWork.NguoiDieuHanhMons.FindAsync(profile =>
+                assignedProfileIds.Contains(profile.Id) && profile.IsDeleted != true)).ToDictionary(profile => profile.Id);
             var gdmList = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(gm => gm.GiaiDauId == giaiDauId && gm.IsDeleted != true)).ToList();
             var monIds = gdmList.Select(x => x.MonTheThaoId).Distinct().ToList();
 
@@ -1719,8 +1727,6 @@ namespace Dms.Application.Services
 
             var allDms = (await _unitOfWork.DanhMucMonTheThaos.FindAsync(dm => dmIds.Contains(dm.Id) && dm.IsDeleted != true)).ToDictionary(dm => dm.Id, dm => dm);
 
-            var allReferees = (await _unitOfWork.TrongTais.FindAsync(t => t.IsDeleted != true)).ToDictionary(r => r.Id, r => r.HoTen);
-
             var categoriesAssigned = new List<CategoryAssignmentViewModelDto>();
             var dmGroup = allMons.GroupBy(m => m.DanhMucId);
 
@@ -1728,14 +1734,12 @@ namespace Dms.Application.Services
             {
                 if (allDms.TryGetValue(grp.Key, out var dm))
                 {
-                    var relatedMonIds = grp.Select(m => m.Id).ToList();
-                    var relatedGdms = gdmList.Where(gm => relatedMonIds.Contains(gm.MonTheThaoId)).ToList();
-
-                    int? coordId = relatedGdms.FirstOrDefault(x => x.NguoiDieuHanhId.HasValue)?.NguoiDieuHanhId;
+                    var assignment = assignments.FirstOrDefault(item => item.DanhMucId == dm.Id);
+                    int? coordinatorProfileId = assignment?.NguoiDieuHanhMonId;
                     string? coordName = null;
-                    if (coordId.HasValue && allReferees.TryGetValue(coordId.Value, out var rn))
+                    if (coordinatorProfileId.HasValue && coordinatorProfiles.TryGetValue(coordinatorProfileId.Value, out var profile))
                     {
-                        coordName = rn;
+                        coordName = profile.HoTen;
                     }
 
                     categoriesAssigned.Add(new CategoryAssignmentViewModelDto
@@ -1743,7 +1747,7 @@ namespace Dms.Application.Services
                         DanhMucId = dm.Id,
                         TenDanhMuc = dm.Ten,
                         MaDanhMuc = dm.Ma,
-                        NguoiDieuHanhId = coordId,
+                        NguoiDieuHanhMonId = coordinatorProfileId,
                         TenNguoiDieuHanh = coordName,
                         DanhSachMon = grp.Select(m => m.Ten).ToList(),
                         SoMonCon = grp.Count()
@@ -1776,34 +1780,84 @@ namespace Dms.Application.Services
             return (true, "Đã phân công Trưởng ban trọng tài cho giải đấu thành công!");
         }
 
-        /// <summary>
-        /// Phân công Người Điều Hành Môn cho từng danh mục môn thể thao trong giải đấu (Dành cho Manager/Admin)
-        /// </summary>
-        /// <param name="giaiDauId">ID giải đấu</param>
-        /// <param name="danhMucId">ID danh mục môn thể thao</param>
-        /// <param name="trongTaiId">ID trọng tài được giao điều hành (hoặc null nếu hủy phân công)</param>
-        /// <returns>Bộ giá trị (success, message) kết quả thực hiện</returns>
-        public async Task<(bool success, string message)> AssignSportCoordinatorForManagerAsync(int giaiDauId, int danhMucId, int? trongTaiId)
+        /// <summary>Lưu hoặc hủy phân công hồ sơ người điều hành cho một danh mục môn trong một giải.</summary>
+        /// <param name="giaiDauId">ID giải đấu cần phân công.</param>
+        /// <param name="danhMucId">ID danh mục môn được giao điều hành.</param>
+        /// <param name="nguoiDieuHanhMonId">ID hồ sơ điều hành; null để xóa mềm phân công hiện tại.</param>
+        /// <param name="coordinatorProfileIds">Các hồ sơ gắn với tài khoản có role SportCoordinator do tầng gọi cung cấp để xác thực.</param>
+        /// <param name="assignedBy">Tên tài khoản Manager/Admin thực hiện thao tác.</param>
+        /// <returns>Kết quả thực hiện cùng thông báo nghiệp vụ.</returns>
+        public async Task<(bool success, string message)> AssignSportCoordinatorForManagerAsync(
+            int giaiDauId,
+            int danhMucId,
+            int? nguoiDieuHanhMonId,
+            IReadOnlyCollection<int> coordinatorProfileIds,
+            string? assignedBy)
         {
+            var tournament = await _unitOfWork.GiaiDaus.GetByIdAsync(giaiDauId);
+            if (tournament == null || tournament.IsDeleted == true) return (false, "Không tìm thấy giải đấu.");
+
+            var category = await _unitOfWork.DanhMucMonTheThaos.GetByIdAsync(danhMucId);
+            if (category == null || category.IsDeleted == true) return (false, "Không tìm thấy danh mục môn thể thao.");
+
             var mons = (await _unitOfWork.MonTheThaos.FindAsync(m => m.DanhMucId == danhMucId && m.IsDeleted != true)).ToList();
             var monIds = mons.Select(m => m.Id).ToList();
 
-            var gdms = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(gm => gm.GiaiDauId == giaiDauId && monIds.Contains(gm.MonTheThaoId) && gm.IsDeleted != true)).ToList();
-            if (gdms.Count == 0)
+            var hasTournamentCategory = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(gm =>
+                gm.GiaiDauId == giaiDauId && monIds.Contains(gm.MonTheThaoId) && gm.IsDeleted != true)).Any();
+            if (!hasTournamentCategory)
             {
                 return (false, "Không tìm thấy môn thi đấu tương ứng trong giải.");
             }
 
-            foreach (var gdm in gdms)
+            if (nguoiDieuHanhMonId.HasValue && !coordinatorProfileIds.Contains(nguoiDieuHanhMonId.Value))
             {
-                var trackedGdm = await _unitOfWork.GiaiDauMonTheThaos.GetByIdAsync(gdm.Id) ?? gdm;
-                trackedGdm.NguoiDieuHanhId = trongTaiId;
-                trackedGdm.LastModified = DateTime.UtcNow;
-                _unitOfWork.GiaiDauMonTheThaos.Update(trackedGdm);
+                return (false, "Hồ sơ được chọn chưa được liên kết với tài khoản có vai trò Người điều hành môn.");
+            }
+
+            NguoiDieuHanhMon? coordinatorProfile = null;
+            if (nguoiDieuHanhMonId.HasValue)
+            {
+                coordinatorProfile = await _unitOfWork.NguoiDieuHanhMons.GetByIdAsync(nguoiDieuHanhMonId.Value);
+                if (coordinatorProfile == null || coordinatorProfile.IsDeleted == true || !coordinatorProfile.TrangThai)
+                {
+                    return (false, "Hồ sơ người điều hành môn không tồn tại hoặc đã ngừng hoạt động.");
+                }
+            }
+
+            var currentAssignment = (await _unitOfWork.PhanCongDieuHanhMons.FindAsync(assignment =>
+                assignment.GiaiDauId == giaiDauId && assignment.DanhMucId == danhMucId && assignment.IsDeleted != true)).FirstOrDefault();
+
+            if (!nguoiDieuHanhMonId.HasValue)
+            {
+                if (currentAssignment == null) return (true, "Danh mục này hiện chưa có người điều hành được phân công.");
+                currentAssignment.IsDeleted = true;
+                currentAssignment.LastModified = DateTime.UtcNow;
+                currentAssignment.LastModifiedBy = assignedBy;
+                _unitOfWork.PhanCongDieuHanhMons.Update(currentAssignment);
+                await _unitOfWork.CompleteAsync();
+                return (true, "Đã hủy phân công người điều hành môn.");
+            }
+
+            if (currentAssignment != null)
+            {
+                currentAssignment.NguoiDieuHanhMonId = coordinatorProfile!.Id;
+                currentAssignment.LastModified = DateTime.UtcNow;
+                currentAssignment.LastModifiedBy = assignedBy;
+                _unitOfWork.PhanCongDieuHanhMons.Update(currentAssignment);
+            }
+            else
+            {
+                await _unitOfWork.PhanCongDieuHanhMons.AddAsync(new PhanCongDieuHanhMon
+                {
+                    GiaiDauId = giaiDauId,
+                    DanhMucId = danhMucId,
+                    NguoiDieuHanhMonId = coordinatorProfile!.Id,
+                    CreatedBy = assignedBy
+                });
             }
 
             await _unitOfWork.CompleteAsync();
-
             return (true, "Đã phân công Người điều hành môn thành công!");
         }
     }

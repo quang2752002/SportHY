@@ -19,6 +19,10 @@ namespace Dms.Domain.Entities
         [System.ComponentModel.DataAnnotations.Schema.ForeignKey(nameof(ThuKyId))]
         public virtual ThuKy? ThuKy { get; set; }
 
+        public int? NguoiDieuHanhMonId { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.ForeignKey(nameof(NguoiDieuHanhMonId))]
+        public virtual NguoiDieuHanhMon? NguoiDieuHanhMon { get; set; }
+
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

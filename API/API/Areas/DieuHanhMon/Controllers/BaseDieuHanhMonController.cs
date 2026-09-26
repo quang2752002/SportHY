@@ -21,20 +21,17 @@ namespace API.Areas.DieuHanhMon.Controllers
             _userManager = userManager;
         }
 
-        protected async Task<Dms.Domain.Entities.TrongTai?> GetCurrentRefereeAsync()
+        protected async Task<ApplicationUser?> GetCurrentUserAsync()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return null;
-
-            return await _dieuHanhService.GetRefereeByUserIdOrNameAsync(user.TrongTaiId, user.UserName, user.Email);
+            return await _userManager.GetUserAsync(User);
         }
 
         protected async Task<List<CoordinatorAssignmentDto>> GetAssignedAssignmentsAsync()
         {
             bool isAdminOrManager = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager);
-            var currentReferee = await GetCurrentRefereeAsync();
+            var currentUser = await GetCurrentUserAsync();
 
-            return await _dieuHanhService.GetAssignedDisciplinesAsync(currentReferee?.Id, isAdminOrManager);
+            return await _dieuHanhService.GetAssignedDisciplinesAsync(currentUser?.Id, isAdminOrManager);
         }
 
         protected (int? giaiDauId, int? danhMucId) GetSelectedAssignment(int? reqGiaiDauId, int? reqDanhMucId, List<CoordinatorAssignmentDto> assignments)

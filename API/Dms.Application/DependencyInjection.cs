@@ -33,6 +33,7 @@ namespace Dms.Application
             services.AddScoped<Dms.Application.Interfaces.ICauHinhLichThiDauService, Dms.Application.Services.CauHinhLichThiDauService>();
             services.AddScoped<Dms.Application.Interfaces.ITruongBanTrongTaiService, Dms.Application.Services.TruongBanTrongTaiService>();
             services.AddScoped<Dms.Application.Interfaces.IDieuHanhMonService, Dms.Application.Services.DieuHanhMonService>();
+            services.AddScoped<Dms.Application.Interfaces.INguoiDieuHanhMonService, Dms.Application.Services.NguoiDieuHanhMonService>();
             services.AddScoped<Dms.Application.Interfaces.IThuKyGiaiService, Dms.Application.Services.ThuKyGiaiService>();
             services.AddScoped<Dms.Application.Interfaces.ICauHinhTheThucService, Dms.Application.Services.CauHinhTheThucService>();
             services.AddScoped<Dms.Application.Interfaces.IMatchScoringEngine, Dms.Application.Services.MatchScoringEngine>();

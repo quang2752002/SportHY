@@ -15,6 +15,9 @@ namespace Dms.Domain.Interfaces
         IGenericRepository<DanhMucMonTheThao> DanhMucMonTheThaos { get; }
         IGenericRepository<MonTheThao> MonTheThaos { get; }
         IGenericRepository<GiaiDauMonTheThao> GiaiDauMonTheThaos { get; }
+        IGenericRepository<PhanCongDieuHanhMon> PhanCongDieuHanhMons { get; }
+        IGenericRepository<NguoiDieuHanhMon> NguoiDieuHanhMons { get; }
+        IGenericRepository<ApplicationUser> ApplicationUsers { get; }
         IGenericRepository<VanDongVien> VanDongViens { get; }
         IGenericRepository<Doi> Dois { get; }
         IGenericRepository<ThanhVienDoi> ThanhVienDois { get; }

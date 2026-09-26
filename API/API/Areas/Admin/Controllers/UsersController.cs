@@ -25,6 +25,8 @@ namespace API.Areas.Admin.Controllers
         public string? TenTrongTai { get; set; }
         public int? ThuKyId { get; set; }
         public string? TenThuKy { get; set; }
+        public int? NguoiDieuHanhMonId { get; set; }
+        public string? TenNguoiDieuHanhMon { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
@@ -48,19 +50,22 @@ namespace API.Areas.Admin.Controllers
         private readonly IDonViService _donViService;
         private readonly ITrongTaiService _trongTaiService;
         private readonly IThuKyService _thuKyService;
+        private readonly INguoiDieuHanhMonService _nguoiDieuHanhMonService;
 
         public UsersController(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole<int>> roleManager,
             IDonViService donViService,
             ITrongTaiService trongTaiService,
-            IThuKyService thuKyService)
+            IThuKyService thuKyService,
+            INguoiDieuHanhMonService nguoiDieuHanhMonService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _donViService = donViService;
             _trongTaiService = trongTaiService;
             _thuKyService = thuKyService;
+            _nguoiDieuHanhMonService = nguoiDieuHanhMonService;
         }
 
         [HttpGet]
@@ -84,6 +89,7 @@ namespace API.Areas.Admin.Controllers
                 .Include(u => u.DonVi)
                 .Include(u => u.TrongTai)
                 .Include(u => u.ThuKy)
+                .Include(u => u.NguoiDieuHanhMon)
                 .AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -126,6 +132,8 @@ namespace API.Areas.Admin.Controllers
                     TenTrongTai = u.TrongTai?.HoTen,
                     ThuKyId = u.ThuKyId,
                     TenThuKy = u.ThuKy?.HoTen,
+                    NguoiDieuHanhMonId = u.NguoiDieuHanhMonId,
+                    TenNguoiDieuHanhMon = u.NguoiDieuHanhMon?.HoTen,
                     CreatedAt = u.CreatedAt
                 });
             }
@@ -165,6 +173,7 @@ namespace API.Areas.Admin.Controllers
                     donViId = user.DonViId,
                     trongTaiId = user.TrongTaiId,
                     thuKyId = user.ThuKyId,
+                    nguoiDieuHanhMonId = user.NguoiDieuHanhMonId,
                     role = roles.FirstOrDefault() ?? AppRoles.Admin
                 }
             });
@@ -199,8 +208,23 @@ namespace API.Areas.Admin.Controllers
                 var currentRoles = await _userManager.GetRolesAsync(user);
                 if (!currentRoles.Contains(dto.Role))
                 {
-                    await _userManager.RemoveFromRolesAsync(user, currentRoles);
-                    await _userManager.AddToRoleAsync(user, dto.Role);
+                    var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                    if (!removeRolesResult.Succeeded)
+                    {
+                        return Json(new { success = false, message = string.Join("; ", removeRolesResult.Errors.Select(e => e.Description)) });
+                    }
+
+                    var addRoleResult = await _userManager.AddToRoleAsync(user, dto.Role);
+                    if (!addRoleResult.Succeeded)
+                    {
+                        return Json(new { success = false, message = string.Join("; ", addRoleResult.Errors.Select(e => e.Description)) });
+                    }
+                }
+
+                if (dto.Role == AppRoles.SportCoordinator)
+                {
+                    var profileResult = await _nguoiDieuHanhMonService.EnsureProfileForUserAsync(user.Id);
+                    if (!profileResult.success) return Json(new { success = false, message = profileResult.message });
                 }
 
                 // Đổi mật khẩu nếu có nhập mật khẩu mới
@@ -247,7 +271,17 @@ namespace API.Areas.Admin.Controllers
                 }
 
                 // Gán vai trò (Role) trực tiếp cho tài khoản - KHÔNG CẦN PERMISSION NỮA
-                await _userManager.AddToRoleAsync(user, dto.Role);
+                var addRoleResult = await _userManager.AddToRoleAsync(user, dto.Role);
+                if (!addRoleResult.Succeeded)
+                {
+                    return Json(new { success = false, message = string.Join("; ", addRoleResult.Errors.Select(e => e.Description)) });
+                }
+
+                if (dto.Role == AppRoles.SportCoordinator)
+                {
+                    var profileResult = await _nguoiDieuHanhMonService.EnsureProfileForUserAsync(user.Id);
+                    if (!profileResult.success) return Json(new { success = false, message = profileResult.message });
+                }
 
                 return Json(new { success = true, message = "Tạo tài khoản người dùng thành công!" });
             }

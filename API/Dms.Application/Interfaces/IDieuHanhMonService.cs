@@ -8,8 +8,11 @@ namespace Dms.Application.Interfaces
 {
     public interface IDieuHanhMonService
     {
-        Task<TrongTai?> GetRefereeByUserIdOrNameAsync(int? trongTaiId, string? userName, string? email);
-        Task<List<CoordinatorAssignmentDto>> GetAssignedDisciplinesAsync(int? refereeId, bool isAdminOrManager);
+        /// <summary>Lấy phạm vi giải và danh mục môn mà tài khoản điều hành được phép truy cập.</summary>
+        /// <param name="applicationUserId">ID tài khoản ApplicationUser của người điều hành.</param>
+        /// <param name="isAdminOrManager">True nếu người gọi là Admin/Manager và được xem mọi phạm vi.</param>
+        /// <returns>Danh sách các cặp giải/danh mục cùng những môn thi đấu tương ứng.</returns>
+        Task<List<CoordinatorAssignmentDto>> GetAssignedDisciplinesAsync(int? applicationUserId, bool isAdminOrManager);
         Task<CoordinatorDashboardDto> GetDashboardAsync(int giaiDauId, int danhMucId, List<CoordinatorAssignmentDto> assignments);
         Task<List<CoordinatorEventDto>> GetEventsAsync(int giaiDauId, int danhMucId, int? monTheThaoId, List<CoordinatorAssignmentDto> assignments);
         Task<List<CoordinatorScheduleMatchDto>> GetScheduleAsync(int giaiDauId, int danhMucId, int? monTheThaoId, string? status, DateTime? date, List<CoordinatorAssignmentDto> assignments);

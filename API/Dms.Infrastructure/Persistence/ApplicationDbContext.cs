@@ -25,6 +25,8 @@ namespace Dms.Infrastructure.Persistence
         public DbSet<DanhMucMonTheThao> DanhMucMonTheThaos => Set<DanhMucMonTheThao>();
         public DbSet<MonTheThao> MonTheThaos => Set<MonTheThao>();
         public DbSet<GiaiDauMonTheThao> GiaiDauMonTheThaos => Set<GiaiDauMonTheThao>();
+        public DbSet<PhanCongDieuHanhMon> PhanCongDieuHanhMons => Set<PhanCongDieuHanhMon>();
+        public DbSet<NguoiDieuHanhMon> NguoiDieuHanhMons => Set<NguoiDieuHanhMon>();
         public DbSet<VanDongVien> VanDongViens => Set<VanDongVien>();
         public DbSet<Doi> Dois => Set<Doi>();
         public DbSet<ThanhVienDoi> ThanhVienDois => Set<ThanhVienDoi>();
@@ -84,6 +86,22 @@ namespace Dms.Infrastructure.Persistence
             modelBuilder.Entity<PhanCongThuKy>()
                 .HasIndex(p => new { p.GiaiDauId, p.ThuKyId })
                 .IsUnique();
+
+            modelBuilder.Entity<PhanCongDieuHanhMon>()
+                .HasIndex(p => new { p.GiaiDauId, p.DanhMucId })
+                .IsUnique()
+                .HasFilter("[IsDeleted] = 0");
+
+            modelBuilder.Entity<PhanCongDieuHanhMon>()
+                .HasOne(p => p.NguoiDieuHanhMon)
+                .WithMany(profile => profile.PhanCongDieuHanhMons)
+                .HasForeignKey(p => p.NguoiDieuHanhMonId);
+
+            modelBuilder.Entity<ApplicationUser>()
+                .HasOne(user => user.NguoiDieuHanhMon)
+                .WithOne(profile => profile.ApplicationUser)
+                .HasForeignKey<ApplicationUser>(user => user.NguoiDieuHanhMonId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<SuCoDieuHanhMon>()
                 .HasIndex(s => new { s.GiaiDauMonTheThaoId, s.TrangThai });

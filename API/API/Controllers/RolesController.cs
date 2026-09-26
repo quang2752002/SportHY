@@ -1,5 +1,6 @@
 using Dms.Application.Common;
 using Dms.Application.DTOs;
+using Dms.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,15 +18,18 @@ namespace API.Controllers
         private readonly RoleManager<IdentityRole<int>> _roleManager;
         private readonly UserManager<Dms.Domain.Entities.ApplicationUser> _userManager;
         private readonly Dms.Infrastructure.Persistence.ApplicationDbContext _dbContext;
+        private readonly INguoiDieuHanhMonService _nguoiDieuHanhMonService;
 
         public RolesController(
             RoleManager<IdentityRole<int>> roleManager,
             UserManager<Dms.Domain.Entities.ApplicationUser> userManager,
-            Dms.Infrastructure.Persistence.ApplicationDbContext dbContext)
+            Dms.Infrastructure.Persistence.ApplicationDbContext dbContext,
+            INguoiDieuHanhMonService nguoiDieuHanhMonService)
         {
             _roleManager = roleManager;
             _userManager = userManager;
             _dbContext = dbContext;
+            _nguoiDieuHanhMonService = nguoiDieuHanhMonService;
         }
 
         /// <summary>
@@ -270,6 +274,11 @@ namespace API.Controllers
                 if (await _roleManager.RoleExistsAsync(dto.Role))
                 {
                     await _userManager.AddToRoleAsync(user, dto.Role);
+                    if (dto.Role == AppRoles.SportCoordinator)
+                    {
+                        var profileResult = await _nguoiDieuHanhMonService.EnsureProfileForUserAsync(user.Id);
+                        if (!profileResult.success) return BadRequest(new { message = profileResult.message });
+                    }
                 }
             }
 
@@ -302,6 +311,11 @@ namespace API.Controllers
                 if (await _roleManager.RoleExistsAsync(dto.Role))
                 {
                     await _userManager.AddToRoleAsync(user, dto.Role);
+                    if (dto.Role == AppRoles.SportCoordinator)
+                    {
+                        var profileResult = await _nguoiDieuHanhMonService.EnsureProfileForUserAsync(user.Id);
+                        if (!profileResult.success) return BadRequest(new { message = profileResult.message });
+                    }
                 }
             }
 

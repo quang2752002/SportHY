@@ -18,6 +18,9 @@ namespace Dms.Infrastructure.Repositories
         private IGenericRepository<DanhMucMonTheThao>? _danhMucMonTheThaos;
         private IGenericRepository<MonTheThao>? _monTheThaos;
         private IGenericRepository<GiaiDauMonTheThao>? _giaiDauMonTheThaos;
+        private IGenericRepository<PhanCongDieuHanhMon>? _phanCongDieuHanhMons;
+        private IGenericRepository<NguoiDieuHanhMon>? _nguoiDieuHanhMons;
+        private IGenericRepository<ApplicationUser>? _applicationUsers;
         private IGenericRepository<VanDongVien>? _vanDongViens;
         private IGenericRepository<Doi>? _dois;
         private IGenericRepository<ThanhVienDoi>? _thanhVienDois;
@@ -76,6 +79,15 @@ namespace Dms.Infrastructure.Repositories
 
         public IGenericRepository<GiaiDauMonTheThao> GiaiDauMonTheThaos => 
             _giaiDauMonTheThaos ??= new GenericRepository<GiaiDauMonTheThao>(_context);
+
+        public IGenericRepository<PhanCongDieuHanhMon> PhanCongDieuHanhMons =>
+            _phanCongDieuHanhMons ??= new GenericRepository<PhanCongDieuHanhMon>(_context);
+
+        public IGenericRepository<NguoiDieuHanhMon> NguoiDieuHanhMons =>
+            _nguoiDieuHanhMons ??= new GenericRepository<NguoiDieuHanhMon>(_context);
+
+        public IGenericRepository<ApplicationUser> ApplicationUsers =>
+            _applicationUsers ??= new GenericRepository<ApplicationUser>(_context);
 
       
 

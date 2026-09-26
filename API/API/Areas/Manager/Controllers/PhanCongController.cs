@@ -15,6 +15,7 @@ namespace API.Areas.Manager.Controllers
         private readonly IGiaiDauService _giaiDauService;
         private readonly ITrongTaiService _trongTaiService;
         private readonly IThuKyGiaiService _thuKyGiaiService;
+        private readonly INguoiDieuHanhMonService _nguoiDieuHanhMonService;
         private readonly UserManager<ApplicationUser> _userManager;
 
         public PhanCongController(
@@ -22,12 +23,14 @@ namespace API.Areas.Manager.Controllers
             IGiaiDauService giaiDauService,
             ITrongTaiService trongTaiService,
             IThuKyGiaiService thuKyGiaiService,
+            INguoiDieuHanhMonService nguoiDieuHanhMonService,
             UserManager<ApplicationUser> userManager)
         {
             _truongBanService = truongBanService;
             _giaiDauService = giaiDauService;
             _trongTaiService = trongTaiService;
             _thuKyGiaiService = thuKyGiaiService;
+            _nguoiDieuHanhMonService = nguoiDieuHanhMonService;
             _userManager = userManager;
         }
 
@@ -46,6 +49,9 @@ namespace API.Areas.Manager.Controllers
 
             var allReferees = (await _trongTaiService.GetAllAsync())?.ToList() ?? new();
             ViewBag.AllReferees = allReferees;
+            var sportCoordinatorUsers = await _userManager.GetUsersInRoleAsync(Dms.Application.Common.AppRoles.SportCoordinator);
+            ViewBag.SportCoordinatorUsers = await _nguoiDieuHanhMonService.GetProfilesForAccountsAsync(
+                sportCoordinatorUsers.Select(user => user.Id).ToList());
             ViewBag.SecretaryAssignments = selectedGiaiDauId.HasValue
                 ? await _thuKyGiaiService.GetSecretaryAssignmentsForManagerAsync(selectedGiaiDauId.Value)
                 : new List<ThuKyPhanCongDto>();
@@ -105,33 +111,19 @@ namespace API.Areas.Manager.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AssignSportCoordinator(int giaiDauId, int danhMucId, int? trongTaiId)
+        public async Task<IActionResult> AssignSportCoordinator(int giaiDauId, int danhMucId, int? nguoiDieuHanhMonId)
         {
-            var (success, message) = await _truongBanService.AssignSportCoordinatorForManagerAsync(giaiDauId, danhMucId, trongTaiId);
-            if (!success)
-            {
-                return Json(new { success = false, message = message });
-            }
+            var coordinatorUsers = await _userManager.GetUsersInRoleAsync(Dms.Application.Common.AppRoles.SportCoordinator);
+            var coordinatorProfiles = await _nguoiDieuHanhMonService.GetProfilesForAccountsAsync(
+                coordinatorUsers.Select(user => user.Id).ToList());
+            var (success, message) = await _truongBanService.AssignSportCoordinatorForManagerAsync(
+                giaiDauId,
+                danhMucId,
+                nguoiDieuHanhMonId,
+                coordinatorProfiles.Select(profile => profile.Id).ToList(),
+                User.Identity?.Name);
 
-            // Đồng bộ cấp Role SportCoordinator cho tài khoản user tương ứng nếu có
-            if (trongTaiId.HasValue)
-            {
-                var refList = await _trongTaiService.GetAllAsync();
-                var refEntity = refList.FirstOrDefault(t => t.Id == trongTaiId.Value);
-                if (refEntity != null)
-                {
-                    var users = _userManager.Users.Where(u => u.TrongTaiId == trongTaiId.Value || u.UserName == refEntity.Ma).ToList();
-                    foreach (var u in users)
-                    {
-                        if (!await _userManager.IsInRoleAsync(u, Dms.Application.Common.AppRoles.SportCoordinator))
-                        {
-                            await _userManager.AddToRoleAsync(u, Dms.Application.Common.AppRoles.SportCoordinator);
-                        }
-                    }
-                }
-            }
-
-            return Json(new { success = true, message = message });
+            return Json(new { success, message });
         }
 
         /// <summary>

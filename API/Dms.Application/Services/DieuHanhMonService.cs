@@ -24,35 +24,47 @@ namespace Dms.Application.Services
             _tranDauService = tranDauService;
         }
 
-        public async Task<TrongTai?> GetRefereeByUserIdOrNameAsync(int? trongTaiId, string? userName, string? email)
-        {
-            if (trongTaiId.HasValue)
-            {
-                var referee = (await _unitOfWork.TrongTais.FindAsync(t => t.Id == trongTaiId.Value && t.IsDeleted != true)).FirstOrDefault();
-                if (referee != null) return referee;
-            }
-
-            var byMa = (await _unitOfWork.TrongTais.FindAsync(t => (t.Ma == userName || t.Email == email) && t.IsDeleted != true)).FirstOrDefault();
-            return byMa;
-        }
-
-        public async Task<List<CoordinatorAssignmentDto>> GetAssignedDisciplinesAsync(int? refereeId, bool isAdminOrManager)
+        /// <summary>Lấy phạm vi giải và danh mục môn mà tài khoản điều hành được phép truy cập.</summary>
+        /// <param name="applicationUserId">ID tài khoản ApplicationUser của người điều hành.</param>
+        /// <param name="isAdminOrManager">True nếu người gọi là Admin/Manager và được xem mọi phạm vi.</param>
+        /// <returns>Danh sách các cặp giải/danh mục cùng những môn thi đấu tương ứng.</returns>
+        public async Task<List<CoordinatorAssignmentDto>> GetAssignedDisciplinesAsync(int? applicationUserId, bool isAdminOrManager)
         {
             var gdms = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(g => g.IsDeleted != true)).ToList();
+            var monTheThaoIds = gdms.Select(g => g.MonTheThaoId).Distinct().ToList();
+            var monTheThaos = (await _unitOfWork.MonTheThaos.FindAsync(m => monTheThaoIds.Contains(m.Id) && m.IsDeleted != true)).ToDictionary(m => m.Id);
 
             if (!isAdminOrManager)
             {
-                if (!refereeId.HasValue) return new List<CoordinatorAssignmentDto>();
-                gdms = gdms.Where(g => g.NguoiDieuHanhId == refereeId.Value).ToList();
+                if (!applicationUserId.HasValue) return new List<CoordinatorAssignmentDto>();
+
+                var currentUser = await _unitOfWork.ApplicationUsers.GetByIdAsync(applicationUserId.Value);
+                if (currentUser?.NguoiDieuHanhMonId is not int coordinatorProfileId)
+                {
+                    return new List<CoordinatorAssignmentDto>();
+                }
+
+                var coordinatorProfile = await _unitOfWork.NguoiDieuHanhMons.GetByIdAsync(coordinatorProfileId);
+                if (coordinatorProfile == null || coordinatorProfile.IsDeleted == true || !coordinatorProfile.TrangThai)
+                {
+                    return new List<CoordinatorAssignmentDto>();
+                }
+
+                var coordinatorAssignments = (await _unitOfWork.PhanCongDieuHanhMons.FindAsync(
+                    assignment => assignment.NguoiDieuHanhMonId == coordinatorProfileId && assignment.IsDeleted != true)).ToList();
+                var assignedScopes = coordinatorAssignments
+                    .Select(assignment => (assignment.GiaiDauId, assignment.DanhMucId))
+                    .ToHashSet();
+                if (assignedScopes.Count == 0) return new List<CoordinatorAssignmentDto>();
+
+                gdms = gdms.Where(g => monTheThaos.TryGetValue(g.MonTheThaoId, out var mon) &&
+                    assignedScopes.Contains((g.GiaiDauId, mon.DanhMucId))).ToList();
             }
 
             if (gdms.Count == 0) return new List<CoordinatorAssignmentDto>();
 
             var giaiDauIds = gdms.Select(g => g.GiaiDauId).Distinct().ToList();
             var giaiDaus = (await _unitOfWork.GiaiDaus.FindAsync(g => giaiDauIds.Contains(g.Id) && g.IsDeleted != true)).ToDictionary(g => g.Id);
-
-            var monTheThaoIds = gdms.Select(g => g.MonTheThaoId).Distinct().ToList();
-            var monTheThaos = (await _unitOfWork.MonTheThaos.FindAsync(m => monTheThaoIds.Contains(m.Id) && m.IsDeleted != true)).ToDictionary(m => m.Id);
 
             var danhMucIds = monTheThaos.Values.Select(m => m.DanhMucId).Distinct().ToList();
             var danhMucs = (await _unitOfWork.DanhMucMonTheThaos.FindAsync(d => danhMucIds.Contains(d.Id) && d.IsDeleted != true)).ToDictionary(d => d.Id);

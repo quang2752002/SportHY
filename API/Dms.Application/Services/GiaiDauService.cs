@@ -90,8 +90,7 @@ namespace Dms.Application.Services
                                     LaMonDongDoi = m.LaMonDongDoi,
                                     TenDanhMuc = tenDM,
                                     HinhThucThiDau = m.HinhThucThiDau.ToString(),
-                                    GioiTinh = m.GioiTinh,
-                                    NguoiDieuHanhId = x.NguoiDieuHanhId
+                                    GioiTinh = m.GioiTinh
                                 };
                             })
                             .ToList();
@@ -150,8 +149,7 @@ namespace Dms.Application.Services
                                     LaMonDongDoi = m.LaMonDongDoi,
                                     TenDanhMuc = tenDM,
                                     HinhThucThiDau = m.HinhThucThiDau.ToString(),
-                                    GioiTinh = m.GioiTinh,
-                                    NguoiDieuHanhId = x.NguoiDieuHanhId
+                                    GioiTinh = m.GioiTinh
                                 };
                             })
                             .ToList();
@@ -217,8 +215,7 @@ namespace Dms.Application.Services
                             LaMonDongDoi = m.LaMonDongDoi,
                             TenDanhMuc = tenDM,
                             HinhThucThiDau = m.HinhThucThiDau.ToString(),
-                            GioiTinh = m.GioiTinh,
-                            NguoiDieuHanhId = x.NguoiDieuHanhId
+                            GioiTinh = m.GioiTinh
                         };
                     })
                     .ToList();

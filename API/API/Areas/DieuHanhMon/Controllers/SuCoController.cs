@@ -16,12 +16,12 @@ namespace API.Areas.DieuHanhMon.Controllers
         public async Task<IActionResult> Index(int? giaiDauId, int? danhMucId, int? giaiDauMonTheThaoId, string? status)
         {
             var assignments = await GetAssignedAssignmentsAsync();
-            var currentReferee = await GetCurrentRefereeAsync();
+            var currentUser = await GetCurrentUserAsync();
             var (selectedGiaiDauId, selectedDanhMucId) = GetSelectedAssignment(giaiDauId, danhMucId, assignments);
             var allowedIds = assignments.SelectMany(a => a.GiaiDauMonTheThaoIds).Distinct().ToList();
 
             ViewBag.Assignments = assignments;
-            ViewBag.CurrentReferee = currentReferee;
+            ViewBag.CurrentUser = currentUser;
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
             ViewBag.SelectedDanhMucId = selectedDanhMucId;
             ViewBag.SelectedEventId = giaiDauMonTheThaoId;

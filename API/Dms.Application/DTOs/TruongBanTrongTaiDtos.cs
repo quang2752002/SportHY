@@ -169,10 +169,20 @@ namespace Dms.Application.DTOs
         public int DanhMucId { get; set; }
         public string TenDanhMuc { get; set; } = string.Empty;
         public string MaDanhMuc { get; set; } = string.Empty;
-        public int? NguoiDieuHanhId { get; set; }
+        public int? NguoiDieuHanhMonId { get; set; }
         public string? TenNguoiDieuHanh { get; set; }
         public List<string> DanhSachMon { get; set; } = new();
         public int SoMonCon { get; set; }
+    }
+
+    public class SportCoordinatorUserOptionDto
+    {
+        public int Id { get; set; }
+        public int ApplicationUserId { get; set; }
+        public string Ma { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string? UserName { get; set; }
+        public string? Email { get; set; }
     }
 
     /// <summary>

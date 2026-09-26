@@ -11,7 +11,7 @@
         <h4 class="fw-bold mb-1 text-dark">
             <i class="fa-solid fa-users-gear text-primary me-2"></i>Quản lý Tài Khoản & Phân Quyền Theo Vai Trò
         </h4>
-        <p class="text-muted small mb-0">Cấp phát tài khoản người dùng theo phân vùng vai trò (Admin, Trọng tài, Thư ký, Đơn vị/Đoàn) - Tự động bảo vệ theo Area.</p>
+        <p class="text-muted small mb-0">Cấp tài khoản theo vai trò: quản lý, điều hành môn, trọng tài, thư ký và đơn vị/đoàn.</p>
     </div>
     <div class="d-flex gap-2">
         <button type="button" class="btn btn-primary shadow-sm" onclick="openCreateModal()">
@@ -95,6 +95,7 @@
                             @* <option value="Admin">Admin (Quản trị viên toàn quyền)</option> *@
                             <option value="Manager">Manager (Quản lý giải đấu)</option>
                             <option value="Delegation">Delegation (Đoàn thể thao / Đơn vị nộp hồ sơ)</option>
+                            <option value="SportCoordinator">SportCoordinator (Người điều hành môn)</option>
                             <option value="HeadReferee">HeadReferee (Trưởng ban trọng tài)</option>
                             <option value="Referee">Referee (Trọng tài điều hành)</option>
                             <option value="Secretary">Secretary (Thư ký bàn)</option>
@@ -102,6 +103,9 @@
                         <div class="form-text text-primary small">
                             <i class="fa-solid fa-circle-check me-1"></i>
                             Tài khoản sẽ tự động được cấp quyền truy cập vào đúng phân vùng Area tương ứng với vai trò này.
+                        </div>
+                        <div class="form-text text-muted small d-none" id="coordinatorProfileHelp">
+                            Hồ sơ người điều hành môn riêng sẽ tự động được tạo từ họ tên, email và số điện thoại của tài khoản.
                         </div>
                     </div>
 
@@ -233,6 +237,7 @@
             $('#donViGroup').addClass('d-none');
             $('#trongTaiGroup').addClass('d-none');
             $('#thuKyGroup').addClass('d-none');
+            $('#coordinatorProfileHelp').addClass('d-none');
 
             if (role === 'Delegation') {
                 $('#donViGroup').removeClass('d-none');
@@ -240,6 +245,8 @@
                 $('#trongTaiGroup').removeClass('d-none');
             } else if (role === 'Secretary') {
                 $('#thuKyGroup').removeClass('d-none');
+            } else if (role === 'SportCoordinator') {
+                $('#coordinatorProfileHelp').removeClass('d-none');
             }
         }
 
@@ -290,6 +297,8 @@
                     linkedHtml = `<span class="badge bg-light text-dark border" title="Hồ sơ Trọng tài"><i class="fa-solid fa-whistle me-1 text-primary"></i>${escapeHtml(item.tenTrongTai)}</span>`;
                 } else if (item.tenThuKy) {
                     linkedHtml = `<span class="badge bg-light text-dark border" title="Hồ sơ Thư ký"><i class="fa-solid fa-clipboard-user me-1 text-secondary"></i>${escapeHtml(item.tenThuKy)}</span>`;
+                } else if (item.tenNguoiDieuHanhMon) {
+                    linkedHtml = `<span class="badge bg-light text-dark border" title="Hồ sơ Người điều hành môn"><i class="fa-solid fa-person-chalkboard me-1 text-primary"></i>${escapeHtml(item.tenNguoiDieuHanhMon)}</span>`;
                 }
 
                 html += `
@@ -340,6 +349,7 @@
                 case 'HeadReferee': return '<span class="badge bg-info text-dark badge-status">Trưởng Ban TT</span>';
                 case 'Referee': return '<span class="badge bg-primary badge-status">Trọng Tài</span>';
                 case 'Secretary': return '<span class="badge bg-secondary badge-status">Thư Ký</span>';
+                case 'SportCoordinator': return '<span class="badge bg-primary badge-status">Điều hành môn</span>';
                 default: return `<span class="badge bg-light text-dark border">${escapeHtml(role)}</span>`;
             }
         }
@@ -350,6 +360,9 @@
             }
             if (role === 'Delegation') {
                 return '<span class="badge bg-info-subtle text-info border">Area: DonVi</span>';
+            }
+            if (role === 'SportCoordinator') {
+                return '<span class="badge bg-primary-subtle text-primary border">Area: DieuHanhMon</span>';
             }
             return '<span class="badge bg-success-subtle text-success border">Area: TrongTai</span>';
         }
