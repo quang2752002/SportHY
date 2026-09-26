@@ -268,6 +268,9 @@ namespace API.Controllers
             Response.Cookies.Delete("DonVi_SelectedId");
             Response.Cookies.Delete("TrongTai_SelectedId");
             Response.Cookies.Delete("TruongBan_SelectedGiaiDauId");
+            Response.Cookies.Delete("DieuHanh_SelectedGiaiDauId");
+            Response.Cookies.Delete("DieuHanh_SelectedDanhMucId");
+            Response.Cookies.Delete("ThuKy_SelectedGiaiDauId");
         }
     }
 }

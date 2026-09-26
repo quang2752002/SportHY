@@ -18,7 +18,7 @@ namespace API.Areas.ThuKy.Controllers
     /// Áp dụng quyền truy cập: Thư ký (Secretary), Quản trị viên (Admin), Quản lý giải (Manager).
     /// </summary>
     [Area("ThuKy")]
-    [Authorize(Roles = AppRoles.Secretary + "," + AppRoles.Admin + "," + AppRoles.Manager)]
+    [Authorize(Roles = AppRoles.Secretary)]
     public abstract class BaseThuKyController : Controller
     {
         protected readonly IThuKyGiaiService _thuKyService;

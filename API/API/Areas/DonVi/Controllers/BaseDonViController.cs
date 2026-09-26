@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace API.Areas.DonVi.Controllers
 {
     [Area("DonVi")]
-    [Authorize(Roles = AppRoles.Delegation + "," + AppRoles.Admin + "," + AppRoles.Manager)]
+    [Authorize(Roles = AppRoles.Delegation)]
     public abstract class BaseDonViController : Controller
     {
         protected readonly UserManager<ApplicationUser> _userManager;
