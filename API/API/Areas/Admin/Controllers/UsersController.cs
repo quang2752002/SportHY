@@ -182,7 +182,7 @@ namespace API.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> Save([FromBody] CreateUpdateUserDto dto, [FromQuery] int? id = null)
         {
-            bool isRefereeRole = dto.Role == AppRoles.Referee || dto.Role == AppRoles.HeadReferee;
+            bool isRefereeRole = dto.Role == AppRoles.Referee;
             bool isSecretaryRole = dto.Role == AppRoles.Secretary;
             bool isDelegationRole = dto.Role == AppRoles.Delegation;
 

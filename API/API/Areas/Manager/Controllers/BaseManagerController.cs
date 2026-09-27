@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Areas.Manager.Controllers
 {
     [Area("Manager")]
-    [Authorize(Roles = AppRoles.Manager)]
+    [Authorize(Roles = AppRoles.Manager + "," + AppRoles.Admin)]
     public abstract class BaseManagerController : Controller
     {
     }

@@ -1,8 +1,10 @@
 using Dms.Application.DTOs;
 using Dms.Application.Interfaces;
+using Dms.Domain.Entities;
 using Dms.Domain.Enums;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.IO;
@@ -17,17 +19,23 @@ namespace API.Areas.Manager.Controllers
         private readonly IGiaiDauService _giaiDauService;
         private readonly IMonTheThaoService _monTheThaoService;
         private readonly IKhoiService _khoiService;
+        private readonly ITrongTaiService _trongTaiService;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _env;
 
         public GiaiDauController(
             IGiaiDauService giaiDauService,
             IMonTheThaoService monTheThaoService,
             IKhoiService khoiService,
+            ITrongTaiService trongTaiService,
+            UserManager<ApplicationUser> userManager,
             IWebHostEnvironment env)
         {
             _giaiDauService = giaiDauService;
             _monTheThaoService = monTheThaoService;
             _khoiService = khoiService;
+            _trongTaiService = trongTaiService;
+            _userManager = userManager;
             _env = env;
         }
 
@@ -42,6 +50,7 @@ namespace API.Areas.Manager.Controllers
         {
             ViewBag.Khois = await _khoiService.GetAllAsync();
             ViewBag.MonTheThaos = await _monTheThaoService.GetAllAsync();
+            ViewBag.TrongTais = (await _trongTaiService.GetAllAsync())?.Where(t => t.TrangThai == true).ToList();
             return View();
         }
 
@@ -56,6 +65,7 @@ namespace API.Areas.Manager.Controllers
 
             ViewBag.Khois = await _khoiService.GetAllAsync();
             ViewBag.MonTheThaos = await _monTheThaoService.GetAllAsync();
+            ViewBag.TrongTais = (await _trongTaiService.GetAllAsync())?.Where(t => t.TrangThai == true).ToList();
             return View(item);
         }
 
@@ -108,17 +118,62 @@ namespace API.Areas.Manager.Controllers
                 {
                     var updated = await _giaiDauService.UpdateAsync(id.Value, dto, username);
                     if (updated == null) return Json(new { success = false, message = "Không tìm thấy giải đấu để cập nhật." });
+
+                    if (dto.TruongBanTrongTaiId.HasValue)
+                    {
+                        await SyncHeadRefereeRoleAsync(dto.TruongBanTrongTaiId.Value);
+                    }
+
                     return Json(new { success = true, message = "Cập nhật giải đấu thành công!", data = updated });
                 }
                 else
                 {
                     var created = await _giaiDauService.CreateAsync(dto, username);
+
+                    if (dto.TruongBanTrongTaiId.HasValue)
+                    {
+                        await SyncHeadRefereeRoleAsync(dto.TruongBanTrongTaiId.Value);
+                    }
+
                     return Json(new { success = true, message = "Thêm mới giải đấu thành công!", data = created });
                 }
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        private async Task SyncHeadRefereeRoleAsync(int trongTaiId)
+        {
+            try
+            {
+                var refList = await _trongTaiService.GetAllAsync();
+                var refEntity = refList.FirstOrDefault(t => t.Id == trongTaiId);
+                if (refEntity != null)
+                {
+                    var users = _userManager.Users.Where(u =>
+                        u.TrongTaiId == trongTaiId ||
+                        u.UserName == refEntity.Ma ||
+                        u.Email == refEntity.Email).ToList();
+                    foreach (var u in users)
+                    {
+                        if (u.TrongTaiId != trongTaiId)
+                        {
+                            u.TrongTaiId = trongTaiId;
+                            await _userManager.UpdateAsync(u);
+                        }
+
+                        if (!await _userManager.IsInRoleAsync(u, Dms.Application.Common.AppRoles.HeadReferee))
+                        {
+                            await _userManager.AddToRoleAsync(u, Dms.Application.Common.AppRoles.HeadReferee);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Bỏ qua lỗi đồng bộ tài khoản nếu có để không gián đoạn lưu giải
             }
         }
 

@@ -470,14 +470,94 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Số VĐV vào Chung kết</label>
-                                    <input type="number" class="form-control" id="fmtSoVdvVaoCk" value="8" min="1" max="16">
+                                    <label class="form-label fw-semibold small">Số vòng thi đấu</label>
+                                    <select id="fmtSoVongThi" class="form-select">
+                                        <option value="1">1 vòng (Chung kết tính giờ trực tiếp)</option>
+                                        <option value="2" selected>2 vòng (Vòng loại → Chung kết Top 8)</option>
+                                        <option value="3">3 vòng (Sơ loại → Bán kết → Chung kết)</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Kỷ lục hiện tại (để phá kỷ lục)</label>
-                                    <div class="input-group">
-                                        <input type="number" step="0.001" class="form-control" id="fmtKyLuc" placeholder="9.58">
-                                        <span class="input-group-text bg-light text-muted" id="fmtDonViText">giây</span>
+                                    <label class="form-label fw-semibold small">Phương thức xếp lượt</label>
+                                    <select id="fmtPhuongThucPhanNhom" class="form-select">
+                                        <option value="random" selected>Bốc thăm ngẫu nhiên</option>
+                                        <option value="performance_seed">Xếp theo hạt giống / thành tích</option>
+                                        <option value="registration_order">Theo thứ tự đăng ký</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Cấu hình Thời lượng trận & Chia Bảng (Tự Động Xếp Lịch) - Luôn hiển thị cho mọi môn -->
+                    <div class="card border border-primary-subtle shadow-sm rounded-3 mt-3 bg-white" id="panelThoiLuongVaChiaBang">
+                        <div class="card-header bg-primary-subtle bg-opacity-25 border-bottom py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-primary d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Quy định Thời Lượng & Chia Bảng (Đồng bộ Tự Động Xếp Lịch)
+                            </h6>
+                            <span class="badge bg-primary text-white small px-2 py-1 shadow-2xs">Đồng bộ sang Lịch Thi Đấu</span>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="alert alert-light border border-info-subtle text-muted rounded-3 py-2 px-3 small mb-3 d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-circle-info text-primary fs-6"></i>
+                                <span>Cấu hình tại đây được hệ thống <strong>tự động đồng bộ vào thuật toán Xếp Lịch Thi Đấu</strong> tại <code>/Manager/LichThiDau</code> mà không cần người dùng cấu hình lại.</span>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">
+                                        <i class="fa-solid fa-stopwatch text-primary me-1"></i><span id="lblThoiLuongTran">Thời lượng mỗi trận / lượt (phút)</span> <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" class="form-control" id="fmtThoiLuongTranPhut" value="60" min="1" max="300" required>
+                                    <small class="text-muted" id="subThoiLuongTran">Tổng thời lượng thi đấu dự kiến của 1 trận đấu/lượt thi</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">
+                                        <i class="fa-solid fa-mug-hot text-primary me-1"></i><span id="lblNghiGiuaTran">Nghỉ giữa 2 trận (phút)</span> <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" class="form-control" id="fmtNghiGiuaTranPhut" value="15" min="0" max="180" required>
+                                    <small class="text-muted" id="subNghiGiuaTran">Thời gian giãn cách, dọn dẹp vệ sinh sân bãi giữa 2 trận liên tiếp</small>
+                                </div>
+
+                                <!-- Cấu hình chia bảng & vòng Knockout -->
+                                <div class="col-12" id="boxFormatGroupConfig">
+                                    <div class="p-3 bg-light rounded-3 border">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fa-solid fa-table-cells-large text-primary me-2 fs-6"></i>
+                                                <strong class="text-primary small">Cấu hình Chia Bảng Đấu & Vòng Knockout</strong>
+                                            </div>
+                                            <span class="badge bg-secondary-subtle text-secondary small" id="badgeGroupFormatStatus">Áp dụng khi thi đấu Bảng / Knockout</span>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-semibold small">Số bảng đấu</label>
+                                                <select class="form-select form-select-sm" id="fmtSoBang">
+                                                    <option value="0" selected>Tự động chia theo số đội</option>
+                                                    <option value="1">1 bảng đấu (Vòng tròn 1 bảng)</option>
+                                                    <option value="2">2 bảng đấu (Bảng A & Bảng B)</option>
+                                                    <option value="3">3 bảng đấu (Bảng A, B, C)</option>
+                                                    <option value="4">4 bảng đấu (Bảng A, B, C, D)</option>
+                                                    <option value="6">6 bảng đấu (Bảng A đến F)</option>
+                                                    <option value="8">8 bảng đấu (Bảng A đến H)</option>
+                                                </select>
+                                                <small class="text-muted">Chọn số bảng hoặc để thuật toán tự tính</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-semibold small">Số đội mỗi bảng <span class="text-danger">*</span></label>
+                                                <input type="number" class="form-control form-control-sm" id="fmtSoDoiMoiBang" value="4" min="2" max="16">
+                                                <small class="text-muted">Dùng khi chọn Tự động chia (mặc định 4)</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-semibold small">Đội vào Vòng Knockout</label>
+                                                <select class="form-select form-select-sm" id="fmtSoDoiMoiBangVaoVongTrong">
+                                                    <option value="1">Chỉ Nhất bảng</option>
+                                                    <option value="2" selected>Top 2 (Nhất & Nhì mỗi bảng)</option>
+                                                    <option value="3">Top 3 mỗi bảng</option>
+                                                    <option value="4">Top 4 mỗi bảng</option>
+                                                </select>
+                                                <small class="text-muted">Tiến vào Bán kết / Chung kết</small>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -860,10 +940,25 @@
 
             if (loai === 'SetDiem') {
                 $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Set điểm:</strong> Nhập điểm từng hiệp, áp dụng Deuce 2đ & trần điểm.');
+                $('#lblThoiLuongTran').text('Thời lượng mỗi trận đấu (phút)');
+                $('#lblNghiGiuaTran').text('Nghỉ giữa 2 trận liên tiếp (phút)');
+                $('#subThoiLuongTran').text('Tổng thời lượng thi đấu dự kiến của 1 trận đấu');
+                $('#subNghiGiuaTran').text('Thời gian giãn cách chuẩn bị sân bãi giữa 2 trận liên tiếp');
+                $('#boxFormatGroupConfig').removeClass('d-none');
             } else if (loai === 'ThoiGianHiep') {
                 $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Thời gian:</strong> Tính tỉ số phút, hiệp phụ & luân lưu Penalty.');
+                $('#lblThoiLuongTran').text('Thời lượng mỗi trận đấu (phút)');
+                $('#lblNghiGiuaTran').text('Nghỉ giữa 2 trận liên tiếp (phút)');
+                $('#subThoiLuongTran').text('Tổng thời lượng thi đấu dự kiến của 1 trận đấu');
+                $('#subNghiGiuaTran').text('Thời gian giãn cách chuẩn bị sân bãi giữa 2 trận liên tiếp');
+                $('#boxFormatGroupConfig').removeClass('d-none');
             } else {
                 $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Đo thành tích:</strong> Xếp hạng theo làn chạy/bơi, kiểm tra kỷ lục & vé Chung kết.');
+                $('#lblThoiLuongTran').text('Thời lượng mỗi lượt thi / Heat (phút)');
+                $('#lblNghiGiuaTran').text('Nghỉ giữa 2 lượt thi liên tiếp (phút)');
+                $('#subThoiLuongTran').text('Tổng thời lượng thi đấu dự kiến của 1 lượt thi/đợt chạy');
+                $('#subNghiGiuaTran').text('Thời gian giãn cách chuẩn bị làn bơi/đường chạy giữa 2 đợt');
+                $('#boxFormatGroupConfig').addClass('d-none');
             }
             onBracketFormatChange();
         }
@@ -877,20 +972,25 @@
                 tipHtml = `
                     <div class="alert alert-light border border-info-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
                         <i class="fa-solid fa-circle-info text-info fs-6"></i>
-                        <span>Sơ đồ <strong>Loại trực tiếp (Knockout)</strong>: Các mục điểm số vòng bảng (Thắng 3/Hòa 1/Thua 0) sẽ được lưu dự phòng nếu giải đấu chuyển sang đá vòng tròn.</span>
+                        <span>Sơ đồ <strong>Loại trực tiếp (Knockout)</strong>: Các mục cấu hình chia bảng vẫn được lưu làm mẫu dự phòng nếu môn chuyển sang đấu bảng.</span>
                     </div>`;
+                $('#badgeGroupFormatStatus').text('Dự phòng (Khi chuyển sang vòng bảng)');
             } else if (hinhThuc === 'TinhDiemXepHang' && loaiTheThuc !== 'TinhDiemXepHang') {
                 tipHtml = `
                     <div class="alert alert-warning border border-warning-subtle text-warning-emphasis rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
                         <i class="fa-solid fa-triangle-exclamation text-warning fs-6"></i>
                         <span>Sơ đồ <strong>Đo thành tích</strong>: Khuyên dùng cơ chế tính điểm <strong>🏅 Đo thành tích / Chạy làn</strong> để hệ thống bấm giờ và chia làn thi đấu chuẩn xác.</span>
                     </div>`;
+                $('#badgeGroupFormatStatus').text('Không áp dụng cho đo thành tích');
             } else if (hinhThuc === 'VongBang' || hinhThuc === 'KetHopVongBangVaLoaiTrucTiep') {
                 tipHtml = `
                     <div class="alert alert-light border border-success-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
                         <i class="fa-solid fa-circle-check text-success fs-6"></i>
-                        <span>Môn có <strong>Vòng bảng</strong>: Điểm số Thắng/Hòa/Thua và tiêu chí hiệu số sẽ được dùng để tự động tính Bảng Xếp Hạng.</span>
+                        <span>Môn có <strong>Vòng bảng</strong>: Thông số Số bảng, Số đội/bảng và Số đội vào Knockout bên dưới sẽ được tự động nạp sang Lịch Thi Đấu.</span>
                     </div>`;
+                $('#badgeGroupFormatStatus').text('Đang áp dụng trực tiếp cho giải');
+            } else {
+                $('#badgeGroupFormatStatus').text('Cấu hình mặc định');
             }
 
             $('#fmtBracketTipContainer').html(tipHtml);
@@ -953,6 +1053,15 @@
             $('#fmtQuyCachVaoCk').val('TopNToanVong');
             $('#fmtSoVdvVaoCk').val(8);
             $('#fmtKyLuc').val('');
+
+            $('#fmtThoiLuongTranPhut').val(60);
+            $('#fmtNghiGiuaTranPhut').val(15);
+            $('#fmtSoBang').val(0);
+            $('#fmtSoDoiMoiBang').val(4);
+            $('#fmtSoDoiMoiBangVaoVongTrong').val(2);
+            $('#fmtSoVongThi').val(2);
+            $('#fmtPhuongThucPhanNhom').val('random');
+
             onFormatTypeChange();
         }
 
@@ -991,6 +1100,14 @@
             $('#fmtSoVdvVaoCk').val(data.soVdvVaoChungKet || 8);
             $('#fmtKyLuc').val(data.kyLucHienTai || '');
 
+            $('#fmtThoiLuongTranPhut').val(data.thoiLuongTranPhut || 60);
+            $('#fmtNghiGiuaTranPhut').val(data.nghiGiuaTranPhut ?? 15);
+            $('#fmtSoBang').val(data.soBang || 0);
+            $('#fmtSoDoiMoiBang').val(data.soDoiMoiBang || 4);
+            $('#fmtSoDoiMoiBangVaoVongTrong').val(data.soDoiMoiBangVaoVongTrong || 2);
+            $('#fmtSoVongThi').val(data.soVongThi || 2);
+            $('#fmtPhuongThucPhanNhom').val(data.phuongThucPhanNhom || 'random');
+
             onFormatTypeChange();
         }
 
@@ -1024,6 +1141,10 @@
                 $('#fmtCachBiet').val(2);
                 $('#fmtDiemToiDa').val(30);
                 $('#fmtCachTinhDiemTheoSet').prop('checked', false);
+                $('#fmtThoiLuongTranPhut').val(45);
+                $('#fmtNghiGiuaTranPhut').val(15);
+                $('#fmtSoBang').val(0);
+                $('#fmtSoDoiMoiBang').val(4);
             } else if (preset === 'volleyball') {
                 $('#fmtHinhThucThiDau').val('KetHopVongBangVaLoaiTrucTiep');
                 $('#fmtLoaiTheThuc').val('SetDiem');
@@ -1034,6 +1155,10 @@
                 $('#fmtCachBiet').val(2);
                 $('#fmtDiemToiDa').val('');
                 $('#fmtCachTinhDiemTheoSet').prop('checked', true);
+                $('#fmtThoiLuongTranPhut').val(75);
+                $('#fmtNghiGiuaTranPhut').val(15);
+                $('#fmtSoBang').val(2);
+                $('#fmtSoDoiMoiBang').val(4);
             } else if (preset === 'football') {
                 $('#fmtHinhThucThiDau').val('KetHopVongBangVaLoaiTrucTiep');
                 $('#fmtLoaiTheThuc').val('ThoiGianHiep');
@@ -1048,6 +1173,11 @@
                 $('#fmtCoPenalty').prop('checked', true);
                 $('#fmtSoLuotPen').val(5);
                 $('#fmtCoThePhat').prop('checked', true);
+                $('#fmtThoiLuongTranPhut').val(60);
+                $('#fmtNghiGiuaTranPhut').val(15);
+                $('#fmtSoBang').val(0);
+                $('#fmtSoDoiMoiBang').val(4);
+                $('#fmtSoDoiMoiBangVaoVongTrong').val(2);
             } else if (preset === 'tabletennis') {
                 $('#fmtHinhThucThiDau').val('VongBang');
                 $('#fmtLoaiTheThuc').val('SetDiem');
@@ -1058,6 +1188,10 @@
                 $('#fmtCachBiet').val(2);
                 $('#fmtDiemToiDa').val('');
                 $('#fmtCachTinhDiemTheoSet').prop('checked', false);
+                $('#fmtThoiLuongTranPhut').val(35);
+                $('#fmtNghiGiuaTranPhut').val(10);
+                $('#fmtSoBang').val(0);
+                $('#fmtSoDoiMoiBang').val(4);
             } else if (preset === 'athletics') {
                 $('#fmtHinhThucThiDau').val('TinhDiemXepHang');
                 $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
@@ -1067,6 +1201,10 @@
                 $('#fmtQuyCachVaoCk').val('TopNToanVong');
                 $('#fmtSoVdvVaoCk').val(8);
                 $('#fmtKyLuc').val(9.58);
+                $('#fmtThoiLuongTranPhut').val(20);
+                $('#fmtNghiGiuaTranPhut').val(10);
+                $('#fmtSoVongThi').val(2);
+                $('#fmtPhuongThucPhanNhom').val('performance_seed');
             } else if (preset === 'swimming') {
                 $('#fmtHinhThucThiDau').val('TinhDiemXepHang');
                 $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
@@ -1076,6 +1214,10 @@
                 $('#fmtQuyCachVaoCk').val('TopNToanVong');
                 $('#fmtSoVdvVaoCk').val(8);
                 $('#fmtKyLuc').val(20.91);
+                $('#fmtThoiLuongTranPhut').val(20);
+                $('#fmtNghiGiuaTranPhut').val(10);
+                $('#fmtSoVongThi').val(2);
+                $('#fmtPhuongThucPhanNhom').val('performance_seed');
             }
             onFormatTypeChange();
             SportApp.toast('info', `Đã áp dụng mẫu luật: ${preset.toUpperCase()}`);
@@ -1123,7 +1265,15 @@
                 soVdvMoiLuotThi: parseInt($('#fmtSoVdvLuot').val()) || 8,
                 quyCachTienVaoChungKet: $('#fmtQuyCachVaoCk').val(),
                 soVdvVaoChungKet: parseInt($('#fmtSoVdvVaoCk').val()) || 8,
-                kyLucHienTai: $('#fmtKyLuc').val() ? parseFloat($('#fmtKyLuc').val()) : null
+                kyLucHienTai: $('#fmtKyLuc').val() ? parseFloat($('#fmtKyLuc').val()) : null,
+
+                thoiLuongTranPhut: parseInt($('#fmtThoiLuongTranPhut').val()) || 60,
+                nghiGiuaTranPhut: parseInt($('#fmtNghiGiuaTranPhut').val()) ?? 15,
+                soBang: parseInt($('#fmtSoBang').val()) || 0,
+                soDoiMoiBang: parseInt($('#fmtSoDoiMoiBang').val()) || 4,
+                soDoiMoiBangVaoVongTrong: parseInt($('#fmtSoDoiMoiBangVaoVongTrong').val()) || 2,
+                soVongThi: parseInt($('#fmtSoVongThi').val()) || 2,
+                phuongThucPhanNhom: $('#fmtPhuongThucPhanNhom').val() || 'random'
             };
 
             const $btn = $('#btnSaveTheThuc');

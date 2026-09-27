@@ -34,7 +34,8 @@ namespace Dms.Application.Mappings
             CreateMap<GiaiDau, GiaiDauDto>()
                 .ForMember(dest => dest.KhoiIds, opt => opt.MapFrom(src => src.GiaiDauKhois != null ? src.GiaiDauKhois.Where(k => k.IsDeleted != true).Select(k => k.KhoiId).Distinct().ToList() : new List<int>()))
                 .ForMember(dest => dest.MonTheThaoIds, opt => opt.MapFrom(src => src.GiaiDauMonTheThaos != null ? src.GiaiDauMonTheThaos.Where(m => m.IsDeleted != true).Select(m => m.MonTheThaoId).Distinct().ToList() : new List<int>()))
-                .ForMember(dest => dest.DieuLeGiaiDaus, opt => opt.MapFrom(src => src.DieuLeGiaiDaus != null ? src.DieuLeGiaiDaus.Where(d => d.IsDeleted != true).OrderBy(d => d.ThuTu).ToList() : new List<DieuLeGiaiDau>()));
+                .ForMember(dest => dest.DieuLeGiaiDaus, opt => opt.MapFrom(src => src.DieuLeGiaiDaus != null ? src.DieuLeGiaiDaus.Where(d => d.IsDeleted != true).OrderBy(d => d.ThuTu).ToList() : new List<DieuLeGiaiDau>()))
+                .ForMember(dest => dest.TenTruongBanTrongTai, opt => opt.MapFrom(src => src.TruongBanTrongTai != null ? src.TruongBanTrongTai.HoTen : null));
             CreateMap<CreateUpdateGiaiDauDto, GiaiDau>();
 
             // Khoi

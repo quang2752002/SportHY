@@ -137,10 +137,13 @@
                         <td class="ps-3 fw-bold text-muted">${stt}</td>
                         <td>
                             <div class="fw-bold text-dark">${escapeHtml(item.ten)}</div>
-                            <small class="text-muted">
+                            <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
                                 <span class="badge bg-light text-secondary border">Mã: ${escapeHtml(item.ma)}</span> 
-                                ${item.diaDiem ? `<span class="ms-1"><i class="fa-solid fa-location-dot me-1"></i>${escapeHtml(item.diaDiem)}</span>` : ''}
-                            </small>
+                                ${item.diaDiem ? `<span class="text-muted small"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${escapeHtml(item.diaDiem)}</span>` : ''}
+                                ${item.tenTruongBanTrongTai 
+                                    ? `<span class="badge bg-warning-subtle text-dark border border-warning-subtle"><i class="fa-solid fa-whistle me-1 text-warning"></i>TT Trưởng: ${escapeHtml(item.tenTruongBanTrongTai)}</span>` 
+                                    : `<span class="badge bg-light text-muted border border-dashed"><i class="fa-solid fa-circle-question me-1"></i>Chưa có TT trưởng</span>`}
+                            </div>
                         </td>
                         <td><small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>${startDate} - ${endDate}</small></td>
                         <td><small class="text-danger fw-semibold">${deadline}</small></td>

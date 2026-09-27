@@ -23,16 +23,27 @@ namespace API.ViewComponents
         {
             currentArea ??= ViewContext.RouteData.Values["area"]?.ToString();
 
+            var isCurrentTrongTai = string.Equals(currentArea, "TrongTai", StringComparison.OrdinalIgnoreCase);
+            var isCurrentTruongBan = string.Equals(currentArea, "TruongBanTrongTai", StringComparison.OrdinalIgnoreCase);
+
+            // Bỏ "Chuyển cổng" ở tất cả các màn khác, chỉ giữ chuyển đổi giữa Trọng tài và Trưởng ban trọng tài
+            if (!isCurrentTrongTai && !isCurrentTruongBan)
+            {
+                return View(new PortalLinksViewModel(currentArea, new List<PortalLinkItem>()));
+            }
+
             var user = await _userManager.GetUserAsync(HttpContext.User);
             if (user == null)
             {
-                return View(new PortalLinksViewModel(currentArea));
+                return View(new PortalLinksViewModel(currentArea, new List<PortalLinkItem>()));
             }
 
             var isAdmin = UserClaimsPrincipal.IsInRole(AppRoles.Admin);
             var isManager = UserClaimsPrincipal.IsInRole(AppRoles.Manager);
             var isAdminOrManager = isAdmin || isManager;
             var isSecretary = UserClaimsPrincipal.IsInRole(AppRoles.Secretary);
+            var hasHeadRefereeRole = UserClaimsPrincipal.IsInRole(AppRoles.HeadReferee);
+
             var referee = await _refereeAccessService.GetRefereeByUserIdOrNameAsync(
                 user.TrongTaiId,
                 user.UserName,
@@ -40,48 +51,26 @@ namespace API.ViewComponents
 
             var links = new List<PortalLinkItem>();
 
-            if (isAdmin)
+            if (isCurrentTrongTai)
             {
-                links.Add(new PortalLinkItem("Admin", "Quản trị hệ thống", "/Admin/GiaiDau", "fa-solid fa-sliders", "text-primary"));
-            }
-
-            if (isAdminOrManager)
-            {
-                links.Add(new PortalLinkItem("Manager", "Quản lý giải", "/Manager/GiaiDau", "fa-solid fa-trophy", "text-warning"));
-                links.Add(new PortalLinkItem("DonVi", "Quản lý đoàn", "/DonVi/Home", "fa-solid fa-building-columns", "text-success"));
-                links.Add(new PortalLinkItem("DieuHanhMon", "Điều hành môn", "/DieuHanhMon/Home", "fa-solid fa-volleyball", "text-info"));
-                links.Add(new PortalLinkItem("ThuKy", "Thư ký giải", "/ThuKy/Home", "fa-solid fa-clipboard-check", "text-primary"));
-                links.Add(new PortalLinkItem("TrongTai", "Trọng tài", "/TrongTai/Home", "fa-solid fa-flag", "text-warning"));
-                links.Add(new PortalLinkItem("TruongBanTrongTai", "Trưởng ban trọng tài", "/TruongBanTrongTai/Home", "fa-solid fa-whistle", "text-warning"));
-            }
-            else
-            {
-                if (UserClaimsPrincipal.IsInRole(AppRoles.Delegation))
-                {
-                    links.Add(new PortalLinkItem("DonVi", "Quản lý đoàn", "/DonVi/Home", "fa-solid fa-building-columns", "text-success"));
-                }
-
-                if (UserClaimsPrincipal.IsInRole(AppRoles.SportCoordinator))
-                {
-                    links.Add(new PortalLinkItem("DieuHanhMon", "Điều hành môn", "/DieuHanhMon/Home", "fa-solid fa-volleyball", "text-info"));
-                }
-
-                if (isSecretary)
-                {
-                    links.Add(new PortalLinkItem("ThuKy", "Thư ký giải", "/ThuKy/Home", "fa-solid fa-clipboard-check", "text-primary"));
-                }
-
-                if (isSecretary || (referee != null && (await _refereeAccessService.GetRefereeTournamentIdsAsync(referee.Id)).Count > 0))
-                {
-                    links.Add(new PortalLinkItem("TrongTai", "Trọng tài", "/TrongTai/Home", "fa-solid fa-flag", "text-warning"));
-                }
-
-                var hasHeadRefereeRole = UserClaimsPrincipal.IsInRole(AppRoles.HeadReferee);
+                // Khi đang ở màn Trọng tài: Cho phép chuyển sang Trưởng ban trọng tài nếu có thẩm quyền
                 var managesTournament = referee != null &&
                     (await _refereeAccessService.GetManagedTournamentsAsync(referee.Id, false)).Count > 0;
-                if (hasHeadRefereeRole || managesTournament)
+
+                if (isAdminOrManager || hasHeadRefereeRole || managesTournament)
                 {
                     links.Add(new PortalLinkItem("TruongBanTrongTai", "Trưởng ban trọng tài", "/TruongBanTrongTai/Home", "fa-solid fa-whistle", "text-warning"));
+                }
+            }
+            else if (isCurrentTruongBan)
+            {
+                // Khi đang ở màn Trưởng ban trọng tài: Cho phép chuyển sang Trọng tài
+                var hasRefereeTournament = referee != null &&
+                    (await _refereeAccessService.GetRefereeTournamentIdsAsync(referee.Id)).Count > 0;
+
+                if (isAdminOrManager || isSecretary || hasHeadRefereeRole || referee != null || user.TrongTaiId.HasValue || hasRefereeTournament)
+                {
+                    links.Add(new PortalLinkItem("TrongTai", "Trọng tài", "/TrongTai/Home", "fa-solid fa-flag", "text-warning"));
                 }
             }
 

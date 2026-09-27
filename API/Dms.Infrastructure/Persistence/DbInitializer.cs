@@ -123,7 +123,7 @@ namespace Dms.Infrastructure.Persistence
             var ttA = await context.TrongTais.FirstOrDefaultAsync(t => t.Ma == "TT_A");
             if (ttA == null)
             {
-                ttA = new TrongTai { Ma = "TT_A", HoTen = "Tài A (Trưởng ban)", GioiTinh = "Nam", SoDienThoai = "0988000001", Email = "taia@sport.vn", CapBac = "Trọng tài Quốc gia", TrangThai = true };
+                ttA = new TrongTai { Ma = "TT_A", HoTen = "Trọng tài A", GioiTinh = "Nam", SoDienThoai = "0988000001", Email = "taia@sport.vn", CapBac = "Trọng tài Quốc gia", TrangThai = true };
                 await context.TrongTais.AddAsync(ttA);
             }
 
@@ -190,7 +190,7 @@ namespace Dms.Infrastructure.Persistence
                 new { Username = "donvi_qghn", Email = "qg@vnu.edu.vn", Name = "Đoàn ĐH Quốc Gia Hà Nội", Pass = "Delegation@123", Roles = new[] { AppRoles.Delegation }, DonViId = (int?)dvQghn.Id, TrongTaiId = (int?)null },
 
                 // Trưởng ban & Trọng tài
-                new { Username = "taia", Email = "taia@sport.vn", Name = "Tài A (Trưởng ban trọng tài)", Pass = "123", Roles = new[] { AppRoles.HeadReferee, AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttA.Id },
+                new { Username = "taia", Email = "taia@sport.vn", Name = "Trọng tài A", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttA.Id },
                 new { Username = "taib", Email = "taib@sport.vn", Name = "Trọng tài B", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttB.Id },
                 new { Username = "taic", Email = "taic@sport.vn", Name = "Trọng tài C", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttC.Id },
                 new { Username = "taid", Email = "taid@sport.vn", Name = "Trọng tài D", Pass = "123", Roles = new[] { AppRoles.Referee }, DonViId = (int?)null, TrongTaiId = (int?)ttD.Id },
@@ -464,7 +464,7 @@ namespace Dms.Infrastructure.Persistence
                     DiaDiem = "Khu liên hợp thể thao Mỹ Đình, Hà Nội",
                     PhamVi = PhamViGiaiDau.TheoKhoi,
                     TrangThai = TrangThaiGiaiDau.DangDienRa,
-                    TruongBanTrongTaiId = ttA.Id // Gán Trưởng Ban Trọng Tài Tài A
+                    TruongBanTrongTaiId = null
                 };
                 await context.GiaiDaus.AddAsync(giaiDau);
                 await context.SaveChangesAsync();
@@ -475,7 +475,6 @@ namespace Dms.Infrastructure.Persistence
             }
             else
             {
-                giaiDau.TruongBanTrongTaiId = ttA.Id;
                 await context.SaveChangesAsync();
             }
 

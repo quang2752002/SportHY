@@ -54,6 +54,15 @@ namespace Dms.Application.DTOs
         public int? SoVdvVaoChungKet { get; set; } = 8;
         public decimal? KyLucHienTai { get; set; }
         public string? KyLucHienTaiText { get; set; }
+
+        // Cấu hình thời lượng & xếp lịch
+        public int ThoiLuongTranPhut { get; set; } = 60;
+        public int NghiGiuaTranPhut { get; set; } = 15;
+        public int SoBang { get; set; } = 0;
+        public int SoDoiMoiBang { get; set; } = 4;
+        public int SoDoiMoiBangVaoVongTrong { get; set; } = 2;
+        public int SoVongThi { get; set; } = 2;
+        public string PhuongThucPhanNhom { get; set; } = "random";
     }
 
     /// <summary>
@@ -102,6 +111,15 @@ namespace Dms.Application.DTOs
         public int? SoVdvVaoChungKet { get; set; } = 8;
         public decimal? KyLucHienTai { get; set; }
         public string? KyLucHienTaiText { get; set; }
+
+        // Cấu hình thời lượng & xếp lịch
+        public int ThoiLuongTranPhut { get; set; } = 60;
+        public int NghiGiuaTranPhut { get; set; } = 15;
+        public int SoBang { get; set; } = 0;
+        public int SoDoiMoiBang { get; set; } = 4;
+        public int SoDoiMoiBangVaoVongTrong { get; set; } = 2;
+        public int SoVongThi { get; set; } = 2;
+        public string PhuongThucPhanNhom { get; set; } = "random";
     }
 
     /// <summary>

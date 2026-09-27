@@ -14,7 +14,6 @@ namespace Dms.Domain.Common
         {
             Admin,
             Manager,
-            HeadReferee,
             Referee,
             Secretary,
             Delegation,

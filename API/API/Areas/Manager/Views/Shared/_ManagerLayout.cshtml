@@ -22,145 +22,202 @@
 
     <style>
         :root {
-            --sidebar-width: 260px;
-            --sidebar-bg: #0c1a30;
-            --sidebar-hover: #162a4d;
-            --sidebar-active: #0284c7;
-            --header-height: 64px;
-            --primary-color: #0284c7;
-            --accent-color: #0ea5e9;
+            --manager-sidebar-width: 270px;
+            --manager-sidebar-bg: #ffffff;
+            --manager-sidebar-dark: #f7faff;
+            --manager-sidebar-hover: #e6f2fe;
+            --manager-sidebar-active: #0284c7;
+            --manager-header-height: 64px;
+            --manager-primary: #0284c7;
+            --manager-accent: #0ea5e9;
+            --bs-primary: #0284c7;
+            --bs-primary-rgb: 2, 132, 199;
+            --bs-primary-text-emphasis: #075985;
+            --bs-primary-bg-subtle: #e0f2fe;
+            --bs-primary-border-subtle: #bae6fd;
+            --bs-link-color: #0284c7;
+            --bs-link-hover-color: #075985;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #334155;
+            background-color: #f1f5f9;
+            color: #33445c;
             overflow-x: hidden;
         }
 
         /* Sidebar Styling */
         .manager-sidebar {
-            width: var(--sidebar-width);
+            width: var(--manager-sidebar-width);
             height: 100vh;
             position: fixed;
             top: 0;
             left: 0;
-            background: var(--sidebar-bg);
-            color: #94a3b8;
+            background: linear-gradient(180deg, var(--manager-sidebar-bg) 0%, var(--manager-sidebar-dark) 100%);
+            color: #33445c;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1040;
             overflow-y: auto;
-            border-right: 1px solid rgba(255,255,255,0.06);
+            border-right: 1px solid #e4ebf4;
+            box-shadow: 3px 0 14px rgba(42, 72, 112, 0.06);
         }
 
-        .sidebar-brand {
-            height: var(--header-height);
+        .manager-brand {
+            height: var(--manager-header-height);
             display: flex;
             align-items: center;
-            padding: 0 1.5rem;
-            color: #fff;
+            padding: 0 1.25rem;
+            color: #263a55;
             font-weight: 700;
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             letter-spacing: 0.5px;
-            background: rgba(0,0,0,0.25);
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: #ffffff;
+            border-bottom: 1px solid #e8eef6;
             text-decoration: none;
         }
 
-        .sidebar-brand i {
-            color: #38bdf8;
+        .manager-brand-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.15rem;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.28);
             margin-right: 0.75rem;
-            font-size: 1.35rem;
+            flex-shrink: 0;
         }
 
-        .sidebar-nav {
+        .manager-nav {
             padding: 1rem 0.75rem;
         }
 
-        .nav-section-title {
-            font-size: 0.68rem;
+        .manager-nav-header {
+            font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: #64748b;
+            color: #71849e;
+            opacity: 1;
             padding: 0.75rem 0.85rem 0.35rem;
         }
 
-        .nav-item-custom {
+        .manager-nav-link {
             display: flex;
             align-items: center;
-            padding: 0.7rem 0.85rem;
+            padding: 0.75rem 0.85rem;
             border-radius: 8px;
-            color: #cbd5e1;
+            color: #4a5f79;
             text-decoration: none;
             font-size: 0.88rem;
             font-weight: 500;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
             transition: all 0.2s ease;
         }
 
-        .nav-item-custom:hover {
-            color: #fff;
-            background: var(--sidebar-hover);
-        }
-
-        .nav-item-custom.active {
-            color: #fff;
-            background: linear-gradient(135deg, #0284c7, #0369a1);
-            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
-        }
-
-        .nav-item-custom i {
-            font-size: 1.05rem;
+        .manager-nav-link i {
             width: 24px;
-            margin-right: 0.65rem;
+            font-size: 1.1rem;
+            margin-right: 0.75rem;
+            color: #0ea5e9;
             text-align: center;
-            opacity: 0.85;
+            transition: transform 0.2s;
         }
 
-        .nav-item-custom.active i {
-            opacity: 1;
-            color: #fff;
+        .manager-nav-link:hover {
+            background: var(--manager-sidebar-hover);
+            color: var(--manager-primary);
+            transform: translateX(3px);
         }
 
-        /* Top Header Styling */
-        .manager-header {
-            height: var(--header-height);
+        .manager-nav-link:hover i {
+            color: var(--manager-primary);
+        }
+
+        .manager-nav-link.active {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 4px 11px rgba(2, 132, 199, 0.24);
+        }
+
+        .manager-nav-link.active i {
+            color: #ffffff;
+        }
+
+        /* Top Header */
+        .manager-topbar {
+            height: var(--manager-header-height);
             position: fixed;
             top: 0;
             right: 0;
-            left: var(--sidebar-width);
-            background: #fff;
-            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.05);
-            z-index: 1030;
+            left: var(--manager-sidebar-width);
+            background: #ffffff;
+            border-bottom: 1px solid #e3eaf3;
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 1.5rem;
+            z-index: 1030;
             transition: left 0.3s ease;
         }
 
-        .manager-content {
-            margin-left: var(--sidebar-width);
-            padding-top: calc(var(--header-height) + 1.5rem);
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-            padding-bottom: 2.5rem;
+        /* Main Content */
+        .manager-main {
+            margin-left: var(--manager-sidebar-width);
+            padding: calc(var(--manager-header-height) + 1.5rem) 1.5rem 2rem;
             min-height: 100vh;
             transition: margin-left 0.3s ease;
         }
 
-        /* Card Custom */
-        .card-custom {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            background: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-            transition: all 0.2s ease;
+        /* Responsive Mobile */
+        @@media (max-width: 991.98px) {
+            .manager-sidebar {
+                transform: translateX(-100%);
+            }
+            .manager-sidebar.show {
+                transform: translateX(0);
+            }
+            .manager-topbar {
+                left: 0 !important;
+            }
+            .manager-main {
+                margin-left: 0 !important;
+            }
+            .manager-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0,0,0,0.5);
+                z-index: 1035;
+                display: none;
+            }
+            .manager-backdrop.show {
+                display: block;
+            }
         }
 
+        /* Cards & Buttons */
+        .card-custom {
+            border: 1px solid #e2eaf4;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            background-color: #fff;
+            transition: all 0.2s ease;
+        }
         .card-custom:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+        }
+
+        .badge-soft-manager {
+            background-color: #e0f2fe;
+            color: #075985;
+            border: 1px solid #bae6fd;
         }
 
         .table thead th {
@@ -169,7 +226,7 @@
             text-transform: uppercase;
             letter-spacing: 0.04em;
             color: #64748b;
-            background: #f8fafc;
+            background: #f0f7ff;
             border-bottom: 1px solid #e2e8f0;
             padding-top: 0.85rem;
             padding-bottom: 0.85rem;
@@ -190,180 +247,172 @@
             border-radius: 6px;
         }
 
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1035;
+        .manager-main .form-control:focus,
+        .manager-main .form-select:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 0.2rem rgba(2, 132, 199, 0.18);
         }
 
-        @@media (max-width: 991.98px) {
-            .manager-sidebar {
-                transform: translateX(-100%);
-            }
-            .manager-sidebar.show {
-                transform: translateX(0);
-            }
-            .manager-header {
-                left: 0;
-            }
-            .manager-content {
-                margin-left: 0;
-            }
-            .sidebar-overlay.show {
-                display: block;
-            }
+        .manager-main .table thead th {
+            background-color: #e0f2fe;
+            color: #075985;
+        }
+
+        .manager-main .table {
+            --bs-table-border-color: #e2eaf4;
         }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="manager-backdrop" id="managerBackdrop" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->
     <aside class="manager-sidebar" id="managerSidebar">
-        <a href="/Manager/Home" class="sidebar-brand">
-            <i class="fa-solid fa-trophy text-warning"></i>
-            <div>
-                <span class="fw-bold">SPORT MANAGER</span>
-                <span class="badge bg-info-subtle text-info border ms-1" style="font-size: 0.65rem;">BTC GIẢI</span>
+        <!-- Brand -->
+        <a href="/Manager/GiaiDau" class="manager-brand">
+            <div class="manager-brand-badge">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <div class="lh-sm overflow-hidden">
+                <div class="fw-bold fs-6 text-truncate">BTC GIẢI</div>
+                <small class="text-truncate d-block" style="font-size: 11px; color: #0ea5e9;">
+                    Quản lý & điều hành
+                </small>
             </div>
         </a>
 
-        <div class="sidebar-nav">
-            <div class="nav-section-title">ĐIỀU HÀNH & TỔNG QUAN</div>
-            <a href="/Manager/Home" class="nav-item-custom" data-route="/Manager/Home">
-                <i class="fa-solid fa-chart-pie text-info"></i>
+        <!-- Navigation Menu -->
+        <div class="manager-nav">
+            <div class="manager-nav-header">Điều hành & Tổng quan</div>
+
+            @{
+                string currentPath = Context.Request.Path.Value?.ToLower() ?? "";
+            }
+
+            <a href="/Manager/Home" class="manager-nav-link @(currentPath == "/manager" || currentPath == "/manager/home" ? "active" : "")" >
+                <i class="fa-solid fa-chart-pie"></i>
                 <span>Tổng Quan Giải</span>
             </a>
-            <a href="/Manager/GiaiDau" class="nav-item-custom" data-route="/Manager/GiaiDau">
-                <i class="fa-solid fa-trophy text-warning"></i>
+            <a href="/Manager/GiaiDau" class="manager-nav-link @(currentPath.StartsWith("/manager/giaidau") ? "active" : "")">
+                <i class="fa-solid fa-trophy"></i>
                 <span>Quản Lý Giải Đấu</span>
             </a>
-            <a href="/Manager/PhanCong" class="nav-item-custom" data-route="/Manager/PhanCong">
-                <i class="fa-solid fa-users-gear text-warning"></i>
-                  <span>Phân Công Trọng Tài, Môn & Thư Ký</span>
+            <a href="/Manager/PhanCong" class="manager-nav-link @(currentPath.StartsWith("/manager/phancong") ? "active" : "")">
+                <i class="fa-solid fa-users-gear"></i>
+                <span>Phân Công TT, Môn & TK</span>
             </a>
 
-            <div class="nav-section-title">ĐIỀU HÀNH THI ĐẤU</div>
-           
-            <a href="/Manager/DangKyThiDau" class="nav-item-custom" data-route="/Manager/DangKyThiDau">
-                <i class="fa-solid fa-address-card text-success"></i>
+            <div class="manager-nav-header mt-3">Điều hành thi đấu</div>
+            <a href="/Manager/DangKyThiDau" class="manager-nav-link @(currentPath.StartsWith("/manager/dangkythidau") ? "active" : "")">
+                <i class="fa-solid fa-address-card"></i>
                 <span>Hồ Sơ Đăng Ký Thi Đấu</span>
             </a>
-            <a href="/Manager/LichThiDau" class="nav-item-custom" data-route="/Manager/LichThiDau">
-                <i class="fa-solid fa-calendar-check text-primary"></i>
+            <a href="/Manager/LichThiDau" class="manager-nav-link @(currentPath.StartsWith("/manager/lichthidau") ? "active" : "")">
+                <i class="fa-solid fa-calendar-check"></i>
                 <span>Lịch Thi Đấu & Bốc Thăm</span>
             </a>
-            <a href="/Manager/BangDau" class="nav-item-custom" data-route="/Manager/BangDau">
-                <i class="fa-solid fa-sitemap text-purple" style="color: #a855f7;"></i>
-                <span>Bảng Thi Đấu & Nhánh</span>
-            </a>
-            <a href="/Manager/HuyChuong" class="nav-item-custom" data-route="/Manager/HuyChuong">
-                <i class="fa-solid fa-award text-warning"></i>
+            
+            <a href="/Manager/HuyChuong" class="manager-nav-link @(currentPath.StartsWith("/manager/huychuong") ? "active" : "")">
+                <i class="fa-solid fa-award"></i>
                 <span>Tổng Kết Huy Chương</span>
             </a>
 
-            <div class="nav-section-title">QUẢN TRỊ THỂ THAO</div>
-            <a href="/Manager/Khoi" class="nav-item-custom" data-route="/Manager/Khoi">
-                <i class="fa-solid fa-layer-group text-info"></i>
+            <div class="manager-nav-header mt-3">Quản trị thể thao</div>
+            <a href="/Manager/Khoi" class="manager-nav-link @(currentPath.StartsWith("/manager/khoi") ? "active" : "")">
+                <i class="fa-solid fa-layer-group"></i>
                 <span>Khối Tham Gia</span>
             </a>
-            <a href="/Manager/DonVi" class="nav-item-custom" data-route="/Manager/DonVi">
-                <i class="fa-solid fa-building-columns text-primary"></i>
+            <a href="/Manager/DonVi" class="manager-nav-link @(currentPath.StartsWith("/manager/donvi") ? "active" : "")">
+                <i class="fa-solid fa-building-columns"></i>
                 <span>Đơn Vị / Đoàn</span>
             </a>
-            <a href="/Manager/VanDongVien" class="nav-item-custom" data-route="/Manager/VanDongVien">
-                <i class="fa-solid fa-person-running text-success"></i>
+            <a href="/Manager/VanDongVien" class="manager-nav-link @(currentPath.StartsWith("/manager/vandongvien") ? "active" : "")">
+                <i class="fa-solid fa-person-running"></i>
                 <span>Vận Động Viên</span>
             </a>
-            <a href="/Manager/DanhMucMonTheThao" class="nav-item-custom" data-route="/Manager/DanhMucMonTheThao">
-                <i class="fa-solid fa-tags text-warning"></i>
+            <a href="/Manager/DanhMucMonTheThao" class="manager-nav-link @(currentPath.StartsWith("/manager/danhmucmonthethao") ? "active" : "")">
+                <i class="fa-solid fa-tags"></i>
                 <span>Danh Mục Môn</span>
             </a>
-            <a href="/Manager/MonTheThao" class="nav-item-custom" data-route="/Manager/MonTheThao">
-                <i class="fa-solid fa-volleyball text-danger"></i>
+            <a href="/Manager/MonTheThao" class="manager-nav-link @(currentPath.StartsWith("/manager/monthethao") ? "active" : "")">
+                <i class="fa-solid fa-volleyball"></i>
                 <span>Môn Thi Đấu</span>
             </a>
-            <a href="/Manager/TrongTai" class="nav-item-custom" data-route="/Manager/TrongTai">
-                <i class="fa-solid fa-user-shield text-info"></i>
+            <a href="/Manager/TrongTai" class="manager-nav-link @(currentPath.StartsWith("/manager/trongtai") ? "active" : "")">
+                <i class="fa-solid fa-user-shield"></i>
                 <span>Trọng Tài</span>
             </a>
-            <a href="/Manager/ThuKy" class="nav-item-custom" data-route="/Manager/ThuKy">
-                <i class="fa-solid fa-file-signature text-secondary"></i>
+            <a href="/Manager/ThuKy" class="manager-nav-link @(currentPath.StartsWith("/manager/thuky") ? "active" : "")">
+                <i class="fa-solid fa-file-signature"></i>
                 <span>Thư Ký Giải Đấu</span>
             </a>
-            <a href="/Manager/CumSan" class="nav-item-custom" data-route="/Manager/CumSan">
-                <i class="fa-solid fa-map-location-dot text-success"></i>
+            <a href="/Manager/CumSan" class="manager-nav-link @(currentPath.StartsWith("/manager/cumsan") ? "active" : "")">
+                <i class="fa-solid fa-map-location-dot"></i>
                 <span>Cụm Sân Thi Đấu</span>
             </a>
-            <a href="/Manager/SanDau" class="nav-item-custom" data-route="/Manager/SanDau">
-                <i class="fa-solid fa-futbol text-primary"></i>
+            <a href="/Manager/SanDau" class="manager-nav-link @(currentPath.StartsWith("/manager/sandau") ? "active" : "")">
+                <i class="fa-solid fa-futbol"></i>
                 <span>Sân Thi Đấu</span>
             </a>
 
-            <div class="nav-section-title">HỆ THỐNG</div>
-            <a href="/" class="nav-item-custom" target="_blank">
-                <i class="fa-solid fa-globe text-info"></i>
-                <span>Xem Cổng Trang Chủ</span>
+            <div class="manager-nav-header mt-3">Hệ thống</div>
+            <a href="/" class="manager-nav-link" target="_blank">
+                <i class="fa-solid fa-globe"></i>
+                <span>Về Cổng Trang Chủ</span>
             </a>
-            @if (User.IsInRole(AppRoles.Admin))
+            @if (User.IsInRole("Admin"))
             {
-                <a href="/Admin/Home" class="nav-item-custom text-warning">
+                <a href="/Admin/GiaiDau" class="manager-nav-link">
                     <i class="fa-solid fa-sliders"></i>
-                    <span>Sang Bảng Điều Khiển Admin</span>
+                    <span>Sang Bảng Admin</span>
                 </a>
             }
+            <a href="/Account/Logout" class="manager-nav-link text-danger mt-2">
+                <i class="fa-solid fa-arrow-right-from-bracket text-danger"></i>
+                <span>Đăng xuất</span>
+            </a>
         </div>
     </aside>
 
-    <!-- Top Header -->
-    <header class="manager-header">
+    <!-- Topbar -->
+    <header class="manager-topbar">
         <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-light border d-lg-none" id="btnToggleSidebar" type="button">
+            <button class="btn btn-light border d-lg-none py-1.5 px-2.5 rounded-2" onclick="toggleSidebar()">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <div class="d-none d-md-flex align-items-center text-muted small">
-                <i class="fa-solid fa-shield-halved text-primary me-2"></i>
-                <span class="fw-semibold">Ban Quản Lý & Điều Hành Giải Đấu Thể Thao</span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="d-none d-sm-inline fw-semibold text-dark" style="font-size: 14px;">
+                    Ban Quản Lý & Điều Hành Giải Đấu Thể Thao
+                </span>
+                <span class="d-none d-sm-inline text-muted">•</span>
+                <span class="badge badge-soft-manager rounded-pill px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Manager
+                </span>
             </div>
         </div>
 
         <div class="d-flex align-items-center gap-3">
-            <div class="dropdown">
-                <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.75rem;">
-                        <i class="fa-solid fa-user-tie"></i>
-                    </div>
-                    <span class="fw-semibold small">@(User.Identity?.Name ?? "Quản Lý")</span>
-                    <span class="badge bg-primary-subtle text-primary border" style="font-size: 0.65rem;">Manager</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                    <li>
-                        <div class="dropdown-header text-muted small">
-                            Tài khoản: <strong>@(User.Identity?.Name)</strong>
-                        </div>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <form method="post" action="/Account/Logout" class="m-0">
-                            <button type="submit" class="dropdown-item text-danger d-flex align-items-center gap-2">
-                                <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
-                            </button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
+            <a href="/" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-none d-md-inline-flex align-items-center gap-1.5" style="font-size: 12px;">
+                <i class="fa-solid fa-house"></i> Trang Chủ Giải
+            </a>
+
+            <div class="vr d-none d-sm-block my-1"></div>
+
+            @await Component.InvokeAsync("PortalAccountMenu", new {
+                currentArea = "Manager",
+                portalLabel = "Quản lý giải đấu",
+                linkedName = User.Identity?.Name as string
+            })
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="manager-content">
-        @RenderBody()
+    <!-- Main Content Body -->
+    <main class="manager-main">
+        <div class="container-fluid p-0" style="max-width: 1400px;">
+            @RenderBody()
+        </div>
     </main>
 
     <!-- Scripts -->
@@ -373,22 +422,10 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
-        // Sidebar toggle for mobile
-        $('#btnToggleSidebar, #sidebarOverlay').on('click', function () {
-            $('#managerSidebar').toggleClass('show');
-            $('#sidebarOverlay').toggleClass('show');
-        });
-
-        // Highlight active menu item based on current URL path
-        $(document).ready(function () {
-            const currentPath = window.location.pathname.toLowerCase();
-            $('.sidebar-nav .nav-item-custom').each(function () {
-                const route = $(this).data('route');
-                if (route && currentPath.startsWith(route.toLowerCase())) {
-                    $(this).addClass('active');
-                }
-            });
-        });
+        function toggleSidebar() {
+            document.getElementById('managerSidebar').classList.toggle('show');
+            document.getElementById('managerBackdrop').classList.toggle('show');
+        }
 
         // Global Alert & Toast Helpers
         const SportApp = {

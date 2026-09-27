@@ -211,6 +211,14 @@ namespace Dms.Application.Services
             target.SoVdvVaoChungKet = source.SoVdvVaoChungKet;
             target.KyLucHienTai = source.KyLucHienTai;
             target.KyLucHienTaiText = source.KyLucHienTaiText;
+
+            target.ThoiLuongTranPhut = source.ThoiLuongTranPhut > 0 ? source.ThoiLuongTranPhut : 60;
+            target.NghiGiuaTranPhut = source.NghiGiuaTranPhut >= 0 ? source.NghiGiuaTranPhut : 15;
+            target.SoBang = source.SoBang >= 0 ? source.SoBang : 0;
+            target.SoDoiMoiBang = source.SoDoiMoiBang > 1 ? source.SoDoiMoiBang : 4;
+            target.SoDoiMoiBangVaoVongTrong = source.SoDoiMoiBangVaoVongTrong > 0 ? source.SoDoiMoiBangVaoVongTrong : 2;
+            target.SoVongThi = source.SoVongThi > 0 ? source.SoVongThi : 2;
+            target.PhuongThucPhanNhom = string.IsNullOrWhiteSpace(source.PhuongThucPhanNhom) ? "random" : source.PhuongThucPhanNhom;
         }
 
         /// <summary>
@@ -261,7 +269,14 @@ namespace Dms.Application.Services
                 QuyCachTienVaoChungKet = entity.QuyCachTienVaoChungKet,
                 SoVdvVaoChungKet = entity.SoVdvVaoChungKet,
                 KyLucHienTai = entity.KyLucHienTai,
-                KyLucHienTaiText = entity.KyLucHienTaiText
+                KyLucHienTaiText = entity.KyLucHienTaiText,
+                ThoiLuongTranPhut = entity.ThoiLuongTranPhut,
+                NghiGiuaTranPhut = entity.NghiGiuaTranPhut,
+                SoBang = entity.SoBang,
+                SoDoiMoiBang = entity.SoDoiMoiBang,
+                SoDoiMoiBangVaoVongTrong = entity.SoDoiMoiBangVaoVongTrong,
+                SoVongThi = entity.SoVongThi,
+                PhuongThucPhanNhom = entity.PhuongThucPhanNhom
             };
         }
 

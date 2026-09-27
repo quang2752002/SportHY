@@ -215,8 +215,13 @@
                         </td>
                         <td>
                             <div class="fw-bold text-dark mb-0">${escapeHtml(item.ten)}</div>
-                            <small class="text-muted"><span class="badge bg-light text-secondary border">Mã: ${escapeHtml(item.ma)}</span></small>
-                            ${item.diaDiem ? `<div class="small text-muted mt-1"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${escapeHtml(item.diaDiem)}</div>` : ''}
+                            <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
+                                <span class="badge bg-light text-secondary border">Mã: ${escapeHtml(item.ma)}</span>
+                                ${item.diaDiem ? `<span class="small text-muted"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${escapeHtml(item.diaDiem)}</span>` : ''}
+                                ${item.tenTruongBanTrongTai 
+                                    ? `<span class="badge bg-warning-subtle text-dark border border-warning-subtle"><i class="fa-solid fa-whistle me-1 text-warning"></i>TT Trưởng: ${escapeHtml(item.tenTruongBanTrongTai)}</span>` 
+                                    : `<span class="badge bg-light text-muted border border-dashed"><i class="fa-solid fa-circle-question me-1"></i>Chưa có TT trưởng</span>`}
+                            </div>
                         </td>
                         <td>
                             <div class="small fw-semibold text-dark"><i class="fa-regular fa-calendar-check me-1 text-primary"></i>${ngayBD}</div>

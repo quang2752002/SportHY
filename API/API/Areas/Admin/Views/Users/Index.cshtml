@@ -96,7 +96,6 @@
                             <option value="Manager">Manager (Quản lý giải đấu)</option>
                             <option value="Delegation">Delegation (Đoàn thể thao / Đơn vị nộp hồ sơ)</option>
                             <option value="SportCoordinator">SportCoordinator (Người điều hành môn)</option>
-                            <option value="HeadReferee">HeadReferee (Trưởng ban trọng tài)</option>
                             <option value="Referee">Referee (Trọng tài điều hành)</option>
                             <option value="Secretary">Secretary (Thư ký bàn)</option>
                         </select>
@@ -121,7 +120,7 @@
                         </select>
                     </div>
 
-                    <!-- Dropdown chọn trọng tài nếu là Referee hoặc HeadReferee -->
+                    <!-- Dropdown chọn trọng tài nếu là Referee -->
                     <div class="mb-3 d-none" id="trongTaiGroup">
                         <label class="form-label fw-semibold">Hồ sơ Trọng tài liên kết <span class="text-danger">*</span></label>
                         <select class="form-select" id="trongTaiId">
@@ -241,7 +240,7 @@
 
             if (role === 'Delegation') {
                 $('#donViGroup').removeClass('d-none');
-            } else if (role === 'Referee' || role === 'HeadReferee') {
+            } else if (role === 'Referee') {
                 $('#trongTaiGroup').removeClass('d-none');
             } else if (role === 'Secretary') {
                 $('#thuKyGroup').removeClass('d-none');
@@ -458,7 +457,7 @@
                 return;
             }
 
-            if ((role === 'Referee' || role === 'HeadReferee') && !trongTaiId) {
+            if (role === 'Referee' && !trongTaiId) {
                 Swal.fire('Lưu ý', 'Vui lòng chọn Hồ sơ Trọng tài liên kết.', 'warning');
                 return;
             }
@@ -475,7 +474,7 @@
                 password: password || null,
                 role: role,
                 donViId: role === 'Delegation' && donViId ? parseInt(donViId) : null,
-                trongTaiId: (role === 'Referee' || role === 'HeadReferee') && trongTaiId ? parseInt(trongTaiId) : null,
+                trongTaiId: role === 'Referee' && trongTaiId ? parseInt(trongTaiId) : null,
                 thuKyId: role === 'Secretary' && thuKyId ? parseInt(thuKyId) : null
             };
 

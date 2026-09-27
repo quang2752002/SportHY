@@ -2,6 +2,7 @@ using Dms.Application;
 using Dms.Domain.Entities;
 using Dms.Infrastructure;
 using Dms.Infrastructure.Persistence;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Đăng ký cấu hình từ lớp Application và Infrastructure
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Lưu trữ Data Protection key ra file cố định để cookie authentication và AntiForgeryToken
+// không bị mất hiệu lực khi ứng dụng restart (IIS recycle, dotnet run lại, deploy mới)
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")))
+    .SetApplicationName("SportDMS");
+
 // Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<int>>(options =>
 {
@@ -57,23 +65,20 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
+    options.Cookie.Name = ".SportDMS.Auth";
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.SlidingExpiration = true;
     options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
-// Cấu hình CORS cho phép Next.js (http://localhost:3000) kết nối
-builder.Services.AddCors(options =>
+// Tăng khoảng thời gian validate SecurityStamp lên 24h để tránh user bị logout bất ngờ
+// khi admin cập nhật thông tin / role (mặc định ASP.NET Identity validate mỗi 30 phút)
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
 {
-    options.AddPolicy("CorsPolicy", policy =>
-    {
-        policy.WithOrigins("http://localhost:3000")
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
-    });
+    options.ValidationInterval = TimeSpan.FromHours(24);
 });
 
 builder.Services.AddControllersWithViews()
@@ -116,25 +121,22 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-else
-{
+//if (app.Environment.IsDevelopment())
+//{
+//    app.UseDeveloperExceptionPage();
+//    app.UseSwagger();
+//    app.UseSwaggerUI();
+//}
+//else
+//{
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
-}
+//}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
-// Sử dụng CORS policy trước khi map controllers và authorization
-app.UseCors("CorsPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -164,7 +166,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Một lỗi đã xảy ra trong quá trình seed dữ liệu.");
+        logger.LogError(ex, "Một lỗi đã xảy ra trong quá trình kết nối hoặc khởi tạo cơ sở dữ liệu (Database Migration/Seed).");
     }
 }
 

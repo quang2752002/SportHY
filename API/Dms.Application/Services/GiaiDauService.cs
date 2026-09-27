@@ -47,6 +47,20 @@ namespace Dms.Application.Services
                 includes: g => g.GiaiDauKhois
             );
 
+            // Nạp thông tin Trưởng ban trọng tài cho các giải đấu
+            var truongBanIds = pagedEntities.Items.Where(g => g.TruongBanTrongTaiId.HasValue).Select(g => g.TruongBanTrongTaiId!.Value).Distinct().ToList();
+            if (truongBanIds.Any())
+            {
+                var ttDict = (await _unitOfWork.TrongTais.FindAsync(t => truongBanIds.Contains(t.Id) && t.IsDeleted != true)).ToDictionary(t => t.Id);
+                foreach (var entity in pagedEntities.Items)
+                {
+                    if (entity.TruongBanTrongTaiId.HasValue && ttDict.TryGetValue(entity.TruongBanTrongTaiId.Value, out var tt))
+                    {
+                        entity.TruongBanTrongTai = tt;
+                    }
+                }
+            }
+
             var dtos = _mapper.Map<List<GiaiDauDto>>(pagedEntities.Items);
 
             // Nạp danh sách môn thể thao cho từng giải đấu
@@ -106,7 +120,22 @@ namespace Dms.Application.Services
         /// </summary>
         public async Task<IEnumerable<GiaiDauDto>> GetAllAsync()
         {
-            var items = await _unitOfWork.GiaiDaus.FindAsync(g => g.IsDeleted != true);
+            var items = (await _unitOfWork.GiaiDaus.FindAsync(g => g.IsDeleted != true)).ToList();
+
+            // Nạp thông tin Trưởng ban trọng tài cho các giải đấu
+            var truongBanIds = items.Where(g => g.TruongBanTrongTaiId.HasValue).Select(g => g.TruongBanTrongTaiId!.Value).Distinct().ToList();
+            if (truongBanIds.Any())
+            {
+                var ttDict = (await _unitOfWork.TrongTais.FindAsync(t => truongBanIds.Contains(t.Id) && t.IsDeleted != true)).ToDictionary(t => t.Id);
+                foreach (var entity in items)
+                {
+                    if (entity.TruongBanTrongTaiId.HasValue && ttDict.TryGetValue(entity.TruongBanTrongTaiId.Value, out var tt))
+                    {
+                        entity.TruongBanTrongTai = tt;
+                    }
+                }
+            }
+
             var dtos = _mapper.Map<List<GiaiDauDto>>(items.OrderByDescending(g => g.NgayBatDau));
 
             var giaiDauIds = dtos.Select(d => d.Id).ToList();
@@ -168,6 +197,13 @@ namespace Dms.Application.Services
             var list = await _unitOfWork.GiaiDaus.FindAsync(g => g.Id == id && g.IsDeleted != true);
             var entity = list.FirstOrDefault();
             if (entity == null) return null;
+
+            // Load Trưởng ban trọng tài nếu có
+            if (entity.TruongBanTrongTaiId.HasValue)
+            {
+                var ttList = await _unitOfWork.TrongTais.FindAsync(t => t.Id == entity.TruongBanTrongTaiId.Value && t.IsDeleted != true);
+                entity.TruongBanTrongTai = ttList.FirstOrDefault();
+            }
 
             // Load kèm các khối tham gia
             var giaiDauKhois = await _unitOfWork.GiaiDauKhois.FindAsync(gk => gk.GiaiDauId == id && gk.IsDeleted != true);

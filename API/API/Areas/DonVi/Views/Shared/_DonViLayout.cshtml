@@ -23,20 +23,26 @@
     <style>
         :root {
             --donvi-sidebar-width: 270px;
-            --donvi-sidebar-bg: #064e3b;
-            --donvi-sidebar-dark: #022c22;
-            --donvi-sidebar-hover: #065f46;
+            --donvi-sidebar-bg: #ffffff;
+            --donvi-sidebar-dark: #f7fdf9;
+            --donvi-sidebar-hover: #ecfdf5;
             --donvi-sidebar-active: #059669;
             --donvi-header-height: 64px;
             --donvi-primary: #059669;
             --donvi-accent: #10b981;
-            --donvi-teal: #0f766e;
+            --bs-primary: #059669;
+            --bs-primary-rgb: 5, 150, 105;
+            --bs-primary-text-emphasis: #047857;
+            --bs-primary-bg-subtle: #d1fae5;
+            --bs-primary-border-subtle: #a7f3d0;
+            --bs-link-color: #059669;
+            --bs-link-hover-color: #047857;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #334155;
+            background-color: #f1f5f9;
+            color: #33445c;
             overflow-x: hidden;
         }
 
@@ -48,12 +54,12 @@
             top: 0;
             left: 0;
             background: linear-gradient(180deg, var(--donvi-sidebar-bg) 0%, var(--donvi-sidebar-dark) 100%);
-            color: #a7f3d0;
+            color: #33445c;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1040;
             overflow-y: auto;
-            border-right: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+            border-right: 1px solid #e4ebf4;
+            box-shadow: 3px 0 14px rgba(42, 72, 112, 0.06);
         }
 
         .donvi-brand {
@@ -61,12 +67,12 @@
             display: flex;
             align-items: center;
             padding: 0 1.25rem;
-            color: #fff;
+            color: #263a55;
             font-weight: 700;
             font-size: 1.1rem;
             letter-spacing: 0.5px;
-            background: rgba(0,0,0,0.2);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: #ffffff;
+            border-bottom: 1px solid #e8eef6;
             text-decoration: none;
         }
 
@@ -80,7 +86,7 @@
             justify-content: center;
             color: #ffffff;
             font-size: 1.15rem;
-            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.28);
             margin-right: 0.75rem;
             flex-shrink: 0;
         }
@@ -94,17 +100,17 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: #6ee7b7;
-            opacity: 0.85;
+            color: #71849e;
+            opacity: 1;
             padding: 0.75rem 0.85rem 0.35rem;
         }
 
         .donvi-nav-link {
             display: flex;
             align-items: center;
-            padding: 0.7rem 0.85rem;
+            padding: 0.75rem 0.85rem;
             border-radius: 8px;
-            color: #d1fae5;
+            color: #4a5f79;
             text-decoration: none;
             font-size: 0.88rem;
             font-weight: 500;
@@ -116,26 +122,26 @@
             width: 24px;
             font-size: 1.1rem;
             margin-right: 0.75rem;
-            color: #6ee7b7;
+            color: #10b981;
             text-align: center;
             transition: transform 0.2s;
         }
 
         .donvi-nav-link:hover {
-            background: rgba(255,255,255,0.08);
-            color: #ffffff;
+            background: var(--donvi-sidebar-hover);
+            color: var(--donvi-primary);
             transform: translateX(3px);
         }
 
         .donvi-nav-link:hover i {
-            color: #a7f3d0;
+            color: var(--donvi-primary);
         }
 
         .donvi-nav-link.active {
-            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: #ffffff;
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+            box-shadow: 0 4px 11px rgba(5, 150, 105, 0.24);
         }
 
         .donvi-nav-link.active i {
@@ -144,11 +150,34 @@
 
         /* Unit Info Card in Sidebar */
         .donvi-unit-card {
-            background: rgba(0,0,0,0.25);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
             border-radius: 10px;
             padding: 0.75rem 0.9rem;
             margin: 0.5rem 0.75rem 1rem;
+        }
+
+        .donvi-unit-card .text-white {
+            color: #1e3a2f !important;
+        }
+
+        .donvi-unit-card .text-white-50 {
+            color: #4b6b5d !important;
+        }
+
+        .donvi-unit-card .text-warning {
+            color: #059669 !important;
+        }
+
+        .donvi-unit-card .badge.bg-warning {
+            background-color: #d1fae5 !important;
+            color: #047857 !important;
+        }
+
+        .donvi-unit-card .form-select {
+            background-color: #ffffff !important;
+            color: #33445c !important;
+            border-color: #bbf7d0 !important;
         }
 
         /* Top Header */
@@ -159,7 +188,7 @@
             right: 0;
             left: var(--donvi-sidebar-width);
             background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e3eaf3;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -176,7 +205,7 @@
             transition: margin-left 0.3s ease;
         }
 
-        /* Responsive Mobile Styles */
+        /* Responsive Mobile */
         @@media (max-width: 991.98px) {
             .donvi-sidebar {
                 transform: translateX(-100%);
@@ -207,7 +236,7 @@
 
         /* Custom Cards */
         .card-custom {
-            border: 1px solid #e2e8f0;
+            border: 1px solid #e2eaf4;
             border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.03);
             background-color: #fff;
@@ -236,6 +265,21 @@
             color: #047857;
             border: 1px solid #a7f3d0;
         }
+
+        .donvi-main .form-control:focus,
+        .donvi-main .form-select:focus {
+            border-color: #34d399;
+            box-shadow: 0 0 0 0.2rem rgba(5, 150, 105, 0.18);
+        }
+
+        .donvi-main .table thead th {
+            background-color: #ecfdf5;
+            color: #065f46;
+        }
+
+        .donvi-main .table {
+            --bs-table-border-color: #e2eaf4;
+        }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -250,8 +294,8 @@
                 <i class="fa-solid fa-building-columns"></i>
             </div>
             <div class="lh-sm overflow-hidden">
-                <div class="fw-bold fs-6 text-white text-truncate">PORTAL ĐOÀN</div>
-                <small class="text-emerald text-truncate d-block" style="font-size: 11px; color: #6ee7b7;">
+                <div class="fw-bold fs-6 text-truncate">PORTAL ĐOÀN</div>
+                <small class="text-truncate d-block" style="font-size: 11px; color: #10b981;">
                     @(ViewBag.CurrentDonVi?.Ten ?? "Đơn vị thi đấu")
                 </small>
             </div>
@@ -277,15 +321,15 @@
             </div>
             @if (!string.IsNullOrEmpty(currentUnit?.Ma))
             {
-                <small class="text-white-50" style="font-size: 11px;">Mã: <span class="text-light fw-medium">@currentUnit.Ma</span></small>
+                <small class="text-white-50" style="font-size: 11px;">Mã: <span class="fw-medium" style="color: #065f46;">@currentUnit.Ma</span></small>
             }
 
             @if (canSwitch && allUnits != null && allUnits.Count > 1)
             {
-                <div class="mt-2 pt-2 border-top border-white border-opacity-10">
+                <div class="mt-2 pt-2 border-top" style="border-color: #bbf7d0 !important;">
                     <form method="post" action="/DonVi/BaseDonVi/SwitchDonVi">
                         <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
-                        <select name="donViId" class="form-select form-select-sm bg-dark text-white border-secondary" style="font-size: 11px;" onchange="this.form.submit()">
+                        <select name="donViId" class="form-select form-select-sm" style="font-size: 11px;" onchange="this.form.submit()">
                             @foreach (var u in allUnits)
                             {
                                 if (currentUnit != null && u.Id == currentUnit.Id)
@@ -375,45 +419,11 @@
 
             <div class="vr d-none d-sm-block my-1"></div>
 
-            <div class="dropdown">
-                <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2 py-1 px-2.5 rounded-pill" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 12px; background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
-                        <i class="fa-solid fa-user-check"></i>
-                    </div>
-                    <div class="d-none d-md-block text-start lh-1">
-                        <span class="fw-semibold text-dark d-block" style="font-size: 13px;">@User.Identity?.Name</span>
-                        <small class="text-muted" style="font-size: 11px;">Tài khoản Đoàn</small>
-                    </div>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
-                    <li class="px-3 py-2 border-bottom">
-                        <div class="small text-muted">Đang đăng nhập:</div>
-                        <div class="fw-bold text-dark">@User.Identity?.Name</div>
-                        <div class="small text-success mt-1">@(ViewBag.CurrentDonVi?.Ten ?? "Đoàn VĐV")</div>
-                    </li>
-                    <li>
-                        <a class="dropdown-item py-2" href="/DonVi/Home">
-                            <i class="fa-solid fa-chart-pie me-2 text-success"></i> Tổng quan Đoàn
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item py-2" href="/DonVi/VanDongVien">
-                            <i class="fa-solid fa-users me-2 text-primary"></i> Danh sách VĐV
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item py-2" href="/DonVi/DangKy">
-                            <i class="fa-solid fa-clipboard-check me-2 text-warning"></i> Đăng ký thi đấu
-                        </a>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <a class="dropdown-item py-2 text-danger" href="/Account/Logout">
-                            <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Đăng Xuất
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            @await Component.InvokeAsync("PortalAccountMenu", new {
+                currentArea = "DonVi",
+                portalLabel = "Tài khoản Đoàn",
+                linkedName = ViewBag.CurrentDonVi?.Ten as string
+            })
         </div>
     </header>
 

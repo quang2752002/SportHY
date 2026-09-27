@@ -3,6 +3,7 @@
     ViewData["Title"] = "Chỉnh sửa Giải Đấu - " + Model.Ten;
     var khois = ViewBag.Khois as IEnumerable<KhoiDto> ?? Enumerable.Empty<KhoiDto>();
     var monTheThaos = ViewBag.MonTheThaos as IEnumerable<MonTheThaoDto> ?? Enumerable.Empty<MonTheThaoDto>();
+    var trongTais = ViewBag.TrongTais as IEnumerable<TrongTaiDto> ?? Enumerable.Empty<TrongTaiDto>();
     var selectedMonIds = Model.MonTheThaoIds ?? new List<int>();
     var selectedKhoiIds = Model.KhoiIds ?? new List<int>();
     var dieuLes = Model.DieuLeGiaiDaus ?? new List<DieuLeGiaiDauDto>();
@@ -207,6 +208,27 @@
                             <option value="TatCa" selected="@(Model.PhamVi == PhamViGiaiDau.TatCa ? "selected" : null)">Tất cả đơn vị</option>
                             <option value="TheoKhoi" selected="@(Model.PhamVi == PhamViGiaiDau.TheoKhoi ? "selected" : null)">Theo khối ngành / đơn vị</option>
                         </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="fa-solid fa-user-shield text-warning me-1"></i>Trọng tài trưởng giải
+                        </label>
+                        <select class="form-select" id="truongBanTrongTaiId">
+                            <option value="">-- Chưa chỉ định / Phân công sau --</option>
+                            @foreach (var tt in trongTais)
+                            {
+                                if (Model.TruongBanTrongTaiId == tt.Id)
+                                {
+                                    <option value="@tt.Id" selected="selected">@tt.HoTen (@tt.Ma) - @tt.CapBac</option>
+                                }
+                                else
+                                {
+                                    <option value="@tt.Id">@tt.HoTen (@tt.Ma) - @tt.CapBac</option>
+                                }
+                            }
+                        </select>
+                        <div class="form-text small text-muted">Trọng tài được chọn sẽ làm Trưởng ban trọng tài, chịu trách nhiệm xếp lịch, phân công trọng tài và duyệt biên bản.</div>
                     </div>
                 </div>
             </div>
@@ -434,6 +456,7 @@
                 moTa: $('#moTa').val().trim(),
                 trangThai: $('#trangThai').val(),
                 phamVi: $('#phamVi').val() || 'TatCa',
+                truongBanTrongTaiId: $('#truongBanTrongTaiId').val() ? parseInt($('#truongBanTrongTaiId').val()) : null,
                 hinhAnh: $('#bannerUrl').val() || null,
                 monTheThaoIds: monTheThaoIds,
                 khoiIds: khoiIds,

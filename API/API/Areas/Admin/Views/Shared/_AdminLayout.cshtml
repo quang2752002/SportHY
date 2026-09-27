@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Sport Management Admin</title>
+    <title>@ViewData["Title"] - Quản Trị Hệ Thống</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,163 +22,158 @@
 
     <style>
         :root {
-            --sidebar-width: 260px;
-            --sidebar-bg: #0f172a;
-            --sidebar-hover: #1e293b;
-            --sidebar-active: #2563eb;
-            --header-height: 64px;
-            --primary-color: #2563eb;
-            --accent-green: #10b981;
+            --admin-sidebar-width: 270px;
+            --admin-sidebar-bg: #ffffff;
+            --admin-sidebar-dark: #f8f9fd;
+            --admin-sidebar-hover: #eef2ff;
+            --admin-sidebar-active: #4f46e5;
+            --admin-header-height: 64px;
+            --admin-primary: #4f46e5;
+            --admin-accent: #6366f1;
+            --bs-primary: #4f46e5;
+            --bs-primary-rgb: 79, 70, 229;
+            --bs-primary-text-emphasis: #3730a3;
+            --bs-primary-bg-subtle: #e0e7ff;
+            --bs-primary-border-subtle: #c7d2fe;
+            --bs-link-color: #4f46e5;
+            --bs-link-hover-color: #3730a3;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f1f5f9;
-            color: #334155;
+            color: #33445c;
             overflow-x: hidden;
         }
 
         /* Sidebar Styling */
         .admin-sidebar {
-            width: var(--sidebar-width);
+            width: var(--admin-sidebar-width);
             height: 100vh;
             position: fixed;
             top: 0;
             left: 0;
-            background: var(--sidebar-bg);
-            color: #94a3b8;
+            background: linear-gradient(180deg, var(--admin-sidebar-bg) 0%, var(--admin-sidebar-dark) 100%);
+            color: #33445c;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1040;
             overflow-y: auto;
-            border-right: 1px solid rgba(255,255,255,0.06);
+            border-right: 1px solid #e4ebf4;
+            box-shadow: 3px 0 14px rgba(42, 72, 112, 0.06);
         }
 
-        .sidebar-brand {
-            height: var(--header-height);
+        .admin-brand {
+            height: var(--admin-header-height);
             display: flex;
             align-items: center;
-            padding: 0 1.5rem;
-            color: #fff;
+            padding: 0 1.25rem;
+            color: #263a55;
             font-weight: 700;
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             letter-spacing: 0.5px;
-            background: rgba(0,0,0,0.2);
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: #ffffff;
+            border-bottom: 1px solid #e8eef6;
             text-decoration: none;
         }
 
-        .sidebar-brand i {
-            color: #38bdf8;
+        .admin-brand-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.15rem;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.28);
             margin-right: 0.75rem;
-            font-size: 1.35rem;
+            flex-shrink: 0;
         }
 
-        .sidebar-nav {
+        .admin-nav {
             padding: 1rem 0.75rem;
         }
 
-        .nav-section-title {
+        .admin-nav-header {
             font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
             font-weight: 700;
-            color: #64748b;
-            padding: 0.75rem 0.75rem 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #71849e;
+            opacity: 1;
+            padding: 0.75rem 0.85rem 0.35rem;
         }
 
-        .sidebar-link {
+        .admin-nav-link {
             display: flex;
             align-items: center;
-            padding: 0.7rem 0.85rem;
-            color: #cbd5e1;
-            text-decoration: none;
+            padding: 0.75rem 0.85rem;
             border-radius: 8px;
-            font-size: 0.9rem;
+            color: #4a5f79;
+            text-decoration: none;
+            font-size: 0.88rem;
             font-weight: 500;
-            margin-bottom: 0.25rem;
+            margin-bottom: 4px;
             transition: all 0.2s ease;
         }
 
-        .sidebar-link i {
+        .admin-nav-link i {
             width: 24px;
             font-size: 1.1rem;
             margin-right: 0.75rem;
-            color: #94a3b8;
-            transition: color 0.2s ease;
+            color: #6366f1;
+            text-align: center;
+            transition: transform 0.2s;
         }
 
-        .sidebar-link:hover {
-            color: #fff;
-            background: var(--sidebar-hover);
+        .admin-nav-link:hover {
+            background: var(--admin-sidebar-hover);
+            color: var(--admin-primary);
+            transform: translateX(3px);
         }
 
-        .sidebar-link:hover i {
-            color: #38bdf8;
+        .admin-nav-link:hover i {
+            color: var(--admin-primary);
         }
 
-        .sidebar-link.active {
-            color: #fff;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+        .admin-nav-link.active {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 4px 11px rgba(79, 70, 229, 0.24);
         }
 
-        .sidebar-link.active i {
-            color: #fff;
+        .admin-nav-link.active i {
+            color: #ffffff;
         }
 
         /* Top Header */
-        .admin-header {
-            height: var(--header-height);
+        .admin-topbar {
+            height: var(--admin-header-height);
             position: fixed;
             top: 0;
             right: 0;
-            left: var(--sidebar-width);
+            left: var(--admin-sidebar-width);
             background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e3eaf3;
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 1.5rem;
             z-index: 1030;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
             transition: left 0.3s ease;
         }
 
-        /* Main Content Container */
+        /* Main Content */
         .admin-main {
-            margin-left: var(--sidebar-width);
-            margin-top: var(--header-height);
-            padding: 1.75rem 1.5rem;
-            min-height: calc(100vh - var(--header-height));
+            margin-left: var(--admin-sidebar-width);
+            padding: calc(var(--admin-header-height) + 1.5rem) 1.5rem 2rem;
+            min-height: 100vh;
             transition: margin-left 0.3s ease;
         }
 
-        /* Cards & Components */
-        .card-custom {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
-            background: #fff;
-        }
-
-        .card-custom .card-header {
-            background-color: #fff;
-            border-bottom: 1px solid #f1f5f9;
-            padding: 1rem 1.25rem;
-            font-weight: 600;
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
-        }
-
-        /* Badges */
-        .badge-status {
-            padding: 0.35em 0.7em;
-            font-weight: 600;
-            font-size: 0.75rem;
-            border-radius: 6px;
-        }
-
-        /* Responsive */
+        /* Responsive Mobile */
         @@media (max-width: 991.98px) {
             .admin-sidebar {
                 transform: translateX(-100%);
@@ -186,157 +181,204 @@
             .admin-sidebar.show {
                 transform: translateX(0);
             }
-            .admin-header {
-                left: 0;
+            .admin-topbar {
+                left: 0 !important;
             }
             .admin-main {
-                margin-left: 0;
+                margin-left: 0 !important;
             }
+            .admin-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0,0,0,0.5);
+                z-index: 1035;
+                display: none;
+            }
+            .admin-backdrop.show {
+                display: block;
+            }
+        }
+
+        /* Cards & Buttons */
+        .card-custom {
+            border: 1px solid #e2eaf4;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            background-color: #fff;
+            transition: all 0.2s ease;
+        }
+        .card-custom:hover {
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+        }
+
+        .badge-soft-admin {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            border: 1px solid #c7d2fe;
+        }
+
+        .admin-main .form-control:focus,
+        .admin-main .form-select:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.18);
+        }
+
+        .admin-main .table thead th {
+            background-color: #eef2ff;
+            color: #312e81;
+        }
+
+        .admin-main .table {
+            --bs-table-border-color: #e2eaf4;
         }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
+    <div class="admin-backdrop" id="adminBackdrop" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar -->
     <aside class="admin-sidebar" id="adminSidebar">
-        <a href="/Admin/Home" class="sidebar-brand">
-            <i class="fa-solid fa-trophy"></i>
-            <span>SPORT DMS</span>
+        <!-- Brand -->
+        <a href="/Admin/GiaiDau" class="admin-brand">
+            <div class="admin-brand-badge">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="lh-sm overflow-hidden">
+                <div class="fw-bold fs-6 text-truncate">ADMIN</div>
+                <small class="text-truncate d-block" style="font-size: 11px; color: #6366f1;">
+                    Quản trị hệ thống
+                </small>
+            </div>
         </a>
 
-        <div class="sidebar-nav">
-            <div class="nav-section-title">Tổng quan</div>
-            <a href="/Admin/Home" class="sidebar-link">
-                <i class="fa-solid fa-chart-pie"></i>
-                <span>Bảng điều khiển</span>
-            </a>
+        <!-- Navigation Menu -->
+        <div class="admin-nav">
+            <div class="admin-nav-header">Quản lý thi đấu</div>
 
-            <div class="nav-section-title">Quản lý thi đấu</div>
-            <a href="/Admin/GiaiDau" class="sidebar-link">
+            @{
+                string currentPath = Context.Request.Path.Value?.ToLower() ?? "";
+            }
+
+            <a href="/Admin/GiaiDau" class="admin-nav-link @(currentPath.StartsWith("/admin/giaidau") ? "active" : "")">
                 <i class="fa-solid fa-medal"></i>
                 <span>Quản lý Giải đấu</span>
             </a>
-            <a href="/Admin/CumSan" class="sidebar-link">
+            <a href="/Admin/CumSan" class="admin-nav-link @(currentPath.StartsWith("/admin/cumsan") ? "active" : "")">
                 <i class="fa-solid fa-map-location-dot"></i>
                 <span>Cụm sân thi đấu</span>
             </a>
-            <a href="/Admin/SanDau" class="sidebar-link">
+            <a href="/Admin/SanDau" class="admin-nav-link @(currentPath.StartsWith("/admin/sandau") ? "active" : "")">
                 <i class="fa-solid fa-futbol"></i>
                 <span>Sân đấu chi tiết</span>
             </a>
-            <a href="/Admin/DanhMucMonTheThao" class="sidebar-link">
+            <a href="/Admin/DanhMucMonTheThao" class="admin-nav-link @(currentPath.StartsWith("/admin/danhmucmonthethao") ? "active" : "")">
                 <i class="fa-solid fa-tags"></i>
                 <span>Danh mục môn</span>
             </a>
-            <a href="/Admin/MonTheThao" class="sidebar-link">
+            <a href="/Admin/MonTheThao" class="admin-nav-link @(currentPath.StartsWith("/admin/monthethao") ? "active" : "")">
                 <i class="fa-solid fa-volleyball"></i>
                 <span>Môn thể thao</span>
             </a>
-            <a href="/Admin/Khoi" class="sidebar-link">
+            <a href="/Admin/Khoi" class="admin-nav-link @(currentPath.StartsWith("/admin/khoi") ? "active" : "")">
                 <i class="fa-solid fa-layer-group"></i>
                 <span>Khối tham gia</span>
             </a>
 
-            <div class="nav-section-title">Nhân sự & Đoàn</div>
-            <a href="/Admin/DonVi" class="sidebar-link">
+            <div class="admin-nav-header mt-3">Nhân sự & Đoàn</div>
+            <a href="/Admin/DonVi" class="admin-nav-link @(currentPath.StartsWith("/admin/donvi") ? "active" : "")">
                 <i class="fa-solid fa-building-columns"></i>
                 <span>Đơn vị / Đoàn</span>
             </a>
-            <a href="/Admin/VanDongVien" class="sidebar-link">
+            <a href="/Admin/VanDongVien" class="admin-nav-link @(currentPath.StartsWith("/admin/vandongvien") ? "active" : "")">
                 <i class="fa-solid fa-person-running"></i>
                 <span>Vận động viên</span>
             </a>
-            <a href="/Admin/TrongTai" class="sidebar-link">
+            <a href="/Admin/TrongTai" class="admin-nav-link @(currentPath.StartsWith("/admin/trongtai") ? "active" : "")">
                 <i class="fa-solid fa-user-shield"></i>
                 <span>Trọng tài</span>
             </a>
-            <a href="/Admin/ThuKy" class="sidebar-link">
+            <a href="/Admin/ThuKy" class="admin-nav-link @(currentPath.StartsWith("/admin/thuky") ? "active" : "")">
                 <i class="fa-solid fa-file-signature"></i>
                 <span>Thư ký giải đấu</span>
             </a>
 
-            
-
-            <div class="nav-section-title">Hệ thống</div>
-            <a href="/Admin/Users" class="sidebar-link">
+            <div class="admin-nav-header mt-3">Hệ thống</div>
+            <a href="/Admin/Users" class="admin-nav-link @(currentPath.StartsWith("/admin/users") ? "active" : "")">
                 <i class="fa-solid fa-users-gear"></i>
                 <span>Tài khoản & Phân quyền</span>
             </a>
-            <a href="/Admin/SystemSetting" class="sidebar-link">
+            <a href="/Admin/SystemSetting" class="admin-nav-link @(currentPath.StartsWith("/admin/systemsetting") ? "active" : "")">
                 <i class="fa-solid fa-sliders"></i>
                 <span>Cấu hình hệ thống</span>
+            </a>
+
+            <a href="/" class="admin-nav-link mt-2" target="_blank">
+                <i class="fa-solid fa-globe"></i>
+                <span>Về Cổng Trang Chủ</span>
+            </a>
+
+            <a href="/Account/Logout" class="admin-nav-link text-danger mt-2">
+                <i class="fa-solid fa-arrow-right-from-bracket text-danger"></i>
+                <span>Đăng xuất</span>
             </a>
         </div>
     </aside>
 
-    <!-- Top Header -->
-    <header class="admin-header">
-        <div class="d-flex align-items-center">
-            <button class="btn btn-sm btn-light d-lg-none me-2" id="sidebarToggle" type="button">
+    <!-- Topbar -->
+    <header class="admin-topbar">
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-light border d-lg-none py-1.5 px-2.5 rounded-2" onclick="toggleSidebar()">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <h6 class="mb-0 fw-bold text-dark d-none d-sm-block">
-                HỆ THỐNG ĐIỀU HÀNH & QUẢN LÝ THỂ THAO
-            </h6>
+            <div class="d-flex align-items-center gap-2">
+                <span class="d-none d-sm-inline fw-semibold text-dark" style="font-size: 14px;">
+                    Hệ Thống Điều Hành & Quản Lý Thể Thao
+                </span>
+                <span class="d-none d-sm-inline text-muted">•</span>
+                <span class="badge badge-soft-admin rounded-pill px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Administrator
+                </span>
+            </div>
         </div>
 
         <div class="d-flex align-items-center gap-3">
-            <div class="dropdown">
-                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 36px; height: 36px; font-weight: 600;">
-                        @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "A")
-                    </div>
-                    <div class="text-start d-none d-md-block">
-                        <div class="fw-semibold text-dark text-truncate" style="max-width: 140px;">
-                            @(User.Identity?.Name ?? "Quản trị viên")
-                        </div>
-                        <small class="text-muted d-block" style="font-size: 0.75rem;">Administrator</small>
-                    </div>
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="userDropdown">
-                    <li><h6 class="dropdown-header">Tài khoản quản trị</h6></li>
-                    <li><a class="dropdown-item" href="/Account/Profile"><i class="fa-regular fa-id-badge me-2 text-muted"></i>Thông tin cá nhân</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <form action="/Account/Logout" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="dropdown-item text-danger">
-                                <i class="fa-solid fa-arrow-right-from-bracket me-2"></i>Đăng xuất
-                            </button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
+            <a href="/" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-none d-md-inline-flex align-items-center gap-1.5" style="font-size: 12px;">
+                <i class="fa-solid fa-house"></i> Trang Chủ Giải
+            </a>
+
+            <div class="vr d-none d-sm-block my-1"></div>
+
+            @await Component.InvokeAsync("PortalAccountMenu", new {
+                currentArea = "Admin",
+                portalLabel = "Quản trị viên",
+                linkedName = User.Identity?.Name as string
+            })
         </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- Main Content Body -->
     <main class="admin-main">
-        @RenderBody()
+        <div class="container-fluid p-0" style="max-width: 1400px;">
+            @RenderBody()
+        </div>
     </main>
 
-    <!-- Scripts: jQuery, Bootstrap Bundle, SweetAlert2, Select2 -->
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
-        // Toggle mobile sidebar
-        $('#sidebarToggle').on('click', function () {
-            $('#adminSidebar').toggleClass('show');
-        });
-
-        // Auto active sidebar link based on current path
-        const currentPath = window.location.pathname.toLowerCase();
-        $('.sidebar-link').each(function () {
-            const href = $(this).attr('href').toLowerCase();
-            if (currentPath === href || (href !== '/admin/home' && currentPath.startsWith(href))) {
-                $(this).addClass('active');
-            } else {
-                $(this).removeClass('active');
-            }
-        });
+        function toggleSidebar() {
+            document.getElementById('adminSidebar').classList.toggle('show');
+            document.getElementById('adminBackdrop').classList.toggle('show');
+        }
 
         // Global Helper for SweetAlert2 & Toast
         window.SportApp = {
@@ -359,7 +401,7 @@
                     text: text || 'Thao tác này sẽ không thể hoàn tác!',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#ef4444',
+                    confirmButtonColor: '#4f46e5',
                     cancelButtonColor: '#64748b',
                     confirmButtonText: 'Đồng ý thực hiện',
                     cancelButtonText: 'Hủy bỏ',

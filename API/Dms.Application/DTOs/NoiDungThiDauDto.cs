@@ -414,6 +414,28 @@ namespace Dms.Application.DTOs
         public DateTime NgayBatDau { get; set; } = DateTime.Today;
         public string GioBatDauMoiNgay { get; set; } = "08:00";
         public string GioKetThucMoiNgay { get; set; } = "17:30";
+
+        // --- Cấu hình các ca thi đấu (Sáng / Chiều / Tối) ---
+        /// <summary>Bật/tắt xếp lịch vào Ca Sáng</summary>
+        public bool ApDungCaSang { get; set; } = true;
+        /// <summary>Giờ bắt đầu ca sáng (VD: "08:00")</summary>
+        public string GioBatDauCaSang { get; set; } = "08:00";
+        /// <summary>Giờ kết thúc ca sáng (VD: "11:30")</summary>
+        public string GioKetThucCaSang { get; set; } = "11:30";
+
+        /// <summary>Bật/tắt xếp lịch vào Ca Chiều</summary>
+        public bool ApDungCaChieu { get; set; } = true;
+        /// <summary>Giờ bắt đầu ca chiều (VD: "14:00")</summary>
+        public string GioBatDauCaChieu { get; set; } = "14:00";
+        /// <summary>Giờ kết thúc ca chiều (VD: "17:30")</summary>
+        public string GioKetThucCaChieu { get; set; } = "17:30";
+
+        /// <summary>Bật/tắt xếp lịch vào Ca Tối</summary>
+        public bool ApDungCaToi { get; set; } = false;
+        /// <summary>Giờ bắt đầu ca tối (VD: "18:00")</summary>
+        public string GioBatDauCaToi { get; set; } = "18:00";
+        /// <summary>Giờ kết thúc ca tối (VD: "21:30")</summary>
+        public string GioKetThucCaToi { get; set; } = "21:30";
         public int ThoiLuongTranPhut { get; set; } = 60;
         public int NghiGiuaTranPhut { get; set; } = 15;
         public List<int> SanDauIds { get; set; } = new();

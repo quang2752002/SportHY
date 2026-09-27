@@ -2,6 +2,7 @@
     ViewData["Title"] = "Thêm Mới Giải Đấu";
     var khois = ViewBag.Khois as IEnumerable<KhoiDto> ?? Enumerable.Empty<KhoiDto>();
     var monTheThaos = ViewBag.MonTheThaos as IEnumerable<MonTheThaoDto> ?? Enumerable.Empty<MonTheThaoDto>();
+    var trongTais = ViewBag.TrongTais as IEnumerable<TrongTaiDto> ?? Enumerable.Empty<TrongTaiDto>();
 }
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
@@ -172,6 +173,20 @@
                             <option value="TatCa" selected>Tất cả đơn vị</option>
                             <option value="TheoKhoi">Theo khối ngành / đơn vị</option>
                         </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="fa-solid fa-user-shield text-warning me-1"></i>Trọng tài trưởng giải
+                        </label>
+                        <select class="form-select" id="truongBanTrongTaiId">
+                            <option value="">-- Chưa chỉ định / Phân công sau --</option>
+                            @foreach (var tt in trongTais)
+                            {
+                                <option value="@tt.Id">@tt.HoTen (@tt.Ma) - @tt.CapBac</option>
+                            }
+                        </select>
+                        <div class="form-text small text-muted">Trọng tài được chọn sẽ làm Trưởng ban trọng tài, chịu trách nhiệm xếp lịch, phân công trọng tài và duyệt biên bản.</div>
                     </div>
                 </div>
             </div>
@@ -415,6 +430,7 @@
                 moTa: $('#moTa').val().trim(),
                 trangThai: $('#trangThai').val(),
                 phamVi: $('#phamVi').val() || 'TatCa',
+                truongBanTrongTaiId: $('#truongBanTrongTaiId').val() ? parseInt($('#truongBanTrongTaiId').val()) : null,
                 hinhAnh: $('#bannerUrl').val() || null,
                 monTheThaoIds: monTheThaoIds,
                 khoiIds: khoiIds,

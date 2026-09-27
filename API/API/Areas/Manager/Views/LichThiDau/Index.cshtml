@@ -333,18 +333,16 @@
                     <option value="">-- Tất cả bảng --</option>
                 </select>
             </div>
-            <!-- Chuyển chế độ xem: Nhánh/Bảng vs Cặp Đấu vs Danh Sách -->
+            <!-- Chuyển chế độ xem: Nhánh/Bảng vs Lịch Thi Đấu -->
             <div class="col-md-4 col-lg-2 d-flex align-items-end pt-3">
                 <div class="btn-group btn-group-sm w-100" role="group">
-                    <button type="button" class="btn btn-outline-primary d-none" id="btnViewBracket" onclick="switchView('bracket')">
-                        <i class="fa-solid fa-diagram-project me-1"></i> Sơ Đồ Nhánh
-                    </button>
                     <button type="button" class="btn btn-outline-primary active" id="btnViewLayout" onclick="switchView('layout')">
                         <i class="fa-solid fa-sitemap me-1"></i> Lịch Thi Đấu
                     </button>
-                    <button type="button" class="btn btn-outline-primary" id="btnViewTable" onclick="switchView('table')">
-                        <i class="fa-solid fa-table-list me-1"></i> Danh Sách Trận
+                    <button type="button" class="btn btn-outline-primary d-none" id="btnViewBracket" onclick="switchView('bracket')">
+                        <i class="fa-solid fa-diagram-project me-1"></i> Sơ Đồ Nhánh
                     </button>
+                   
                 </div>
             </div>
         </div>
@@ -491,62 +489,6 @@
     </div>
 </div>
 
-<!-- ==================== KHÔNG GIAN 2: BẢNG TỔNG HỢP TRẬN ĐẤU (TABLE VIEW) ==================== -->
-<div id="viewTableContainer" class="d-none">
-    <div class="card card-custom border shadow-sm">
-        <div class="card-header bg-white p-3 border-bottom">
-            <div class="row g-2 align-items-center">
-                <div class="col-md-4">
-                    <input type="text" id="keyword" class="form-control form-control-sm" placeholder="Tìm theo tên đội, mã trận...">
-                </div>
-                <div class="col-md-3">
-                    <input type="date" id="dateFilter" class="form-control form-control-sm">
-                </div>
-                <div class="col-md-3">
-                    <select id="statusFilter" class="form-select form-select-sm">
-                        <option value="">-- Tất cả trạng thái --</option>
-                        <option value="ChuaDienRa">Chưa diễn ra</option>
-                        <option value="DangDienRa">Đang diễn ra</option>
-                        <option value="KetThuc">Đã kết thúc</option>
-                        <option value="Huy">Đã hủy</option>
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex gap-1">
-                    <button type="button" class="btn btn-primary btn-sm flex-grow-1" onclick="loadTableData(1)">
-                        <i class="fa-solid fa-filter me-1"></i> Lọc
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilter()" title="Làm mới">
-                        <i class="fa-solid fa-arrows-rotate"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="tblTranDau">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-3" style="width: 50px;">STT</th>
-                            <th>Cặp Đấu (Đội 1 vs Đội 2)</th>
-                            <th>Thời Gian & Sân Đấu</th>
-                            <th>Vòng / Bảng</th>
-                            <th>Tỷ Số</th>
-                            <th>Trạng Thái</th>
-                            <th class="text-end pe-3" style="width: 140px;">Thao Tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tblBody">
-                        <tr><td colspan="7" class="text-center py-5 text-muted">Đang tải lịch thi đấu...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-3">
-            <div class="text-muted small" id="paginationInfo">Hiển thị 0 trên 0 trận đấu</div>
-            <ul class="pagination pagination-sm mb-0" id="paginationList"></ul>
-        </div>
-    </div>
-</div>
 
 <!-- Modal Nhập Tỷ Số / Cập Nhật Kết Quả Trận Đấu -->
 <div class="modal fade" id="modalScore" tabindex="-1" aria-hidden="true">
@@ -674,101 +616,102 @@
                     </div>
 
                     <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Ngày bắt đầu</label>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold"><i class="fa-regular fa-calendar-check text-primary me-1"></i> Ngày bắt đầu giải đấu</label>
                             <input type="date" class="form-control" id="autoNgayBatDau" value="@DateTime.Today.ToString("yyyy-MM-dd")">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Ca bắt đầu hàng ngày</label>
-                            <input type="time" class="form-control" id="autoGioBatDau" value="08:00">
+                    </div>
+
+                    <!-- Cấu hình Ca thi đấu: Ca Sáng, Ca Chiều, Ca Tối -->
+                    <div class="card border border-light-subtle rounded-3 shadow-xs mb-3">
+                        <div class="card-header bg-light py-2 d-flex align-items-center justify-content-between">
+                            <span class="fw-bold text-dark small">
+                                <i class="fa-solid fa-business-time text-primary me-1"></i> Khung Giờ &amp; Ca Thi Đấu Hàng Ngày
+                            </span>
+                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.72rem;">
+                                Có thể tùy chỉnh giờ theo nhu cầu
+                            </span>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Ca kết thúc hàng ngày</label>
-                            <input type="time" class="form-control" id="autoGioKetThuc" value="17:30">
+                        <div class="card-body p-3">
+                            <div class="row g-3">
+                                <!-- Ca Sáng -->
+                                <div class="col-md-4">
+                                    <div class="p-2 border rounded-3 h-100 bg-white shadow-2xs" id="boxCaSang" style="transition: all 0.2s ease;">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="autoApDungCaSang" checked onchange="toggleShiftInput('Sang')">
+                                            <label class="form-check-label fw-bold text-dark" for="autoApDungCaSang">
+                                                <i class="fa-solid fa-sun text-warning me-1"></i> Ca Sáng
+                                            </label>
+                                        </div>
+                                        <div class="row g-1">
+                                            <div class="col-6">
+                                                <label class="form-label text-muted mb-1" style="font-size: 0.72rem;">Bắt đầu</label>
+                                                <input type="time" class="form-control form-control-sm" id="autoGioBatDauCaSang" value="08:00">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted mb-1" style="font-size: 0.72rem;">Kết thúc</label>
+                                                <input type="time" class="form-control form-control-sm" id="autoGioKetThucCaSang" value="11:30">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Ca Chiều -->
+                                <div class="col-md-4">
+                                    <div class="p-2 border rounded-3 h-100 bg-white shadow-2xs" id="boxCaChieu" style="transition: all 0.2s ease;">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="autoApDungCaChieu" checked onchange="toggleShiftInput('Chieu')">
+                                            <label class="form-check-label fw-bold text-dark" for="autoApDungCaChieu">
+                                                <i class="fa-solid fa-cloud-sun text-primary me-1"></i> Ca Chiều
+                                            </label>
+                                        </div>
+                                        <div class="row g-1">
+                                            <div class="col-6">
+                                                <label class="form-label text-muted mb-1" style="font-size: 0.72rem;">Bắt đầu</label>
+                                                <input type="time" class="form-control form-control-sm" id="autoGioBatDauCaChieu" value="14:00">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted mb-1" style="font-size: 0.72rem;">Kết thúc</label>
+                                                <input type="time" class="form-control form-control-sm" id="autoGioKetThucCaChieu" value="17:30">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Ca Tối -->
+                                <div class="col-md-4">
+                                    <div class="p-2 border rounded-3 h-100 bg-light opacity-50 shadow-2xs" id="boxCaToi" style="transition: all 0.2s ease;">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="autoApDungCaToi" onchange="toggleShiftInput('Toi')">
+                                            <label class="form-check-label fw-bold text-dark" for="autoApDungCaToi">
+                                                <i class="fa-solid fa-moon text-indigo me-1"></i> Ca Tối
+                                            </label>
+                                        </div>
+                                        <div class="row g-1">
+                                            <div class="col-6">
+                                                <label class="form-label text-muted mb-1" style="font-size: 0.72rem;">Bắt đầu</label>
+                                                <input type="time" class="form-control form-control-sm" id="autoGioBatDauCaToi" value="18:30" disabled>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted mb-1" style="font-size: 0.72rem;">Kết thúc</label>
+                                                <input type="time" class="form-control form-control-sm" id="autoGioKetThucCaToi" value="21:30" disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Thời lượng trận (phút)</label>
-                            <input type="number" class="form-control" id="autoThoiLuong" value="60">
+                    <!-- Thông tin Thể thức & Luật thi đấu áp dụng (Tự động tải từ Cấu Hình Thể Thức) -->
+                    <div id="autoTheThucSummary" class="alert alert-light border border-primary-subtle rounded-3 py-2 px-3 mb-3 small d-none shadow-2xs">
+                        <div class="d-flex align-items-center text-primary fw-bold mb-1">
+                            <i class="fa-solid fa-sliders me-2"></i>
+                            <span>Cấu hình Thể thức & Luật thi đấu đang áp dụng:</span>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Nghỉ giữa 2 trận (phút)</label>
-                            <input type="number" class="form-control" id="autoNghiGiuaTran" value="15">
-                        </div>
-                    </div>
-
-                    <!-- Cấu hình Thể thức Vòng Bảng & Knockout (Bóng đá, Bóng chuyền, Cầu lông...) -->
-                    <div id="groupAutoGroupStageConfig" class="border rounded p-3 mb-3 bg-light">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fa-solid fa-table-cells-large text-primary me-2 fs-5"></i>
-                            <strong class="text-primary">Cấu hình Chia Bảng Đấu & Vòng Knockout</strong>
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Số bảng đấu</label>
-                                <select class="form-select" id="autoSoBang">
-                                    <option value="0" selected>Tự động chia theo số đội</option>
-                                    <option value="1">1 bảng đấu (Vòng tròn 1 bảng)</option>
-                                    <option value="2">2 bảng đấu (Bảng A & Bảng B)</option>
-                                    <option value="3">3 bảng đấu (Bảng A, B, C)</option>
-                                    <option value="4">4 bảng đấu (Bảng A, B, C, D)</option>
-                                </select>
-                                <small class="text-muted">Chọn cụ thể hoặc để thuật toán tự tính</small>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Số đội mỗi bảng <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="autoSoDoiMoiBang" value="4" min="2" max="16">
-                                <small class="text-muted">Dùng khi chọn Tự động chia (mặc định 4)</small>
-                            </div>
-                            <div class="col-md-4" id="groupAutoSoDoiMoiBang">
-                                <label class="form-label fw-semibold">Đội vào Vòng Knockout</label>
-                                <select class="form-select" id="autoSoDoiMoiBangVaoVongTrong">
-                                    <option value="2" selected>Top 2 (Nhất & Nhì mỗi bảng)</option>
-                                    <option value="1">Chỉ Nhất bảng</option>
-                                </select>
-                                <small class="text-muted">Tiến vào Bán kết / Chung kết</small>
-                            </div>
-                        </div>
-                        <div class="alert alert-info py-2 px-3 small mt-3 mb-0" id="autoGroupStageHelpText">
-                            <i class="fa-solid fa-circle-info me-1"></i>
-                            <strong>Gợi ý:</strong> Với 4 đội: Nếu chọn <strong>1 bảng</strong>, 4 đội đá vòng tròn 3 lượt (6 trận) và Top 2 vào thẳng Chung kết. Nếu chọn <strong>2 bảng</strong> (mỗi bảng 2 đội), 2 đội Nhất & Nhì mỗi bảng sẽ đá Bán kết rồi vào Chung kết.
-                        </div>
-                    </div>
-
-                    <!-- Cấu hình chuyên biệt cho môn tính điểm xếp hạng / Heat (Điền kinh, Bơi lội...) -->
-                    <div id="groupAutoHeatConfig" class="d-none border rounded p-3 mb-3 bg-light">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fa-solid fa-person-running text-primary me-2 fs-5"></i>
-                            <strong class="text-primary">Cấu hình Lượt thi & Số làn (Heats - Điền kinh / Bơi lội)</strong>
-                        </div>
-                        <div class="alert alert-info py-2 px-3 small mb-3">
-                            <i class="fa-solid fa-circle-info me-1"></i>
-                            Môn thể thao theo lượt thi: Mỗi trận đấu sẽ gồm <strong>nhiều VĐV thi đấu cùng lúc trên các làn</strong>. Hệ thống sẽ tự động bốc thăm xếp làn và xếp Top hạt giống vào lượt Chung kết.
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Số VĐV mỗi lượt (Làn) <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="autoSoVdvMoiLuotThi" value="8" min="2" max="16">
-                                <small class="text-muted">Mặc định: 8 làn (tiêu chuẩn Điền kinh/Bơi)</small>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Số vòng thi đấu <span class="text-danger">*</span></label>
-                                <select class="form-select" id="autoSoVongThi">
-                                    <option value="1">1 vòng (Chung kết tính giờ trực tiếp)</option>
-                                    <option value="2" selected>2 vòng (Vòng loại → Chung kết Top 8)</option>
-                                    <option value="3">3 vòng (Sơ loại → Bán kết → Chung kết)</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Phương thức xếp lượt <span class="text-danger">*</span></label>
-                                <select class="form-select" id="autoPhuongThucPhanNhom">
-                                    <option value="random" selected>Bốc thăm ngẫu nhiên</option>
-                                    <option value="performance_seed">Xếp theo hạt giống / thành tích</option>
-                                    <option value="registration_order">Theo thứ tự đăng ký</option>
-                                </select>
-                            </div>
+                        <div id="autoTheThucDetails" class="text-secondary fw-semibold"></div>
+                        <div class="text-muted mt-1 fst-italic" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-circle-check text-success me-1"></i>Thời lượng, nghỉ giữa 2 trận, chia bảng và lượt thi được đồng bộ tự động theo cấu hình tại <strong>Môn Thể Thao &gt; Cấu Hình Thể Thức &amp; Luật Thi Đấu</strong>.
                         </div>
                     </div>
 
@@ -1013,11 +956,9 @@
             currentView = view;
             $('#btnViewBracket').removeClass('active');
             $('#btnViewLayout').removeClass('active');
-            $('#btnViewTable').removeClass('active');
 
             $('#viewBracketContainer').addClass('d-none');
             $('#viewLayoutContainer').addClass('d-none');
-            $('#viewTableContainer').addClass('d-none');
 
             if (view === 'bracket') {
                 $('#viewBracketContainer').removeClass('d-none');
@@ -1028,7 +969,7 @@
                 } else {
                     renderBracketUI();
                 }
-            } else if (view === 'layout') {
+            } else {
                 $('#viewLayoutContainer').removeClass('d-none');
                 $('#layoutActionStrip').removeClass('d-none');
                 $('#btnViewLayout').addClass('active');
@@ -1037,11 +978,6 @@
                 } else {
                     renderMainViewOnlyUI();
                 }
-            } else {
-                $('#viewTableContainer').removeClass('d-none');
-                $('#layoutActionStrip').addClass('d-none');
-                $('#btnViewTable').addClass('active');
-                loadTableData(1);
             }
         }
 
@@ -1121,11 +1057,7 @@
         }
 
         function loadMainData() {
-            if (currentView === 'bracket' || currentView === 'layout') {
-                loadMainLayoutViewData();
-            } else {
-                loadTableData(1);
-            }
+            loadMainLayoutViewData();
         }
 
         // ==================== KHÔNG GIAN 1: LAYOUT CHỈ XEM NGOÀI TRANG CHÍNH ====================
@@ -3889,30 +3821,37 @@
         // ==================== TỰ ĐỘNG XẾP LỊCH & KIỂM TRA XUNG ĐỘT ====================
         let currentModalAvailableMons = [];
 
-        function onMonSelected(monId) {
-            if (!monId) {
+        function onMonSelected(giaiDauMonId) {
+            if (!giaiDauMonId) {
                 $('#autoCauHinhAlert').addClass('d-none');
-                $('#groupAutoGroupStageConfig').removeClass('d-none');
-                $('#groupAutoHeatConfig').addClass('d-none');
+                $('#autoTheThucSummary').addClass('d-none');
                 return;
             }
 
-            // Kiểm tra thể thức môn thi đấu (Điền kinh, Bơi lội...)
-            const selectedOpt = $(`#autoGiaiDauMonId option[value="${monId}"]`);
-            const hinhThuc = selectedOpt.data('hinhthuc') || '';
-            const selectedMon = currentModalAvailableMons.find(m => m.id == monId);
-            const optText = selectedOpt.text() || '';
-            const isLeaderboardSport = (hinhThuc === 'TinhDiemXepHang' || hinhThuc == 6) 
-                || (selectedMon && (selectedMon.hinhThucThiDau === 'TinhDiemXepHang' || selectedMon.hinhThucThiDau == 6))
-                || optText.includes('Điền kinh') || optText.includes('Bơi') || optText.includes('100m');
+            const selectedOpt = $(`#autoGiaiDauMonId option[value="${giaiDauMonId}"]`);
+            const monId = selectedOpt.data('monid') || giaiDauMonId;
 
-            if (isLeaderboardSport) {
-                $('#groupAutoGroupStageConfig').addClass('d-none');
-                $('#groupAutoHeatConfig').removeClass('d-none');
-            } else {
-                $('#groupAutoGroupStageConfig').removeClass('d-none');
-                $('#groupAutoHeatConfig').addClass('d-none');
-            }
+            // Nạp cấu hình Thể thức & Luật thi đấu của môn để hiển thị tóm tắt
+            $.get('/Manager/CauHinhTheThuc/GetConfig', { monTheThaoId: parseInt(monId), giaiDauMonTheThaoId: parseInt(giaiDauMonId) }, function (res) {
+                if (res && res.success && res.data) {
+                    const cfg = res.data;
+                    $('#autoTheThucSummary').removeClass('d-none');
+                    let summaryText = `<span><i class="fa-solid fa-stopwatch text-primary me-1"></i>Thời lượng: <strong>${cfg.thoiLuongTranPhut || 60} phút</strong>/trận</span> • `
+                        + `<span><i class="fa-solid fa-mug-hot text-primary me-1"></i>Nghỉ giữa 2 trận: <strong>${cfg.nghiGiuaTranPhut ?? 15} phút</strong></span>`;
+
+                    if (cfg.loaiTheThuc === 'TinhDiemXepHang') {
+                        summaryText += ` • <span><i class="fa-solid fa-person-running text-primary me-1"></i>Số làn: <strong>${cfg.soVdvMoiLuotThi || 8} làn</strong></span> • `
+                            + `<span>Số vòng thi: <strong>${cfg.soVongThi || 2} vòng</strong></span>`;
+                    } else if (cfg.soBang > 0) {
+                        summaryText += ` • <span><i class="fa-solid fa-table-cells-large text-primary me-1"></i>Chia <strong>${cfg.soBang} bảng</strong> (${cfg.soDoiMoiBang || 4} đội/bảng, Top ${cfg.soDoiMoiBangVaoVongTrong || 2} vào Knockout)</span>`;
+                    } else {
+                        summaryText += ` • <span><i class="fa-solid fa-table-cells-large text-primary me-1"></i>Chia bảng: <strong>Tự động</strong> (${cfg.soDoiMoiBang || 4} đội/bảng, Top ${cfg.soDoiMoiBangVaoVongTrong || 2} vào Knockout)</span>`;
+                    }
+                    $('#autoTheThucDetails').html(summaryText);
+                } else {
+                    $('#autoTheThucSummary').addClass('d-none');
+                }
+            });
 
             $.ajax({
                 url: '/api/CauHinhLichThiDau/' + monId,
@@ -3930,12 +3869,13 @@
                             </div>
                         `);
 
-                        if (res.thoiLuongTranMacDinhPhut > 0) {
-                            $('#autoThoiLuong').val(res.thoiLuongTranMacDinhPhut);
-                        }
-                        if (res.thoiGianDemDonSanPhut > 0) {
-                            $('#autoNghiGiuaTran').val(res.thoiGianDemDonSanPhut);
-                        }
+                        // Đồng bộ giờ các ca nếu môn có cấu hình riêng
+                        if (res.caSangBatDau) $('#autoGioBatDauCaSang').val(res.caSangBatDau.substring(0, 5));
+                        if (res.caSangKetThuc) $('#autoGioKetThucCaSang').val(res.caSangKetThuc.substring(0, 5));
+                        if (res.caChieuBatDau) $('#autoGioBatDauCaChieu').val(res.caChieuBatDau.substring(0, 5));
+                        if (res.caChieuKetThuc) $('#autoGioKetThucCaChieu').val(res.caChieuKetThuc.substring(0, 5));
+                        if (res.caToiBatDau) $('#autoGioBatDauCaToi').val(res.caToiBatDau.substring(0, 5));
+                        if (res.caToiKetThuc) $('#autoGioKetThucCaToi').val(res.caToiKetThuc.substring(0, 5));
                     }
                 },
                 error: function () {
@@ -3944,12 +3884,27 @@
             });
         }
 
+        function toggleShiftInput(shift) {
+            const isChecked = $(`#autoApDungCa${shift}`).is(':checked');
+            const box = $(`#boxCa${shift}`);
+            $(`#autoGioBatDauCa${shift}`).prop('disabled', !isChecked);
+            $(`#autoGioKetThucCa${shift}`).prop('disabled', !isChecked);
+            if (isChecked) {
+                box.removeClass('opacity-50 bg-light').addClass('bg-white');
+            } else {
+                box.removeClass('bg-white').addClass('opacity-50 bg-light');
+            }
+        }
+
         function openAutoScheduleModal() {
             const currentGiaiDau = $('#mainGiaiDauSelect').val();
             if (currentGiaiDau) {
                 $('#autoGiaiDauId').val(currentGiaiDau);
                 loadMonByGiaiDau(currentGiaiDau);
             }
+            toggleShiftInput('Sang');
+            toggleShiftInput('Chieu');
+            toggleShiftInput('Toi');
             $('#modalAutoSchedule').modal('show');
         }
 
@@ -3964,7 +3919,7 @@
                 if (res.success && res.data) {
                     currentModalAvailableMons = res.data;
                     res.data.forEach(m => {
-                        opts += `<option value="${m.id}" data-hinhthuc="${m.hinhThucThiDau || ''}">${escapeHtml(m.ten)}</option>`;
+                        opts += `<option value="${m.id}" data-hinhthuc="${m.hinhThucThiDau || ''}" data-monid="${m.monTheThaoId || m.id}">${escapeHtml(m.ten)}</option>`;
                     });
                 }
                 $('#autoGiaiDauMonId').html(opts);
@@ -3985,22 +3940,39 @@
                 return;
             }
 
+            const apDungCaSang = $('#autoApDungCaSang').is(':checked');
+            const apDungCaChieu = $('#autoApDungCaChieu').is(':checked');
+            const apDungCaToi = $('#autoApDungCaToi').is(':checked');
+
+            if (!apDungCaSang && !apDungCaChieu && !apDungCaToi) {
+                Swal.fire('Chú ý', 'Vui lòng chọn ít nhất một ca thi đấu (Ca sáng, Ca chiều hoặc Ca tối) để xếp lịch.', 'warning');
+                return;
+            }
+
             const selectedSanIds = $('#autoSanDauIds').val() || [];
             const sanIds = selectedSanIds.map(x => parseInt(x));
+
+            const gioBatDauSang = $('#autoGioBatDauCaSang').val() || "08:00";
+            const gioKetThucSang = $('#autoGioKetThucCaSang').val() || "11:30";
+            const gioBatDauChieu = $('#autoGioBatDauCaChieu').val() || "14:00";
+            const gioKetThucChieu = $('#autoGioKetThucCaChieu').val() || "17:30";
+            const gioBatDauToi = $('#autoGioBatDauCaToi').val() || "18:30";
+            const gioKetThucToi = $('#autoGioKetThucCaToi').val() || "21:30";
 
             const request = {
                 giaiDauMonTheThaoId: parseInt(monId),
                 ngayBatDau: $('#autoNgayBatDau').val(),
-                gioBatDauMoiNgay: $('#autoGioBatDau').val(),
-                gioKetThucMoiNgay: $('#autoGioKetThuc').val(),
-                thoiLuongTranPhut: parseInt($('#autoThoiLuong').val()) || 60,
-                nghiGiuaTranPhut: parseInt($('#autoNghiGiuaTran').val()) || 15,
-                soDoiMoiBang: parseInt($('#autoSoDoiMoiBang').val()) || 4,
-                soBang: parseInt($('#autoSoBang').val()) || 0,
-                soDoiMoiBangVaoVongTrong: parseInt($('#autoSoDoiMoiBangVaoVongTrong').val()) || 2,
-                soVdvMoiLuotThi: parseInt($('#autoSoVdvMoiLuotThi').val()) || 8,
-                soVongThi: parseInt($('#autoSoVongThi').val()) || 1,
-                phuongThucPhanNhom: $('#autoPhuongThucPhanNhom').val() || 'random',
+                apDungCaSang: apDungCaSang,
+                gioBatDauCaSang: gioBatDauSang,
+                gioKetThucCaSang: gioKetThucSang,
+                apDungCaChieu: apDungCaChieu,
+                gioBatDauCaChieu: gioBatDauChieu,
+                gioKetThucCaChieu: gioKetThucChieu,
+                apDungCaToi: apDungCaToi,
+                gioBatDauCaToi: gioBatDauToi,
+                gioKetThucCaToi: gioKetThucToi,
+                gioBatDauMoiNgay: apDungCaSang ? gioBatDauSang : (apDungCaChieu ? gioBatDauChieu : gioBatDauToi),
+                gioKetThucMoiNgay: apDungCaToi ? gioKetThucToi : (apDungCaChieu ? gioKetThucChieu : gioKetThucSang),
                 sanDauIds: sanIds,
                 xoaLichCu: $('#autoXoaLichCu').is(':checked'),
                 tranhTrungLichVdv: $('#autoTranhTrungVdv').is(':checked')

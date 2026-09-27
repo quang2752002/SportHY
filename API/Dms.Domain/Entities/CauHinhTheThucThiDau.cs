@@ -105,5 +105,30 @@ namespace Dms.Domain.Entities
 
         [MaxLength(100)]
         public string? KyLucHienTaiText { get; set; }
+
+        // ==========================================
+        // NHÓM 3: CẤU HÌNH THỜI LƯỢNG & XẾP LỊCH THI ĐẤU (TỰ ĐỘNG XẾP LỊCH)
+        // ==========================================
+        /// <summary>Thời lượng mỗi trận đấu (phút). Mặc định: 60</summary>
+        public int ThoiLuongTranPhut { get; set; } = 60;
+
+        /// <summary>Thời gian nghỉ giữa 2 trận đấu / đệm dọn sân (phút). Mặc định: 15</summary>
+        public int NghiGiuaTranPhut { get; set; } = 15;
+
+        /// <summary>Số bảng đấu (0: Tự động chia theo số đội, 1: 1 bảng, 2: 2 bảng...)</summary>
+        public int SoBang { get; set; } = 0;
+
+        /// <summary>Số đội mỗi bảng (dùng khi chọn tự động chia, mặc định: 4)</summary>
+        public int SoDoiMoiBang { get; set; } = 4;
+
+        /// <summary>Số đội mỗi bảng vào vòng Knockout (1: Chỉ Nhất bảng, 2: Nhất và Nhì bảng. Mặc định: 2)</summary>
+        public int SoDoiMoiBangVaoVongTrong { get; set; } = 2;
+
+        /// <summary>Số vòng thi đấu đối với môn đo thành tích / Heat (1: Chung kết thẳng, 2: Vòng loại -> Chung kết, 3: Sơ loại -> Bán kết -> Chung kết)</summary>
+        public int SoVongThi { get; set; } = 2;
+
+        /// <summary>Phương thức phân nhóm / xếp lượt cho môn Heat: "random" (ngẫu nhiên), "performance_seed" (hạt giống), "registration_order" (thứ tự đăng ký)</summary>
+        [MaxLength(50)]
+        public string PhuongThucPhanNhom { get; set; } = "random";
     }
 }

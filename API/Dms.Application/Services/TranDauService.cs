@@ -1108,6 +1108,20 @@ namespace Dms.Application.Services
                 return result;
             }
 
+            // 2.5 Lấy cấu hình thể thức & luật thi đấu của môn để tự động áp dụng (thời lượng, nghỉ, chia bảng, lượt thi)
+            var theThuc = await _theThucService.GetEffectiveConfigAsync(noiDung.MonTheThaoId, request.GiaiDauMonTheThaoId);
+            if (theThuc != null)
+            {
+                if (theThuc.SoBang > 0) request.SoBang = theThuc.SoBang;
+                if (theThuc.SoDoiMoiBang > 1) request.SoDoiMoiBang = theThuc.SoDoiMoiBang;
+                if (theThuc.SoDoiMoiBangVaoVongTrong > 0) request.SoDoiMoiBangVaoVongTrong = theThuc.SoDoiMoiBangVaoVongTrong;
+                if (theThuc.SoVdvMoiLuotThi > 0) request.SoVdvMoiLuotThi = theThuc.SoVdvMoiLuotThi;
+                if (theThuc.SoVongThi > 0) request.SoVongThi = theThuc.SoVongThi;
+                if (!string.IsNullOrWhiteSpace(theThuc.PhuongThucPhanNhom)) request.PhuongThucPhanNhom = theThuc.PhuongThucPhanNhom;
+                if (theThuc.ThoiLuongTranPhut > 0) request.ThoiLuongTranPhut = theThuc.ThoiLuongTranPhut;
+                if (theThuc.NghiGiuaTranPhut >= 0) request.NghiGiuaTranPhut = theThuc.NghiGiuaTranPhut;
+            }
+
             // 3. Nếu yêu cầu xóa lịch cũ
             if (request.XoaLichCu)
             {
@@ -1982,12 +1996,79 @@ namespace Dms.Application.Services
                 : (cauHinh?.ThoiGianDemDonSanPhut ?? 15);
             int effNghiToiThieuTrongTaiPhut = cauHinh?.NghiToiThieuTrongTaiPhut ?? 15;
 
-            TimeSpan caSangStart = TimeSpan.ParseExact(string.IsNullOrWhiteSpace(request.GioBatDauMoiNgay) ? (cauHinh?.CaSangBatDau ?? "08:00") : request.GioBatDauMoiNgay, "hh\\:mm", CultureInfo.InvariantCulture);
-            TimeSpan caSangEnd = TimeSpan.ParseExact(cauHinh?.CaSangKetThuc ?? "11:30", "hh\\:mm", CultureInfo.InvariantCulture);
-            TimeSpan caChieuStart = TimeSpan.ParseExact(cauHinh?.CaChieuBatDau ?? "14:00", "hh\\:mm", CultureInfo.InvariantCulture);
-            TimeSpan caChieuEnd = TimeSpan.ParseExact(string.IsNullOrWhiteSpace(request.GioKetThucMoiNgay) ? (cauHinh?.CaChieuKetThuc ?? "17:30") : request.GioKetThucMoiNgay, "hh\\:mm", CultureInfo.InvariantCulture);
-            TimeSpan caToStart = !string.IsNullOrEmpty(cauHinh?.CaToBatDau) ? TimeSpan.ParseExact(cauHinh.CaToBatDau, "hh\\:mm", CultureInfo.InvariantCulture) : TimeSpan.FromHours(18); // 18:00
-            TimeSpan caToEnd = !string.IsNullOrEmpty(cauHinh?.CaToKetThuc) ? TimeSpan.ParseExact(cauHinh.CaToKetThuc, "hh\\:mm", CultureInfo.InvariantCulture) : TimeSpan.FromHours(21.5); // 21:30
+            // Helper an toàn để parse chuỗi thời gian "hh:mm"
+            static TimeSpan ParseTime(string? str, string defaultVal)
+            {
+                if (string.IsNullOrWhiteSpace(str)) str = defaultVal;
+                if (TimeSpan.TryParseExact(str, new[] { "h\\:mm", "hh\\:mm", "H\\:mm", "HH\\:mm" }, CultureInfo.InvariantCulture, out var ts))
+                    return ts;
+                if (TimeSpan.TryParse(str, out var ts2))
+                    return ts2;
+                return TimeSpan.Parse(defaultVal, CultureInfo.InvariantCulture);
+            }
+
+            var activeShifts = new List<(string Name, TimeSpan Start, TimeSpan End)>();
+
+            // 1. Ca Sáng
+            if (request.ApDungCaSang)
+            {
+                string sStartStr = !string.IsNullOrWhiteSpace(request.GioBatDauCaSang) 
+                    ? request.GioBatDauCaSang 
+                    : (!string.IsNullOrWhiteSpace(request.GioBatDauMoiNgay) ? request.GioBatDauMoiNgay : (cauHinh?.CaSangBatDau ?? "08:00"));
+                string sEndStr = !string.IsNullOrWhiteSpace(request.GioKetThucCaSang) 
+                    ? request.GioKetThucCaSang 
+                    : (cauHinh?.CaSangKetThuc ?? "11:30");
+                var sStart = ParseTime(sStartStr, "08:00");
+                var sEnd = ParseTime(sEndStr, "11:30");
+                if (sEnd > sStart)
+                {
+                    activeShifts.Add(("Ca Sáng", sStart, sEnd));
+                }
+            }
+
+            // 2. Ca Chiều
+            if (request.ApDungCaChieu)
+            {
+                string cStartStr = !string.IsNullOrWhiteSpace(request.GioBatDauCaChieu) 
+                    ? request.GioBatDauCaChieu 
+                    : (cauHinh?.CaChieuBatDau ?? "14:00");
+                string cEndStr = !string.IsNullOrWhiteSpace(request.GioKetThucCaChieu) 
+                    ? request.GioKetThucCaChieu 
+                    : (!string.IsNullOrWhiteSpace(request.GioKetThucMoiNgay) ? request.GioKetThucMoiNgay : (cauHinh?.CaChieuKetThuc ?? "17:30"));
+                var cStart = ParseTime(cStartStr, "14:00");
+                var cEnd = ParseTime(cEndStr, "17:30");
+                if (cEnd > cStart)
+                {
+                    activeShifts.Add(("Ca Chiều", cStart, cEnd));
+                }
+            }
+
+            // 3. Ca Tối
+            if (request.ApDungCaToi)
+            {
+                string tStartStr = !string.IsNullOrWhiteSpace(request.GioBatDauCaToi) 
+                    ? request.GioBatDauCaToi 
+                    : (cauHinh?.CaToBatDau ?? "18:00");
+                string tEndStr = !string.IsNullOrWhiteSpace(request.GioKetThucCaToi) 
+                    ? request.GioKetThucCaToi 
+                    : (cauHinh?.CaToKetThuc ?? "21:30");
+                var tStart = ParseTime(tStartStr, "18:00");
+                var tEnd = ParseTime(tEndStr, "21:30");
+                if (tEnd > tStart)
+                {
+                    activeShifts.Add(("Ca Tối", tStart, tEnd));
+                }
+            }
+
+            // Fallback nếu không có ca nào được chọn (đảm bảo thuật toán luôn hoạt động an toàn)
+            if (!activeShifts.Any())
+            {
+                activeShifts.Add(("Ca Sáng", ParseTime(request.GioBatDauMoiNgay, "08:00"), TimeSpan.FromHours(11.5)));
+                activeShifts.Add(("Ca Chiều", TimeSpan.FromHours(14), ParseTime(request.GioKetThucMoiNgay, "17:30")));
+            }
+
+            activeShifts = activeShifts.OrderBy(s => s.Start).ToList();
+            TimeSpan firstShiftStart = activeShifts.First().Start;
 
             int matchMinutes = request.ThoiLuongTranPhut > 0 ? request.ThoiLuongTranPhut : (cauHinh?.ThoiLuongTranMacDinhPhut > 0 ? cauHinh.ThoiLuongTranMacDinhPhut : 60);
             int breakMinutes = request.NghiGiuaTranPhut >= 0 ? request.NghiGiuaTranPhut : 15;
@@ -2140,8 +2221,8 @@ namespace Dms.Application.Services
 
                 // --- Xác định earliestAllowed dựa trên Macro Target Date ---
                 DateTime earliestAllowed = roundTargetDate.TryGetValue(f.VongThuTu, out var targetDate) 
-                    ? targetDate.Date.Add(caSangStart)
-                    : tournamentStart.Add(caSangStart);
+                    ? targetDate.Date.Add(firstShiftStart)
+                    : tournamentStart.Add(firstShiftStart);
 
                 // Ràng buộc thứ tự vòng đấu (Round Precedence)
                 if (f.VongThuTu > 0)
@@ -2174,7 +2255,7 @@ namespace Dms.Application.Services
                         .Max();
                     if (groupStageMaxEnd > DateTime.MinValue)
                     {
-                        var minAfterGroupRest = groupStageMaxEnd.Date.AddDays(daysRestAfterGroup + 1).Add(caSangStart);
+                        var minAfterGroupRest = groupStageMaxEnd.Date.AddDays(daysRestAfterGroup + 1).Add(firstShiftStart);
                         if (minAfterGroupRest > earliestAllowed)
                         {
                             earliestAllowed = minAfterGroupRest;
@@ -2219,46 +2300,36 @@ namespace Dms.Application.Services
                 {
                     attempts++;
 
-                    // --- CHIA CA THI ĐẤU (SÁNG / CHIỀU / TỐI) ---
+                    // --- CHIA CA THI ĐẤU (THEO CÁC CA ĐÃ ĐƯỢC CHỌN: SÁNG / CHIỀU / TỐI) ---
                     var tod = searchSlot.TimeOfDay;
-                    if (effChiaCaThiDau)
+                    bool inValidShift = false;
+
+                    for (int i = 0; i < activeShifts.Count; i++)
                     {
-                        // 1. Trước Ca Sáng -> nhảy vào đầu Ca Sáng
-                        if (tod < caSangStart)
+                        var shift = activeShifts[i];
+
+                        // Nếu tod trước ca này, nhảy vào đầu ca
+                        if (tod < shift.Start)
                         {
-                            searchSlot = searchSlot.Date.Add(caSangStart);
-                            tod = caSangStart;
+                            searchSlot = searchSlot.Date.Add(shift.Start);
+                            tod = shift.Start;
                         }
 
-                        // 2. Trận đấu vượt quá Ca Sáng hoặc đang trong giờ nghỉ trưa -> nhảy sang Ca Chiều
-                        if (tod.Add(TimeSpan.FromMinutes(effMatchMinutes)) > caSangEnd && tod < caChieuStart)
+                        // Kiểm tra xem trận đấu có thể vừa vặn trong ca này không
+                        if (tod >= shift.Start && tod.Add(TimeSpan.FromMinutes(effMatchMinutes)) <= shift.End)
                         {
-                            searchSlot = searchSlot.Date.Add(caChieuStart);
-                            tod = caChieuStart;
+                            inValidShift = true;
+                            break;
                         }
 
-                        // 3. Trận đấu vượt quá Ca Chiều hoặc đang trong giờ nghỉ chiều -> nhảy sang Ca Tối
-                        if (tod.Add(TimeSpan.FromMinutes(effMatchMinutes)) > caChieuEnd && tod < caToStart)
-                        {
-                            searchSlot = searchSlot.Date.Add(caToStart);
-                            tod = caToStart;
-                        }
-
-                        // 4. Trận đấu vượt quá Ca Tối hoặc sau Ca Tối -> sang Ca Sáng ngày hôm sau
-                        if (tod.Add(TimeSpan.FromMinutes(effMatchMinutes)) > caToEnd || tod >= caToEnd)
-                        {
-                            searchSlot = searchSlot.Date.AddDays(1).Add(caSangStart);
-                            continue;
-                        }
+                        // Nếu tod vượt quá ca này hoặc không vừa trận đấu, vòng lặp tiếp tục xét ca kế tiếp trong ngày
                     }
-                    else
+
+                    if (!inValidShift)
                     {
-                        if (tod < caSangStart) searchSlot = searchSlot.Date.Add(caSangStart);
-                        if (tod.Add(TimeSpan.FromMinutes(effMatchMinutes)) > caToEnd)
-                        {
-                            searchSlot = searchSlot.Date.AddDays(1).Add(caSangStart);
-                            continue;
-                        }
+                        // Nếu trong ngày không còn ca nào vừa cho trận đấu -> Nhảy sang ca đầu tiên của ngày hôm sau!
+                        searchSlot = searchSlot.Date.AddDays(1).Add(firstShiftStart);
+                        continue;
                     }
 
                     var matchStart = searchSlot;
@@ -2283,7 +2354,7 @@ namespace Dms.Application.Services
                     if (teamExceededMaxPerDay)
                     {
                         // Đội đã đá đủ số trận trong ngày -> nhảy sang ngày hôm sau
-                        searchSlot = searchSlot.Date.AddDays(1).Add(caSangStart);
+                        searchSlot = searchSlot.Date.AddDays(1).Add(firstShiftStart);
                         continue;
                     }
 
