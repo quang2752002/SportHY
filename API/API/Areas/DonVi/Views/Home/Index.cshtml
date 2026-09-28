@@ -192,31 +192,36 @@
                 <h6 class="fw-bold text-dark mb-3">
                     <i class="fa-solid fa-user-plus text-primary me-2"></i> Thêm Nhanh Vận Động Viên
                 </h6>
-                <form id="quickAddForm">
+                <form id="quickAddForm" novalidate>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Họ và tên VĐV <span class="text-danger">*</span></label>
-                        <input type="text" id="qaHoTen" class="form-control form-control-sm" placeholder="VD: Nguyễn Văn An" required />
+                        <input type="text" id="qaHoTen" class="form-control form-control-sm" placeholder="VD: Nguyễn Văn An" required minlength="2" maxlength="200" />
+                        <div class="invalid-feedback">Vui lòng nhập họ tên từ 2 đến 200 ký tự.</div>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label class="form-label small fw-semibold">Giới tính</label>
-                            <select id="qaGioiTinh" class="form-select form-select-sm">
+                            <label class="form-label small fw-semibold">Giới tính <span class="text-danger">*</span></label>
+                            <select id="qaGioiTinh" class="form-select form-select-sm" required>
                                 <option value="Nam">Nam</option>
                                 <option value="Nữ">Nữ</option>
                             </select>
+                            <div class="invalid-feedback">Vui lòng chọn giới tính.</div>
                         </div>
                         <div class="col-6">
                             <label class="form-label small fw-semibold">Ngày sinh</label>
                             <input type="date" id="qaNgaySinh" class="form-control form-control-sm" />
+                            <div class="invalid-feedback">Ngày sinh không thể ở tương lai.</div>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Số CCCD / Định danh</label>
-                        <input type="text" id="qaSoCccd" class="form-control form-control-sm" placeholder="12 chữ số" />
+                        <input type="text" id="qaSoCccd" class="form-control form-control-sm" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="12 chữ số" />
+                        <div class="invalid-feedback">CCCD/định danh phải gồm đúng 12 chữ số.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Số điện thoại</label>
-                        <input type="tel" id="qaSoDienThoai" class="form-control form-control-sm" placeholder="09xxxx" />
+                        <input type="tel" id="qaSoDienThoai" class="form-control form-control-sm" inputmode="tel" maxlength="30" pattern="(?:0[0-9]{9}|\+84[0-9]{9})" placeholder="0987654321 hoặc +84987654321" />
+                        <div class="invalid-feedback">Nhập 10 chữ số bắt đầu bằng 0 hoặc mã +84 và 9 chữ số.</div>
                     </div>
                     <button type="submit" class="btn btn-sm btn-donvi-primary w-100 rounded-pill py-2">
                         <i class="fa-solid fa-plus me-1"></i> Lưu Vận Động Viên
@@ -265,13 +270,18 @@
 
 @section Scripts {
     <script>
+        const today = new Date();
+        today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+        $('#qaNgaySinh').attr('max', today.toISOString().slice(0, 10));
         $('#quickAddForm').on('submit', function (e) {
             e.preventDefault();
-            const hoTen = $('#qaHoTen').val().trim();
-            if (!hoTen) {
-                Swal.fire('Lỗi', 'Vui lòng nhập họ tên VĐV', 'warning');
+            const form = this;
+            $(form).addClass('was-validated');
+            if (!form.checkValidity()) {
                 return;
             }
+
+            const hoTen = $('#qaHoTen').val().trim();
 
             const payload = {
                 hoTen: hoTen,

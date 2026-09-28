@@ -71,6 +71,15 @@ namespace API.Areas.DonVi.Controllers
                 return Json(new { success = false, message = "Vui lòng nhập họ và tên vận động viên." });
             }
 
+            if (!ModelState.IsValid)
+            {
+                var validationMessage = ModelState.Values
+                    .SelectMany(entry => entry.Errors)
+                    .Select(error => error.ErrorMessage)
+                    .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message));
+                return Json(new { success = false, message = validationMessage ?? "Thông tin vận động viên chưa hợp lệ." });
+            }
+
             var currentDonVi = await GetCurrentDonViAsync();
             if (currentDonVi == null)
             {
@@ -80,7 +89,13 @@ namespace API.Areas.DonVi.Controllers
             dto.DonViId = currentDonVi.Id;
             if (string.IsNullOrWhiteSpace(dto.Ma))
             {
-                dto.Ma = $"VDV-{currentDonVi.Ma}-{DateTime.Now:fffss}";
+                var unitCode = string.IsNullOrWhiteSpace(currentDonVi.Ma) ? "DV" : currentDonVi.Ma.Trim();
+                if (unitCode.Length > 13)
+                {
+                    unitCode = unitCode.Substring(0, 13);
+                }
+
+                dto.Ma = $"VDV-{unitCode}-{Guid.NewGuid():N}";
             }
 
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "DonVi";

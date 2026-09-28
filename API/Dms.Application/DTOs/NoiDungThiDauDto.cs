@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace Dms.Application.DTOs
 {
@@ -63,19 +64,128 @@ namespace Dms.Application.DTOs
         public DateTime? LastModified { get; set; }
     }
 
-    public class CreateUpdateVanDongVienDto
+    public class CreateUpdateVanDongVienDto : IValidatableObject
     {
+        [StringLength(50, ErrorMessage = "Mã VĐV không được vượt quá 50 ký tự.")]
         public string Ma { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập thông tin")]
+        [StringLength(200, MinimumLength = 2, ErrorMessage = "Họ tên phải có từ 2 đến 200 ký tự.")]
         public string HoTen { get; set; } = string.Empty;
+
         public int? DonViId { get; set; }
+
+        [DataType(DataType.Date)]
         public DateTime? NgaySinh { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập thông tin")]
+        [RegularExpression("^(Nam|Nữ)$", ErrorMessage = "Giới tính chỉ được là Nam hoặc Nữ.")]
         public string GioiTinh { get; set; } = "Nam";
+
+        [StringLength(30, ErrorMessage = "Số điện thoại không được vượt quá 30 ký tự.")]
+        [RegularExpression(@"^(?:0\d{9}|\+84\d{9})$", ErrorMessage = "Số điện thoại phải gồm 10 chữ số bắt đầu bằng 0 hoặc mã +84 và 9 chữ số.")]
         public string? SoDienThoai { get; set; }
+
+        [StringLength(200, ErrorMessage = "Email không được vượt quá 200 ký tự.")]
+        [EmailAddress(ErrorMessage = "Email không đúng định dạng.")]
         public string? Email { get; set; }
+
+        [StringLength(50, ErrorMessage = "Số CCCD không được vượt quá 50 ký tự.")]
+        [RegularExpression(@"^\d{12}$", ErrorMessage = "CCCD/định danh phải gồm đúng 12 chữ số.")]
         public string? SoCCCD { get; set; }
+
+        [StringLength(500, ErrorMessage = "Địa chỉ không được vượt quá 500 ký tự.")]
         public string? DiaChi { get; set; }
+
+        [StringLength(1000, ErrorMessage = "Đường dẫn ảnh không được vượt quá 1000 ký tự.")]
         public string? HinhAnh { get; set; }
+
         public bool TrangThai { get; set; } = true;
+
+        /// <summary>Kiểm tra ngày sinh của VĐV không nằm trong tương lai.</summary>
+        /// <param name="validationContext">Ngữ cảnh kiểm tra dữ liệu do ASP.NET cung cấp.</param>
+        /// <returns>Lỗi gắn với trường ngày sinh nếu ngày được nhập lớn hơn hôm nay.</returns>
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (NgaySinh.HasValue && NgaySinh.Value.Date > DateTime.Today)
+            {
+                yield return new ValidationResult("Ngày sinh không thể ở tương lai.", new[] { nameof(NgaySinh) });
+            }
+        }
+    }
+
+    /// <summary>DTO nhập đầy đủ hồ sơ VĐV từ cổng đơn vị, yêu cầu các thông tin cá nhân bắt buộc.</summary>
+    public class CreateUpdateDonViVanDongVienDto : IValidatableObject
+    {
+        [Required(ErrorMessage = "Vui lòng nhập họ và tên VĐV.")]
+        [StringLength(200, MinimumLength = 2, ErrorMessage = "Họ tên phải có từ 2 đến 200 ký tự.")]
+        public string HoTen { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập thông tin")]
+        [RegularExpression("^(Nam|Nữ)$", ErrorMessage = "Giới tính chỉ được là Nam hoặc Nữ.")]
+        public string GioiTinh { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập thông tin")]
+        [DataType(DataType.Date)]
+        public DateTime? NgaySinh { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập thông tin")]
+        [StringLength(12, MinimumLength = 12, ErrorMessage = "CCCD/định danh phải gồm đúng 12 chữ số.")]
+        [RegularExpression(@"^\d{12}$", ErrorMessage = "CCCD/định danh phải gồm đúng 12 chữ số.")]
+        public string? SoCCCD { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập thông tin")]
+        [StringLength(30, ErrorMessage = "Số điện thoại không được vượt quá 30 ký tự.")]
+        [RegularExpression(@"^(?:0\d{9}|\+84\d{9})$", ErrorMessage = "Số điện thoại phải gồm 10 chữ số bắt đầu bằng 0 hoặc mã +84 và 9 chữ số.")]
+        public string? SoDienThoai { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập thông tin")]
+        [StringLength(200, ErrorMessage = "Email không được vượt quá 200 ký tự.")]
+        [EmailAddress(ErrorMessage = "Email không đúng định dạng.")]
+        public string? Email { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập thông tin")]
+        [StringLength(500, ErrorMessage = "Địa chỉ không được vượt quá 500 ký tự.")]
+        public string? DiaChi { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập thông tin")]
+        [StringLength(1000, ErrorMessage = "Đường dẫn ảnh không được vượt quá 1000 ký tự.")]
+        public string? HinhAnh { get; set; }
+
+        public bool TrangThai { get; set; } = true;
+
+        /// <summary>Chuyển dữ liệu hồ sơ đã kiểm tra sang DTO dùng chung của dịch vụ VĐV.</summary>
+        /// <param name="donViId">Mã đơn vị đang quản lý hồ sơ.</param>
+        /// <param name="ma">Mã VĐV do máy chủ tự sinh hoặc lấy từ hồ sơ hiện có.</param>
+        /// <returns>DTO chuẩn để gọi dịch vụ tạo hoặc cập nhật vận động viên.</returns>
+        public CreateUpdateVanDongVienDto ToServiceDto(int donViId, string ma)
+        {
+            return new CreateUpdateVanDongVienDto
+            {
+                Ma = ma,
+                HoTen = HoTen,
+                DonViId = donViId,
+                NgaySinh = NgaySinh,
+                GioiTinh = GioiTinh,
+                SoDienThoai = SoDienThoai,
+                Email = Email,
+                SoCCCD = SoCCCD,
+                DiaChi = DiaChi,
+                HinhAnh = HinhAnh,
+                TrangThai = TrangThai
+            };
+        }
+
+        /// <summary>Kiểm tra ngày sinh bắt buộc có tồn tại trong lịch và không nằm ở tương lai.</summary>
+        /// <param name="validationContext">Ngữ cảnh kiểm tra dữ liệu do ASP.NET cung cấp.</param>
+        /// <returns>Lỗi xác thực nếu ngày sinh không hợp lệ.</returns>
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (NgaySinh.HasValue && NgaySinh.Value.Date > DateTime.Today)
+            {
+                yield return new ValidationResult("Ngày sinh không thể ở tương lai.", new[] { nameof(NgaySinh) });
+            }
+        }
     }
 
     // ==================== DOI DTOs ====================

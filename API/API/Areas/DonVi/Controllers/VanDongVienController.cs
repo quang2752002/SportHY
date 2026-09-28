@@ -67,25 +67,26 @@ namespace API.Areas.DonVi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Save([FromBody] CreateUpdateVanDongVienDto dto, [FromQuery] int? id = null)
+        public async Task<IActionResult> Save([FromBody] CreateUpdateDonViVanDongVienDto dto, [FromQuery] int? id = null)
         {
             if (dto == null || string.IsNullOrWhiteSpace(dto.HoTen))
             {
-                return Json(new { success = false, message = "Họ tên vận động viên không được để trống." });
+                return Json(new { success = false, message = "Vui lòng nhập thông tin" });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var validationMessage = ModelState.Values
+                    .SelectMany(entry => entry.Errors)
+                    .Select(error => error.ErrorMessage)
+                    .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message));
+                return Json(new { success = false, message = validationMessage ?? "Thông tin vận động viên chưa hợp lệ." });
             }
 
             var currentUnit = await GetCurrentDonViAsync();
             if (currentUnit == null)
             {
                 return Json(new { success = false, message = "Không xác định được đơn vị thi đấu." });
-            }
-
-            // Gán đơn vị hiện tại
-            dto.DonViId = currentUnit.Id;
-
-            if (string.IsNullOrWhiteSpace(dto.Ma))
-            {
-                dto.Ma = $"VDV-{currentUnit.Ma}-{DateTime.Now:fffss}";
             }
 
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "DonVi";
@@ -100,12 +101,14 @@ namespace API.Areas.DonVi.Controllers
                         return Json(new { success = false, message = "Vận động viên cần cập nhật không tồn tại." });
                     }
 
-                    var updated = await _vanDongVienService.UpdateAsync(id.Value, dto, username);
+                    var updateDto = dto.ToServiceDto(currentUnit.Id, existing.Ma);
+                    var updated = await _vanDongVienService.UpdateAsync(id.Value, updateDto, username);
                     return Json(new { success = true, message = "Cập nhật hồ sơ vận động viên thành công!", data = updated });
                 }
                 else
                 {
-                    var created = await _vanDongVienService.CreateAsync(dto, username);
+                    var createDto = dto.ToServiceDto(currentUnit.Id, GenerateAthleteCode(currentUnit.Ma));
+                    var created = await _vanDongVienService.CreateAsync(createDto, username);
                     return Json(new { success = true, message = "Thêm mới vận động viên vào đoàn thành công!", data = created });
                 }
             }
@@ -113,6 +116,18 @@ namespace API.Areas.DonVi.Controllers
             {
                 return Json(new { success = false, message = ex.Message });
             }
+        }
+
+        private static string GenerateAthleteCode(string unitCode)
+        {
+            var normalizedUnitCode = string.IsNullOrWhiteSpace(unitCode) ? "DV" : unitCode.Trim();
+            const int maxUnitCodeLength = 13;
+            if (normalizedUnitCode.Length > maxUnitCodeLength)
+            {
+                normalizedUnitCode = normalizedUnitCode.Substring(0, maxUnitCodeLength);
+            }
+
+            return $"VDV-{normalizedUnitCode}-{Guid.NewGuid():N}";
         }
 
         [HttpPost]

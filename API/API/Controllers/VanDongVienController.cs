@@ -13,10 +13,14 @@ namespace API.Controllers
     public class VanDongVienController : ControllerBase
     {
         private readonly IVanDongVienService _vanDongVienService;
+        private readonly IVanDongVienAvatarStorageService _avatarStorageService;
 
-        public VanDongVienController(IVanDongVienService vanDongVienService)
+        public VanDongVienController(
+            IVanDongVienService vanDongVienService,
+            IVanDongVienAvatarStorageService avatarStorageService)
         {
             _vanDongVienService = vanDongVienService;
+            _avatarStorageService = avatarStorageService;
         }
 
         [HttpGet("paged")]
@@ -107,31 +111,14 @@ namespace API.Controllers
                 return BadRequest(new { message = "Vui lòng chọn tệp hình ảnh của vận động viên." });
             }
 
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
-            var extension = System.IO.Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!allowedExtensions.Contains(extension))
+            await using var imageStream = file.OpenReadStream();
+            var saveResult = await _avatarStorageService.SaveAsync(imageStream, file.FileName, file.Length, HttpContext.RequestAborted);
+            if (!saveResult.success)
             {
-                return BadRequest(new { message = "Chỉ chấp nhận các định dạng ảnh: .jpg, .jpeg, .png, .webp, .gif" });
+                return BadRequest(new { message = saveResult.message });
             }
 
-            // Tạo thư mục wwwroot/vdv nếu chưa có
-            var webRoot = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot");
-            var targetFolder = System.IO.Path.Combine(webRoot, "vdv");
-            if (!System.IO.Directory.Exists(targetFolder))
-            {
-                System.IO.Directory.CreateDirectory(targetFolder);
-            }
-
-            var fileName = $"{System.Guid.NewGuid():N}{extension}";
-            var fullPath = System.IO.Path.Combine(targetFolder, fileName);
-
-            using (var stream = new System.IO.FileStream(fullPath, System.IO.FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            var relativeUrl = $"/vdv/{fileName}";
-            return Ok(new { url = relativeUrl });
+            return Ok(new { url = saveResult.url });
         }
 
         [HttpDelete("{id}")]

@@ -91,52 +91,71 @@
                 <h6 class="modal-title fw-bold" id="modalTitle">Thêm Vận Động Viên Mới</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form id="vdvForm">
+            <form id="vdvForm" novalidate>
                 <div class="modal-body p-4">
                     <input type="hidden" id="vdvId" />
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Mã VĐV (Tùy chọn)</label>
-                            <input type="text" id="vdvMa" class="form-control form-control-sm" placeholder="Hệ thống tự tạo nếu để trống" />
+                            <label class="form-label small fw-semibold">Mã VĐV (Tự động)</label>
+                            <input type="text" id="vdvMa" class="form-control form-control-sm bg-light" readonly placeholder="Mã sẽ được tạo khi lưu" />
                         </div>
                         <div class="col-md-8">
                             <label class="form-label small fw-semibold">Họ và tên VĐV <span class="text-danger">*</span></label>
-                            <input type="text" id="vdvHoTen" class="form-control form-control-sm" required placeholder="VD: Nguyễn Văn Hoàng" />
+                            <input type="text" id="vdvHoTen" class="form-control form-control-sm" required minlength="2" maxlength="200" placeholder="VD: Nguyễn Văn Hoàng" />
+                            <div class="invalid-feedback">Vui lòng nhập họ tên từ 2 đến 200 ký tự.</div>
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold">Giới tính <span class="text-danger">*</span></label>
                             <select id="vdvGioiTinh" class="form-select form-select-sm" required>
+                                <option value="" selected disabled>-- Chọn giới tính --</option>
                                 <option value="Nam">Nam</option>
                                 <option value="Nữ">Nữ</option>
                             </select>
+                            <div class="invalid-feedback">Vui lòng chọn giới tính hợp lệ.</div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Ngày sinh</label>
-                            <input type="date" id="vdvNgaySinh" class="form-control form-control-sm" />
+                            <label class="form-label small fw-semibold">Ngày sinh <span class="text-danger">*</span></label>
+                            <input type="text" id="vdvNgaySinh" class="form-control form-control-sm" required maxlength="10" pattern="(?:0[1-9]|[12][0-9]|3[01])/(?:0[1-9]|1[0-2])/[0-9]{4}" placeholder="dd/MM/yyyy" inputmode="numeric" />
+                            <div class="invalid-feedback">Nhập ngày sinh đúng định dạng dd/MM/yyyy và không ở tương lai.</div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Số CCCD / Định danh</label>
-                            <input type="text" id="vdvSoCCCD" class="form-control form-control-sm" placeholder="12 chữ số" />
+                            <label class="form-label small fw-semibold">Số CCCD / Định danh <span class="text-danger">*</span></label>
+                            <input type="text" id="vdvSoCCCD" class="form-control form-control-sm" required inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="12 chữ số" />
+                            <div class="invalid-feedback">Vui lòng nhập CCCD/định danh gồm đúng 12 chữ số.</div>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Số điện thoại</label>
-                            <input type="tel" id="vdvSoDienThoai" class="form-control form-control-sm" placeholder="VD: 0987654321" />
+                            <label class="form-label small fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+                            <input type="tel" id="vdvSoDienThoai" class="form-control form-control-sm" required inputmode="tel" maxlength="30" pattern="(?:0[0-9]{9}|\+84[0-9]{9})" placeholder="VD: 0987654321 hoặc +84987654321" />
+                            <div class="invalid-feedback">Vui lòng nhập số gồm 10 chữ số bắt đầu bằng 0 hoặc +84 và 9 chữ số.</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Email</label>
-                            <input type="email" id="vdvEmail" class="form-control form-control-sm" placeholder="VD: vdv@example.com" />
+                            <label class="form-label small fw-semibold">Email <span class="text-danger">*</span></label>
+                            <input type="email" id="vdvEmail" class="form-control form-control-sm" required maxlength="200" placeholder="VD: vdv@example.com" />
+                            <div class="invalid-feedback">Vui lòng nhập email hợp lệ, tối đa 200 ký tự.</div>
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label small fw-semibold">Địa chỉ / Quê quán</label>
-                            <input type="text" id="vdvDiaChi" class="form-control form-control-sm" placeholder="VD: TP. Buôn Ma Thuột, Đắk Lắk" />
+                            <label class="form-label small fw-semibold">Địa chỉ / Quê quán <span class="text-danger">*</span></label>
+                            <input type="text" id="vdvDiaChi" class="form-control form-control-sm" required maxlength="500" placeholder="VD: TP. Buôn Ma Thuột, Đắk Lắk" />
+                            <div class="invalid-feedback">Vui lòng nhập địa chỉ, tối đa 500 ký tự.</div>
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label small fw-semibold">Ảnh đại diện (URL)</label>
-                            <input type="text" id="vdvHinhAnh" class="form-control form-control-sm" placeholder="https://..." />
+                            <label class="form-label small fw-semibold">Ảnh đại diện <span class="text-danger">*</span></label>
+                            <input type="hidden" id="vdvHinhAnh" />
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden" style="width:64px;height:64px;">
+                                    <i id="vdvAvatarPlaceholder" class="fa-solid fa-user text-secondary"></i>
+                                    <img id="vdvAvatarPreview" class="d-none w-100 h-100 object-fit-cover" alt="Ảnh đại diện xem trước" />
+                                </div>
+                                <div class="flex-grow-1">
+                                    <input type="file" id="vdvAvatarFile" class="form-control form-control-sm" required accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                                    <div id="vdvAvatarFeedback" class="invalid-feedback">Vui lòng chọn ảnh JPG, PNG hoặc WEBP, dung lượng tối đa 5 MB.</div>
+                                    <div class="form-text">Bắt buộc khi chưa có ảnh • JPG, PNG hoặc WEBP • tối đa 5 MB.</div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="col-12">
@@ -184,10 +203,47 @@
         const pageSize = 10;
         let vdvModal = null;
         let viewModal = null;
+        let avatarPreviewObjectUrl = null;
 
         $(document).ready(function () {
             vdvModal = new bootstrap.Modal(document.getElementById('vdvModal'));
             viewModal = new bootstrap.Modal(document.getElementById('viewModal'));
+            setAvatarPreview('');
+            $('#vdvForm .invalid-feedback').each(function () {
+                $(this).data('defaultMessage', $(this).text());
+            });
+            $('#vdvForm').on('input change', ':input', function () {
+                if (this.id === 'vdvNgaySinh') {
+                    formatBirthDateInput(this);
+                    validateBirthDateInput();
+                }
+                updateValidationMessage(this);
+            });
+
+            $('#vdvAvatarFile').on('change', function () {
+                const file = this.files && this.files[0];
+                this.setCustomValidity('');
+                if (!file) {
+                    setAvatarPreview($('#vdvHinhAnh').val());
+                    return;
+                }
+
+                const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+                const extension = file.name.split('.').pop().toLowerCase();
+                if (!allowedExtensions.includes(extension)) {
+                    this.setCustomValidity('Chỉ chấp nhận ảnh JPG, JPEG hoặc WEBP.');
+                } else if (file.size > 5 * 1024 * 1024) {
+                    this.setCustomValidity('Ảnh đại diện không được vượt quá 5 MB.');
+                }
+
+                if (!this.checkValidity()) {
+                    $('#vdvForm').addClass('was-validated');
+                    setAvatarPreview($('#vdvHinhAnh').val());
+                    return;
+                }
+
+                setAvatarPreview(URL.createObjectURL(file));
+            });
 
             loadData();
 
@@ -270,17 +326,17 @@
                     ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5"><i class="fa-solid fa-circle-check me-1"></i>Sẵn sàng</span>'
                     : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5">Tạm ngừng</span>';
 
-                const avatarLetter = (item.hoTen || 'V').charAt(0).toUpperCase();
+                const avatarLetter = escapeHtml((item.hoTen || 'V').charAt(0).toUpperCase());
+                const avatarMarkup = isSafeAvatarUrl(item.hinhAnh)
+                    ? `<img src="${escapeHtml(item.hinhAnh)}" alt="Ảnh ${escapeHtml(item.hoTen || 'VĐV')}" class="rounded-circle flex-shrink-0" style="width:32px;height:32px;object-fit:cover;" />`
+                    : `<div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,#059669 0%,#10b981 100%);">${avatarLetter}</div>`;
 
                 const tr = `
                     <tr>
                         <td class="ps-3 fw-bold text-secondary font-monospace" style="font-size: 12px;">${item.ma || '--'}</td>
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
-                                     style="width: 32px; height: 32px; font-size: 12px; background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
-                                    ${avatarLetter}
-                                </div>
+                                ${avatarMarkup}
                                 <div class="fw-semibold text-dark">${item.hoTen}</div>
                             </div>
                         </td>
@@ -356,6 +412,12 @@
             $('#modalTitle').text('Thêm Vận Động Viên Mới');
             $('#vdvId').val('');
             $('#vdvForm')[0].reset();
+            $('#vdvForm').removeClass('was-validated');
+            $('#vdvAvatarFile')[0].setCustomValidity('');
+            $('#vdvAvatarFile').prop('required', true);
+            $('#vdvMa').val('');
+            $('#vdvHinhAnh').val('');
+            setAvatarPreview('');
             $('#vdvTrangThai').prop('checked', true);
             vdvModal.show();
         }
@@ -369,12 +431,17 @@
                     $('#vdvMa').val(d.ma);
                     $('#vdvHoTen').val(d.hoTen);
                     $('#vdvGioiTinh').val(d.gioiTinh || 'Nam');
-                    $('#vdvNgaySinh').val(d.ngaySinh ? d.ngaySinh.split('T')[0] : '');
+                    $('#vdvNgaySinh').val(formatVietnameseDate(d.ngaySinh));
                     $('#vdvSoCCCD').val(d.soCCCD || '');
                     $('#vdvSoDienThoai').val(d.soDienThoai || '');
                     $('#vdvEmail').val(d.email || '');
                     $('#vdvDiaChi').val(d.diaChi || '');
                     $('#vdvHinhAnh').val(d.hinhAnh || '');
+                    $('#vdvAvatarFile').val('').get(0).setCustomValidity('');
+                    $('#vdvAvatarFile').prop('required', !d.hinhAnh);
+                    $('#vdvForm').removeClass('was-validated');
+                    validateBirthDateInput();
+                    setAvatarPreview(d.hinhAnh || '');
                     $('#vdvTrangThai').prop('checked', d.trangThai);
                     vdvModal.show();
                 } else {
@@ -383,13 +450,141 @@
             });
         }
 
-        function saveVdv() {
+        function setAvatarPreview(url) {
+            if (avatarPreviewObjectUrl) {
+                URL.revokeObjectURL(avatarPreviewObjectUrl);
+                avatarPreviewObjectUrl = null;
+            }
+
+            if (url && url.startsWith('blob:')) {
+                avatarPreviewObjectUrl = url;
+            }
+
+            if (url) {
+                $('#vdvAvatarPreview').attr('src', url).removeClass('d-none');
+                $('#vdvAvatarPlaceholder').addClass('d-none');
+            } else {
+                $('#vdvAvatarPreview').attr('src', '').addClass('d-none');
+                $('#vdvAvatarPlaceholder').removeClass('d-none');
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[character]));
+        }
+
+        function isSafeAvatarUrl(value) {
+            const url = String(value || '').trim();
+            return (url.startsWith('/') && !url.startsWith('//')) || /^https?:\/\//i.test(url);
+        }
+
+        function parseVietnameseDate(value) {
+            const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(value || '').trim());
+            if (!match) return null;
+
+            const day = Number(match[1]);
+            const month = Number(match[2]);
+            const year = Number(match[3]);
+            const date = new Date(year, month - 1, day);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day || date > today) {
+                return null;
+            }
+
+            return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+
+        function formatVietnameseDate(value) {
+            if (!value) return '';
+            const datePart = String(value).split('T')[0];
+            const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(datePart);
+            return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
+        }
+
+        function validateBirthDateInput() {
+            const input = $('#vdvNgaySinh')[0];
+            const value = input.value.trim();
+            input.setCustomValidity(value && !parseVietnameseDate(value)
+                ? 'Ngày sinh phải đúng dd/MM/yyyy, là ngày có thật và không ở tương lai.'
+                : '');
+        }
+
+        function formatBirthDateInput(input) {
+            const previousValue = input.value;
+            const previousCursor = input.selectionStart ?? previousValue.length;
+            const digitsBeforeCursor = previousValue.slice(0, previousCursor).replace(/\D/g, '').length;
+            const digits = previousValue.replace(/\D/g, '').slice(0, 8);
+            let formatted = digits.slice(0, 2);
+
+            if (digits.length >= 2) {
+                formatted += '/';
+            }
+            if (digits.length > 2) {
+                formatted += digits.slice(2, 4);
+            }
+            if (digits.length >= 4) {
+                formatted += '/';
+            }
+            if (digits.length > 4) {
+                formatted += digits.slice(4, 8);
+            }
+
+            input.value = formatted;
+
+            if (document.activeElement === input) {
+                let cursor = 0;
+                let countedDigits = 0;
+                while (cursor < formatted.length && countedDigits < digitsBeforeCursor) {
+                    if (/\d/.test(formatted[cursor])) countedDigits++;
+                    cursor++;
+                }
+                if (countedDigits >= 2 && formatted[cursor] === '/') cursor++;
+                if (countedDigits >= 4 && formatted[cursor] === '/') cursor++;
+                input.setSelectionRange(cursor, cursor);
+            }
+        }
+
+        function updateValidationMessage(input) {
+            const feedback = $(input).siblings('.invalid-feedback').first();
+            if (!feedback.length) return;
+
+            const defaultMessage = feedback.data('defaultMessage') || 'Thông tin chưa hợp lệ.';
+            feedback.text(input.validity.valueMissing ? 'Vui lòng nhập thông tin' : defaultMessage);
+        }
+
+        function refreshValidationMessages(form) {
+            form.querySelectorAll('input, select, textarea').forEach(updateValidationMessage);
+        }
+
+        function uploadVdvAvatar(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            return $.ajax({
+                url: '/api/VanDongVien/upload-avatar',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false
+            });
+        }
+
+        async function saveVdv() {
+            const form = $('#vdvForm')[0];
+            validateBirthDateInput();
+            refreshValidationMessages(form);
+            $('#vdvForm').addClass('was-validated');
+            if (!form.checkValidity()) {
+                return;
+            }
+
             const id = $('#vdvId').val();
             const payload = {
-                ma: $('#vdvMa').val().trim(),
                 hoTen: $('#vdvHoTen').val().trim(),
                 gioiTinh: $('#vdvGioiTinh').val(),
-                ngaySinh: $('#vdvNgaySinh').val() || null,
+                ngaySinh: parseVietnameseDate($('#vdvNgaySinh').val()),
                 soCCCD: $('#vdvSoCCCD').val().trim(),
                 soDienThoai: $('#vdvSoDienThoai').val().trim(),
                 email: $('#vdvEmail').val().trim(),
@@ -401,32 +596,39 @@
             const url = id ? `/DonVi/VanDongVien/Save?id=${id}` : '/DonVi/VanDongVien/Save';
             $('#btnSave').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Đang lưu...');
 
-            $.ajax({
-                url: url,
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
-                success: function (res) {
-                    $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Vận Động Viên');
-                    if (res.success) {
-                        vdvModal.hide();
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Thành công',
-                            text: res.message,
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                        loadData();
-                    } else {
-                        Swal.fire('Lỗi', res.message || 'Không thể lưu VĐV', 'error');
-                    }
-                },
-                error: function () {
-                    $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Vận Động Viên');
-                    Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
+            try {
+                const avatarFile = $('#vdvAvatarFile')[0].files[0];
+                if (avatarFile) {
+                    const uploadResult = await uploadVdvAvatar(avatarFile);
+                    payload.hinhAnh = uploadResult.url;
                 }
-            });
+
+                const response = await $.ajax({
+                    url: url,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload)
+                });
+
+                if (response.success) {
+                    vdvModal.hide();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công',
+                        text: response.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    loadData();
+                } else {
+                    Swal.fire('Lỗi', response.message || 'Không thể lưu VĐV', 'error');
+                }
+            } catch (error) {
+                const errorMessage = error.responseJSON?.message || 'Không thể tải ảnh hoặc lưu hồ sơ. Vui lòng thử lại.';
+                Swal.fire('Lỗi', errorMessage, 'error');
+            } finally {
+                $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Vận Động Viên');
+            }
         }
 
         function viewDetail(id) {
@@ -434,12 +636,12 @@
                 if (res.success && res.data) {
                     const d = res.data;
                     const dob = d.ngaySinh ? new Date(d.ngaySinh).toLocaleDateString('vi-VN') : '--';
+                    const avatarMarkup = isSafeAvatarUrl(d.hinhAnh)
+                        ? `<img src="${escapeHtml(d.hinhAnh)}" alt="Ảnh ${escapeHtml(d.hoTen || 'VĐV')}" class="rounded-circle flex-shrink-0" style="width:56px;height:56px;object-fit:cover;" />`
+                        : `<div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold fs-3" style="width:56px;height:56px;background:linear-gradient(135deg,#059669 0%,#10b981 100%);">${escapeHtml((d.hoTen || 'V').charAt(0).toUpperCase())}</div>`;
                     const html = `
                         <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
-                            <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold fs-3"
-                                 style="width: 56px; height: 56px; background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
-                                ${(d.hoTen || 'V').charAt(0).toUpperCase()}
-                            </div>
+                            ${avatarMarkup}
                             <div>
                                 <h5 class="fw-bold text-dark mb-0">${d.hoTen}</h5>
                                 <div class="text-muted small">Mã: <span class="fw-semibold text-secondary font-monospace">${d.ma || '--'}</span></div>
