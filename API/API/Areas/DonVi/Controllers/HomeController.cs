@@ -39,22 +39,28 @@ namespace API.Areas.DonVi.Controllers
             var currentDonVi = await GetCurrentDonViAsync();
             int? donViId = currentDonVi?.Id;
 
-            var allVdvs = (await _vanDongVienService.GetAllAsync(donViId))?.ToList() ?? new();
+            // Dùng cùng truy vấn phân trang với màn Hồ sơ VĐV để dashboard hiển thị đúng
+            // toàn bộ hồ sơ (bao gồm cả VĐV tạm ngừng), không chỉ VĐV đang hoạt động.
+            var athletePage = await _vanDongVienService.GetPagedAsync(
+                pageIndex: 1,
+                pageSize: 5,
+                donViId: donViId);
+            var recentVdvs = athletePage.Items.ToList();
             var allRegs = (await _dangKyThiDauService.GetAllAsync(donViId: donViId))?.ToList() ?? new();
             var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
 
-            ViewBag.TotalVdvs = allVdvs.Count;
+            ViewBag.TotalVdvs = athletePage.TotalCount;
             ViewBag.ApprovedRegs = allRegs.Count(r => r.TrangThai == "DaDuyet");
             ViewBag.PendingRegs = allRegs.Count(r => r.TrangThai != "DaDuyet" && r.TrangThai != "TuChoi");
             ViewBag.ActiveTournamentsCount = allTournaments.Count(t => t.TrangThai == TrangThaiGiaiDau.SapDienRa || t.TrangThai == TrangThaiGiaiDau.DangDienRa);
 
-            ViewBag.RecentAthletes = allVdvs.OrderByDescending(v => v.Id).Take(5).ToList();
+            ViewBag.RecentAthletes = recentVdvs;
             ViewBag.AvailableTournaments = allTournaments
                 .Where(t => t.TrangThai == TrangThaiGiaiDau.SapDienRa || t.TrangThai == TrangThaiGiaiDau.DangDienRa)
                 .Take(4)
                 .ToList();
 
-            return View(allVdvs);
+            return View(recentVdvs);
         }
 
         [HttpPost]

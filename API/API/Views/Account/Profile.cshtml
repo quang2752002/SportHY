@@ -1,0 +1,261 @@
+@model API.Controllers.AccountProfilePageViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Hồ sơ cá nhân";
+    var profile = Model.Profile;
+}
+
+<section class="container py-4 py-lg-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="text-primary fw-semibold small text-uppercase mb-1">Tài khoản của tôi</div>
+            <h2 class="fw-bold text-dark mb-1">Hồ sơ cá nhân</h2>
+            <p class="text-muted mb-0">Xem thông tin tài khoản, cập nhật số điện thoại và mật khẩu đăng nhập.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["ProfileSuccess"] is string successMessage)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4">
+            <i class="fa-solid fa-circle-check me-2"></i>@successMessage
+        </div>
+    }
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header border-0 px-4 py-3 text-white" style="background: linear-gradient(120deg,#1d4ed8,#2563eb);">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <i class="fa-solid fa-user fa-lg"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">@profile.FullName</h5>
+                            <div class="small text-white-50">@profile.UserName</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-dark mb-3"><i class="fa-regular fa-id-card text-primary me-2"></i>Thông tin tài khoản</h6>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="profile-info-label">Mã tài khoản</div>
+                            <div class="profile-info-value">#@profile.UserId</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="profile-info-label">Tên đăng nhập</div>
+                            <div class="profile-info-value">@profile.UserName</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="profile-info-label">Họ và tên</div>
+                            <div class="profile-info-value">@(string.IsNullOrWhiteSpace(profile.FullName) ? "Chưa cập nhật" : profile.FullName)</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="profile-info-label">Email</div>
+                            <div class="profile-info-value text-break">@(string.IsNullOrWhiteSpace(profile.Email) ? "Chưa cập nhật" : profile.Email)</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="profile-info-label">Số điện thoại</div>
+                            <div class="profile-info-value">@(string.IsNullOrWhiteSpace(profile.PhoneNumber) ? "Chưa cập nhật" : profile.PhoneNumber)</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="profile-info-label">Ngày tạo tài khoản</div>
+                            <div class="profile-info-value">@profile.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                    </div>
+
+                    <form asp-action="UpdatePhoneNumber" method="post" class="mt-4 p-3 p-md-4 border rounded-3 bg-light">
+                        <h6 class="fw-bold text-dark mb-1"><i class="fa-solid fa-phone text-primary me-2"></i>Cập nhật số điện thoại tài khoản</h6>
+                        <p class="text-muted small mb-3">Thông tin này độc lập với số điện thoại trong hồ sơ nghiệp vụ. Thay đổi số sẽ đặt trạng thái xác nhận về chưa xác nhận.</p>
+                        <div class="row g-2 align-items-start">
+                            <div class="col-md-8">
+                                <label asp-for="PhoneNumberChange.PhoneNumber" class="form-label fw-semibold">Số điện thoại</label>
+                                <input asp-for="PhoneNumberChange.PhoneNumber" class="form-control" type="tel" autocomplete="tel" placeholder="Nhập số điện thoại" />
+                                <span asp-validation-for="PhoneNumberChange.PhoneNumber" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4 d-grid pt-md-4">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> Lưu số điện thoại
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <hr class="my-4" />
+                    <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-shield-halved text-primary me-2"></i>Vai trò và bảo mật</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        @if (profile.Roles.Count > 0)
+                        {
+                            foreach (var role in profile.Roles)
+                            {
+                                <span class="badge rounded-pill text-bg-primary px-3 py-2">@role</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">Tài khoản chưa được gán vai trò.</span>
+                        }
+                    </div>
+                    <div class="row g-2 small">
+                        <div class="col-md-4">
+                            <span class="text-muted">Email:</span>
+                            <span class="fw-semibold @(profile.EmailConfirmed ? "text-success" : "text-warning")">
+                                @(profile.EmailConfirmed ? "Đã xác nhận" : "Chưa xác nhận")
+                            </span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted">Điện thoại:</span>
+                            <span class="fw-semibold @(profile.PhoneNumberConfirmed ? "text-success" : "text-secondary")">
+                                @(profile.PhoneNumberConfirmed ? "Đã xác nhận" : "Chưa xác nhận")
+                            </span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted">Xác thực 2 lớp:</span>
+                            <span class="fw-semibold @(profile.TwoFactorEnabled ? "text-success" : "text-secondary")">
+                                @(profile.TwoFactorEnabled ? "Đang bật" : "Chưa bật")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-1">Hồ sơ nghiệp vụ liên kết</h5>
+                            <p class="text-muted small mb-0">Thông tin hồ sơ được liên kết với tài khoản của bạn trong hệ thống.</p>
+                        </div>
+                        <i class="fa-solid fa-address-card text-primary fs-3"></i>
+                    </div>
+                    @if (profile.LinkedProfiles.Count == 0)
+                    {
+                        <div class="rounded-3 bg-light p-3 text-muted small">
+                            Tài khoản chưa liên kết hồ sơ nghiệp vụ riêng.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row g-3">
+                            @foreach (var linked in profile.LinkedProfiles)
+                            {
+                                <div class="col-12">
+                                    <div class="border rounded-3 p-3 p-md-4">
+                                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                                            <div>
+                                                <span class="badge bg-primary-subtle text-primary border mb-2">@linked.LoaiHoSo</span>
+                                                <h6 class="fw-bold text-dark mb-0">@linked.HoTen</h6>
+                                            </div>
+                                            <span class="badge @(linked.TrangThai == "Đang hoạt động" ? "text-bg-success" : "text-bg-secondary")">@linked.TrangThai</span>
+                                        </div>
+                                        <div class="row g-3 small">
+                                            @if (!string.IsNullOrWhiteSpace(linked.Ma))
+                                            {
+                                                <div class="col-sm-6"><div class="profile-info-label">Mã hồ sơ</div><div class="profile-info-value">@linked.Ma</div></div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(linked.GioiTinh))
+                                            {
+                                                <div class="col-sm-6"><div class="profile-info-label">Giới tính</div><div class="profile-info-value">@linked.GioiTinh</div></div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(linked.Email))
+                                            {
+                                                <div class="col-sm-6"><div class="profile-info-label">Email hồ sơ</div><div class="profile-info-value text-break">@linked.Email</div></div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(linked.SoDienThoai))
+                                            {
+                                                <div class="col-sm-6"><div class="profile-info-label">Số điện thoại hồ sơ</div><div class="profile-info-value">@linked.SoDienThoai</div></div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(linked.ChucDanh))
+                                            {
+                                                <div class="col-sm-6"><div class="profile-info-label">Chức vụ / cấp bậc / loại đơn vị</div><div class="profile-info-value">@linked.ChucDanh</div></div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(linked.DonViCongTac))
+                                            {
+                                                <div class="col-sm-6"><div class="profile-info-label">Đơn vị công tác</div><div class="profile-info-value">@linked.DonViCongTac</div></div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(linked.NguoiDaiDien))
+                                            {
+                                                <div class="col-sm-6"><div class="profile-info-label">Người đại diện</div><div class="profile-info-value">@linked.NguoiDaiDien</div></div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(linked.NhomDonVi))
+                                            {
+                                                <div class="col-sm-6"><div class="profile-info-label">Khối</div><div class="profile-info-value">@linked.NhomDonVi</div></div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(linked.DonViCha))
+                                            {
+                                                <div class="col-sm-6"><div class="profile-info-label">Đơn vị cấp trên</div><div class="profile-info-value">@linked.DonViCha</div></div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(linked.DiaChi))
+                                            {
+                                                <div class="col-12"><div class="profile-info-label">Địa chỉ</div><div class="profile-info-value">@linked.DiaChi</div></div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(linked.MoTa))
+                                            {
+                                                <div class="col-12"><div class="profile-info-label">Mô tả</div><div class="profile-info-value">@linked.MoTa</div></div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 sticky-lg-top" style="top: 90px;">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width:44px;height:44px;">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">Đổi mật khẩu</h5>
+                            <span class="text-muted small">Dùng mật khẩu hiện tại để xác nhận.</span>
+                        </div>
+                    </div>
+
+                    <form asp-action="ChangePassword" method="post" autocomplete="off">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="PasswordChange.CurrentPassword" class="form-label fw-semibold">Mật khẩu hiện tại</label>
+                            <input asp-for="PasswordChange.CurrentPassword" class="form-control" autocomplete="current-password" />
+                            <span asp-validation-for="PasswordChange.CurrentPassword" class="text-danger small"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="PasswordChange.NewPassword" class="form-label fw-semibold">Mật khẩu mới</label>
+                            <input asp-for="PasswordChange.NewPassword" class="form-control" autocomplete="new-password" />
+                            <span asp-validation-for="PasswordChange.NewPassword" class="text-danger small"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="PasswordChange.ConfirmPassword" class="form-label fw-semibold">Nhập lại mật khẩu mới</label>
+                            <input asp-for="PasswordChange.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                            <span asp-validation-for="PasswordChange.ConfirmPassword" class="text-danger small"></span>
+                        </div>
+
+                        <div class="alert alert-light border small text-muted">
+                            <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                            Mật khẩu mới phải đáp ứng quy tắc bảo mật đang được cấu hình cho hệ thống.
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill py-2">
+                            <i class="fa-solid fa-lock me-1"></i> Cập nhật mật khẩu
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .profile-info-label { color: #64748b; font-size: .78rem; margin-bottom: .2rem; }
+    .profile-info-value { color: #0f172a; font-weight: 600; overflow-wrap: anywhere; }
+    @@media (max-width: 991.98px) { .sticky-lg-top { position: static !important; } }
+</style>
