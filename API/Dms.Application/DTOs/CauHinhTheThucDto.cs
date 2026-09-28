@@ -46,7 +46,6 @@ namespace Dms.Application.DTOs
         public string? LoaiDoThanhTich { get; set; } = "ThoiGian";
         public string? DonViThanhTich { get; set; } = "giay";
         public string? TieuChiXepHangThanhTich { get; set; } = "CangNhoCangTot";
-        public bool ChoPhepDongHangThanhTich { get; set; } = true;
         public string? TenTieuChiPhuThanhTich { get; set; } = "Chỉ số phụ";
         public bool TieuChiPhuCangNhoCangTot { get; set; } = true;
         public int SoVdvMoiLuotThi { get; set; } = 8;
@@ -103,7 +102,6 @@ namespace Dms.Application.DTOs
         public string? LoaiDoThanhTich { get; set; } = "ThoiGian";
         public string? DonViThanhTich { get; set; } = "giay";
         public string? TieuChiXepHangThanhTich { get; set; } = "CangNhoCangTot";
-        public bool ChoPhepDongHangThanhTich { get; set; } = true;
         public string? TenTieuChiPhuThanhTich { get; set; } = "Chỉ số phụ";
         public bool TieuChiPhuCangNhoCangTot { get; set; } = true;
         public int SoVdvMoiLuotThi { get; set; } = 8;

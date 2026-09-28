@@ -6,6 +6,7 @@
     int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
     string filterScope = ViewBag.FilterScope as string ?? "my_matches";
     bool canBrowseAllMatches = ViewBag.CanBrowseAllMatches == true;
+    var canRecordMatchIds = ViewBag.CanRecordMatchIds as HashSet<int> ?? new HashSet<int>();
 }
 
 <div class="d-flex flex-column gap-4">
@@ -274,18 +275,21 @@
                             <a href="/TrongTai/KetQua?tranDauId=@m.Id&giaiDauId=@selectedGiaiDauId"
                                class="btn btn-sm btn-referee-primary rounded-pill px-3 d-inline-flex align-items-center gap-1.5 flex-grow-1 justify-content-center">
                                 <i class="fa-solid fa-clipboard-list"></i>
-                                <span>Ghi Nhận Kết Quả</span>
+                                <span>@(canRecordMatchIds.Contains(m.Id) ? "Ghi Nhận Kết Quả" : "Xem Kết Quả")</span>
                             </a>
                             <a href="/TrongTai/BienBan?tranDauId=@m.Id&giaiDauId=@selectedGiaiDauId"
                                class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center gap-1.5 justify-content-center">
                                 <i class="fa-solid fa-file-signature"></i>
                                 <span>Biên Bản</span>
                             </a>
-                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5"
-                                    title="Cập nhật nhanh"
-                                    onclick="openQuickScoreModal(@m.Id, '@(m.TenDoi1 ?? "Đội 1")', '@(m.TenDoi2 ?? "Đội 2")', @s1, @s2, '@m.TrangThai', '@customNotes')">
-                                <i class="fa-solid fa-bolt text-warning"></i>
-                            </button>
+                            @if (canRecordMatchIds.Contains(m.Id))
+                            {
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5"
+                                        title="Cập nhật nhanh"
+                                        onclick="openQuickScoreModal(@m.Id, '@(m.TenDoi1 ?? "Đội 1")', '@(m.TenDoi2 ?? "Đội 2")', @s1, @s2, '@m.TrangThai', '@customNotes')">
+                                    <i class="fa-solid fa-bolt text-warning"></i>
+                                </button>
+                            }
                         </div>
                     </div>
                 </div>

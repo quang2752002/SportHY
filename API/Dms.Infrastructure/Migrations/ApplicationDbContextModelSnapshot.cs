@@ -290,9 +290,6 @@ namespace Dms.Infrastructure.Migrations
                     b.Property<bool>("CachTinhDiemTheoSet")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("ChoPhepDongHangThanhTich")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("ChoPhepHoaKnockout")
                         .HasColumnType("bit");
 
