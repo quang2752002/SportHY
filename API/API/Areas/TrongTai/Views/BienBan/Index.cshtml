@@ -13,9 +13,16 @@
     var setScores = ViewBag.SetScores as List<SetScoreDto> ?? new();
     var events = ViewBag.Events as List<MatchEventItemDto> ?? new();
     var signatures = ViewBag.Signatures as Dictionary<string, SignatureInfoDto> ?? new();
+    bool canCreateReport = ViewBag.CanCreateReport == true;
 }
 
 <div class="d-flex flex-column gap-4">
+    @if (Model != null && !canCreateReport)
+    {
+        <div class="alert alert-info mb-0 d-print-none" role="status">
+            <i class="fa-solid fa-eye me-1"></i> Bạn được phân công với vai trò trọng tài phụ. Bạn có thể xem và in biên bản nhưng không thể ký hoặc chỉnh sửa.
+        </div>
+    }
     <!-- Header & Print Actions (Hidden on Print) -->
     <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3 d-print-none">
         <div>
@@ -27,9 +34,12 @@
         <div class="d-flex gap-2">
             @if (Model != null)
             {
-                <a href="/TrongTai/KetQua?tranDauId=@Model.Id&giaiDauId=@selectedGiaiDauId" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                    <i class="fa-solid fa-pen-to-square me-1"></i> Điều chỉnh kết quả
-                </a>
+                @if (canCreateReport)
+                {
+                    <a href="/TrongTai/KetQua?tranDauId=@Model.Id&giaiDauId=@selectedGiaiDauId" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                        <i class="fa-solid fa-pen-to-square me-1"></i> Điều chỉnh kết quả
+                    </a>
+                }
                 <button type="button" class="btn btn-sm btn-primary rounded-pill px-3.5 shadow-sm" onclick="window.print()">
                     <i class="fa-solid fa-print me-1"></i> In Biên Bản (A4)
                 </button>
@@ -345,10 +355,14 @@
                             }
                             else
                             {
-                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-print-none"
-                                        onclick="openSignModal('team1', 'Đại diện Đội 1')">
-                                    <i class="fa-solid fa-pen me-1"></i> Ký tên
-                                </button>
+                                @if (canCreateReport)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-print-none"
+                                            onclick="openSignModal('team1', 'Đại diện Đội 1')">
+                                        <i class="fa-solid fa-pen me-1"></i> Ký tên
+                                    </button>
+                                }
+                                else { <span class="text-muted">Chưa ký</span> }
                             }
                         </div>
                     </div>
@@ -365,10 +379,14 @@
                             }
                             else
                             {
-                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-print-none"
-                                        onclick="openSignModal('team2', 'Đại diện Đội 2')">
-                                    <i class="fa-solid fa-pen me-1"></i> Ký tên
-                                </button>
+                                @if (canCreateReport)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-print-none"
+                                            onclick="openSignModal('team2', 'Đại diện Đội 2')">
+                                        <i class="fa-solid fa-pen me-1"></i> Ký tên
+                                    </button>
+                                }
+                                else { <span class="text-muted">Chưa ký</span> }
                             }
                         </div>
                     </div>
@@ -385,10 +403,14 @@
                             }
                             else
                             {
-                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-print-none"
-                                        onclick="openSignModal('secretary', 'Thư ký trận đấu')">
-                                    <i class="fa-solid fa-pen me-1"></i> Ký tên
-                                </button>
+                                @if (canCreateReport)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-print-none"
+                                            onclick="openSignModal('secretary', 'Thư ký trận đấu')">
+                                        <i class="fa-solid fa-pen me-1"></i> Ký tên
+                                    </button>
+                                }
+                                else { <span class="text-muted">Chưa ký</span> }
                             }
                         </div>
                     </div>
@@ -405,10 +427,14 @@
                             }
                             else
                             {
-                                <button type="button" class="btn btn-sm btn-warning text-dark fw-semibold rounded-pill px-2.5 py-1 d-print-none"
-                                        onclick="openSignModal('referee', 'Trọng tài chính')">
-                                    <i class="fa-solid fa-pen me-1"></i> Ký tên
-                                </button>
+                                @if (canCreateReport)
+                                {
+                                    <button type="button" class="btn btn-sm btn-warning text-dark fw-semibold rounded-pill px-2.5 py-1 d-print-none"
+                                            onclick="openSignModal('referee', 'Trọng tài chính')">
+                                        <i class="fa-solid fa-pen me-1"></i> Ký tên
+                                    </button>
+                                }
+                                else { <span class="text-muted">Chưa ký</span> }
                             }
                         </div>
                     </div>
@@ -419,6 +445,8 @@
 </div>
 
 <!-- Modal Ký Điện Tử -->
+@if (canCreateReport)
+{
 <div class="modal fade" id="signModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -447,6 +475,7 @@
         </div>
     </div>
 </div>
+}
 
 @section Styles {
     <style>
@@ -480,7 +509,8 @@
         let signModal = null;
 
         $(document).ready(function () {
-            signModal = new bootstrap.Modal(document.getElementById('signModal'));
+            const signModalElement = document.getElementById('signModal');
+            if (signModalElement) signModal = new bootstrap.Modal(signModalElement);
 
             $('#signForm').on('submit', function (e) {
                 e.preventDefault();

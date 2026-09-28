@@ -126,6 +126,7 @@ namespace API.Areas.TrongTai.Controllers
             }
 
             ViewBag.CurrentMatch = currentMatch;
+            ViewBag.CanRecordResult = await CanRecordMatchAsync(currentMatch);
 
             CauHinhTheThucDto? matchFormat = null;
             if (currentMatch != null)
@@ -194,7 +195,7 @@ namespace API.Areas.TrongTai.Controllers
                 return Json(new { success = false, message = "Không tìm thấy trận đấu." });
             }
 
-            if (!await CanAccessMatchAsync(match)) return Forbid();
+            if (!await CanRecordMatchAsync(match)) return Forbid();
 
             var matchFormat = await _cauHinhTheThucService.GetConfigByTranDauIdAsync(match.Id);
             if (matchFormat?.CoThePhat != true && dto.Events?.Any(IsPenaltyCardEvent) == true)
@@ -286,7 +287,7 @@ namespace API.Areas.TrongTai.Controllers
             {
                 var match = await _tranDauService.GetByIdAsync(dto.TranDauId);
                 if (match == null) return NotFound(new { success = false, message = "Không tìm thấy trận đấu." });
-                if (!await CanAccessMatchAsync(match)) return Forbid();
+                if (!await CanRecordMatchAsync(match)) return Forbid();
 
                 var matchFormat = await _cauHinhTheThucService.GetConfigByTranDauIdAsync(match.Id);
                 if (matchFormat?.CoThePhat != true && dto.Events?.Any(IsPenaltyCardEvent) == true)

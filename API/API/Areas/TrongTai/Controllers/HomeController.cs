@@ -72,6 +72,10 @@ namespace API.Areas.TrongTai.Controllers
             var selectedScope = canBrowseAll && filterScope == "my_matches" ? "my_matches" : (canBrowseAll ? "all" : "my_matches");
             var displayMatches = selectedScope == "all" ? allMatches : assignedMatchesForTournament;
 
+            ViewBag.CanRecordMatchIds = currentRef == null
+                ? new HashSet<int>()
+                : await _refereeAccessService.GetHeadRefereeMatchIdsAsync(currentRef.Id, displayMatches.Select(match => match.Id).ToList());
+
             ViewBag.FilterScope = selectedScope;
             ViewBag.AllMatchesCount = canBrowseAll ? allMatches.Count : assignedMatchesForTournament.Count;
             ViewBag.MyAssignedCount = assignedMatchesForTournament.Count;
@@ -97,7 +101,7 @@ namespace API.Areas.TrongTai.Controllers
                 return Json(new { success = false, message = "Không tìm thấy trận đấu." });
             }
 
-            if (!await CanAccessMatchAsync(match))
+            if (!await CanRecordMatchAsync(match))
             {
                 return Forbid();
             }

@@ -145,6 +145,63 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
+        /// Kiểm tra trọng tài có đang giữ vai trò trọng tài chính trong trận đấu hay không.
+        /// </summary>
+        /// <param name="refereeId">ID hồ sơ trọng tài.</param>
+        /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
+        /// <returns>True nếu trọng tài được phân công chính vào trận đấu còn hiệu lực.</returns>
+        public async Task<bool> IsHeadRefereeAssignedToMatchAsync(int refereeId, int tranDauId)
+        {
+            if (refereeId <= 0 || tranDauId <= 0) return false;
+
+            var match = (await _unitOfWork.TranDaus.FindAsync(item =>
+                item.Id == tranDauId && item.IsDeleted != true)).FirstOrDefault();
+            if (match == null) return false;
+
+            var gdm = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(item =>
+                item.Id == match.GiaiDauMonTheThaoId && item.IsDeleted != true)).FirstOrDefault();
+            if (gdm == null) return false;
+
+            var tournament = (await _unitOfWork.GiaiDaus.FindAsync(item =>
+                item.Id == gdm.GiaiDauId && item.IsDeleted != true)).FirstOrDefault();
+            if (tournament == null) return false;
+
+            var assignments = await _unitOfWork.PhanCongTrongTais.FindAsync(assignment =>
+                assignment.TranDauId == tranDauId &&
+                assignment.TrongTaiId == refereeId &&
+                assignment.IsDeleted != true);
+
+            return assignments.Any(assignment =>
+                string.Equals(NormalizeRefereeRole(assignment.VaiTro), "Trọng tài chính", StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Lấy các trận trong danh sách mà trọng tài được phân công ở vai trò trọng tài chính.
+        /// </summary>
+        /// <param name="refereeId">ID hồ sơ trọng tài.</param>
+        /// <param name="tranDauIds">Danh sách ID trận cần kiểm tra.</param>
+        /// <returns>Tập ID trận có phân công trọng tài chính còn hiệu lực.</returns>
+        public async Task<HashSet<int>> GetHeadRefereeMatchIdsAsync(int refereeId, IReadOnlyCollection<int> tranDauIds)
+        {
+            if (refereeId <= 0 || tranDauIds == null || tranDauIds.Count == 0)
+            {
+                return new HashSet<int>();
+            }
+
+            var matchIds = tranDauIds.Distinct().ToList();
+            var assignments = await _unitOfWork.PhanCongTrongTais.FindAsync(assignment =>
+                matchIds.Contains(assignment.TranDauId) &&
+                assignment.TrongTaiId == refereeId &&
+                assignment.IsDeleted != true);
+
+            return assignments
+                .Where(assignment => string.Equals(
+                    NormalizeRefereeRole(assignment.VaiTro), "Trọng tài chính", StringComparison.OrdinalIgnoreCase))
+                .Select(assignment => assignment.TranDauId)
+                .ToHashSet();
+        }
+
+        /// <summary>
         /// Kiểm tra trận đấu có thuộc giải đấu được chỉ định hay không.
         /// </summary>
         /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>

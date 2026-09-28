@@ -7,6 +7,7 @@
     int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
     int? selectedGiaiDauMonTheThaoId = ViewBag.SelectedGiaiDauMonTheThaoId as int?;
     var matchFormat = ViewBag.MatchFormat as CauHinhTheThucDto;
+    bool canRecordResult = ViewBag.CanRecordResult == true;
 
     int initScore1 = ViewBag.Score1 is int s1 ? s1 : (Model?.TySoDoi1 ?? 0);
     int initScore2 = ViewBag.Score2 is int s2 ? s2 : (Model?.TySoDoi2 ?? 0);
@@ -26,7 +27,6 @@
     bool hasPenaltyCards = matchFormat?.CoThePhat == true;
     bool hasExtraTime = matchFormat?.CoHiepPhu == true;
     bool hasPenalty = matchFormat?.CoPenalty == true;
-    bool allowSharedPerformanceRank = matchFormat?.ChoPhepDongHangThanhTich != false;
     bool secondaryMetricSmallerIsBetter = matchFormat?.TieuChiPhuCangNhoCangTot != false;
     int? initExtraTime1 = ViewBag.ExtraTimeScore1 as int?;
     int? initExtraTime2 = ViewBag.ExtraTimeScore2 as int?;
@@ -144,6 +144,13 @@
     }
     else
     {
+        @if (!canRecordResult)
+        {
+            <div class="alert alert-info mb-0" role="status">
+                <i class="fa-solid fa-eye me-1"></i> Bạn được phân công với vai trò trọng tài phụ. Màn hình này chỉ cho phép xem kết quả và diễn biến.
+            </div>
+        }
+        <fieldset disabled="@(!canRecordResult)" class="border-0 p-0 m-0">
         <!-- Bảng Thông Tin Cấu Hình Thể Thức & Nhánh Thi Đấu -->
         <div class="card-custom p-3 bg-light border-start border-4 border-warning">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
@@ -275,10 +282,7 @@
                                 <th style="width: 70px;">Làn</th>
                                 <th class="text-start">Vận Động Viên & Đơn Vị</th>
                                 <th style="width: 200px;">Thành Tích (@(matchFormat?.DonViThanhTich ?? "giây"))</th>
-                                @if (!allowSharedPerformanceRank)
-                                {
-                                    <th style="width: 180px;">@(matchFormat?.TenTieuChiPhuThanhTich ?? "Chỉ số phụ") (@(secondaryMetricSmallerIsBetter ? "nhỏ hơn tốt hơn" : "lớn hơn tốt hơn"))</th>
-                                }
+                                <th style="width: 180px;">@(matchFormat?.TenTieuChiPhuThanhTich ?? "Chỉ số phụ") (@(secondaryMetricSmallerIsBetter ? "nhỏ hơn tốt hơn" : "lớn hơn tốt hơn"))</th>
                                 <th style="width: 220px;">Trạng Thái Xuất Phát</th>
                                 <th style="width: 110px;">Xếp Hạng</th>
                                 <th>Kỷ Lục / Ghi Chú</th>
@@ -305,14 +309,11 @@
                                                    value="@(savedHeatResult?.GiaTri?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
                                                    onchange="onLaneTimeChanged(this)" />
                                         </td>
-                                        @if (!allowSharedPerformanceRank)
-                                        {
-                                            <td>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-center font-monospace heat-tiebreak-input"
-                                                       placeholder="@(matchFormat?.TenTieuChiPhuThanhTich ?? "Nhập chỉ số phụ")"
-                                                       value="@(savedHeatResult?.GiaTriPhu?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" onchange="recalculateHeatRanks()" />
-                                            </td>
-                                        }
+                                        <td>
+                                            <input type="number" step="0.01" class="form-control form-control-sm text-center font-monospace heat-tiebreak-input"
+                                                   placeholder="@(matchFormat?.TenTieuChiPhuThanhTich ?? "Nhập chỉ số phụ")"
+                                                   value="@(savedHeatResult?.GiaTriPhu?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" onchange="recalculateHeatRanks()" />
+                                        </td>
                                         <td>
                                             <div class="btn-group btn-group-sm w-100" role="group">
                                                 <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_ok_@tp.Id" value="ThamGia" @(savedHeatResult?.TrangThai == null || savedHeatResult.TrangThai == "ThamGia" ? "checked" : "") onchange="onLaneStatusChanged(@tp.Id)" />
@@ -340,7 +341,7 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="@(allowSharedPerformanceRank ? 6 : 7)" class="text-muted py-4">Chưa có danh sách VĐV trong lượt thi này.</td>
+                                    <td colspan="7" class="text-muted py-4">Chưa có danh sách VĐV trong lượt thi này.</td>
                                 </tr>
                             }
                         </tbody>
@@ -716,10 +717,13 @@
                 </button>
             </div>
         </div>
+        </fieldset>
     }
 </div>
 
 <!-- Modal Thêm Sự Kiện -->
+@if (canRecordResult)
+{
 <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -772,6 +776,7 @@
         </div>
     </div>
 </div>
+}
 
 @section Scripts {
     <script>
@@ -812,7 +817,8 @@
         let eventModal = null;
 
         $(document).ready(function () {
-            eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+            const eventModalElement = document.getElementById('eventModal');
+            if (eventModalElement) eventModal = new bootstrap.Modal(eventModalElement);
             renderMatchClock();
             setInterval(renderMatchClock, 1000);
 
@@ -1193,7 +1199,6 @@
 
             const kyLuc = sportConfig?.KyLucHienTai || null;
             const cangNhoCangTot = (sportConfig?.TieuChiXepHangThanhTich !== 'CangLonCangTot');
-            const allowSharedRank = sportConfig?.ChoPhepDongHangThanhTich !== false;
             const secondarySmallerIsBetter = sportConfig?.TieuChiPhuCangNhoCangTot !== false;
 
             const validItems = [];
@@ -1215,36 +1220,30 @@
             });
 
             const unresolvedPrimaryValues = new Set();
-            if (!allowSharedRank) {
-                const primaryGroups = new Map();
-                validItems.forEach(item => {
-                    const group = primaryGroups.get(item.val) || [];
-                    group.push(item);
-                    primaryGroups.set(item.val, group);
-                });
-                primaryGroups.forEach((group, primary) => {
-                    if (group.length > 1 && (group.some(item => item.secondary === null) ||
-                        new Set(group.map(item => item.secondary)).size !== group.length)) {
-                        unresolvedPrimaryValues.add(primary);
-                    }
-                });
-            }
+            const primaryGroups = new Map();
+            validItems.forEach(item => {
+                const group = primaryGroups.get(item.val) || [];
+                group.push(item);
+                primaryGroups.set(item.val, group);
+            });
+            primaryGroups.forEach((group, primary) => {
+                if (group.length > 1 && (group.some(item => item.secondary === null) ||
+                    new Set(group.map(item => item.secondary)).size !== group.length)) {
+                    unresolvedPrimaryValues.add(primary);
+                }
+            });
 
             validItems.sort((a, b) => {
                 const primaryOrder = cangNhoCangTot ? (a.val - b.val) : (b.val - a.val);
-                if (primaryOrder !== 0 || allowSharedRank) return primaryOrder;
+                if (primaryOrder !== 0) return primaryOrder;
                 if (a.secondary === null) return b.secondary === null ? 0 : 1;
                 if (b.secondary === null) return -1;
                 return secondarySmallerIsBetter ? a.secondary - b.secondary : b.secondary - a.secondary;
             });
 
             validItems.forEach((item, idx) => {
-                const previous = idx > 0 ? validItems[idx - 1] : null;
-                const tiedPrimary = previous && previous.val === item.val;
                 const unresolvedSecondaryTie = unresolvedPrimaryValues.has(item.val);
-                const rank = allowSharedRank && tiedPrimary
-                    ? Number(previous.row.find('.lane-rank-badge').data('rank') || idx)
-                    : idx + 1;
+                const rank = idx + 1;
                 const $badge = item.row.find('.lane-rank-badge');
                 if (unresolvedSecondaryTie) {
                     $badge.text('Cần chỉ số phụ').removeClass('bg-secondary bg-success bg-warning bg-primary text-dark text-white').addClass('bg-danger text-white').removeData('rank');
@@ -1371,6 +1370,39 @@
             return heatPayload;
         }
 
+        function validateHeatTieBreaks() {
+            const primaryGroups = new Map();
+            $('#bodyHeatLanes tr').each(function () {
+                const $row = $(this);
+                const tpId = $row.data('tp-id');
+                const status = $row.find(`input[name="laneStatus_${tpId}"]:checked`).val() || 'ThamGia';
+                const primary = parseFloat($row.find('.heat-time-input').val().trim());
+                if (status !== 'ThamGia' || !Number.isFinite(primary) || primary <= 0) return;
+
+                const rawSecondary = $row.find('.heat-tiebreak-input').val();
+                const secondary = rawSecondary !== undefined && String(rawSecondary).trim() !== ''
+                    ? Number(rawSecondary)
+                    : null;
+                const group = primaryGroups.get(primary) || [];
+                group.push(secondary);
+                primaryGroups.set(primary, group);
+            });
+
+            const hasUnresolvedTie = Array.from(primaryGroups.values()).some(group =>
+                group.length > 1 && (group.some(value => value === null || !Number.isFinite(value)) ||
+                    new Set(group).size !== group.length));
+            if (hasUnresolvedTie) {
+                recalculateHeatRanks();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Chưa phân định được thứ hạng',
+                    text: 'Có VĐV bằng thành tích chính. Hãy nhập chỉ số phụ khác nhau cho từng VĐV trước khi chốt lượt thi.'
+                });
+                return false;
+            }
+            return true;
+        }
+
         function saveDraftResult() {
             if (!ensureNoSetEdit()) return;
             const payload = {
@@ -1418,6 +1450,7 @@
 
         function completeMatchFinal() {
             if (!ensureNoSetEdit()) return;
+            if (isHeatMatch && !validateHeatTieBreaks()) return;
             let winnerVal = $('#selectWinner').val();
 
             if (!isHeatMatch && !isSetSport) {
