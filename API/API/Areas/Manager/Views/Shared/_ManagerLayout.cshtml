@@ -261,6 +261,10 @@
         .manager-main .table {
             --bs-table-border-color: #e2eaf4;
         }
+
+        .cursor-pointer {
+            cursor: pointer !important;
+        }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -298,10 +302,7 @@
                 <i class="fa-solid fa-trophy"></i>
                 <span>Quản Lý Giải Đấu</span>
             </a>
-            <a href="/Manager/PhanCong" class="manager-nav-link @(currentPath.StartsWith("/manager/phancong") ? "active" : "")">
-                <i class="fa-solid fa-users-gear"></i>
-                <span>Phân Công TT, Môn & TK</span>
-            </a>
+          
 
             <div class="manager-nav-header mt-3">Điều hành thi đấu</div>
             <a href="/Manager/DangKyThiDau" class="manager-nav-link @(currentPath.StartsWith("/manager/dangkythidau") ? "active" : "")">

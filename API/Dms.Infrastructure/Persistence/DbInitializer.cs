@@ -46,6 +46,41 @@ namespace Dms.Infrastructure.Persistence
                     BEGIN
                         ALTER TABLE GiaiDauMonTheThao ADD NguoiDieuHanhId INT NULL;
                     END
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('CauHinhTheThucThiDau') AND name = 'ThoiLuongTranPhut')
+                    BEGIN
+                        ALTER TABLE CauHinhTheThucThiDau ADD ThoiLuongTranPhut INT NOT NULL CONSTRAINT DF_CauHinhTheThucThiDau_ThoiLuongTranPhut DEFAULT (60);
+                    END
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('CauHinhTheThucThiDau') AND name = 'NghiGiuaTranPhut')
+                    BEGIN
+                        ALTER TABLE CauHinhTheThucThiDau ADD NghiGiuaTranPhut INT NOT NULL CONSTRAINT DF_CauHinhTheThucThiDau_NghiGiuaTranPhut DEFAULT (15);
+                    END
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('CauHinhTheThucThiDau') AND name = 'SoBang')
+                    BEGIN
+                        ALTER TABLE CauHinhTheThucThiDau ADD SoBang INT NOT NULL CONSTRAINT DF_CauHinhTheThucThiDau_SoBang DEFAULT (0);
+                    END
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('CauHinhTheThucThiDau') AND name = 'SoDoiMoiBang')
+                    BEGIN
+                        ALTER TABLE CauHinhTheThucThiDau ADD SoDoiMoiBang INT NOT NULL CONSTRAINT DF_CauHinhTheThucThiDau_SoDoiMoiBang DEFAULT (4);
+                    END
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('CauHinhTheThucThiDau') AND name = 'SoDoiMoiBangVaoVongTrong')
+                    BEGIN
+                        ALTER TABLE CauHinhTheThucThiDau ADD SoDoiMoiBangVaoVongTrong INT NOT NULL CONSTRAINT DF_CauHinhTheThucThiDau_SoDoiMoiBangVaoVongTrong DEFAULT (2);
+                    END
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('CauHinhTheThucThiDau') AND name = 'SoVongThi')
+                    BEGIN
+                        ALTER TABLE CauHinhTheThucThiDau ADD SoVongThi INT NOT NULL CONSTRAINT DF_CauHinhTheThucThiDau_SoVongThi DEFAULT (2);
+                    END
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('CauHinhTheThucThiDau') AND name = 'PhuongThucPhanNhom')
+                    BEGIN
+                        ALTER TABLE CauHinhTheThucThiDau ADD PhuongThucPhanNhom NVARCHAR(50) NOT NULL CONSTRAINT DF_CauHinhTheThucThiDau_PhuongThucPhanNhom DEFAULT ('random');
+                    END
                 ");
             }
             catch { }

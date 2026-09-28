@@ -57,18 +57,36 @@
 
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Ngày bắt đầu <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="ngayBatDau" required>
-                            <div class="invalid-feedback">Vui lòng chọn ngày bắt đầu.</div>
+                            <div class="input-group has-validation position-relative">
+                                <input type="text" class="form-control date-dmy-input bg-white" id="ngayBatDau" placeholder="dd/mm/yyyy" maxlength="10" required autocomplete="off">
+                                <span class="input-group-text bg-white cursor-pointer" onclick="openDatePicker('ngayBatDau')" title="Mở lịch chọn ngày">
+                                    <i class="fa-solid fa-calendar-days text-primary"></i>
+                                </span>
+                                <input type="date" class="date-native-picker" id="ngayBatDau_picker" tabindex="-1" aria-hidden="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; z-index: -1;">
+                                <div class="invalid-feedback">Vui lòng chọn ngày bắt đầu giải đấu.</div>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Ngày kết thúc <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="ngayKetThuc" required>
-                            <div class="invalid-feedback">Vui lòng chọn ngày kết thúc (phải sau ngày bắt đầu).</div>
+                            <div class="input-group has-validation position-relative">
+                                <input type="text" class="form-control date-dmy-input bg-white" id="ngayKetThuc" placeholder="dd/mm/yyyy" maxlength="10" required autocomplete="off">
+                                <span class="input-group-text bg-white cursor-pointer" onclick="openDatePicker('ngayKetThuc')" title="Mở lịch chọn ngày">
+                                    <i class="fa-solid fa-calendar-days text-primary"></i>
+                                </span>
+                                <input type="date" class="date-native-picker" id="ngayKetThuc_picker" tabindex="-1" aria-hidden="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; z-index: -1;">
+                                <div class="invalid-feedback">Vui lòng chọn ngày kết thúc giải đấu.</div>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Hạn nộp hồ sơ đăng ký <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="hanDangKy" required>
-                            <div class="invalid-feedback">Vui lòng chọn hạn đăng ký (phải trước hoặc bằng ngày bắt đầu).</div>
+                            <div class="input-group has-validation position-relative">
+                                <input type="text" class="form-control date-dmy-input bg-white" id="hanDangKy" placeholder="dd/mm/yyyy" maxlength="10" required autocomplete="off">
+                                <span class="input-group-text bg-white cursor-pointer" onclick="openDatePicker('hanDangKy')" title="Mở lịch chọn ngày">
+                                    <i class="fa-solid fa-calendar-days text-primary"></i>
+                                </span>
+                                <input type="date" class="date-native-picker" id="hanDangKy_picker" tabindex="-1" aria-hidden="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; z-index: -1;">
+                                <div class="invalid-feedback">Vui lòng chọn hạn nộp hồ sơ đăng ký.</div>
+                            </div>
                         </div>
 
                         <div class="col-12">
@@ -151,150 +169,180 @@
             </div>
 
             <!-- 4. Phân Công Nhân Sự Điều Hành Giải (Trưởng ban, Điều hành môn & Thư ký) -->
-            <div class="card card-custom mb-4" id="sectionPhanCong">
-                <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold text-dark mb-0">
-                        <i class="fa-solid fa-users-gear text-primary me-2"></i>4. Phân Công Nhân Sự Điều Hành Giải
-                    </h6>
-                    <small class="text-muted">Chỉ định Trưởng ban trọng tài, phân công Người điều hành môn và Thư ký ngay khi tạo giải</small>
+            <div class="card card-custom mb-4 shadow-sm" id="sectionPhanCong">
+                <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center text-white shadow-2xs" style="width: 38px; height: 38px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+                            <i class="fa-solid fa-users-gear fs-6"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0">
+                                4. Phân Công Nhân Sự Điều Hành Giải
+                            </h6>
+                            <small class="text-muted">Chỉ định Trưởng ban trọng tài, phân công Người điều hành môn và Thư ký ngay khi tạo giải</small>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-3 p-md-4 d-flex flex-column gap-4">
                     <!-- 4.1. Trưởng ban trọng tài -->
-                    <div class="p-3 bg-light rounded-3 mb-4 border">
-                        <label class="form-label fw-bold text-dark mb-1">
-                            <i class="fa-solid fa-user-shield text-warning me-1"></i> Trưởng Ban Trọng Tài Giải Đấu
-                        </label>
-                        <p class="text-muted small mb-2">Trọng tài được chọn sẽ làm Trưởng ban trọng tài, chịu trách nhiệm xếp lịch, phân công trọng tài và duyệt biên bản.</p>
-                        <select class="form-select" id="truongBanTrongTaiId">
-                            <option value="">-- Chưa chỉ định / Phân công sau --</option>
-                            @foreach (var tt in trongTais)
-                            {
-                                <option value="@tt.Id">@tt.HoTen (@tt.Ma) - @tt.CapBac</option>
-                            }
-                        </select>
+                    <div class="card border rounded-3 overflow-hidden shadow-2xs" style="border-color: #fde68a !important;">
+                        <div class="p-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2" style="background-color: #fffbeb; border-color: #fef3c7 !important;">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center shadow-2xs" style="width: 36px; height: 36px; background-color: #fef3c7; border: 1px solid #fde68a;">
+                                    <i class="fa-solid fa-user-shield text-warning"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">
+                                        Trưởng Ban Trọng Tài Giải Đấu
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.8rem;">Trọng tài được chọn sẽ làm Trưởng ban trọng tài, chịu trách nhiệm xếp lịch, phân công trọng tài và duyệt biên bản.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-white">
+                            <label class="form-label small fw-semibold text-secondary mb-1.5">
+                                <i class="fa-solid fa-user-check me-1 text-primary"></i>Chọn tài khoản trọng tài làm Trưởng ban (Tùy chọn):
+                            </label>
+                            <select class="form-select form-select-md shadow-2xs" id="truongBanTrongTaiId" style="border-color: #cbd5e1; font-weight: 500;">
+                                <option value="">-- Chưa chỉ định / Phân công sau --</option>
+                                @foreach (var tt in trongTais)
+                                {
+                                    <option value="@tt.Id">@tt.HoTen (@tt.Ma) - @tt.CapBac</option>
+                                }
+                            </select>
+                        </div>
                     </div>
 
                     <!-- 4.2. Phân công người điều hành theo danh mục môn -->
-                    <div class="mb-4">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <div>
-                                <h6 class="fw-bold text-dark mb-0">
-                                    <i class="fa-solid fa-volleyball text-success me-1"></i> Phân Công Người Điều Hành Môn (Tùy Chọn)
-                                </h6>
-                                <small class="text-muted">Gán tài khoản Người điều hành môn theo danh mục môn thi đấu</small>
+                    <div class="card border rounded-3 overflow-hidden shadow-2xs" style="border-color: #bbf7d0 !important;">
+                        <div class="p-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2" style="background-color: #f0fdf4; border-color: #dcfce7 !important;">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center shadow-2xs" style="width: 36px; height: 36px; background-color: #dcfce7; border: 1px solid #bbf7d0;">
+                                    <i class="fa-solid fa-volleyball text-success"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">
+                                        Phân Công Người Điều Hành Môn (Tùy Chọn)
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.8rem;">Gán tài khoản Người điều hành môn theo danh mục môn thi đấu</small>
+                                </div>
                             </div>
                         </div>
-                        @{
-                            var categoriesFromMons = monTheThaos
-                                .Where(m => m.DanhMucId > 0 && !string.IsNullOrEmpty(m.TenDanhMuc))
-                                .GroupBy(m => new { m.DanhMucId, m.TenDanhMuc })
-                                .Select(g => new { DanhMucId = g.Key.DanhMucId, TenDanhMuc = g.Key.TenDanhMuc, Mons = g.Select(x => x.Ten).ToList() })
-                                .ToList();
-                        }
-                        @if (categoriesFromMons.Any())
-                        {
-                            <div class="table-responsive border rounded">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light small">
-                                        <tr>
-                                            <th class="ps-3" style="width: 220px;">Danh Mục Môn</th>
-                                            <th>Các Môn Trong Hệ Thống</th>
-                                            <th style="width: 290px;">Người Điều Hành Phụ Trách</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody style="font-size: 13px;">
-                                        @foreach (var cat in categoriesFromMons)
-                                        {
-                                            <tr>
-                                                <td class="ps-3 fw-bold text-dark">@cat.TenDanhMuc</td>
-                                                <td>
-                                                    <div class="d-flex flex-wrap gap-1">
-                                                        @foreach (var m in cat.Mons)
-                                                        {
-                                                            <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">@m</span>
-                                                        }
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <select class="form-select form-select-sm sel-coordinator" data-danhmuc-id="@cat.DanhMucId">
-                                                        <option value="">-- Chưa gán người điều hành --</option>
-                                                        @foreach (var coord in sportCoordinatorUsers)
-                                                        {
-                                                            <option value="@coord.Id">@coord.Ma - @coord.FullName (@coord.UserName)</option>
-                                                        }
-                                                    </select>
-                                                </td>
+                        <div class="p-3 bg-white">
+                            @{
+                                var categoriesFromMons = monTheThaos
+                                    .Where(m => m.DanhMucId > 0 && !string.IsNullOrEmpty(m.TenDanhMuc))
+                                    .GroupBy(m => new { m.DanhMucId, m.TenDanhMuc })
+                                    .Select(g => new { DanhMucId = g.Key.DanhMucId, TenDanhMuc = g.Key.TenDanhMuc })
+                                    .ToList();
+                            }
+                            @if (categoriesFromMons.Any())
+                            {
+                                <div class="table-responsive border rounded-3 overflow-hidden shadow-2xs">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                            <tr class="text-muted small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                                                <th class="ps-3 py-2.5">Danh Mục Môn</th>
+                                                <th class="py-2.5" style="width: 420px;">Người Điều Hành Phụ Trách</th>
                                             </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="text-muted small bg-light p-3 rounded">Chưa có danh mục môn thể thao nào trên hệ thống.</div>
-                        }
+                                        </thead>
+                                        <tbody style="font-size: 13px;">
+                                            @foreach (var cat in categoriesFromMons)
+                                            {
+                                                <tr>
+                                                    <td class="ps-3 py-2.5 fw-bold text-dark">@cat.TenDanhMuc</td>
+                                                    <td class="py-2.5">
+                                                        <select class="form-select form-select-sm sel-coordinator shadow-2xs" data-danhmuc-id="@cat.DanhMucId" style="border-color: #cbd5e1;">
+                                                            <option value="">-- Chưa gán người điều hành --</option>
+                                                            @foreach (var coord in sportCoordinatorUsers)
+                                                            {
+                                                                <option value="@coord.Id">@coord.Ma - @coord.FullName (@coord.UserName)</option>
+                                                            }
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-4 bg-light rounded-3 border border-dashed text-muted">
+                                    <i class="fa-solid fa-volleyball fa-2x mb-2 text-secondary opacity-50"></i>
+                                    <div class="fw-semibold">Chưa có danh mục môn thể thao nào trên hệ thống</div>
+                                </div>
+                            }
+                        </div>
                     </div>
 
                     <!-- 4.3. Phân công thư ký giải đấu -->
-                    <div>
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <div>
-                                <h6 class="fw-bold text-dark mb-0">
-                                    <i class="fa-solid fa-user-pen text-info me-1"></i> Phân Công Thư Ký Cho Giải Đấu
-                                </h6>
-                                <small class="text-muted">Tích chọn các thư ký được quyền quản lý và tác nghiệp giải đấu này sau khi đăng nhập</small>
+                    <div class="card border rounded-3 overflow-hidden shadow-2xs" style="border-color: #bfdbfe !important;">
+                        <div class="p-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2" style="background-color: #eff6ff; border-color: #dbeafe !important;">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center shadow-2xs" style="width: 36px; height: 36px; background-color: #dbeafe; border: 1px solid #bfdbfe;">
+                                    <i class="fa-solid fa-user-pen text-primary"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">
+                                        Phân Công Thư Ký Cho Giải Đấu
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.8rem;">Tích chọn các thư ký được quyền quản lý và tác nghiệp giải đấu này sau khi đăng nhập</small>
+                                </div>
                             </div>
-                            <span class="badge bg-light text-secondary border">
-                                Đã chọn: <span id="selectedSecretaryCount" class="fw-bold text-primary">0</span> thư ký
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1.5 rounded-pill fw-semibold">
+                                <i class="fa-solid fa-users me-1"></i>Đã chọn: <span id="selectedSecretaryCount" class="fw-bold text-primary">0</span> thư ký
                             </span>
                         </div>
-
-                        @if (!secretaryAssignments.Any())
-                        {
-                            <div class="text-center py-3 text-muted bg-light rounded-3 small">
-                                Chưa có hồ sơ thư ký hoạt động trong hệ thống.
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="table-responsive border rounded mb-2" style="max-height: 280px; overflow-y: auto;">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light small sticky-top">
-                                        <tr>
-                                            <th class="text-center ps-2" style="width: 50px;">
-                                                <input type="checkbox" class="form-check-input" id="chkAllSecretaries" onchange="toggleSelectAllSecretaries(this)">
-                                            </th>
-                                            <th>Thư Ký</th>
-                                            <th>Chức Vụ / Đơn Vị</th>
-                                            <th>Liên Hệ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody style="font-size: 13px;">
-                                        @foreach (var s in secretaryAssignments)
-                                        {
-                                            <tr>
-                                                <td class="text-center ps-2">
-                                                    <input type="checkbox" class="form-check-input chk-secretary" value="@s.ThuKyId" onchange="updateSelectedSecretaryCount()">
-                                                </td>
-                                                <td>
-                                                    <div class="fw-bold text-dark">@s.HoTen</div>
-                                                    <small class="text-muted font-monospace">Mã: @s.Ma</small>
-                                                </td>
-                                                <td>
-                                                    <div>@(s.ChucVu ?? "-")</div>
-                                                    <small class="text-muted">@(s.DonViCongTac ?? "-")</small>
-                                                </td>
-                                                <td>
-                                                    <div>@(s.SoDienThoai ?? "-")</div>
-                                                    <small class="text-muted">@(s.Email ?? "-")</small>
-                                                </td>
+                        <div class="p-3 bg-white">
+                            @if (!secretaryAssignments.Any())
+                            {
+                                <div class="text-center py-4 bg-light rounded-3 border border-dashed text-muted">
+                                    <i class="fa-solid fa-clipboard-user fa-2x mb-2 text-secondary opacity-50"></i>
+                                    <div class="fw-semibold">Chưa có hồ sơ thư ký hoạt động trong hệ thống</div>
+                                    <small class="text-muted">Bạn có thể tạo hồ sơ thư ký trong mục Quản lý Thư ký trước khi phân công.</small>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive border rounded-3 overflow-hidden shadow-2xs mb-2" style="max-height: 280px; overflow-y: auto;">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="sticky-top" style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                            <tr class="text-muted small fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                                                <th class="text-center ps-2 py-2.5" style="width: 50px;">
+                                                    <input type="checkbox" class="form-check-input cursor-pointer" id="chkAllSecretaries" onchange="toggleSelectAllSecretaries(this)" title="Chọn tất cả">
+                                                </th>
+                                                <th class="py-2.5">Thư Ký</th>
+                                                <th class="py-2.5">Chức Vụ / Đơn Vị</th>
+                                                <th class="py-2.5">Liên Hệ</th>
                                             </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
+                                        </thead>
+                                        <tbody style="font-size: 13px;">
+                                            @foreach (var s in secretaryAssignments)
+                                            {
+                                                <tr>
+                                                    <td class="text-center ps-2 py-2.5">
+                                                        <input type="checkbox" class="form-check-input chk-secretary cursor-pointer" value="@s.ThuKyId" onchange="updateSelectedSecretaryCount()">
+                                                    </td>
+                                                    <td class="py-2.5">
+                                                        <div class="fw-bold text-dark">@s.HoTen</div>
+                                                        <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.7rem;">Mã: @s.Ma</span>
+                                                    </td>
+                                                    <td class="py-2.5">
+                                                        <div class="text-dark">@(s.ChucVu ?? "-")</div>
+                                                        <small class="text-muted">@(s.DonViCongTac ?? "-")</small>
+                                                    </td>
+                                                    <td class="py-2.5">
+                                                        <div class="text-dark"><i class="fa-solid fa-phone me-1 text-muted" style="font-size: 11px;"></i>@(s.SoDienThoai ?? "-")</div>
+                                                        <small class="text-muted"><i class="fa-solid fa-envelope me-1 text-muted" style="font-size: 11px;"></i>@(s.Email ?? "-")</small>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
@@ -438,6 +486,48 @@
                 $('.chk-mon').prop('checked', false).closest('.form-check').removeClass('border-primary bg-primary-subtle');
             });
 
+            // Tự động định dạng ngày trước tháng sau (dd/mm/yyyy) khi gõ
+            $('.date-dmy-input').on('input', function () {
+                let v = $(this).val().replace(/\D/g, '').slice(0, 8);
+                if (v.length >= 5) {
+                    $(this).val(`${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4)}`);
+                } else if (v.length >= 3) {
+                    $(this).val(`${v.slice(0, 2)}/${v.slice(2)}`);
+                } else {
+                    $(this).val(v);
+                }
+
+                if (v.length === 8) {
+                    const d = v.slice(0, 2), m = v.slice(2, 4), y = v.slice(4);
+                    $(this).closest('.input-group').find('.date-native-picker').val(`${y}-${m}-${d}`);
+                }
+
+                if ($('#ngayBatDau.is-invalid, #ngayKetThuc.is-invalid, #hanDangKy.is-invalid').length > 0) {
+                    validateDateFields(true);
+                }
+            });
+
+            // Đồng bộ ngày dd/mm/yyyy khi chọn từ popup lịch
+            $('.date-native-picker').on('change', function () {
+                const iso = $(this).val();
+                if (iso) {
+                    const parts = iso.split('-');
+                    if (parts.length === 3) {
+                        const dmy = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                        $(this).closest('.input-group').find('.date-dmy-input').val(dmy);
+                    }
+                }
+                if ($('#ngayBatDau.is-invalid, #ngayKetThuc.is-invalid, #hanDangKy.is-invalid').length > 0) {
+                    validateDateFields(true);
+                }
+            });
+
+            $('#ten, #ma').on('input blur', function () {
+                if ($(this).val().trim()) {
+                    $(this).removeClass('is-invalid').addClass('is-valid');
+                }
+            });
+
             // Thêm 1 dòng điều lệ mặc định
             addDieuLeRow('Điều lệ chung', 'Quy định về đối tượng, điều kiện tham gia và thể thức tính điểm');
 
@@ -532,6 +622,197 @@
             });
         }
 
+        function openDatePicker(id) {
+            const el = document.getElementById(id + '_picker');
+            if (el && typeof el.showPicker === 'function') {
+                el.showPicker();
+            }
+        }
+
+        function setElementValidation($elem, isValid, errorText) {
+            const $feedback = $elem.siblings('.invalid-feedback');
+            if (isValid) {
+                $elem.removeClass('is-invalid').addClass('is-valid');
+            } else {
+                $elem.removeClass('is-valid').addClass('is-invalid');
+                if (errorText) {
+                    $feedback.text(errorText);
+                }
+            }
+        }
+
+        function clearElementValidation($elem) {
+            $elem.removeClass('is-invalid is-valid');
+        }
+
+        function getTodayIsoString() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function parseDateDmy(str) {
+            if (!str || typeof str !== 'string') return null;
+            const parts = str.trim().split(/[\/\-\.]/);
+            if (parts.length !== 3) return null;
+            const d = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            const y = parseInt(parts[2], 10);
+            if (isNaN(d) || isNaN(m) || isNaN(y) || y < 1900 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31) return null;
+
+            const dateObj = new Date(y, m - 1, d);
+            if (dateObj.getFullYear() !== y || (dateObj.getMonth() + 1) !== m || dateObj.getDate() !== d) return null;
+
+            const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            return { dateObj, iso };
+        }
+
+        function validateDateFields(showFeedback = true) {
+            const $nbd = $('#ngayBatDau');
+            const $nkt = $('#ngayKetThuc');
+            const $hdk = $('#hanDangKy');
+
+            const strNbd = $nbd.val() ? $nbd.val().trim() : '';
+            const strNkt = $nkt.val() ? $nkt.val().trim() : '';
+            const strHdk = $hdk.val() ? $hdk.val().trim() : '';
+
+            const parsedNbd = parseDateDmy(strNbd);
+            const parsedNkt = parseDateDmy(strNkt);
+            const parsedHdk = parseDateDmy(strHdk);
+
+            const todayStr = getTodayIsoString();
+
+            let isValid = true;
+            let firstErrorElem = null;
+            let errorMessage = '';
+
+            if (showFeedback) {
+                clearElementValidation($nbd);
+                clearElementValidation($nkt);
+                clearElementValidation($hdk);
+            }
+
+            // 1. Kiểm tra Hạn nộp hồ sơ đăng ký
+            if (!strHdk) {
+                if (showFeedback) {
+                    isValid = false;
+                    const msg = 'Vui lòng chọn hạn nộp hồ sơ đăng ký.';
+                    if (!errorMessage) errorMessage = msg;
+                    setElementValidation($hdk, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $hdk;
+                }
+            } else if (!parsedHdk) {
+                if (showFeedback) {
+                    isValid = false;
+                    const msg = 'Hạn nộp hồ sơ không đúng định dạng (dd/mm/yyyy).';
+                    if (!errorMessage) errorMessage = msg;
+                    setElementValidation($hdk, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $hdk;
+                }
+            } else if (parsedHdk.iso <= todayStr) {
+                isValid = false;
+                const msg = 'Hạn nộp hồ sơ đăng ký phải lớn hơn ngày hiện tại.';
+                if (!errorMessage) errorMessage = msg;
+                if (showFeedback) {
+                    setElementValidation($hdk, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $hdk;
+                }
+            } else {
+                if (showFeedback) setElementValidation($hdk, true);
+            }
+
+            // 2. Kiểm tra Ngày bắt đầu
+            if (!strNbd) {
+                if (showFeedback) {
+                    isValid = false;
+                    const msg = 'Vui lòng chọn ngày bắt đầu giải đấu.';
+                    if (!errorMessage) errorMessage = msg;
+                    setElementValidation($nbd, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $nbd;
+                }
+            } else if (!parsedNbd) {
+                if (showFeedback) {
+                    isValid = false;
+                    const msg = 'Ngày bắt đầu không đúng định dạng (dd/mm/yyyy).';
+                    if (!errorMessage) errorMessage = msg;
+                    setElementValidation($nbd, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $nbd;
+                }
+            } else if (parsedNbd.iso <= todayStr) {
+                isValid = false;
+                const msg = 'Ngày bắt đầu phải lớn hơn ngày hiện tại.';
+                if (!errorMessage) errorMessage = msg;
+                if (showFeedback) {
+                    setElementValidation($nbd, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $nbd;
+                }
+            } else if (parsedHdk && parsedHdk.iso >= parsedNbd.iso) {
+                isValid = false;
+                const msg = 'Hạn nộp hồ sơ đăng ký phải nhỏ hơn ngày bắt đầu giải đấu.';
+                if (!errorMessage) errorMessage = msg;
+                if (showFeedback) {
+                    setElementValidation($hdk, false, msg);
+                    setElementValidation($nbd, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $hdk;
+                }
+            } else {
+                if (showFeedback && parsedNbd.iso > todayStr && (!parsedHdk || parsedHdk.iso < parsedNbd.iso)) {
+                    setElementValidation($nbd, true);
+                }
+            }
+
+            // 3. Kiểm tra Ngày kết thúc
+            if (!strNkt) {
+                if (showFeedback) {
+                    isValid = false;
+                    const msg = 'Vui lòng chọn ngày kết thúc giải đấu.';
+                    if (!errorMessage) errorMessage = msg;
+                    setElementValidation($nkt, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $nkt;
+                }
+            } else if (!parsedNkt) {
+                if (showFeedback) {
+                    isValid = false;
+                    const msg = 'Ngày kết thúc không đúng định dạng (dd/mm/yyyy).';
+                    if (!errorMessage) errorMessage = msg;
+                    setElementValidation($nkt, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $nkt;
+                }
+            } else if (parsedNkt.iso <= todayStr) {
+                isValid = false;
+                const msg = 'Ngày kết thúc phải lớn hơn ngày hiện tại.';
+                if (!errorMessage) errorMessage = msg;
+                if (showFeedback) {
+                    setElementValidation($nkt, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $nkt;
+                }
+            } else if (parsedNbd && parsedNbd.iso >= parsedNkt.iso) {
+                isValid = false;
+                const msg = 'Ngày bắt đầu phải nhỏ hơn ngày kết thúc (ngày kết thúc phải sau ngày bắt đầu).';
+                if (!errorMessage) errorMessage = msg;
+                if (showFeedback) {
+                    setElementValidation($nkt, false, msg);
+                    setElementValidation($nbd, false, msg);
+                    if (!firstErrorElem) firstErrorElem = $nkt;
+                }
+            } else {
+                if (showFeedback && parsedNkt.iso > todayStr && (!parsedNbd || parsedNbd.iso < parsedNkt.iso)) {
+                    setElementValidation($nkt, true);
+                }
+            }
+
+            return { 
+                isValid, 
+                firstErrorElem, 
+                errorMessage,
+                isoNbd: parsedNbd ? parsedNbd.iso : null,
+                isoNkt: parsedNkt ? parsedNkt.iso : null,
+                isoHdk: parsedHdk ? parsedHdk.iso : null
+            };
+        }
+
         function saveGiaiDau() {
             const ten = $('#ten').val().trim();
             const ma = $('#ma').val().trim();
@@ -539,45 +820,46 @@
             const ngayKetThuc = $('#ngayKetThuc').val();
             const hanDangKy = $('#hanDangKy').val();
 
-            // Reset trạng thái validate củ
-            $('#ngayBatDau, #ngayKetThuc, #hanDangKy').removeClass('is-invalid is-valid');
+            let formValid = true;
+            let firstErrorElem = null;
 
-            let valid = true;
-
-            if (!ten || !ma) {
-                Swal.fire('Thiếu thông tin', 'Vui lòng điền đầy đủ tên giải và mã giải.', 'warning');
-                return;
-            }
-
-            if (!ngayBatDau) {
-                $('#ngayBatDau').addClass('is-invalid');
-                valid = false;
+            // Kiểm tra tên & mã giải đấu
+            if (!ten) {
+                $('#ten').addClass('is-invalid');
+                formValid = false;
+                if (!firstErrorElem) firstErrorElem = $('#ten');
             } else {
-                $('#ngayBatDau').addClass('is-valid');
+                $('#ten').removeClass('is-invalid').addClass('is-valid');
             }
 
-            if (!ngayKetThuc) {
-                $('#ngayKetThuc').addClass('is-invalid');
-                valid = false;
-            } else if (ngayBatDau && ngayKetThuc <= ngayBatDau) {
-                $('#ngayKetThuc').addClass('is-invalid').next('.invalid-feedback').text('Ngày kết thúc phải sau ngày bắt đầu.');
-                valid = false;
+            if (!ma) {
+                $('#ma').addClass('is-invalid');
+                formValid = false;
+                if (!firstErrorElem) firstErrorElem = $('#ma');
             } else {
-                $('#ngayKetThuc').addClass('is-valid');
+                $('#ma').removeClass('is-invalid').addClass('is-valid');
             }
 
-            if (!hanDangKy) {
-                $('#hanDangKy').addClass('is-invalid');
-                valid = false;
-            } else if (ngayBatDau && hanDangKy > ngayBatDau) {
-                $('#hanDangKy').addClass('is-invalid').next('.invalid-feedback').text('Hạn đăng ký phải trước hoặc bằng ngày bắt đầu.');
-                valid = false;
-            } else {
-                $('#hanDangKy').addClass('is-valid');
+            // Kiểm tra các trường ngày
+            const dateCheck = validateDateFields(true);
+            if (!dateCheck.isValid) {
+                formValid = false;
+                if (!firstErrorElem) firstErrorElem = dateCheck.firstErrorElem;
             }
 
-            if (!valid) {
-                Swal.fire('Thông tin chưa hợp lệ', 'Vui lòng kiểm tra lại các trường ngày được đánh dấu đỏ.', 'warning');
+            if (!formValid) {
+                if (firstErrorElem) {
+                    $('html, body').animate({
+                        scrollTop: firstErrorElem.closest('.card').offset().top - 20
+                    }, 300);
+                    firstErrorElem.focus();
+                }
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thông tin chưa hợp lệ',
+                    text: dateCheck.errorMessage || 'Vui lòng kiểm tra lại các trường thông tin và thời gian giải đấu (được đánh dấu đỏ).',
+                    confirmButtonText: 'Đã hiểu'
+                });
                 return;
             }
 
@@ -631,9 +913,9 @@
                 ma: ma,
                 slug: $('#slug').val().trim() || generateSlug(ten),
                 diaDiem: $('#diaDiem').val().trim(),
-                ngayBatDau: ngayBatDau,
-                ngayKetThuc: ngayKetThuc,
-                hanDangKy: $('#hanDangKy').val() || null,
+                ngayBatDau: dateCheck.isoNbd,
+                ngayKetThuc: dateCheck.isoNkt,
+                hanDangKy: dateCheck.isoHdk,
                 moTa: $('#moTa').val().trim(),
                 trangThai: $('#trangThai').val(),
                 phamVi: $('#phamVi').val() || 'TatCa',
