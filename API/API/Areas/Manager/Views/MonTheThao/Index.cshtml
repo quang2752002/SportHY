@@ -50,10 +50,9 @@
                         <select id="hinhThucFilter" class="form-select bg-white border rounded-3 shadow-none">
                             <option value="">-- Sơ đồ thi đấu --</option>
                             <option value="LoaiTrucTiep">Loại trực tiếp (Knockout)</option>
-                            <option value="VongBang">Vòng tròn / Vòng bảng</option>
+                            <option value="VongBang">Vòng tròn</option>
                             <option value="KetHopVongBangVaLoaiTrucTiep">Bảng + Knockout</option>
-                            <option value="NhanhThangNhanhThua">Nhánh thắng - thua</option>
-                            <option value="HeThuySi">Hệ Thụy Sĩ</option>
+                            
                             <option value="TinhDiemXepHang">Đo thành tích</option>
                         </select>
                     </div>
@@ -66,7 +65,7 @@
                     </div>
                     <div class="col-md-1">
                         <select id="gioiTinhFilter" class="form-select bg-white border rounded-3 shadow-none">
-                            <option value="">-- Phái --</option>
+                            <option value="">-- Giới tính --</option>
                             <option value="Nam">Nam</option>
                             <option value="Nu">Nữ</option>
                             <option value="HonHop">Hỗn hợp</option>
@@ -167,12 +166,9 @@
                             <label class="form-label fw-semibold small">Hình thức / Sơ đồ thi đấu</label>
                             <select id="hinhThucThiDau" class="form-select">
                                 <option value="LoaiTrucTiep">Loại trực tiếp (Knockout)</option>
-                                <option value="VongBang">Vòng tròn tính điểm / Vòng bảng (Round Robin)</option>
-                                <option value="KetHopVongBangVaLoaiTrucTiep">Kết hợp vòng bảng và loại trực tiếp</option>
-                                <option value="NhanhThangNhanhThua">Nhánh thắng - Nhánh thua (Double Elimination)</option>
-                                <option value="HeThuySi">Hệ Thụy Sĩ (Swiss System - Cờ vua)</option>
+                                <option value="VongBang">Vòng tròn tính điểm </option>
+                                <option value="KetHopVongBangVaLoaiTrucTiep">Kết hợp vòng bảng và loại trực tiếp</option>                                
                                 <option value="TinhDiemXepHang">Đo thành tích / Tính điểm xếp hạng (Điền kinh, Bơi lội)</option>
-                                <option value="Khac">Khác</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -265,12 +261,9 @@
                             </label>
                             <select id="fmtHinhThucThiDau" class="form-select fw-semibold border-primary-subtle" onchange="onBracketFormatChange()">
                                 <option value="LoaiTrucTiep">Loại trực tiếp (Knockout)</option>
-                                <option value="VongBang">Vòng tròn tính điểm / Bảng</option>
+                                <option value="VongBang">Vòng tròn tính điểm</option>
                                 <option value="KetHopVongBangVaLoaiTrucTiep">Bảng + Knockout</option>
-                                <option value="NhanhThangNhanhThua">Nhánh thắng - thua (Double Elim)</option>
-                                <option value="HeThuySi">Hệ Thụy Sĩ (Swiss System - Cờ vua)</option>
                                 <option value="TinhDiemXepHang">Đo thành tích / Chạy làn</option>
-                                <option value="Khac">Khác</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -278,9 +271,9 @@
                                 <i class="fa-solid fa-stopwatch text-success me-1"></i> Cơ chế tính điểm trận (Scoring) <span class="text-danger">*</span>
                             </label>
                             <select id="fmtLoaiTheThuc" class="form-select fw-semibold border-success-subtle" onchange="onFormatTypeChange()">
-                                <option value="SetDiem">🎯 Đấu Set / Hiệp tính điểm (Cầu lông, Bóng chuyền, Bóng bàn...)</option>
-                                <option value="ThoiGianHiep">⏱️ Tính thời gian hiệp (Bóng đá, Futsal, Bóng rổ...)</option>
-                                <option value="TinhDiemXepHang">🏅 Đo thành tích / Chạy làn (Điền kinh, Bơi lội...)</option>
+                                <option value="SetDiem"> Đấu Set / Hiệp tính điểm (Cầu lông, Bóng chuyền, Bóng bàn...)</option>
+                                <option value="ThoiGianHiep"> Tính theo tỉ số trận đấu (Bóng đá, Futsal, Bóng rổ...)</option>
+                                <option value="TinhDiemXepHang">Đo thành tích / Chạy làn (Điền kinh, Bơi lội...)</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -500,7 +493,7 @@
                         <div class="card-body p-4">
                             <div class="alert alert-light border border-info-subtle text-muted rounded-3 py-2 px-3 small mb-3 d-flex align-items-center gap-2">
                                 <i class="fa-solid fa-circle-info text-primary fs-6"></i>
-                                <span>Cấu hình tại đây được hệ thống <strong>tự động đồng bộ vào thuật toán Xếp Lịch Thi Đấu</strong> tại <code>/Manager/LichThiDau</code> mà không cần người dùng cấu hình lại.</span>
+                                <span>Cấu hình tại đây được hệ thống <strong>tự động đồng bộ vào thuật toán Xếp Lịch Thi Đấu</strong> tại <code>Lịch thi đấu</code> mà không cần người dùng cấu hình lại.</span>
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -701,17 +694,11 @@
                         hinhThucBadge = '<span class="badge bg-danger-subtle text-danger border fw-semibold"><i class="fa-solid fa-sitemap me-1"></i>Loại trực tiếp</span>';
                         break;
                     case 'VongBang':
-                        hinhThucBadge = '<span class="badge bg-success-subtle text-success border fw-semibold"><i class="fa-solid fa-table-cells me-1"></i>Vòng tròn / Bảng</span>';
+                        hinhThucBadge = '<span class="badge bg-success-subtle text-success border fw-semibold"><i class="fa-solid fa-table-cells me-1"></i>Vòng tròn</span>';
                         break;
                     case 'KetHopVongBangVaLoaiTrucTiep':
                         hinhThucBadge = '<span class="badge bg-primary-subtle text-primary border fw-semibold"><i class="fa-solid fa-diagram-project me-1"></i>Bảng + Knockout</span>';
-                        break;
-                    case 'NhanhThangNhanhThua':
-                        hinhThucBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border fw-semibold"><i class="fa-solid fa-code-branch me-1"></i>Nhánh thắng - thua</span>';
-                        break;
-                    case 'HeThuySi':
-                        hinhThucBadge = '<span class="badge border fw-semibold" style="background-color: #f3e8ff; color: #7e22ce; border-color: #e9d5ff !important;"><i class="fa-solid fa-chess me-1"></i>Hệ Thụy Sĩ</span>';
-                        break;
+                        break;                    
                     case 'TinhDiemXepHang':
                         hinhThucBadge = '<span class="badge bg-info-subtle text-info border fw-semibold"><i class="fa-solid fa-stopwatch me-1"></i>Đo thành tích</span>';
                         break;
