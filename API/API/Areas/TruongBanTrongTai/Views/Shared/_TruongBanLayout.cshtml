@@ -341,13 +341,6 @@
         </header>
 
         <main class="tb-content">
-            @if (ViewBag.HasManagedTournament == false && User.IsInRole("HeadReferee"))
-            {
-                <div class="alert alert-info border-0 shadow-sm rounded-3 mb-3">
-                    <i class="fa-solid fa-circle-info me-2"></i>
-                    Bạn đã có quyền vào cổng Trưởng ban trọng tài nhưng hiện chưa được giao phụ trách giải đấu nào. Các chức năng quản lý sẽ khả dụng sau khi được phân công.
-                </div>
-            }
             @RenderBody()
         </main>
     </div>

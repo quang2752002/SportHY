@@ -53,22 +53,20 @@ namespace API.ViewComponents
 
             if (isCurrentTrongTai)
             {
-                // Khi đang ở màn Trọng tài: Cho phép chuyển sang Trưởng ban trọng tài nếu có thẩm quyền
+                // Chỉ hiện nút chuyển sang TruởngBan nếu referee được gán TruongBanTrongTaiId trong ít nhất 1 giải
+                // Không cần role HeadReferee — chỉ cần có giải được giao.
                 var managesTournament = referee != null &&
                     (await _refereeAccessService.GetManagedTournamentsAsync(referee.Id, false)).Count > 0;
 
-                if (isAdminOrManager || hasHeadRefereeRole || managesTournament)
+                if (isAdminOrManager || managesTournament)
                 {
                     links.Add(new PortalLinkItem("TruongBanTrongTai", "Trưởng ban trọng tài", "/TruongBanTrongTai/Home", "fa-solid fa-whistle", "text-warning"));
                 }
             }
             else if (isCurrentTruongBan)
             {
-                // Khi đang ở màn Trưởng ban trọng tài: Cho phép chuyển sang Trọng tài
-                var hasRefereeTournament = referee != null &&
-                    (await _refereeAccessService.GetRefereeTournamentIdsAsync(referee.Id)).Count > 0;
-
-                if (isAdminOrManager || isSecretary || hasHeadRefereeRole || referee != null || user.TrongTaiId.HasValue || hasRefereeTournament)
+                // Khi đang ở màn Trưởng ban: luôn cho phép quay lại TrongTai nếu là trọng tài
+                if (isAdminOrManager || referee != null || user.TrongTaiId.HasValue)
                 {
                     links.Add(new PortalLinkItem("TrongTai", "Trọng tài", "/TrongTai/Home", "fa-solid fa-flag", "text-warning"));
                 }

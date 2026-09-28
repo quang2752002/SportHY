@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace API.Areas.TruongBanTrongTai.Controllers
 {
     [Area("TruongBanTrongTai")]
-    [Authorize]
+    [Authorize(Roles = AppRoles.Referee)]
     public abstract class BaseTruongBanController : Controller
     {
         protected readonly ITruongBanTrongTaiService _truongBanService;
@@ -66,7 +66,9 @@ namespace API.Areas.TruongBanTrongTai.Controllers
             ViewBag.ManagedTournaments = managedTournaments;
             ViewBag.HasManagedTournament = managedTournaments.Count > 0;
 
-            if (managedTournaments.Count == 0 && !User.IsInRole(AppRoles.HeadReferee))
+            // Cho phép trọng tài bình thường vào nếu được phân công làm Trưởng ban (TruongBanTrongTaiId) trong ít nhất 1 giải.
+            // Không yêu cầu role HeadReferee — chỉ cần có giải được giao.
+            if (managedTournaments.Count == 0)
             {
                 context.Result = Forbid();
                 return;
