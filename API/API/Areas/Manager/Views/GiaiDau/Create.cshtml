@@ -58,14 +58,17 @@
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Ngày bắt đầu <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="ngayBatDau" required>
+                            <div class="invalid-feedback">Vui lòng chọn ngày bắt đầu.</div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Ngày kết thúc <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="ngayKetThuc" required>
+                            <div class="invalid-feedback">Vui lòng chọn ngày kết thúc (phải sau ngày bắt đầu).</div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Hạn nộp hồ sơ đăng ký</label>
-                            <input type="date" class="form-control" id="hanDangKy">
+                            <label class="form-label fw-semibold">Hạn nộp hồ sơ đăng ký <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="hanDangKy" required>
+                            <div class="invalid-feedback">Vui lòng chọn hạn đăng ký (phải trước hoặc bằng ngày bắt đầu).</div>
                         </div>
 
                         <div class="col-12">
@@ -534,9 +537,47 @@
             const ma = $('#ma').val().trim();
             const ngayBatDau = $('#ngayBatDau').val();
             const ngayKetThuc = $('#ngayKetThuc').val();
+            const hanDangKy = $('#hanDangKy').val();
 
-            if (!ten || !ma || !ngayBatDau || !ngayKetThuc) {
-                Swal.fire('Thiếu thông tin', 'Vui lòng điền đầy đủ tên giải, mã giải và thời gian tổ chức.', 'warning');
+            // Reset trạng thái validate củ
+            $('#ngayBatDau, #ngayKetThuc, #hanDangKy').removeClass('is-invalid is-valid');
+
+            let valid = true;
+
+            if (!ten || !ma) {
+                Swal.fire('Thiếu thông tin', 'Vui lòng điền đầy đủ tên giải và mã giải.', 'warning');
+                return;
+            }
+
+            if (!ngayBatDau) {
+                $('#ngayBatDau').addClass('is-invalid');
+                valid = false;
+            } else {
+                $('#ngayBatDau').addClass('is-valid');
+            }
+
+            if (!ngayKetThuc) {
+                $('#ngayKetThuc').addClass('is-invalid');
+                valid = false;
+            } else if (ngayBatDau && ngayKetThuc <= ngayBatDau) {
+                $('#ngayKetThuc').addClass('is-invalid').next('.invalid-feedback').text('Ngày kết thúc phải sau ngày bắt đầu.');
+                valid = false;
+            } else {
+                $('#ngayKetThuc').addClass('is-valid');
+            }
+
+            if (!hanDangKy) {
+                $('#hanDangKy').addClass('is-invalid');
+                valid = false;
+            } else if (ngayBatDau && hanDangKy > ngayBatDau) {
+                $('#hanDangKy').addClass('is-invalid').next('.invalid-feedback').text('Hạn đăng ký phải trước hoặc bằng ngày bắt đầu.');
+                valid = false;
+            } else {
+                $('#hanDangKy').addClass('is-valid');
+            }
+
+            if (!valid) {
+                Swal.fire('Thông tin chưa hợp lệ', 'Vui lòng kiểm tra lại các trường ngày được đánh dấu đỏ.', 'warning');
                 return;
             }
 

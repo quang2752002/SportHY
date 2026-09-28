@@ -8,7 +8,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -22,164 +22,234 @@
 
     <style>
         :root {
+            --trongtai-sidebar-width: 270px;
+            --trongtai-sidebar-bg: #ffffff;
+            --trongtai-sidebar-dark: #f8fbff;
+            --trongtai-sidebar-hover: #e9f1fc;
+            --trongtai-sidebar-active: #3473bc;
+            --trongtai-header-height: 64px;
+            --trongtai-primary: #2f6db5;
+            --trongtai-accent: #5d8fce;
+            --bs-primary: #2f6db5;
+            --bs-primary-rgb: 47, 109, 181;
+            --bs-primary-text-emphasis: #244f86;
+            --bs-primary-bg-subtle: #dce9f8;
+            --bs-primary-border-subtle: #b8cfea;
+            --bs-link-color: #2f6db5;
+            --bs-link-hover-color: #244f86;
+
+            /* Tương thích biến --tb cũ nếu có */
             --tb-sidebar-width: 270px;
-            --tb-sidebar-bg: #091326;
-            --tb-sidebar-dark: #040914;
-            --tb-sidebar-hover: #172554;
-            --tb-sidebar-active: #d97706;
             --tb-header-height: 64px;
-            --tb-primary: #1d4ed8;
-            --tb-accent: #f59e0b;
+            --tb-primary: #2f6db5;
+            --tb-accent: #5d8fce;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
-            color: #1e293b;
+            background-color: #f2f6fb;
+            color: #33445c;
             overflow-x: hidden;
         }
 
-        .tb-sidebar {
-            width: var(--tb-sidebar-width);
+        /* Sidebar Styling */
+        .trongtai-sidebar {
+            width: var(--trongtai-sidebar-width);
             height: 100vh;
             position: fixed;
             top: 0;
             left: 0;
-            background: linear-gradient(180deg, var(--tb-sidebar-bg) 0%, var(--tb-sidebar-dark) 100%);
-            color: #e2e8f0;
+            background: linear-gradient(180deg, var(--trongtai-sidebar-bg) 0%, var(--trongtai-sidebar-dark) 100%);
+            color: #33445c;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1040;
             overflow-y: auto;
-            border-right: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+            border-right: 1px solid #e4ebf4;
+            box-shadow: 3px 0 14px rgba(42, 72, 112, 0.06);
         }
 
-        .tb-brand {
-            height: var(--tb-header-height);
+        .trongtai-brand {
+            height: var(--trongtai-header-height);
             display: flex;
             align-items: center;
-            padding: 0 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.02);
+            padding: 0 1.25rem;
+            color: #263a55;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            background: #ffffff;
+            border-bottom: 1px solid #e8eef6;
+            text-decoration: none;
         }
 
-        .tb-brand-icon {
-            width: 40px;
-            height: 40px;
+        .trongtai-brand-badge {
+            width: 38px;
+            height: 38px;
             border-radius: 10px;
-            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            background: linear-gradient(135deg, #4b83c5 0%, #2f64a5 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.25rem;
             color: #ffffff;
+            font-size: 1.15rem;
+            box-shadow: 0 4px 10px rgba(47, 109, 181, 0.28);
             margin-right: 0.75rem;
-            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+            flex-shrink: 0;
         }
 
-        .tb-brand-text {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: -0.5px;
-            line-height: 1.2;
+        .trongtai-nav {
+            padding: 1rem 0.75rem;
         }
 
-        .tb-brand-subtext {
-            font-size: 0.72rem;
-            color: #f59e0b;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-        }
-
-        .tb-nav-section {
-            padding: 1.2rem 1.5rem 0.4rem;
+        .trongtai-nav-header {
             font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: #64748b;
+            letter-spacing: 0.08em;
+            color: #71849e;
+            opacity: 1;
+            padding: 0.75rem 0.85rem 0.35rem;
         }
 
-        .tb-nav-item {
-            margin: 0.2rem 0.8rem;
-        }
-
-        .tb-nav-link {
+        .trongtai-nav-link {
             display: flex;
             align-items: center;
-            padding: 0.75rem 1rem;
-            color: #94a3b8;
+            padding: 0.75rem 0.85rem;
+            border-radius: 8px;
+            color: #4a5f79;
             text-decoration: none;
-            border-radius: 10px;
+            font-size: 0.88rem;
             font-weight: 500;
-            font-size: 0.9rem;
+            margin-bottom: 4px;
             transition: all 0.2s ease;
         }
 
-        .tb-nav-link i {
-            font-size: 1.15rem;
-            width: 26px;
-            margin-right: 0.8rem;
+        .trongtai-nav-link i {
+            width: 24px;
+            font-size: 1.1rem;
+            margin-right: 0.75rem;
+            color: #5e83b3;
             text-align: center;
             transition: transform 0.2s;
         }
 
-        .tb-nav-link:hover {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.06);
+        .trongtai-nav-link:hover {
+            background: var(--trongtai-sidebar-hover);
+            color: var(--trongtai-primary);
             transform: translateX(3px);
         }
 
-        .tb-nav-link.active {
+        .trongtai-nav-link:hover i {
+            color: var(--trongtai-primary);
+        }
+
+        .trongtai-nav-link.active {
+            background: linear-gradient(135deg, #3d7bc1 0%, #2e67aa 100%);
             color: #ffffff;
-            background: linear-gradient(90deg, rgba(217, 119, 6, 0.25) 0%, rgba(217, 119, 6, 0.08) 100%);
-            border-left: 3.5px solid #f59e0b;
             font-weight: 600;
+            box-shadow: 0 4px 11px rgba(47, 109, 181, 0.24);
         }
 
-        .tb-nav-link.active i {
-            color: #f59e0b;
+        .trongtai-nav-link.active i {
+            color: #ffffff;
         }
 
-        .tb-main-wrapper {
-            margin-left: var(--tb-sidebar-width);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s ease;
+        /* User Card in Sidebar */
+        .trongtai-user-card {
+            background: #f7faff;
+            border: 1px solid #e2eaf5;
+            border-radius: 10px;
+            padding: 0.75rem 0.9rem;
+            margin: 0.5rem 0.75rem 1rem;
         }
 
-        .tb-header {
-            height: var(--tb-header-height);
+        /* Top Header */
+        .trongtai-topbar {
+            height: var(--trongtai-header-height);
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: var(--trongtai-sidebar-width);
             background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e3eaf3;
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 1.5rem;
-            position: sticky;
-            top: 0;
-            z-index: 1020;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            z-index: 1030;
+            transition: left 0.3s ease;
         }
 
-        .tb-content {
-            padding: 1.5rem;
-            flex: 1;
+        .trongtai-topbar .text-warning {
+            color: var(--trongtai-primary) !important;
         }
 
+        /* Main Content */
+        .trongtai-main {
+            margin-left: var(--trongtai-sidebar-width);
+            padding: calc(var(--trongtai-header-height) + 1.5rem) 1.5rem 2rem;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Responsive Mobile */
+        @@media (max-width: 991.98px) {
+            .trongtai-sidebar {
+                transform: translateX(-100%);
+            }
+            .trongtai-sidebar.show {
+                transform: translateX(0);
+            }
+            .trongtai-topbar {
+                left: 0 !important;
+            }
+            .trongtai-main {
+                margin-left: 0 !important;
+            }
+            .trongtai-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0,0,0,0.5);
+                z-index: 1035;
+                display: none;
+            }
+            .trongtai-backdrop.show {
+                display: block;
+            }
+        }
+
+        /* Cards & Buttons */
         .card-custom {
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            background: #ffffff;
+            border: 1px solid #e2eaf4;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            background-color: #fff;
             transition: all 0.2s ease;
         }
-
         .card-custom:hover {
-            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+        }
+
+        .btn-referee-primary {
+            background: linear-gradient(135deg, #4b83c5 0%, #2f64a5 100%);
+            border: none;
+            color: #ffffff;
+            font-weight: 500;
+            box-shadow: 0 2px 6px rgba(47, 109, 181, 0.26);
+        }
+        .btn-referee-primary:hover {
+            background: linear-gradient(135deg, #3a75b9 0%, #285a98 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(47, 109, 181, 0.32);
+        }
+
+        .badge-soft-amber {
+            background-color: #e4eefb;
+            color: #244f86;
+            border: 1px solid #c4d7ef;
         }
 
         .badge-conflict {
@@ -194,156 +264,275 @@
             100% { transform: scale(1); }
         }
 
-        @@media (max-width: 991.98px) {
-            .tb-sidebar {
-                transform: translateX(-100%);
-            }
-            .tb-sidebar.show {
-                transform: translateX(0);
-            }
-            .tb-main-wrapper {
-                margin-left: 0;
-            }
+        .trongtai-sidebar .text-white {
+            color: #263a55 !important;
+        }
+
+        .trongtai-sidebar .text-white-50 {
+            color: #718198 !important;
+        }
+
+        .trongtai-sidebar .text-warning {
+            color: #2f6db5 !important;
+        }
+
+        .trongtai-sidebar .badge.bg-warning {
+            background-color: #e1ecfa !important;
+            color: #244f86 !important;
+        }
+
+        .trongtai-sidebar .border-white {
+            border-color: #dfe8f4 !important;
+        }
+
+        .trongtai-sidebar .form-select {
+            background-color: #ffffff !important;
+            color: #33445c !important;
+            border-color: #d7e1ee !important;
+        }
+
+        .trongtai-main .text-warning {
+            color: #2f6db5 !important;
+        }
+
+        .trongtai-theme .btn-warning {
+            --bs-btn-color: #ffffff;
+            --bs-btn-bg: #3e79bd;
+            --bs-btn-border-color: #3e79bd;
+            --bs-btn-hover-color: #ffffff;
+            --bs-btn-hover-bg: #2f6db5;
+            --bs-btn-hover-border-color: #2f6db5;
+            --bs-btn-active-bg: #285d9c;
+            --bs-btn-active-border-color: #285d9c;
+        }
+
+        .trongtai-theme .btn-outline-warning {
+            --bs-btn-color: #2f6db5;
+            --bs-btn-border-color: #7ea5d3;
+            --bs-btn-hover-color: #ffffff;
+            --bs-btn-hover-bg: #3e79bd;
+            --bs-btn-hover-border-color: #3e79bd;
+        }
+
+        .trongtai-main .bg-warning-subtle {
+            background-color: #e8f0fb !important;
+        }
+
+        .trongtai-main .border-warning {
+            border-color: #b8cfea !important;
+        }
+
+        .trongtai-main .badge.bg-warning {
+            background-color: #dce9f8 !important;
+            color: #244f86 !important;
+        }
+
+        .trongtai-main .bg-dark {
+            background-color: #dce9f8 !important;
+            color: #244f86 !important;
+        }
+
+        .trongtai-theme .modal-header.bg-dark,
+        .trongtai-theme .modal-header.bg-warning,
+        .trongtai-theme .modal-header.bg-success {
+            background: #2f6db5 !important;
+            color: #ffffff !important;
+        }
+
+        .trongtai-theme .modal-header.bg-warning .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        .trongtai-theme .modal-header.bg-warning .text-dark {
+            color: #ffffff !important;
+        }
+
+        .trongtai-main .form-control:focus,
+        .trongtai-main .form-select:focus {
+            border-color: #6f9bcc;
+            box-shadow: 0 0 0 0.2rem rgba(47, 109, 181, 0.18);
+        }
+
+        .trongtai-main .table thead th {
+            background-color: #e7effa;
+            color: #2f496b;
+        }
+
+        .trongtai-main .table {
+            --bs-table-border-color: #e2eaf4;
         }
     </style>
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
-    @{ var managedTournaments = ViewBag.ManagedTournaments as List<GiaiDau> ?? new List<GiaiDau>(); }
+<body class="trongtai-theme">
+    @{
+        var managedTournaments = ViewBag.ManagedTournaments as List<GiaiDau> ?? new List<GiaiDau>();
+        var currentRef = ViewBag.CurrentReferee as TrongTaiDto;
+        string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+        string displayName = currentRef?.HoTen ?? User.Identity?.Name ?? "Trưởng ban điều hành";
+    }
+
+    <!-- Mobile Backdrop -->
+    <div class="trongtai-backdrop" id="trongtaiBackdrop" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->
-    <aside class="tb-sidebar" id="sidebar">
-        <div class="tb-brand">
-            <div class="tb-brand-icon">
+    <aside class="trongtai-sidebar" id="trongtaiSidebar">
+        <!-- Brand -->
+        <a href="/TruongBanTrongTai/Home" class="trongtai-brand">
+            <div class="trongtai-brand-badge">
                 <i class="fa-solid fa-whistle"></i>
             </div>
-            <div>
-                <div class="tb-brand-text">BAN TRỌNG TÀI</div>
-                <div class="tb-brand-subtext">Trưởng Ban Điều Hành</div>
+            <div class="lh-sm overflow-hidden">
+                <div class="fw-bold fs-6 text-white text-truncate">BAN TRỌNG TÀI</div>
+                <small class="text-warning text-truncate d-block" style="font-size: 11px;">
+                    Trưởng Ban Điều Hành
+                </small>
+            </div>
+        </a>
+
+        <!-- Current Referee Info Card -->
+        <div class="trongtai-user-card">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="small fw-semibold text-white-50" style="font-size: 11px;">CÁN BỘ TRỰC BAN</span>
+                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                {
+                    <span class="badge bg-warning text-dark px-1.5 py-0.5" style="font-size: 10px;">Admin/Manager</span>
+                }
+                else
+                {
+                    <span class="badge bg-warning text-dark px-1.5 py-0.5" style="font-size: 10px;">Trưởng Ban</span>
+                }
+            </div>
+            <div class="fw-bold text-white text-truncate" style="font-size: 13px;" title="@displayName">
+                <i class="fa-solid fa-user-shield me-1 text-warning"></i>
+                @displayName
+            </div>
+            <div class="d-flex align-items-center justify-content-between mt-1 text-white-50" style="font-size: 11px;">
+                <span>Cấp bậc: <strong class="text-warning">@(currentRef?.CapBac ?? "Quốc gia")</strong></span>
+                <span>@(currentRef?.Ma ?? "")</span>
             </div>
         </div>
 
-        <div class="p-3">
-            <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);">
-                <small class="text-secondary d-block mb-1" style="font-size:0.75rem;"><i class="fa-regular fa-user me-1 text-warning"></i> Cán bộ trực ban:</small>
-                <div class="fw-bold text-white text-truncate" style="font-size:0.88rem;">
-                    @(ViewBag.CurrentReferee != null ? ViewBag.CurrentReferee.HoTen : User.Identity?.Name)
-                </div>
-                <span class="badge bg-warning text-dark mt-1" style="font-size:0.68rem;">Trưởng Ban Trọng Tài</span>
-            </div>
-        </div>
+        <!-- Navigation Menu -->
+        <div class="trongtai-nav">
+            <div class="trongtai-nav-header">Nhiệm Vụ Điều Hành</div>
 
-        <div class="tb-nav-section">Chức Năng Chính</div>
-        <div class="tb-nav-item">
-            <a class="tb-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" href="/TruongBanTrongTai/Home">
+            <a href="/TruongBanTrongTai/Home" class="trongtai-nav-link @(currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
                 <i class="fa-solid fa-chart-pie"></i>
                 <span>Tổng Quan Giải</span>
             </a>
-        </div>
-        <div class="tb-nav-item">
-            <a class="tb-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TrongTai" ? "active" : "")" href="/TruongBanTrongTai/TrongTai">
+
+            <a href="/TruongBanTrongTai/TrongTai" class="trongtai-nav-link @(currentController.Equals("TrongTai", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
                 <i class="fa-solid fa-users-gear"></i>
                 <span>Danh Sách Trọng Tài</span>
             </a>
-        </div>
-        <div class="tb-nav-item">
-            <a class="tb-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "PhanCong" ? "active" : "")" href="/TruongBanTrongTai/PhanCong">
+
+            <a href="/TruongBanTrongTai/PhanCong" class="trongtai-nav-link @(currentController.Equals("PhanCong", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
                 <i class="fa-solid fa-clipboard-user"></i>
                 <span>Phân Công Trọng Tài</span>
             </a>
-        </div>
-        <div class="tb-nav-item">
-            <a class="tb-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "LichLamViec" ? "active" : "")" href="/TruongBanTrongTai/LichLamViec">
+
+            <a href="/TruongBanTrongTai/LichLamViec" class="trongtai-nav-link @(currentController.Equals("LichLamViec", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
                 <i class="fa-solid fa-calendar-days"></i>
                 <span>Lịch Làm Việc & Tiến Độ</span>
             </a>
-        </div>
-        <div class="tb-nav-item">
-            <a class="tb-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "KiemTraTrungLich" ? "active" : "")" href="/TruongBanTrongTai/KiemTraTrungLich">
+
+            <a href="/TruongBanTrongTai/KiemTraTrungLich" class="trongtai-nav-link @(currentController.Equals("KiemTraTrungLich", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <span>Kiểm Tra Trùng Lịch</span>
             </a>
-        </div>
 
-        <div class="tb-nav-section">Hệ Thống</div>
-        @if (User.IsInRole("Manager") || User.IsInRole("Admin"))
-        {
-            <div class="tb-nav-item">
-                <a class="tb-nav-link" href="/Manager/GiaiDau">
+            <div class="trongtai-nav-header mt-3">Hệ thống</div>
+
+            @if (User.IsInRole("Manager") || User.IsInRole("Admin"))
+            {
+                <a href="/Manager/GiaiDau" class="trongtai-nav-link">
                     <i class="fa-solid fa-arrow-left"></i>
                     <span>Quay Lại Quản Lý Giải</span>
                 </a>
-            </div>
-        }
-        <div class="tb-nav-item">
-            <a class="tb-nav-link" href="/Home/Index">
+            }
+
+            <a href="/" class="trongtai-nav-link" target="_blank">
                 <i class="fa-solid fa-globe"></i>
-                <span>Cổng Thông Tin Chung</span>
+                <span>Về Cổng Trang Chủ</span>
             </a>
-        </div>
-        <div class="tb-nav-item mt-3">
-            <a class="tb-nav-link text-danger" href="/Account/Logout">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                <span>Đăng Xuất</span>
+
+            <a href="/Account/Logout" class="trongtai-nav-link text-danger mt-2">
+                <i class="fa-solid fa-arrow-right-from-bracket text-danger"></i>
+                <span>Đăng xuất</span>
             </a>
         </div>
     </aside>
 
-    <!-- Main Wrapper -->
-    <div class="tb-main-wrapper">
-        <header class="tb-header">
-            <div class="d-flex align-items-center gap-3">
-                <button class="btn btn-outline-secondary btn-sm d-lg-none" id="sidebarToggle">
-                    <i class="fa-solid fa-bars"></i>
-                </button>
+    <!-- Topbar -->
+    <header class="trongtai-topbar">
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-light border d-lg-none py-1.5 px-2.5 rounded-2" id="sidebarToggle" onclick="toggleSidebar()">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="d-flex align-items-center gap-2">
+                <span class="d-none d-sm-inline fw-semibold text-dark" style="font-size: 14px;">
+                    Cổng Ban Trọng Tài & Giám Sát
+                </span>
                 @if (managedTournaments.Count > 0)
                 {
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-trophy text-warning"></i>
-                        <span class="fw-semibold text-muted d-none d-sm-inline" style="font-size:0.88rem;">Giải đấu đang chọn:</span>
-                        <form method="get" id="formSelectGiaiDau" class="m-0">
-                            <select name="giaiDauId" class="form-select form-select-sm fw-bold border-warning bg-light" style="min-width: 240px; max-width: 360px;" onchange="document.getElementById('formSelectGiaiDau').submit();">
-                                @foreach (var g in managedTournaments)
+                    <span class="d-none d-sm-inline text-muted">•</span>
+                    <form method="get" id="formSelectGiaiDau" class="m-0 d-inline-flex align-items-center gap-1.5">
+                        <label for="selectGiaiDauId" class="small text-muted d-none d-md-inline mb-0" style="font-size: 12px;">Giải:</label>
+                        <select id="selectGiaiDauId" name="giaiDauId" class="form-select form-select-sm fw-semibold" style="min-width: 200px; max-width: 320px; border-color: #b8cfea; background-color: #f7faff;" onchange="document.getElementById('formSelectGiaiDau').submit();">
+                            @foreach (var g in managedTournaments)
+                            {
+                                if (ViewBag.SelectedGiaiDauId != null && (int)ViewBag.SelectedGiaiDauId == g.Id)
                                 {
-                                    if (ViewBag.SelectedGiaiDauId != null && (int)ViewBag.SelectedGiaiDauId == g.Id)
-                                    {
-                                        <option value="@g.Id" selected>@g.Ten</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="@g.Id">@g.Ten</option>
-                                    }
+                                    <option value="@g.Id" selected>@g.Ten</option>
                                 }
-                            </select>
-                        </form>
-                    </div>
+                                else
+                                {
+                                    <option value="@g.Id">@g.Ten</option>
+                                }
+                            }
+                        </select>
+                    </form>
                 }
                 else
                 {
-                    <span class="small text-muted"><i class="fa-solid fa-circle-info me-1"></i>Chưa được phân công giải đấu</span>
+                    <span class="badge badge-soft-amber rounded-pill px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1">
+                        <i class="fa-solid fa-circle-info text-warning"></i>
+                        Chưa có giải đấu
+                    </span>
                 }
             </div>
+        </div>
 
-            <div class="d-flex align-items-center gap-3">
-                @if (managedTournaments.Count > 0)
-                {
-                    <a href="/TruongBanTrongTai/KiemTraTrungLich" class="btn btn-sm btn-outline-danger position-relative d-none d-md-flex align-items-center gap-1">
-                        <i class="fa-solid fa-shield-halved"></i>
-                        <span>Quét Trùng Lịch</span>
-                    </a>
-                }
+        <div class="d-flex align-items-center gap-3">
+            @if (managedTournaments.Count > 0)
+            {
+                <a href="/TruongBanTrongTai/KiemTraTrungLich" class="btn btn-outline-danger btn-sm rounded-pill px-3 d-none d-md-inline-flex align-items-center gap-1.5" style="font-size: 12px;">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Quét Trùng Lịch</span>
+                </a>
+            }
 
-                @await Component.InvokeAsync("PortalAccountMenu", new {
-                    currentArea = "TruongBanTrongTai",
-                    portalLabel = "Trưởng ban trọng tài",
-                    linkedName = ViewBag.CurrentReferee?.HoTen as string
-                })
-            </div>
-        </header>
+            <a href="/" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-none d-lg-inline-flex align-items-center gap-1.5" style="font-size: 12px;">
+                <i class="fa-solid fa-house"></i> Trang Chủ Giải
+            </a>
 
-        <main class="tb-content">
+            <div class="vr d-none d-sm-block my-1"></div>
+
+            @await Component.InvokeAsync("PortalAccountMenu", new {
+                currentArea = "TruongBanTrongTai",
+                portalLabel = "Trưởng ban trọng tài",
+                linkedName = displayName
+            })
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="trongtai-main">
+        <div class="container-fluid p-0">
             @RenderBody()
-        </main>
-    </div>
+        </div>
+    </main>
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -352,15 +541,22 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
+        function toggleSidebar() {
+            var sidebar = document.getElementById('trongtaiSidebar');
+            var backdrop = document.getElementById('trongtaiBackdrop');
+            if (sidebar) sidebar.classList.toggle('show');
+            if (backdrop) backdrop.classList.toggle('show');
+        }
+
         $(document).ready(function () {
-            $('#sidebarToggle').on('click', function () {
-                $('#sidebar').toggleClass('show');
-            });
-            $('.select2').select2({
-                theme: 'bootstrap-5'
-            });
+            if ($.fn.select2) {
+                $('.select2').select2({
+                    theme: 'bootstrap-5'
+                });
+            }
         });
     </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
