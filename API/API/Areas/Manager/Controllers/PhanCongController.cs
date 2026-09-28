@@ -78,35 +78,6 @@ namespace API.Areas.Manager.Controllers
                 return Json(new { success = false, message = message });
             }
 
-            // Đồng bộ cấp Role HeadReferee cho tài khoản user tương ứng nếu có
-            if (trongTaiId.HasValue)
-            {
-                var refList = await _trongTaiService.GetAllAsync();
-                var refEntity = refList.FirstOrDefault(t => t.Id == trongTaiId.Value);
-                if (refEntity != null)
-                {
-                    // Tim user theo TrongTaiId hoac Ma hoac Email
-                    var users = _userManager.Users.Where(u =>
-                        u.TrongTaiId == trongTaiId.Value ||
-                        u.UserName == refEntity.Ma ||
-                        u.Email == refEntity.Email).ToList();
-                    foreach (var u in users)
-                    {
-                        // Gan TrongTaiId neu chua duoc lien ket
-                        if (u.TrongTaiId != trongTaiId.Value)
-                        {
-                            u.TrongTaiId = trongTaiId.Value;
-                            await _userManager.UpdateAsync(u);
-                        }
-
-                        if (!await _userManager.IsInRoleAsync(u, Dms.Application.Common.AppRoles.HeadReferee))
-                        {
-                            await _userManager.AddToRoleAsync(u, Dms.Application.Common.AppRoles.HeadReferee);
-                        }
-                    }
-                }
-            }
-
             return Json(new { success = true, message = message });
         }
 

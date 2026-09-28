@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace API.Areas.TrongTai.Controllers
 {
     [Area("TrongTai")]
-    [Authorize]
+    [Authorize(Roles = AppRoles.Referee)]
     public abstract class BaseTrongTaiController : Controller
     {
         protected readonly UserManager<ApplicationUser> _userManager;

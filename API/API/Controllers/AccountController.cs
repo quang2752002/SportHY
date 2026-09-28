@@ -64,7 +64,7 @@ namespace API.Controllers
                     bool userCanAccess = (isAdminUrl && User.IsInRole(AppRoles.Admin))
                         || (isManagerUrl && (User.IsInRole(AppRoles.Manager) || User.IsInRole(AppRoles.Admin)))
                         || (isTrongTaiUrl && (User.IsInRole(AppRoles.Referee) || User.IsInRole(AppRoles.HeadReferee) || User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager)))
-                        || (isTruongBanUrl && (User.IsInRole(AppRoles.HeadReferee) || User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager)))
+                        || (isTruongBanUrl && (User.IsInRole(AppRoles.HeadReferee) || User.IsInRole(AppRoles.Referee) || User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager)))
                         || (isDonViUrl && (User.IsInRole(AppRoles.Delegation) || User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Manager)));
 
                     if (!userCanAccess)
@@ -245,7 +245,7 @@ namespace API.Controllers
             if (returnUrl.StartsWith("/TrongTai", StringComparison.OrdinalIgnoreCase) && (roles.Contains(AppRoles.Referee) || roles.Contains(AppRoles.HeadReferee) || roles.Contains(AppRoles.Admin) || roles.Contains(AppRoles.Manager)))
                 return returnUrl;
 
-            if (returnUrl.StartsWith("/TruongBanTrongTai", StringComparison.OrdinalIgnoreCase) && (roles.Contains(AppRoles.HeadReferee) || roles.Contains(AppRoles.Admin) || roles.Contains(AppRoles.Manager)))
+            if (returnUrl.StartsWith("/TruongBanTrongTai", StringComparison.OrdinalIgnoreCase) && (roles.Contains(AppRoles.HeadReferee) || roles.Contains(AppRoles.Referee) || roles.Contains(AppRoles.Admin) || roles.Contains(AppRoles.Manager)))
                 return returnUrl;
 
             if (returnUrl.StartsWith("/DonVi", StringComparison.OrdinalIgnoreCase) && (roles.Contains(AppRoles.Delegation) || roles.Contains(AppRoles.Admin) || roles.Contains(AppRoles.Manager)))

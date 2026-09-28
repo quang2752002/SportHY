@@ -20,6 +20,9 @@ namespace API.Areas.Manager.Controllers
         private readonly IMonTheThaoService _monTheThaoService;
         private readonly IKhoiService _khoiService;
         private readonly ITrongTaiService _trongTaiService;
+        private readonly IThuKyGiaiService _thuKyGiaiService;
+        private readonly INguoiDieuHanhMonService _nguoiDieuHanhMonService;
+        private readonly ITruongBanTrongTaiService _truongBanService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _env;
 
@@ -28,6 +31,9 @@ namespace API.Areas.Manager.Controllers
             IMonTheThaoService monTheThaoService,
             IKhoiService khoiService,
             ITrongTaiService trongTaiService,
+            IThuKyGiaiService thuKyGiaiService,
+            INguoiDieuHanhMonService nguoiDieuHanhMonService,
+            ITruongBanTrongTaiService truongBanService,
             UserManager<ApplicationUser> userManager,
             IWebHostEnvironment env)
         {
@@ -35,6 +41,9 @@ namespace API.Areas.Manager.Controllers
             _monTheThaoService = monTheThaoService;
             _khoiService = khoiService;
             _trongTaiService = trongTaiService;
+            _thuKyGiaiService = thuKyGiaiService;
+            _nguoiDieuHanhMonService = nguoiDieuHanhMonService;
+            _truongBanService = truongBanService;
             _userManager = userManager;
             _env = env;
         }
@@ -51,6 +60,12 @@ namespace API.Areas.Manager.Controllers
             ViewBag.Khois = await _khoiService.GetAllAsync();
             ViewBag.MonTheThaos = await _monTheThaoService.GetAllAsync();
             ViewBag.TrongTais = (await _trongTaiService.GetAllAsync())?.Where(t => t.TrangThai == true).ToList();
+
+            var coordinatorUsers = await _userManager.GetUsersInRoleAsync(Dms.Application.Common.AppRoles.SportCoordinator);
+            ViewBag.SportCoordinatorUsers = await _nguoiDieuHanhMonService.GetProfilesForAccountsAsync(
+                coordinatorUsers.Select(user => user.Id).ToList());
+            ViewBag.SecretaryAssignments = await _thuKyGiaiService.GetSecretaryAssignmentsForManagerAsync(0);
+
             return View();
         }
 
@@ -66,6 +81,13 @@ namespace API.Areas.Manager.Controllers
             ViewBag.Khois = await _khoiService.GetAllAsync();
             ViewBag.MonTheThaos = await _monTheThaoService.GetAllAsync();
             ViewBag.TrongTais = (await _trongTaiService.GetAllAsync())?.Where(t => t.TrangThai == true).ToList();
+
+            var coordinatorUsers = await _userManager.GetUsersInRoleAsync(Dms.Application.Common.AppRoles.SportCoordinator);
+            ViewBag.SportCoordinatorUsers = await _nguoiDieuHanhMonService.GetProfilesForAccountsAsync(
+                coordinatorUsers.Select(user => user.Id).ToList());
+            ViewBag.SecretaryAssignments = await _thuKyGiaiService.GetSecretaryAssignmentsForManagerAsync(id);
+            ViewBag.CategoryAssignments = await _truongBanService.GetCategoryAssignmentsForManagerAsync(id);
+
             return View(item);
         }
 
@@ -119,21 +141,11 @@ namespace API.Areas.Manager.Controllers
                     var updated = await _giaiDauService.UpdateAsync(id.Value, dto, username);
                     if (updated == null) return Json(new { success = false, message = "Không tìm thấy giải đấu để cập nhật." });
 
-                    if (dto.TruongBanTrongTaiId.HasValue)
-                    {
-                        await SyncHeadRefereeRoleAsync(dto.TruongBanTrongTaiId.Value);
-                    }
-
                     return Json(new { success = true, message = "Cập nhật giải đấu thành công!", data = updated });
                 }
                 else
                 {
                     var created = await _giaiDauService.CreateAsync(dto, username);
-
-                    if (dto.TruongBanTrongTaiId.HasValue)
-                    {
-                        await SyncHeadRefereeRoleAsync(dto.TruongBanTrongTaiId.Value);
-                    }
 
                     return Json(new { success = true, message = "Thêm mới giải đấu thành công!", data = created });
                 }
@@ -141,39 +153,6 @@ namespace API.Areas.Manager.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        private async Task SyncHeadRefereeRoleAsync(int trongTaiId)
-        {
-            try
-            {
-                var refList = await _trongTaiService.GetAllAsync();
-                var refEntity = refList.FirstOrDefault(t => t.Id == trongTaiId);
-                if (refEntity != null)
-                {
-                    var users = _userManager.Users.Where(u =>
-                        u.TrongTaiId == trongTaiId ||
-                        u.UserName == refEntity.Ma ||
-                        u.Email == refEntity.Email).ToList();
-                    foreach (var u in users)
-                    {
-                        if (u.TrongTaiId != trongTaiId)
-                        {
-                            u.TrongTaiId = trongTaiId;
-                            await _userManager.UpdateAsync(u);
-                        }
-
-                        if (!await _userManager.IsInRoleAsync(u, Dms.Application.Common.AppRoles.HeadReferee))
-                        {
-                            await _userManager.AddToRoleAsync(u, Dms.Application.Common.AppRoles.HeadReferee);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Bỏ qua lỗi đồng bộ tài khoản nếu có để không gián đoạn lưu giải
             }
         }
 

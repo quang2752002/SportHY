@@ -15,7 +15,7 @@ namespace API.Areas.ThuKy.Controllers
 {
     /// <summary>
     /// Base Controller cho phân hệ Thư ký giải (ThuKy).
-    /// Áp dụng quyền truy cập: Thư ký (Secretary), Quản trị viên (Admin), Quản lý giải (Manager).
+    /// Áp dụng quyền truy cập: Thư ký (Secretary
     /// </summary>
     [Area("ThuKy")]
     [Authorize(Roles = AppRoles.Secretary)]

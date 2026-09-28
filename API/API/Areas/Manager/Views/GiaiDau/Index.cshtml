@@ -2,6 +2,137 @@
     ViewData["Title"] = "Quản lý Giải Đấu";
 }
 
+<style>
+    /* Nút thao tác Điều Hành */
+    .action-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: flex-end;
+    }
+
+    .btn-action-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: 8px;
+        text-decoration: none !important;
+        white-space: nowrap;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        line-height: 1.35;
+        border: 1px solid transparent;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .btn-action-register {
+        background-color: #ecfdf5;
+        border-color: #a7f3d0;
+        color: #047857;
+    }
+    .btn-action-register:hover {
+        background-color: #059669;
+        border-color: #059669;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.28);
+        transform: translateY(-1px);
+    }
+    .btn-action-register i {
+        color: #059669;
+        font-size: 0.85rem;
+        transition: color 0.2s;
+    }
+    .btn-action-register:hover i {
+        color: #ffffff !important;
+    }
+
+    .btn-action-schedule {
+        background-color: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+    }
+    .btn-action-schedule:hover {
+        background-color: #2563eb;
+        border-color: #2563eb;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+        transform: translateY(-1px);
+    }
+    .btn-action-schedule i {
+        color: #2563eb;
+        font-size: 0.85rem;
+        transition: color 0.2s;
+    }
+    .btn-action-schedule:hover i {
+        color: #ffffff !important;
+    }
+
+    .btn-action-assign {
+        background-color: #f5f3ff;
+        border-color: #ddd6fe;
+        color: #6d28d9;
+    }
+    .btn-action-assign:hover {
+        background-color: #7c3aed;
+        border-color: #7c3aed;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.28);
+        transform: translateY(-1px);
+    }
+    .btn-action-assign i {
+        color: #7c3aed;
+        font-size: 0.85rem;
+        transition: color 0.2s;
+    }
+    .btn-action-assign:hover i {
+        color: #ffffff !important;
+    }
+
+    .btn-action-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        border: 1px solid transparent;
+        text-decoration: none !important;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .btn-action-edit {
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+        color: #64748b;
+    }
+    .btn-action-edit:hover {
+        background-color: #f1f5f9;
+        border-color: #cbd5e1;
+        color: #0f172a !important;
+        box-shadow: 0 3px 8px rgba(15, 23, 42, 0.12);
+        transform: translateY(-1px);
+    }
+
+    .btn-action-delete {
+        background-color: #fff1f2;
+        border-color: #fecdd3;
+        color: #e11d48;
+    }
+    .btn-action-delete:hover {
+        background-color: #e11d48;
+        border-color: #e11d48;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(225, 29, 72, 0.28);
+        transform: translateY(-1px);
+    }
+</style>
+
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <div>
         <h4 class="fw-bold mb-1 text-dark">
@@ -59,7 +190,7 @@
                         <th>Thời Gian Tổ Chức</th>
                         <th>Hạn Đăng Ký</th>
                         <th>Trạng Thái</th>
-                        <th class="text-end pe-3" style="width: 250px;">Điều Hành</th>
+                        <th class="text-end pe-3" style="width: 360px; min-width: 340px;">Điều Hành</th>
                     </tr>
                 </thead>
                 <tbody id="tblBody">
@@ -138,29 +269,28 @@
                         <td>
                             <div class="fw-bold text-dark">${escapeHtml(item.ten)}</div>
                             <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
-                                <span class="badge bg-light text-secondary border">Mã: ${escapeHtml(item.ma)}</span> 
-                                ${item.diaDiem ? `<span class="text-muted small"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${escapeHtml(item.diaDiem)}</span>` : ''}
-                                ${item.tenTruongBanTrongTai 
-                                    ? `<span class="badge bg-warning-subtle text-dark border border-warning-subtle"><i class="fa-solid fa-whistle me-1 text-warning"></i>TT Trưởng: ${escapeHtml(item.tenTruongBanTrongTai)}</span>` 
-                                    : `<span class="badge bg-light text-muted border border-dashed"><i class="fa-solid fa-circle-question me-1"></i>Chưa có TT trưởng</span>`}
+                                <span class="badge bg-light text-secondary border">Mã: ${escapeHtml(item.ma)}</span>
                             </div>
                         </td>
                         <td><small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>${startDate} - ${endDate}</small></td>
                         <td><small class="text-danger fw-semibold">${deadline}</small></td>
                         <td>${statusBadge}</td>
                         <td class="text-end pe-3">
-                            <div class="btn-group btn-group-sm">
-                                <a href="/Manager/DangKyThiDau?giaiDauId=${item.id}" class="btn btn-outline-success" title="Duyệt Đăng Ký">
-                                    <i class="fa-solid fa-users me-1"></i>Đăng Ký
+                            <div class="action-group">
+                                <a href="/Manager/DangKyThiDau?giaiDauId=${item.id}" class="btn-action-pill btn-action-register" title="Duyệt Đăng Ký Thi Đấu">
+                                    <i class="fa-solid fa-users"></i>Đăng Ký
                                 </a>
-                                <a href="/Manager/LichThiDau?giaiDauId=${item.id}" class="btn btn-outline-primary" title="Xếp Lịch">
-                                    <i class="fa-solid fa-calendar-check me-1"></i>Lịch
+                                <a href="/Manager/LichThiDau?giaiDauId=${item.id}" class="btn-action-pill btn-action-schedule" title="Xếp Lịch Thi Đấu">
+                                    <i class="fa-solid fa-calendar-check"></i>Lịch
                                 </a>
-                                <a href="/Manager/GiaiDau/Edit/${item.id}" class="btn btn-light border" title="Chỉnh sửa giải đấu & môn thi">
-                                    <i class="fa-solid fa-pen-to-square text-secondary"></i>
+                                <a href="/Manager/GiaiDau/Edit/${item.id}#sectionPhanCong" class="btn-action-pill btn-action-assign" title="Phân Công Trọng Tài, Điều Hành Môn & Thư Ký">
+                                    <i class="fa-solid fa-users-gear"></i>Phân Công
                                 </a>
-                                <button type="button" class="btn btn-light border" title="Xóa giải đấu" onclick="deleteItem(${item.id}, '${escapeHtml(item.ten)}')">
-                                    <i class="fa-solid fa-trash text-danger"></i>
+                                <a href="/Manager/GiaiDau/Edit/${item.id}" class="btn-action-icon btn-action-edit" title="Chỉnh sửa giải đấu & môn thi">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                                <button type="button" class="btn-action-icon btn-action-delete" title="Xóa giải đấu" onclick="deleteItem(${item.id}, '${escapeHtml(item.ten)}')">
+                                    <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </div>
                         </td>

@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Areas.DieuHanhMon.Controllers
 {
     [Area("DieuHanhMon")]
-    [Authorize(Roles = "SportCoordinator")]
+    [Authorize(Roles = AppRoles.SportCoordinator)]
     public abstract class BaseDieuHanhMonController : Controller
     {
         protected readonly IDieuHanhMonService _dieuHanhService;

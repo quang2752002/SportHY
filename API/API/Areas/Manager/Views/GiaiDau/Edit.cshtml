@@ -4,6 +4,9 @@
     var khois = ViewBag.Khois as IEnumerable<KhoiDto> ?? Enumerable.Empty<KhoiDto>();
     var monTheThaos = ViewBag.MonTheThaos as IEnumerable<MonTheThaoDto> ?? Enumerable.Empty<MonTheThaoDto>();
     var trongTais = ViewBag.TrongTais as IEnumerable<TrongTaiDto> ?? Enumerable.Empty<TrongTaiDto>();
+    var sportCoordinatorUsers = ViewBag.SportCoordinatorUsers as List<SportCoordinatorUserOptionDto> ?? new();
+    var secretaryAssignments = ViewBag.SecretaryAssignments as List<ThuKyPhanCongDto> ?? new();
+    var categoryAssignments = ViewBag.CategoryAssignments as List<CategoryAssignmentViewModelDto> ?? new();
     var selectedMonIds = Model.MonTheThaoIds ?? new List<int>();
     var selectedKhoiIds = Model.KhoiIds ?? new List<int>();
     var dieuLes = Model.DieuLeGiaiDaus ?? new List<DieuLeGiaiDauDto>();
@@ -179,6 +182,214 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 4. Phân Công Nhân Sự Điều Hành Giải (Trưởng ban, Điều hành môn & Thư ký) -->
+            <div class="card card-custom mb-4" id="sectionPhanCong">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">
+                            <i class="fa-solid fa-users-gear text-primary me-2"></i>4. Phân Công Nhân Sự Điều Hành Giải
+                        </h6>
+                        <small class="text-muted">Phân công Trưởng ban trọng tài, Người điều hành từng môn và Thư ký trực tiếp cho giải đấu này</small>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill small fw-semibold">
+                        @Model.Ten
+                    </span>
+                </div>
+                <div class="card-body">
+                    <!-- 4.1. Trưởng ban trọng tài -->
+                    <div class="p-3 bg-light rounded-3 mb-4 border">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label fw-bold text-dark mb-0">
+                                <i class="fa-solid fa-user-shield text-warning me-1"></i> Trưởng Ban Trọng Tài Giải Đấu
+                            </label>
+                            @if (Model.TruongBanTrongTaiId.HasValue)
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1" id="badgeHeadRefStatus">
+                                    <i class="fa-solid fa-check me-1"></i> Đã phân công
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1" id="badgeHeadRefStatus">
+                                    <i class="fa-solid fa-clock me-1"></i> Chưa phân công
+                                </span>
+                            }
+                        </div>
+                        <p class="text-muted small mb-2">Trưởng ban chịu trách nhiệm phân bổ trọng tài, giám sát trùng lịch và phê duyệt biên bản thi đấu.</p>
+                        <div class="input-group">
+                            <select class="form-select" id="truongBanTrongTaiId">
+                                <option value="">-- Chưa chỉ định / Hủy phân công --</option>
+                                @foreach (var tt in trongTais)
+                                {
+                                    if (Model.TruongBanTrongTaiId == tt.Id)
+                                    {
+                                        <option value="@tt.Id" selected="selected">@tt.HoTen (@tt.Ma) - @tt.CapBac</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@tt.Id">@tt.HoTen (@tt.Ma) - @tt.CapBac</option>
+                                    }
+                                }
+                            </select>
+                            <button type="button" class="btn btn-outline-primary" onclick="quickSaveHeadReferee()" title="Lưu riêng Trưởng ban trọng tài">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Lưu ngay
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 4.2. Người điều hành theo danh mục môn -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0">
+                                    <i class="fa-solid fa-volleyball text-success me-1"></i> Người Điều Hành Môn (Theo Danh Mục Môn)
+                                </h6>
+                                <small class="text-muted">Chọn tài khoản Người điều hành môn phụ trách giám sát môn thi đấu</small>
+                            </div>
+                            <span class="badge bg-light text-secondary border">@categoryAssignments.Count danh mục</span>
+                        </div>
+
+                        @if (!categoryAssignments.Any())
+                        {
+                            <div class="text-center py-3 text-muted bg-light rounded-3 small">
+                                Chưa có môn thi đấu nào trong giải. Hãy tích chọn môn ở mục 2 và lưu lại để hiển thị danh mục môn.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive border rounded">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light small">
+                                        <tr>
+                                            <th class="ps-3" style="width: 220px;">Danh Mục Môn</th>
+                                            <th>Các Môn Trong Danh Mục</th>
+                                            <th style="width: 290px;">Người Điều Hành Phụ Trách</th>
+                                            <th class="text-end pe-3" style="width: 100px;">Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody style="font-size: 13px;">
+                                        @foreach (var cat in categoryAssignments)
+                                        {
+                                            <tr>
+                                                <td class="ps-3">
+                                                    <div class="fw-bold text-dark">@cat.TenDanhMuc</div>
+                                                    <small class="text-muted font-monospace">Mã: @cat.MaDanhMuc</small>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        @foreach (var m in cat.DanhSachMon)
+                                                        {
+                                                            <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">@m</span>
+                                                        }
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm sel-coordinator" data-danhmuc-id="@cat.DanhMucId" id="selectCoord_@cat.DanhMucId">
+                                                        <option value="">-- Chưa gán người điều hành --</option>
+                                                        @foreach (var coord in sportCoordinatorUsers)
+                                                        {
+                                                            if (cat.NguoiDieuHanhMonId == coord.Id)
+                                                            {
+                                                                <option value="@coord.Id" selected="selected">@coord.Ma - @coord.FullName (@coord.UserName)</option>
+                                                            }
+                                                            else
+                                                            {
+                                                                <option value="@coord.Id">@coord.Ma - @coord.FullName (@coord.UserName)</option>
+                                                            }
+                                                        }
+                                                        @if (cat.NguoiDieuHanhMonId.HasValue && sportCoordinatorUsers.All(p => p.Id != cat.NguoiDieuHanhMonId.Value))
+                                                        {
+                                                            <option value="@cat.NguoiDieuHanhMonId" selected="selected" disabled>@(cat.TenNguoiDieuHanh ?? "Hồ sơ đã phân công")</option>
+                                                        }
+                                                    </select>
+                                                </td>
+                                                <td class="text-end pe-3">
+                                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="quickSaveCoordinator(@cat.DanhMucId, '@cat.TenDanhMuc')" title="Lưu người điều hành này">
+                                                        <i class="fa-solid fa-check"></i> Lưu
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- 4.3. Phân công thư ký giải đấu -->
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0">
+                                    <i class="fa-solid fa-user-pen text-info me-1"></i> Phân Công Thư Ký Cho Giải Đấu
+                                </h6>
+                                <small class="text-muted">Chỉ các thư ký được tích chọn mới nhìn thấy và quản trị giải đấu này sau khi đăng nhập</small>
+                            </div>
+                            <span class="badge bg-light text-secondary border">
+                                Đã chọn: <span id="selectedSecretaryCount" class="fw-bold text-primary">@secretaryAssignments.Count(s => s.DaPhanCong)</span> thư ký
+                            </span>
+                        </div>
+
+                        @if (!secretaryAssignments.Any())
+                        {
+                            <div class="text-center py-3 text-muted bg-light rounded-3 small">
+                                Chưa có hồ sơ thư ký hoạt động trong hệ thống.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive border rounded mb-2" style="max-height: 280px; overflow-y: auto;">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light small sticky-top">
+                                        <tr>
+                                            <th class="text-center ps-2" style="width: 50px;">
+                                                <input type="checkbox" class="form-check-input" id="chkAllSecretaries" onchange="toggleSelectAllSecretaries(this)">
+                                            </th>
+                                            <th>Thư Ký</th>
+                                            <th>Chức Vụ / Đơn Vị</th>
+                                            <th>Liên Hệ</th>
+                                            <th class="text-end pe-3">Trạng Thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody style="font-size: 13px;">
+                                        @foreach (var s in secretaryAssignments)
+                                        {
+                                            <tr>
+                                                <td class="text-center ps-2">
+                                                    <input type="checkbox" class="form-check-input chk-secretary" value="@s.ThuKyId" @(s.DaPhanCong ? "checked" : "") onchange="updateSelectedSecretaryCount()">
+                                                </td>
+                                                <td>
+                                                    <div class="fw-bold text-dark">@s.HoTen</div>
+                                                    <small class="text-muted font-monospace">Mã: @s.Ma</small>
+                                                </td>
+                                                <td>
+                                                    <div>@(s.ChucVu ?? "-")</div>
+                                                    <small class="text-muted">@(s.DonViCongTac ?? "-")</small>
+                                                </td>
+                                                <td>
+                                                    <div>@(s.SoDienThoai ?? "-")</div>
+                                                    <small class="text-muted">@(s.Email ?? "-")</small>
+                                                </td>
+                                                <td class="text-end pe-3">
+                                                    <span class="badge @(s.DaPhanCong ? "bg-success-subtle text-success" : "bg-light text-secondary")">
+                                                        @(s.DaPhanCong ? "Đã phân công" : "Chưa phân công")
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="quickSaveSecretaries()">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> Lưu riêng danh sách thư ký
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Cột phải: Khối tham gia, Cấu hình & Banner -->
@@ -212,23 +423,12 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
-                            <i class="fa-solid fa-user-shield text-warning me-1"></i>Trọng tài trưởng giải
+                            <i class="fa-solid fa-users-gear text-primary me-1"></i>Phân công nhân sự
                         </label>
-                        <select class="form-select" id="truongBanTrongTaiId">
-                            <option value="">-- Chưa chỉ định / Phân công sau --</option>
-                            @foreach (var tt in trongTais)
-                            {
-                                if (Model.TruongBanTrongTaiId == tt.Id)
-                                {
-                                    <option value="@tt.Id" selected="selected">@tt.HoTen (@tt.Ma) - @tt.CapBac</option>
-                                }
-                                else
-                                {
-                                    <option value="@tt.Id">@tt.HoTen (@tt.Ma) - @tt.CapBac</option>
-                                }
-                            }
-                        </select>
-                        <div class="form-text small text-muted">Trọng tài được chọn sẽ làm Trưởng ban trọng tài, chịu trách nhiệm xếp lịch, phân công trọng tài và duyệt biên bản.</div>
+                        <a href="#sectionPhanCong" class="btn btn-sm btn-outline-primary w-100 text-start py-2">
+                            <i class="fa-solid fa-arrow-down me-1"></i> Đến mục Phân công (Mục 4)
+                        </a>
+                        <div class="form-text small text-muted">Trưởng ban, Điều hành môn & Thư ký được thiết lập trực tiếp tại Mục 4 bên dưới.</div>
                     </div>
                 </div>
             </div>
@@ -445,6 +645,23 @@
                 }
             });
 
+            // Thu thập danh sách Thư ký được chọn
+            const thuKyIds = [];
+            $('.chk-secretary:checked').each(function () {
+                thuKyIds.push(parseInt($(this).val()));
+            });
+
+            // Thu thập danh sách Người điều hành môn
+            const dieuHanhMonAssignments = [];
+            $('.sel-coordinator').each(function () {
+                const dmId = parseInt($(this).data('danhmuc-id'));
+                const coordVal = $(this).val();
+                dieuHanhMonAssignments.push({
+                    danhMucId: dmId,
+                    nguoiDieuHanhMonId: coordVal ? parseInt(coordVal) : null
+                });
+            });
+
             const payload = {
                 ten: ten,
                 ma: ma,
@@ -460,7 +677,9 @@
                 hinhAnh: $('#bannerUrl').val() || null,
                 monTheThaoIds: monTheThaoIds,
                 khoiIds: khoiIds,
-                dieuLes: dieuLeGiaiDaus
+                dieuLes: dieuLeGiaiDaus,
+                thuKyIds: thuKyIds,
+                dieuHanhMonAssignments: dieuHanhMonAssignments
             };
 
             $('#btnSubmit').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Đang lưu cập nhật...');
@@ -490,6 +709,73 @@
                     Swal.fire('Lỗi', xhr.responseJSON?.message || 'Có lỗi xảy ra khi lưu dữ liệu.', 'error');
                 }
             });
+        }
+
+        function quickSaveHeadReferee() {
+            const refId = $('#truongBanTrongTaiId').val();
+            const giaiDauId = parseInt($('#giaiDauId').val());
+            $.post('/Manager/PhanCong/AssignHeadReferee', {
+                giaiDauId: giaiDauId,
+                trongTaiId: refId ? parseInt(refId) : null
+            }, function (res) {
+                if (res.success) {
+                    SportApp.toast('success', res.message || 'Đã lưu Trưởng ban trọng tài!');
+                    if (refId) {
+                        $('#badgeHeadRefStatus').removeClass('bg-warning-subtle text-warning').addClass('bg-success-subtle text-success').html('<i class="fa-solid fa-check me-1"></i> Đã phân công');
+                    } else {
+                        $('#badgeHeadRefStatus').removeClass('bg-success-subtle text-success').addClass('bg-warning-subtle text-warning').html('<i class="fa-solid fa-clock me-1"></i> Chưa phân công');
+                    }
+                } else {
+                    Swal.fire('Lỗi', res.message || 'Không thể lưu', 'error');
+                }
+            });
+        }
+
+        function quickSaveCoordinator(danhMucId, tenDanhMuc) {
+            const coordId = $(`#selectCoord_${danhMucId}`).val();
+            const giaiDauId = parseInt($('#giaiDauId').val());
+            $.post('/Manager/PhanCong/AssignSportCoordinator', {
+                giaiDauId: giaiDauId,
+                danhMucId: danhMucId,
+                nguoiDieuHanhMonId: coordId ? parseInt(coordId) : null
+            }, function (res) {
+                if (res.success) {
+                    SportApp.toast('success', `Đã lưu điều hành cho môn: ${tenDanhMuc}!`);
+                } else {
+                    Swal.fire('Lỗi', res.message || 'Không thể lưu', 'error');
+                }
+            });
+        }
+
+        function quickSaveSecretaries() {
+            const thuKyIds = [];
+            $('.chk-secretary:checked').each(function () {
+                thuKyIds.push(parseInt($(this).val()));
+            });
+            const giaiDauId = parseInt($('#giaiDauId').val());
+            $.ajax({
+                url: `/Manager/PhanCong/AssignSecretaries?giaiDauId=${giaiDauId}`,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(thuKyIds),
+                success: function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã lưu danh sách thư ký giải!');
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu', 'error');
+                    }
+                }
+            });
+        }
+
+        function updateSelectedSecretaryCount() {
+            const count = $('.chk-secretary:checked').length;
+            $('#selectedSecretaryCount').text(count);
+        }
+
+        function toggleSelectAllSecretaries(checkbox) {
+            $('.chk-secretary').prop('checked', $(checkbox).is(':checked'));
+            updateSelectedSecretaryCount();
         }
 
         function escapeHtml(text) {

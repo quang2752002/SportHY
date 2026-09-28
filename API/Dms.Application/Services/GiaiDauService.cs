@@ -358,6 +358,42 @@ namespace Dms.Application.Services
                 }
             }
 
+            // 4. Lưu danh sách phân công thư ký nếu có
+            if (dto.ThuKyIds != null && dto.ThuKyIds.Any())
+            {
+                foreach (var tkId in dto.ThuKyIds.Distinct())
+                {
+                    await _unitOfWork.PhanCongThuKys.AddAsync(new PhanCongThuKy
+                    {
+                        GiaiDauId = entity.Id,
+                        ThuKyId = tkId,
+                        Created = DateTime.UtcNow,
+                        CreatedBy = createdBy,
+                        IsDeleted = false
+                    });
+                }
+            }
+
+            // 5. Lưu danh sách phân công người điều hành môn nếu có
+            if (dto.DieuHanhMonAssignments != null && dto.DieuHanhMonAssignments.Any())
+            {
+                foreach (var assign in dto.DieuHanhMonAssignments)
+                {
+                    if (assign.NguoiDieuHanhMonId.HasValue)
+                    {
+                        await _unitOfWork.PhanCongDieuHanhMons.AddAsync(new PhanCongDieuHanhMon
+                        {
+                            GiaiDauId = entity.Id,
+                            DanhMucId = assign.DanhMucId,
+                            NguoiDieuHanhMonId = assign.NguoiDieuHanhMonId.Value,
+                            Created = DateTime.UtcNow,
+                            CreatedBy = createdBy,
+                            IsDeleted = false
+                        });
+                    }
+                }
+            }
+
             await _unitOfWork.CompleteAsync();
 
             return await GetByIdAsync(entity.Id) ?? _mapper.Map<GiaiDauDto>(entity);
@@ -513,6 +549,87 @@ namespace Dms.Application.Services
                         CreatedBy = updatedBy,
                         IsDeleted = false
                     });
+                }
+            }
+
+            // 4. Cập nhật danh sách phân công thư ký nếu có
+            if (dto.ThuKyIds != null)
+            {
+                var existingThuKys = (await _unitOfWork.PhanCongThuKys.FindAsync(p => p.GiaiDauId == id)).ToList();
+                var targetTkIds = dto.ThuKyIds.Distinct().ToHashSet();
+
+                foreach (var existing in existingThuKys.Where(p => p.IsDeleted != true && !targetTkIds.Contains(p.ThuKyId)))
+                {
+                    existing.IsDeleted = true;
+                    existing.LastModified = DateTime.UtcNow;
+                    existing.LastModifiedBy = updatedBy;
+                    _unitOfWork.PhanCongThuKys.Update(existing);
+                }
+
+                foreach (var tkId in targetTkIds)
+                {
+                    var existing = existingThuKys.FirstOrDefault(p => p.ThuKyId == tkId);
+                    if (existing != null)
+                    {
+                        if (existing.IsDeleted == true)
+                        {
+                            existing.IsDeleted = false;
+                            existing.LastModified = DateTime.UtcNow;
+                            existing.LastModifiedBy = updatedBy;
+                            _unitOfWork.PhanCongThuKys.Update(existing);
+                        }
+                    }
+                    else
+                    {
+                        await _unitOfWork.PhanCongThuKys.AddAsync(new PhanCongThuKy
+                        {
+                            GiaiDauId = id,
+                            ThuKyId = tkId,
+                            Created = DateTime.UtcNow,
+                            CreatedBy = updatedBy,
+                            IsDeleted = false
+                        });
+                    }
+                }
+            }
+
+            // 5. Cập nhật phân công người điều hành môn nếu có
+            if (dto.DieuHanhMonAssignments != null)
+            {
+                var existingAssignments = (await _unitOfWork.PhanCongDieuHanhMons.FindAsync(p => p.GiaiDauId == id)).ToList();
+                foreach (var assign in dto.DieuHanhMonAssignments)
+                {
+                    var existing = existingAssignments.FirstOrDefault(p => p.DanhMucId == assign.DanhMucId);
+                    if (assign.NguoiDieuHanhMonId.HasValue)
+                    {
+                        if (existing != null)
+                        {
+                            existing.NguoiDieuHanhMonId = assign.NguoiDieuHanhMonId.Value;
+                            existing.IsDeleted = false;
+                            existing.LastModified = DateTime.UtcNow;
+                            existing.LastModifiedBy = updatedBy;
+                            _unitOfWork.PhanCongDieuHanhMons.Update(existing);
+                        }
+                        else
+                        {
+                            await _unitOfWork.PhanCongDieuHanhMons.AddAsync(new PhanCongDieuHanhMon
+                            {
+                                GiaiDauId = id,
+                                DanhMucId = assign.DanhMucId,
+                                NguoiDieuHanhMonId = assign.NguoiDieuHanhMonId.Value,
+                                Created = DateTime.UtcNow,
+                                CreatedBy = updatedBy,
+                                IsDeleted = false
+                            });
+                        }
+                    }
+                    else if (existing != null && existing.IsDeleted != true)
+                    {
+                        existing.IsDeleted = true;
+                        existing.LastModified = DateTime.UtcNow;
+                        existing.LastModifiedBy = updatedBy;
+                        _unitOfWork.PhanCongDieuHanhMons.Update(existing);
+                    }
                 }
             }
 

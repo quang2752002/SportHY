@@ -83,6 +83,12 @@ namespace Dms.Application.DTOs
         public string? GioiTinh { get; set; }
     }
 
+    public class CategoryCoordinatorAssignmentDto
+    {
+        public int DanhMucId { get; set; }
+        public int? NguoiDieuHanhMonId { get; set; }
+    }
+
     public class CreateUpdateGiaiDauDto
     {
         public string Ma { get; set; } = string.Empty;
@@ -106,5 +112,11 @@ namespace Dms.Application.DTOs
 
         // Danh sách điều lệ giải đấu
         public List<CreateUpdateDieuLeGiaiDauDto>? DieuLes { get; set; }
+
+        // Danh sách ID thư ký được phân công cho giải
+        public List<int>? ThuKyIds { get; set; }
+
+        // Danh sách phân công người điều hành theo danh mục môn
+        public List<CategoryCoordinatorAssignmentDto>? DieuHanhMonAssignments { get; set; }
     }
 }

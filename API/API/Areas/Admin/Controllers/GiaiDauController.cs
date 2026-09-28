@@ -118,21 +118,11 @@ namespace API.Areas.Admin.Controllers
                     if (updated == null)
                         return Json(new { success = false, message = "Không tìm thấy giải đấu để cập nhật." });
 
-                    if (dto.TruongBanTrongTaiId.HasValue)
-                    {
-                        await SyncHeadRefereeRoleAsync(dto.TruongBanTrongTaiId.Value);
-                    }
-
                     return Json(new { success = true, message = "Cập nhật giải đấu thành công!", id = updated.Id });
                 }
                 else
                 {
                     var created = await _giaiDauService.CreateAsync(dto, username);
-
-                    if (dto.TruongBanTrongTaiId.HasValue)
-                    {
-                        await SyncHeadRefereeRoleAsync(dto.TruongBanTrongTaiId.Value);
-                    }
 
                     return Json(new { success = true, message = "Thêm mới giải đấu thành công!", id = created.Id });
                 }
@@ -140,39 +130,6 @@ namespace API.Areas.Admin.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        private async Task SyncHeadRefereeRoleAsync(int trongTaiId)
-        {
-            try
-            {
-                var refList = await _trongTaiService.GetAllAsync();
-                var refEntity = refList.FirstOrDefault(t => t.Id == trongTaiId);
-                if (refEntity != null)
-                {
-                    var users = _userManager.Users.Where(u =>
-                        u.TrongTaiId == trongTaiId ||
-                        u.UserName == refEntity.Ma ||
-                        u.Email == refEntity.Email).ToList();
-                    foreach (var u in users)
-                    {
-                        if (u.TrongTaiId != trongTaiId)
-                        {
-                            u.TrongTaiId = trongTaiId;
-                            await _userManager.UpdateAsync(u);
-                        }
-
-                        if (!await _userManager.IsInRoleAsync(u, Dms.Application.Common.AppRoles.HeadReferee))
-                        {
-                            await _userManager.AddToRoleAsync(u, Dms.Application.Common.AppRoles.HeadReferee);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Bỏ qua lỗi đồng bộ tài khoản nếu có để không gián đoạn lưu giải
             }
         }
 
