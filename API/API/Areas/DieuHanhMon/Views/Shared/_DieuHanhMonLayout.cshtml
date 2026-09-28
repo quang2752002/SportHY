@@ -1,6 +1,8 @@
 @{
     var selectedGiaiDauId = ViewBag.SelectedGiaiDauId is int giaiDauId ? giaiDauId : (int?)null;
     var selectedDanhMucId = ViewBag.SelectedDanhMucId is int danhMucId ? danhMucId : (int?)null;
+    var assignments = ViewBag.Assignments as List<Dms.Application.DTOs.CoordinatorAssignmentDto>
+        ?? new List<Dms.Application.DTOs.CoordinatorAssignmentDto>();
     var selectedAssignmentQuery = selectedGiaiDauId.HasValue && selectedDanhMucId.HasValue
         ? $"?giaiDauId={selectedGiaiDauId.Value}&danhMucId={selectedDanhMucId.Value}"
         : string.Empty;
@@ -181,6 +183,29 @@
             flex: 1;
         }
 
+        .dh-assignment-bar {
+            border-left: 4px solid var(--dh-primary);
+            background: linear-gradient(100deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .dh-assignment-icon {
+            width: 44px;
+            height: 44px;
+            flex: 0 0 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--dh-primary);
+            background: #eaf1ff;
+            font-size: 1.15rem;
+        }
+
+        .dh-assignment-form {
+            flex: 0 1 520px;
+            min-width: 260px;
+        }
+
         .card-custom {
             border: 1px solid var(--dh-border);
             border-radius: 14px;
@@ -277,8 +302,6 @@
 
         .dh-sidebar .text-info { color: #93c5fd !important; }
 
-        .dh-header .border-teal { border-color: #b6c9ea !important; }
-
         @@media (max-width: 991.98px) {
             .dh-sidebar {
                 transform: translateX(-100%);
@@ -314,10 +337,9 @@
         }
 
         @@media (max-width: 575.98px) {
-            .dh-header form#formSelectAssignment { max-width: min(56vw, 250px); }
-            .dh-header form#formSelectAssignment select { min-width: 0 !important; width: 100%; }
             .dh-header .dropdown > button { padding: .25rem .4rem; }
             .dh-header .dropdown > button .fw-medium { max-width: 70px !important; }
+            .dh-assignment-form { flex: 1 1 100%; min-width: 0; width: 100%; }
             .dh-page-heading { font-size: 1.2rem; }
             .dh-content .modal-dialog { margin: .5rem; }
         }
@@ -415,24 +437,7 @@
                 </button>
                 <div class="d-flex align-items-center gap-2">
                     <i class="fa-solid fa-volleyball text-primary fs-5"></i>
-                    <span class="fw-semibold text-muted d-none d-sm-inline" style="font-size:0.88rem;">Môn phụ trách:</span>
-                    <form method="get" id="formSelectAssignment" class="m-0">
-                        <select name="selectedOption" class="form-select form-select-sm fw-bold border-teal bg-light" style="min-width: 260px; max-width: 420px;" onchange="onAssignmentChange(this)">
-                            @if (ViewBag.Assignments != null)
-                            {
-                                foreach (var a in (List<Dms.Application.DTOs.CoordinatorAssignmentDto>)ViewBag.Assignments)
-                                {
-                                    bool isSelected = ViewBag.SelectedGiaiDauId != null && (int)ViewBag.SelectedGiaiDauId == a.GiaiDauId &&
-                                                      ViewBag.SelectedDanhMucId != null && (int)ViewBag.SelectedDanhMucId == a.DanhMucId;
-                                    <option value="@a.GiaiDauId-@a.DanhMucId" selected="@isSelected">
-                                        @a.TenDanhMuc (@a.TenGiaiDau)
-                                    </option>
-                                }
-                            }
-                        </select>
-                        <input type="hidden" name="giaiDauId" id="inputGiaiDauId" value="@ViewBag.SelectedGiaiDauId" />
-                        <input type="hidden" name="danhMucId" id="inputDanhMucId" value="@ViewBag.SelectedDanhMucId" />
-                    </form>
+                    <span class="fw-semibold text-muted d-none d-sm-inline" style="font-size:0.88rem;">Phân hệ Điều hành môn</span>
                 </div>
             </div>
 
@@ -456,6 +461,37 @@
         </header>
 
         <main class="dh-content">
+            <section class="dh-assignment-bar card-custom px-3 px-md-4 py-3 mb-4" aria-label="Chọn môn phụ trách">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="dh-assignment-icon"><i class="fa-solid fa-volleyball"></i></div>
+                        <div>
+                            <div class="fw-bold text-dark">Môn phụ trách</div>
+                            <div class="small text-muted">Chọn giải đấu và danh mục môn được phân công</div>
+                        </div>
+                    </div>
+                    <form method="get" id="formSelectAssignment" class="dh-assignment-form m-0">
+                        <select name="selectedOption" class="form-select fw-semibold" onchange="onAssignmentChange(this)" aria-label="Chọn giải đấu và môn phụ trách" @(assignments.Count == 0 ? "disabled" : null)>
+                            @if (assignments.Count == 0)
+                            {
+                                <option value="" selected>Chưa có môn được phân công</option>
+                            }
+                            else
+                            {
+                                foreach (var a in assignments)
+                                {
+                                    bool isSelected = selectedGiaiDauId == a.GiaiDauId && selectedDanhMucId == a.DanhMucId;
+                                    <option value="@a.GiaiDauId-@a.DanhMucId" selected="@isSelected">
+                                        @a.TenDanhMuc (@a.TenGiaiDau)
+                                    </option>
+                                }
+                            }
+                        </select>
+                        <input type="hidden" name="giaiDauId" id="inputGiaiDauId" value="@ViewBag.SelectedGiaiDauId" />
+                        <input type="hidden" name="danhMucId" id="inputDanhMucId" value="@ViewBag.SelectedDanhMucId" />
+                    </form>
+                </div>
+            </section>
             @RenderBody()
         </main>
     </div>

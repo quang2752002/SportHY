@@ -286,6 +286,7 @@
                     var isManager = User.IsInRole(AppRoles.Manager);
                     var isAdmin = User.IsInRole(AppRoles.Admin);
                     var isDelegation = User.IsInRole(AppRoles.Delegation);
+                    var isSportCoordinator = User.IsInRole(AppRoles.SportCoordinator);
 
                     <div class="dropdown">
                         <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2 py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -316,6 +317,15 @@
                                 }
                             </li>
                             <li><hr class="dropdown-divider"></li>
+                            @if (isSportCoordinator)
+                            {
+                                <li>
+                                    <a class="dropdown-item py-2" href="/DieuHanhMon/Home">
+                                        <i class="fa-solid fa-volleyball me-2 text-primary"></i> Quay về Điều hành môn
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                            }
                             <li>
                                 <a class="dropdown-item py-2 text-danger" href="/Account/Logout">
                                     <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Đăng Xuất
@@ -340,6 +350,12 @@
                     {
                         <a href="/Admin/GiaiDau" class="btn btn-primary btn-sm fw-bold shadow-sm d-none d-sm-inline-flex align-items-center">
                             <i class="fa-solid fa-sliders me-1"></i> Trang Admin
+                        </a>
+                    }
+                    else if (isSportCoordinator)
+                    {
+                        <a href="/DieuHanhMon/Home" class="btn btn-info btn-sm fw-bold shadow-sm d-none d-sm-inline-flex align-items-center text-dark">
+                            <i class="fa-solid fa-volleyball me-1"></i> Quay về Điều hành môn
                         </a>
                     }
                 }

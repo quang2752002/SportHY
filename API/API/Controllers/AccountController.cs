@@ -1,4 +1,6 @@
 using Dms.Application.Common;
+using Dms.Application.DTOs;
+using Dms.Application.Interfaces;
 using Dms.Domain.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -24,21 +26,55 @@ namespace API.Controllers
         public string? ReturnUrl { get; set; }
     }
 
-    [AllowAnonymous]
+    public class ChangePasswordViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu hiện tại.")]
+        [DataType(DataType.Password)]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới.")]
+        [DataType(DataType.Password)]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu mới.")]
+        [DataType(DataType.Password)]
+        [Compare(nameof(NewPassword), ErrorMessage = "Mật khẩu xác nhận không khớp.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    public class UpdateAccountPhoneNumberViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
+        [StringLength(32, ErrorMessage = "Số điện thoại không được dài quá 32 ký tự.")]
+        [Phone(ErrorMessage = "Số điện thoại không đúng định dạng.")]
+        public string? PhoneNumber { get; set; }
+    }
+
+    public class AccountProfilePageViewModel
+    {
+        public AccountProfileDto Profile { get; set; } = new();
+        public ChangePasswordViewModel PasswordChange { get; set; } = new();
+        public UpdateAccountPhoneNumberViewModel PhoneNumberChange { get; set; } = new();
+    }
+
     public class AccountController : Controller
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IAccountProfileService _accountProfileService;
 
         public AccountController(
             SignInManager<ApplicationUser> signInManager,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IAccountProfileService accountProfileService)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _accountProfileService = accountProfileService;
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> Login(string? returnUrl = null, bool switchAccount = false)
         {
             if (switchAccount)
@@ -82,6 +118,7 @@ namespace API.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
@@ -163,9 +200,120 @@ namespace API.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult AccessDenied()
         {
             return View();
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Profile()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var model = await BuildProfilePageAsync(user);
+            return model == null ? NotFound() : View(model);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdatePhoneNumber(
+            [Bind(Prefix = "PhoneNumberChange")] UpdateAccountPhoneNumberViewModel phoneModel)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            if (!ModelState.IsValid)
+            {
+                var invalidModel = await BuildProfilePageAsync(user);
+                if (invalidModel == null) return NotFound();
+                invalidModel.PhoneNumberChange = phoneModel;
+                return View("Profile", invalidModel);
+            }
+
+            var updateResult = await _accountProfileService.UpdatePhoneNumberAsync(user.Id, phoneModel.PhoneNumber);
+            if (!updateResult.success)
+            {
+                ModelState.AddModelError("PhoneNumberChange.PhoneNumber", updateResult.message);
+                var failedModel = await BuildProfilePageAsync(user);
+                if (failedModel == null) return NotFound();
+                failedModel.PhoneNumberChange = phoneModel;
+                return View("Profile", failedModel);
+            }
+
+            TempData["ProfileSuccess"] = updateResult.message;
+            return RedirectToAction(nameof(Profile));
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword([Bind(Prefix = "PasswordChange")] ChangePasswordViewModel passwordModel)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            if (!ModelState.IsValid)
+            {
+                var invalidModel = await BuildProfilePageAsync(user);
+                if (invalidModel == null) return NotFound();
+                invalidModel.PasswordChange = passwordModel;
+                return View("Profile", invalidModel);
+            }
+
+            var changeResult = await _userManager.ChangePasswordAsync(
+                user,
+                passwordModel.CurrentPassword,
+                passwordModel.NewPassword);
+
+            if (!changeResult.Succeeded)
+            {
+                foreach (var error in changeResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, GetVietnamesePasswordError(error));
+                }
+
+                var failedModel = await BuildProfilePageAsync(user);
+                if (failedModel == null) return NotFound();
+                failedModel.PasswordChange = passwordModel;
+                return View("Profile", failedModel);
+            }
+
+            await _signInManager.RefreshSignInAsync(user);
+            TempData["ProfileSuccess"] = "Đổi mật khẩu thành công.";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        private async Task<AccountProfilePageViewModel?> BuildProfilePageAsync(ApplicationUser user)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            var profile = await _accountProfileService.GetProfileAsync(user.Id, roles.ToList());
+            return profile == null
+                ? null
+                : new AccountProfilePageViewModel
+                {
+                    Profile = profile,
+                    PhoneNumberChange = new UpdateAccountPhoneNumberViewModel { PhoneNumber = profile.PhoneNumber }
+                };
+        }
+
+        private static string GetVietnamesePasswordError(IdentityError error)
+        {
+            return error.Code switch
+            {
+                "PasswordMismatch" => "Mật khẩu hiện tại không chính xác.",
+                "PasswordTooShort" => "Mật khẩu mới chưa đạt độ dài tối thiểu theo quy định.",
+                "PasswordRequiresDigit" => "Mật khẩu mới phải có ít nhất một chữ số.",
+                "PasswordRequiresLower" => "Mật khẩu mới phải có ít nhất một chữ cái viết thường.",
+                "PasswordRequiresUpper" => "Mật khẩu mới phải có ít nhất một chữ cái viết hoa.",
+                "PasswordRequiresNonAlphanumeric" => "Mật khẩu mới phải có ít nhất một ký tự đặc biệt.",
+                "PasswordRequiresUniqueChars" => "Mật khẩu mới cần có thêm các ký tự khác nhau.",
+                "InvalidToken" => "Thông tin xác thực không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.",
+                _ => "Không thể đổi mật khẩu. Vui lòng kiểm tra lại thông tin và thử lại."
+            };
         }
 
         private IActionResult RedirectToLocal(string? returnUrl)
