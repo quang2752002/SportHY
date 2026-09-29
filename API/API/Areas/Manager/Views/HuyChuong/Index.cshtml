@@ -198,7 +198,7 @@
         <div class="d-flex flex-wrap align-items-center gap-2">
             <div class="d-flex align-items-center gap-2">
                 <label class="small fw-bold text-muted text-nowrap d-none d-sm-block">Giải đấu:</label>
-                <select id="giaiDauSelect" class="form-select rounded-3 shadow-none border-secondary-subtle" style="min-width: 280px; height: 40px; font-weight: 600;" onchange="onTournamentChange(this.value)">
+                <select id="giaiDauSelect" class="form-select rounded-3 shadow-none border-secondary-subtle" style="min-width: 250px; height: 40px; font-weight: 600;" onchange="onTournamentChange(this.value)">
                     <option value="">-- Tất cả giải đấu (Tổng hợp toàn đoàn) --</option>
                     @foreach (var g in giaiDaus)
                     {
@@ -213,6 +213,16 @@
                     }
                 </select>
             </div>
+            <div class="d-flex align-items-center gap-2" id="monTheThaoContainer">
+                <label class="small fw-bold text-muted text-nowrap d-none d-sm-block">Môn thi đấu:</label>
+                <select id="monTheThaoSelect" class="form-select rounded-3 shadow-none border-secondary-subtle" style="min-width: 220px; height: 40px; font-weight: 600;" onchange="onMonTheThaoChange(this.value)">
+                    <option value="">-- Tất cả môn thi đấu --</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-warning text-dark fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm" style="height: 40px;" onclick="syncMedalsFromResults()" title="Tự động quét kết quả các bảng đấu/trận đấu để tính toán và trao huy chương">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span class="d-none d-md-inline">Đồng bộ huy chương</span>
+            </button>
             <a id="btnPublicView" href="/BangXepHang" target="_blank" class="btn btn-outline-primary d-inline-flex align-items-center gap-1.5" style="height: 40px;" title="Xem trên cổng thông tin công khai">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
                 <span class="d-none d-md-inline">Trang công khai</span>
@@ -383,6 +393,7 @@
 @section Scripts {
     <script>
         let currentGiaiDauId = @(selectedGiaiDauId.HasValue ? selectedGiaiDauId.Value : 0);
+        let currentMonTheThaoId = null;
         let medalRankings = [];
         let allMedalDetails = [];
         let standingKeyword = '';
@@ -391,31 +402,104 @@
         $(document).ready(function () {
             const urlParams = new URLSearchParams(window.location.search);
             const qGId = urlParams.get('giaiDauId');
+            const qMId = urlParams.get('monTheThaoId');
             if (qGId !== null && qGId !== undefined) {
                 currentGiaiDauId = parseInt(qGId) || 0;
                 $('#giaiDauSelect').val(currentGiaiDauId > 0 ? currentGiaiDauId : "");
             }
+            if (qMId !== null && qMId !== undefined) {
+                currentMonTheThaoId = parseInt(qMId) || null;
+            }
 
+            loadSports(currentGiaiDauId, currentMonTheThaoId);
             reloadAllData();
         });
 
+        function loadSports(giaiDauId, selectedMonId) {
+            const url = giaiDauId > 0
+                ? `/Manager/HuyChuong/GetSportsByGiaiDau?giaiDauId=${giaiDauId}`
+                : '/Manager/HuyChuong/GetSportsByGiaiDau';
+
+            $.get(url, function (res) {
+                let html = '<option value="">-- Tất cả môn thi đấu --</option>';
+                if (res && res.success && res.data) {
+                    res.data.forEach(function (m) {
+                        const sel = selectedMonId && selectedMonId === m.id ? 'selected' : '';
+                        html += `<option value="${m.id}" ${sel}>${escapeHtml(m.ten)}</option>`;
+                    });
+                }
+                $('#monTheThaoSelect').html(html);
+                if (selectedMonId) {
+                    $('#monTheThaoSelect').val(selectedMonId);
+                }
+            });
+        }
+
         function onTournamentChange(val) {
             currentGiaiDauId = val ? parseInt(val) : 0;
+            currentMonTheThaoId = null;
+            loadSports(currentGiaiDauId);
+            updatePublicLink();
+            reloadAllData();
+        }
+
+        function onMonTheThaoChange(val) {
+            currentMonTheThaoId = val ? parseInt(val) : null;
             updatePublicLink();
             reloadAllData();
         }
 
         function updatePublicLink() {
-            if (currentGiaiDauId > 0) {
-                $('#btnPublicView').attr('href', `/BangXepHang?giaiDauId=${currentGiaiDauId}`);
-            } else {
-                $('#btnPublicView').attr('href', '/BangXepHang');
-            }
+            let params = [];
+            if (currentGiaiDauId > 0) params.push(`giaiDauId=${currentGiaiDauId}`);
+            if (currentMonTheThaoId > 0) params.push(`monTheThaoId=${currentMonTheThaoId}`);
+            const qs = params.length > 0 ? '?' + params.join('&') : '';
+            $('#btnPublicView').attr('href', `/BangXepHang${qs}`);
         }
 
         function reloadAllData() {
             loadRankings();
             loadDetails();
+        }
+
+        function syncMedalsFromResults() {
+            Swal.fire({
+                title: 'Đồng bộ kết quả huy chương?',
+                html: 'Hệ thống sẽ tự động quét các bảng đấu và trận đấu đã hoàn thành (bao gồm cả thể thức Vòng Tròn, Knockout, Điền kinh...) để tính toán và trao huy chương (Vàng, Bạc, Đồng) theo đúng thứ hạng thực tế.<br><br>Bạn có muốn thực hiện ngay không?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa-solid fa-wand-magic-sparkles me-1"></i> Đồng bộ ngay',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    SportApp.showLoading('Đang tính toán và đồng bộ huy chương...');
+                    let params = [];
+                    if (currentGiaiDauId > 0) params.push(`giaiDauId=${currentGiaiDauId}`);
+                    if (currentMonTheThaoId > 0) params.push(`monTheThaoId=${currentMonTheThaoId}`);
+                    const qs = params.length > 0 ? '?' + params.join('&') : '';
+
+                    $.post(`/Manager/HuyChuong/SyncMedalsFromResults${qs}`, function (res) {
+                        SportApp.hideLoading();
+                        if (res && res.success) {
+                            let detailHtml = res.message || 'Đã đồng bộ huy chương thành công!';
+                            if (res.awarded && res.awarded.length > 0) {
+                                detailHtml += '<div class="text-start mt-3 p-2 bg-light rounded" style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;">' +
+                                    res.awarded.map(a => `<div>${escapeHtml(a)}</div>`).join('') +
+                                    '</div>';
+                            }
+                            Swal.fire('Thành công', detailHtml, 'success');
+                            reloadAllData();
+                        } else {
+                            Swal.fire('Thông báo', res ? res.message : 'Không có thay đổi nào.', 'info');
+                        }
+                    }).fail(function () {
+                        SportApp.hideLoading();
+                        Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ để đồng bộ huy chương.', 'error');
+                    });
+                }
+            });
         }
 
         // ==================== 1. GỌI BACKEND BANG XEP HANG ====================
@@ -429,9 +513,11 @@
                 </tr>
             `);
 
-            const url = currentGiaiDauId > 0
-                ? `/Manager/HuyChuong/GetMedalRankings?giaiDauId=${currentGiaiDauId}`
-                : '/Manager/HuyChuong/GetMedalRankings';
+            let params = [];
+            if (currentGiaiDauId > 0) params.push(`giaiDauId=${currentGiaiDauId}`);
+            if (currentMonTheThaoId > 0) params.push(`monTheThaoId=${currentMonTheThaoId}`);
+            const qs = params.length > 0 ? '?' + params.join('&') : '';
+            const url = `/Manager/HuyChuong/GetMedalRankings${qs}`;
 
             $.get(url, function (res) {
                 if (res && res.success && res.data) {
@@ -674,9 +760,11 @@
 
         // ==================== 2. QUẢN LÝ CHI TIẾT & THU HỒI ====================
         function loadDetails() {
-            const url = currentGiaiDauId > 0
-                ? `/Manager/HuyChuong/GetAll?giaiDauId=${currentGiaiDauId}`
-                : '/Manager/HuyChuong/GetAll';
+            let params = [];
+            if (currentGiaiDauId > 0) params.push(`giaiDauId=${currentGiaiDauId}`);
+            if (currentMonTheThaoId > 0) params.push(`monTheThaoId=${currentMonTheThaoId}`);
+            const qs = params.length > 0 ? '?' + params.join('&') : '';
+            const url = `/Manager/HuyChuong/GetAll${qs}`;
 
             $.get(url, function (res) {
                 if (res && res.success && res.data) {

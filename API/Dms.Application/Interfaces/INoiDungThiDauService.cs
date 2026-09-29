@@ -243,10 +243,53 @@ namespace Dms.Application.Interfaces
 
     public interface IHuyChuongService
     {
-        Task<IEnumerable<HuyChuongDto>> GetAllAsync(int? giaiDauId = null);
+        /// <summary>
+        /// Lấy toàn bộ danh sách huy chương đã trao, hỗ trợ lọc theo giải đấu và môn thể thao
+        /// </summary>
+        /// <param name="giaiDauId">Mã giải đấu (tùy chọn)</param>
+        /// <param name="monTheThaoId">Mã môn thể thao (tùy chọn)</param>
+        /// <returns>Danh sách chi tiết các huy chương đã trao</returns>
+        Task<IEnumerable<HuyChuongDto>> GetAllAsync(int? giaiDauId = null, int? monTheThaoId = null);
+
+        /// <summary>
+        /// Lấy thông tin chi tiết một bản ghi huy chương theo ID
+        /// </summary>
+        /// <param name="id">Mã định danh bản ghi huy chương</param>
+        /// <returns>Đối tượng DTO của huy chương hoặc null nếu không tìm thấy</returns>
         Task<HuyChuongDto?> GetByIdAsync(int id);
+
+        /// <summary>
+        /// Tạo mới một bản ghi huy chương trao cho VĐV / Đội thi đấu
+        /// </summary>
+        /// <param name="dto">Dữ liệu tạo huy chương</param>
+        /// <param name="createdBy">Người thực hiện</param>
+        /// <returns>Bản ghi huy chương vừa được tạo</returns>
         Task<HuyChuongDto> CreateAsync(CreateUpdateHuyChuongDto dto, string? createdBy = null);
+
+        /// <summary>
+        /// Cập nhật thông tin bản ghi huy chương đã trao
+        /// </summary>
+        /// <param name="id">Mã định danh bản ghi huy chương</param>
+        /// <param name="dto">Dữ liệu cập nhật</param>
+        /// <param name="updatedBy">Người thực hiện</param>
+        /// <returns>Bản ghi huy chương sau khi cập nhật hoặc null nếu không tìm thấy</returns>
         Task<HuyChuongDto?> UpdateAsync(int id, CreateUpdateHuyChuongDto dto, string? updatedBy = null);
+
+        /// <summary>
+        /// Xóa mềm một bản ghi huy chương đã trao
+        /// </summary>
+        /// <param name="id">Mã định danh bản ghi huy chương cần xóa</param>
+        /// <returns>True nếu xóa mềm thành công, False nếu không tìm thấy</returns>
         Task<bool> DeleteAsync(int id);
+
+        /// <summary>
+        /// Tự động quét và đồng bộ huy chương (Vàng, Bạc, Đồng) từ kết quả các trận đấu và bảng đấu
+        /// cho các thể thức Vòng Tròn (Round Robin), Loại Trực Tiếp (Knockout) và Điền Kinh/Bơi Lội.
+        /// </summary>
+        /// <param name="giaiDauId">Mã giải đấu (tùy chọn)</param>
+        /// <param name="monTheThaoId">Mã môn thể thao (tùy chọn)</param>
+        /// <param name="username">Người thực hiện</param>
+        /// <returns>Bộ ba kết quả: thành công, thông báo và danh sách các huy chương được trao/cập nhật</returns>
+        Task<(bool success, string message, List<string> awarded)> SyncMedalsFromResultsAsync(int? giaiDauId = null, int? monTheThaoId = null, string? username = null);
     }
 }

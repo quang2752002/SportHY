@@ -695,6 +695,12 @@ namespace Dms.Application.Services
                     await AdvanceGroupStageWinnersAsync(entity.GiaiDauMonTheThaoId, forceAdvance: false, username: updatedBy);
                 }
                 catch { }
+
+                try
+                {
+                    await CheckAndAwardRoundRobinMedalsAsync(entity.GiaiDauMonTheThaoId, entity.BangDauId.Value, updatedBy);
+                }
+                catch { }
             }
             // 2. Nếu là trận VÒNG KNOCKOUT: Tự động đưa đội thắng/thua đi tiếp vào Bán kết/Chung kết/Tranh 3-4 và trao huy chương
             else if (entity.TrangThai == "KetThuc" && !entity.BangDauId.HasValue)
@@ -3818,6 +3824,17 @@ namespace Dms.Application.Services
                     }
                 }
                 catch { }
+
+                try
+                {
+                    var rrMedals = await CheckAndAwardRoundRobinMedalsAsync(match.GiaiDauMonTheThaoId, match.BangDauId.Value, username);
+                    if (rrMedals.Any())
+                    {
+                        response.MedalsAwarded.AddRange(rrMedals);
+                        response.StandingsUpdateNotice += $" Bảng đấu đã hoàn thành và tự động trao {rrMedals.Count} huy chương!";
+                    }
+                }
+                catch { }
             }
 
             // 4. Nếu là trận VÒNG KNOCKOUT: Tự động đưa đội thắng/thua đi tiếp và trao huy chương
@@ -4127,6 +4144,115 @@ namespace Dms.Application.Services
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Tự động kiểm tra và trao huy chương (Vàng, Bạc, Đồng) cho thể thức Vòng Tròn khi tất cả các trận trong bảng đấu đã hoàn thành
+        /// </summary>
+        /// <param name="giaiDauMonTheThaoId">Mã định danh môn thi đấu trong giải</param>
+        /// <param name="bangDauId">Mã định danh bảng đấu</param>
+        /// <param name="username">Người thực hiện</param>
+        /// <returns>Danh sách các thông báo huy chương được trao</returns>
+        private async Task<List<string>> CheckAndAwardRoundRobinMedalsAsync(int giaiDauMonTheThaoId, int bangDauId, string? username = null)
+        {
+            var notices = new List<string>();
+            try
+            {
+                var gdm = await _unitOfWork.GiaiDauMonTheThaos.GetByIdAsync(giaiDauMonTheThaoId);
+                if (gdm == null || gdm.IsDeleted == true) return notices;
+
+                var mon = await _unitOfWork.MonTheThaos.GetByIdAsync(gdm.MonTheThaoId);
+                var hinhThuc = mon?.HinhThucThiDau ?? Dms.Domain.Enums.HinhThucThiDau.LoaiTrucTiep;
+
+                // Kiểm tra xem môn này có trận Knockout nào không
+                var allMatches = (await _unitOfWork.TranDaus.FindAsync(t => t.GiaiDauMonTheThaoId == giaiDauMonTheThaoId && t.IsDeleted != true)).ToList();
+                bool hasKnockout = allMatches.Any(m => !m.BangDauId.HasValue);
+
+                // Chỉ tự động trao huy chương theo vòng bảng nếu là thể thức Vòng Tròn hoặc môn không có vòng Knockout
+                if (hinhThuc != Dms.Domain.Enums.HinhThucThiDau.VongBang && hasKnockout)
+                {
+                    return notices;
+                }
+
+                // Kiểm tra các trận của bảng này đã kết thúc hết chưa
+                var groupMatches = allMatches.Where(m => m.BangDauId == bangDauId).ToList();
+                if (!groupMatches.Any()) return notices;
+
+                bool isCompleted = groupMatches.All(m => m.TrangThai == "KetThuc" || m.TrangThai == "DaDau");
+                if (!isCompleted) return notices;
+
+                // Đảm bảo loại huy chương chuẩn tồn tại
+                var loaiHcs = (await _unitOfWork.LoaiHuyChuongs.FindAsync(l => l.IsDeleted != true)).ToList();
+                var lhcVang = loaiHcs.FirstOrDefault(l => (l.Ma ?? "").ToUpper() == "VANG" || l.ThuTu == 1);
+                var lhcBac = loaiHcs.FirstOrDefault(l => (l.Ma ?? "").ToUpper() == "BAC" || l.ThuTu == 2);
+                var lhcDong = loaiHcs.FirstOrDefault(l => (l.Ma ?? "").ToUpper() == "DONG" || l.ThuTu == 3);
+
+                bool needSaveLoai = false;
+                if (lhcVang == null) { lhcVang = new LoaiHuyChuong { Ma = "VANG", Ten = "Huy chương Vàng", ThuTu = 1, Created = DateTime.UtcNow, IsDeleted = false }; await _unitOfWork.LoaiHuyChuongs.AddAsync(lhcVang); needSaveLoai = true; }
+                if (lhcBac == null) { lhcBac = new LoaiHuyChuong { Ma = "BAC", Ten = "Huy chương Bạc", ThuTu = 2, Created = DateTime.UtcNow, IsDeleted = false }; await _unitOfWork.LoaiHuyChuongs.AddAsync(lhcBac); needSaveLoai = true; }
+                if (lhcDong == null) { lhcDong = new LoaiHuyChuong { Ma = "DONG", Ten = "Huy chương Đồng", ThuTu = 3, Created = DateTime.UtcNow, IsDeleted = false }; await _unitOfWork.LoaiHuyChuongs.AddAsync(lhcDong); needSaveLoai = true; }
+                if (needSaveLoai) await _unitOfWork.CompleteAsync();
+
+                var bang = await _unitOfWork.BangDaus.GetByIdAsync(bangDauId);
+                string tenBang = bang?.Ten ?? "Bảng đấu";
+
+                var members = (await _unitOfWork.ThanhVienBangs.FindAsync(m => m.BangDauId == bangDauId && m.IsDeleted != true))
+                    .OrderBy(m => m.XepHang ?? 999).ThenByDescending(m => m.Diem).ToList();
+
+                if (!members.Any()) return notices;
+
+                var top1 = members.FirstOrDefault(m => m.XepHang == 1) ?? members[0];
+                var top2 = members.FirstOrDefault(m => m.XepHang == 2) ?? (members.Count > 1 ? members[1] : null);
+                var top3 = members.FirstOrDefault(m => m.XepHang == 3) ?? (members.Count > 2 ? members[2] : null);
+
+                var dks = (await _unitOfWork.DangKyThiDaus.FindAsync(d => d.GiaiDauMonTheThaoId == giaiDauMonTheThaoId && d.IsDeleted != true)).ToDictionary(d => d.Id);
+
+                async Task UpsertGroupMedal(int dangKyId, int lhcId, int rank, string medalEmoji, string rankText)
+                {
+                    string name = dks.TryGetValue(dangKyId, out var dk) ? dk.TenDangKy : $"Đội {dangKyId}";
+                    var existing = (await _unitOfWork.HuyChuongs.FindAsync(h =>
+                        h.GiaiDauMonTheThaoId == giaiDauMonTheThaoId &&
+                        h.DangKyThiDauId == dangKyId &&
+                        h.IsDeleted != true
+                    )).FirstOrDefault();
+
+                    if (existing != null)
+                    {
+                        existing.LoaiHuyChuongId = lhcId;
+                        existing.XepHang = rank;
+                        existing.GhiChu = $"{medalEmoji} {rankText} - {tenBang} ({mon?.Ten})";
+                        existing.NgayTrao = DateTime.UtcNow;
+                        existing.LastModified = DateTime.UtcNow;
+                        existing.LastModifiedBy = username;
+                        _unitOfWork.HuyChuongs.Update(existing);
+                    }
+                    else
+                    {
+                        await _unitOfWork.HuyChuongs.AddAsync(new HuyChuong
+                        {
+                            GiaiDauId = gdm.GiaiDauId,
+                            GiaiDauMonTheThaoId = giaiDauMonTheThaoId,
+                            DangKyThiDauId = dangKyId,
+                            LoaiHuyChuongId = lhcId,
+                            XepHang = rank,
+                            NgayTrao = DateTime.UtcNow,
+                            GhiChu = $"{medalEmoji} {rankText} - {tenBang} ({mon?.Ten})",
+                            Created = DateTime.UtcNow,
+                            CreatedBy = username,
+                            IsDeleted = false
+                        });
+                    }
+                    notices.Add($"{medalEmoji} {rankText} trao cho '{name}' ({tenBang})");
+                }
+
+                if (top1 != null && lhcVang != null) await UpsertGroupMedal(top1.DangKyThiDauId, lhcVang.Id, 1, "🥇", "Huy chương Vàng");
+                if (top2 != null && lhcBac != null) await UpsertGroupMedal(top2.DangKyThiDauId, lhcBac.Id, 2, "🥈", "Huy chương Bạc");
+                if (top3 != null && lhcDong != null) await UpsertGroupMedal(top3.DangKyThiDauId, lhcDong.Id, 3, "🥉", "Huy chương Đồng");
+
+                await _unitOfWork.CompleteAsync();
+            }
+            catch { }
+            return notices;
         }
     }
 }
