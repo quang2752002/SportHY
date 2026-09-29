@@ -44,6 +44,22 @@ namespace Dms.Application.Interfaces
         Task<bool> IsRefereeAssignedToMatchAsync(int refereeId, int tranDauId);
 
         /// <summary>
+        /// Kiểm tra trọng tài có đang giữ vai trò trọng tài chính trong trận đấu hay không.
+        /// </summary>
+        /// <param name="refereeId">ID hồ sơ trọng tài.</param>
+        /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
+        /// <returns>True nếu trọng tài được phân công chính vào trận đấu còn hiệu lực.</returns>
+        Task<bool> IsHeadRefereeAssignedToMatchAsync(int refereeId, int tranDauId);
+
+        /// <summary>
+        /// Lấy các trận trong danh sách mà trọng tài được phân công ở vai trò trọng tài chính.
+        /// </summary>
+        /// <param name="refereeId">ID hồ sơ trọng tài.</param>
+        /// <param name="tranDauIds">Danh sách ID trận cần kiểm tra.</param>
+        /// <returns>Tập ID trận có phân công trọng tài chính còn hiệu lực.</returns>
+        Task<HashSet<int>> GetHeadRefereeMatchIdsAsync(int refereeId, IReadOnlyCollection<int> tranDauIds);
+
+        /// <summary>
         /// Kiểm tra trận đấu có thuộc giải đấu được chỉ định hay không.
         /// </summary>
         /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>

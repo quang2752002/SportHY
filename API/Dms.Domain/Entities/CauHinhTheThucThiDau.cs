@@ -88,7 +88,6 @@ namespace Dms.Domain.Entities
         [MaxLength(30)]
         public string? TieuChiXepHangThanhTich { get; set; } = "CangNhoCangTot"; // "CangNhoCangTot" (Bơi/Chạy), "CangLonCangTot" (Nhảy/Cử tạ/Bắn súng)
 
-        public bool ChoPhepDongHangThanhTich { get; set; } = true;
         [MaxLength(100)]
         public string? TenTieuChiPhuThanhTich { get; set; } = "Chỉ số phụ";
         public bool TieuChiPhuCangNhoCangTot { get; set; } = true;

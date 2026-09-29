@@ -24,8 +24,8 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
-        /// Ghi nhận kết quả lượt thi (Heat) bơi lội / điền kinh, cập nhật thứ hạng theo làn,
-        /// kiểm tra phá kỷ lục giải, và tự động đưa Top VĐV vào Lượt Chung kết hoặc trao huy chương.
+        /// Ghi nhận kết quả lượt thi bơi lội/điền kinh, bắt buộc phân định thành tích chính bằng chỉ số phụ,
+        /// cập nhật thứ hạng duy nhất, kiểm tra kỷ lục và tự động chọn VĐV vào chung kết hoặc trao huy chương.
         /// </summary>
         /// <param name="tranDauId">Mã định danh lượt thi vừa hoàn thành</param>
         /// <param name="heatResults">Danh sách thành tích của các VĐV theo làn</param>
@@ -49,7 +49,7 @@ namespace Dms.Application.Services
             }
 
             bool isAscending = (config.TieuChiXepHangThanhTich ?? "CangNhoCangTot") == "CangNhoCangTot";
-            var qualificationError = await ValidateQualificationTieAsync(currentMatch, heatResults, config, isAscending);
+            var qualificationError = await ValidateQualificationTieBreaksAsync(currentMatch, heatResults);
             if (qualificationError != null)
             {
                 result.Success = false;
@@ -57,7 +57,6 @@ namespace Dms.Application.Services
                 return result;
             }
 
-            // Sắp xếp thành tích chính; nếu không cho đồng hạng thì dùng chỉ số phụ đã cấu hình.
             var validParticipants = heatResults.Where(r => r.TrangThai == "ThamGia" && r.GiaTri.HasValue).ToList();
             var invalidParticipants = heatResults.Where(r => r.TrangThai != "ThamGia" || !r.GiaTri.HasValue).ToList();
 
@@ -65,20 +64,16 @@ namespace Dms.Application.Services
                 .GroupBy(participant => participant.GiaTri!.Value)
                 .Where(group => group.Count() > 1)
                 .ToList();
-            if (!config.ChoPhepDongHangThanhTich && tiedPrimaryGroups.Any(group =>
+            if (tiedPrimaryGroups.Any(group =>
                     group.Any(participant => !participant.GiaTriPhu.HasValue) ||
                     group.Select(participant => participant.GiaTriPhu!.Value).Distinct().Count() != group.Count()))
             {
                 result.Success = false;
-                result.Message = "Có VĐV bằng thành tích chính. Hãy nhập chỉ số phụ khác nhau cho các VĐV đồng thành tích hoặc bật tùy chọn cho phép đồng hạng.";
+                result.Message = "Có VĐV bằng thành tích chính. Hãy nhập chỉ số phụ khác nhau để phân định thứ hạng trước khi chốt lượt thi.";
                 return result;
             }
 
-            if (isAscending && config.ChoPhepDongHangThanhTich)
-                validParticipants = validParticipants.OrderBy(r => r.GiaTri!.Value).ToList();
-            else if (!isAscending && config.ChoPhepDongHangThanhTich)
-                validParticipants = validParticipants.OrderByDescending(r => r.GiaTri!.Value).ToList();
-            else if (isAscending && config.TieuChiPhuCangNhoCangTot)
+            if (isAscending && config.TieuChiPhuCangNhoCangTot)
                 validParticipants = validParticipants.OrderBy(r => r.GiaTri!.Value).ThenBy(r => r.GiaTriPhu).ToList();
             else if (isAscending)
                 validParticipants = validParticipants.OrderBy(r => r.GiaTri!.Value).ThenByDescending(r => r.GiaTriPhu).ToList();
@@ -87,14 +82,10 @@ namespace Dms.Application.Services
             else
                 validParticipants = validParticipants.OrderByDescending(r => r.GiaTri!.Value).ThenByDescending(r => r.GiaTriPhu).ToList();
 
-            // Gán đồng hạng theo thành tích chính nếu được cấu hình; chỉ số phụ phân định khi tắt đồng hạng.
             for (var index = 0; index < validParticipants.Count; index++)
             {
                 var participant = validParticipants[index];
-                var previous = index > 0 ? validParticipants[index - 1] : null;
-                var samePlace = previous != null && previous.GiaTri == participant.GiaTri &&
-                    (config.ChoPhepDongHangThanhTich || previous.GiaTriPhu == participant.GiaTriPhu);
-                participant.XepHang = samePlace ? previous!.XepHang : index + 1;
+                participant.XepHang = index + 1;
             }
             foreach (var p in invalidParticipants)
             {
@@ -195,7 +186,6 @@ namespace Dms.Application.Services
                     loaiHcs.TryGetValue("BAC", out var lhcBac);
                     loaiHcs.TryGetValue("DONG", out var lhcDong);
 
-                    // Tất cả VĐV đồng hạng trên bục nhận cùng loại huy chương.
                     if (lhcVang != null)
                     {
                         foreach (var participant in validParticipants.Where(item => item.XepHang == 1))
@@ -266,12 +256,9 @@ namespace Dms.Application.Services
                         var sortedAll = isAscending
                             ? combined.OrderBy(item => item.GiaTri!.Value)
                             : combined.OrderByDescending(item => item.GiaTri!.Value);
-                        if (!config.ChoPhepDongHangThanhTich)
-                        {
-                            sortedAll = config.TieuChiPhuCangNhoCangTot
-                                ? sortedAll.ThenBy(item => item.Diem)
-                                : sortedAll.ThenByDescending(item => item.Diem);
-                        }
+                        sortedAll = config.TieuChiPhuCangNhoCangTot
+                            ? sortedAll.ThenBy(item => item.Diem)
+                            : sortedAll.ThenByDescending(item => item.Diem);
                         var rankedAll = sortedAll.ToList();
 
                         // Lấy Top N vào Chung kết (ví dụ Top 8)
@@ -319,19 +306,15 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
-        /// Kiểm tra trước khi chốt lượt cuối của vòng loại rằng hòa thành tích tại ranh giới vào chung kết
-        /// đã được phân định bằng chỉ số phụ hoặc có thể đưa toàn bộ nhóm đồng hạng vào trong sức chứa.
+        /// Kiểm tra trước khi chốt lượt cuối vòng loại rằng các VĐV trùng thành tích chính giữa nhiều lượt
+        /// đã có chỉ số phụ khác nhau, để hệ thống tạo thứ hạng duy nhất và chọn đúng số suất vào chung kết.
         /// </summary>
         /// <param name="currentMatch">Lượt thi đang được hoàn tất</param>
         /// <param name="heatResults">Kết quả VĐV vừa gửi từ màn trọng tài</param>
-        /// <param name="config">Cấu hình xếp hạng và số VĐV vào chung kết</param>
-        /// <param name="isAscending">Cho biết thành tích chính có tiêu chí nhỏ hơn là tốt hơn hay không</param>
         /// <returns>Thông báo lỗi nếu có hòa chưa phân định; ngược lại trả về null</returns>
-        private async Task<string?> ValidateQualificationTieAsync(
+        private async Task<string?> ValidateQualificationTieBreaksAsync(
             TranDau currentMatch,
-            List<HeatParticipantResultDto> heatResults,
-            CauHinhTheThucDto config,
-            bool isAscending)
+            List<HeatParticipantResultDto> heatResults)
         {
             if (!currentMatch.NextTranDauId.HasValue || currentMatch.NextTranDauId.Value <= 0)
             {
@@ -361,31 +344,13 @@ namespace Dms.Application.Services
                 .Where(item => item.TrangThai == "ThamGia" && item.GiaTri.HasValue)
                 .Select(item => (Primary: item.GiaTri!.Value, Secondary: item.GiaTriPhu)));
 
-            if (!config.ChoPhepDongHangThanhTich && entries
+            if (entries
                 .GroupBy(item => item.Primary)
                 .Any(group => group.Count() > 1 &&
                     (group.Any(item => !item.Secondary.HasValue) ||
                      group.Select(item => item.Secondary!.Value).Distinct().Count() != group.Count())))
             {
                 return "Có VĐV bằng thành tích chính giữa các lượt. Hãy nhập chỉ số phụ khác nhau trước khi chốt lượt cuối vòng loại.";
-            }
-
-            IOrderedEnumerable<(decimal Primary, decimal? Secondary)> ordered = isAscending
-                ? entries.OrderBy(item => item.Primary)
-                : entries.OrderByDescending(item => item.Primary);
-            if (!config.ChoPhepDongHangThanhTich)
-            {
-                ordered = config.TieuChiPhuCangNhoCangTot
-                    ? ordered.ThenBy(item => item.Secondary)
-                    : ordered.ThenByDescending(item => item.Secondary);
-            }
-
-            var ranked = ordered.ToList();
-            var finalSize = Math.Max(1, config.SoVdvVaoChungKet ?? 8);
-            if (config.ChoPhepDongHangThanhTich && ranked.Count > finalSize &&
-                ranked[finalSize - 1].Primary == ranked[finalSize].Primary)
-            {
-                return $"Có đồng hạng tại vị trí cuối được vào chung kết (Top {finalSize}). Hãy tăng số VĐV vào chung kết hoặc cấu hình tiêu chí phụ trước khi chốt lượt.";
             }
 
             return null;

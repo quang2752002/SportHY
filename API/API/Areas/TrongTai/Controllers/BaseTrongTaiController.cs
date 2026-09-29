@@ -129,6 +129,19 @@ namespace API.Areas.TrongTai.Controllers
         }
 
         /// <summary>
+        /// Determines whether the current referee is the assigned head referee and may modify a match.
+        /// </summary>
+        /// <param name="match">The match whose write permission should be checked.</param>
+        /// <returns>True only when the current referee is assigned as the match's head referee.</returns>
+        protected async Task<bool> CanRecordMatchAsync(TranDauDto? match)
+        {
+            if (match == null) return false;
+            var currentReferee = await GetCurrentRefereeAsync();
+            return currentReferee != null &&
+                await _refereeAccessService.IsHeadRefereeAssignedToMatchAsync(currentReferee.Id, match.Id);
+        }
+
+        /// <summary>
         /// Indicates whether the current user may browse every match in a tournament.
         /// </summary>
         /// <returns>True for administrators and managers; otherwise false.</returns>

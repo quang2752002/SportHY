@@ -75,6 +75,7 @@ namespace API.Areas.TrongTai.Controllers
             }
 
             ViewBag.CurrentMatch = currentMatch;
+            ViewBag.CanCreateReport = await CanRecordMatchAsync(currentMatch);
 
             // Đọc thông tin đăng ký của 2 đội để lấy danh sách vận động viên
             DangKyThiDauDto? regTeam1 = null;
@@ -183,7 +184,7 @@ namespace API.Areas.TrongTai.Controllers
                 return Json(new { success = false, message = "Không tìm thấy trận đấu." });
             }
 
-            if (!await CanAccessMatchAsync(match)) return Forbid();
+            if (!await CanRecordMatchAsync(match)) return Forbid();
 
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
 
