@@ -6,6 +6,8 @@
     var categories = ViewBag.Categories as List<DanhMucMonTheThaoDto> ?? new();
     var sports = Model.MonTheThaos ?? new();
     bool isExpired = Model.HanDangKy.HasValue && Model.HanDangKy.Value < DateTime.Now;
+    bool isUnitSuspended = currentUnit != null && !currentUnit.TrangThai;
+    bool canRegister = !isExpired && !isUnitSuspended;
 }
 
 <div class="d-flex flex-column gap-4">
@@ -52,7 +54,16 @@
         </div>
     </div>
 
-    @if (isExpired)
+    @if (isUnitSuspended)
+    {
+        <div class="alert alert-danger border-danger d-flex align-items-center gap-2 mb-0 py-2.5">
+            <i class="fa-solid fa-ban fs-5"></i>
+            <div>
+                <strong>Đơn vị đang tạm dừng:</strong> Đơn vị hiện không thể đăng ký thi đấu mới. Bạn vẫn có thể xem các hồ sơ đã nộp trước đó.
+            </div>
+        </div>
+    }
+    else if (isExpired)
     {
         <div class="alert alert-warning border-warning d-flex align-items-center gap-2 mb-0 py-2.5">
             <i class="fa-solid fa-triangle-exclamation fs-5"></i>
@@ -65,7 +76,7 @@
     <!-- Tabs Header -->
     <div class="card-custom p-2">
         <ul class="nav nav-pills nav-fill gap-2" id="registrationTabs" role="tablist">
-            @if (!isExpired)
+            @if (canRegister)
             {
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active rounded-pill py-2.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-2"
@@ -76,7 +87,7 @@
                 </li>
             }
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(isExpired ? "active" : "") rounded-pill py-2.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-2"
+                <button class="nav-link @(!canRegister ? "active" : "") rounded-pill py-2.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-2"
                         id="tab-submitted-reg" data-bs-toggle="pill" data-bs-target="#content-submitted-reg" type="button" role="tab" onclick="loadSubmittedRegistrations()">
                     <i class="fa-solid fa-folder-open text-primary"></i>
                     <span>Hồ Sơ Đã Nộp Của Đoàn</span>
@@ -89,7 +100,7 @@
     <!-- Tabs Content -->
     <div class="tab-content" id="registrationTabsContent">
         <!-- Tab 1: Đăng ký mới -->
-        @if (!isExpired)
+        @if (canRegister)
         {
             <div class="tab-pane fade show active" id="content-new-reg" role="tabpanel">
                 <div class="card-custom p-4">
@@ -213,6 +224,9 @@
                                                                 <span>• CCCD: @a.SoCCCD</span>
                                                             }
                                                         </small>
+                                                        <small class="athlete-registration-status text-danger fw-semibold d-none" style="font-size: 10px;">
+                                                            <i class="fa-solid fa-circle-check me-1"></i>Đã đăng ký môn này
+                                                        </small>
                                                     </div>
                                                 </div>
                                             </div>
@@ -243,7 +257,7 @@
         }
 
         <!-- Tab 2: Hồ sơ đã nộp -->
-        <div class="tab-pane fade @(isExpired ? "show active" : "")" id="content-submitted-reg" role="tabpanel">
+        <div class="tab-pane fade @(!canRegister ? "show active" : "")" id="content-submitted-reg" role="tabpanel">
             <div class="card-custom p-4">
                 <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                     <div>
@@ -291,6 +305,17 @@
             background-color: #ecfdf5 !important;
             box-shadow: 0 0 0 1px #059669;
         }
+        .athlete-card-selectable.is-registered {
+            background-color: #f1f3f5 !important;
+            border-color: #d7dce1 !important;
+            box-shadow: none !important;
+            cursor: not-allowed !important;
+            opacity: .58;
+        }
+        .athlete-card-selectable.is-registered:hover {
+            background-color: #f1f3f5 !important;
+            border-color: #d7dce1 !important;
+        }
     </style>
 }
 
@@ -301,6 +326,7 @@
         let selectedAthletes = [];
         let currentSportIsTeam = false;
         let submittedRegistrations = [];
+        let registrationLocksLoaded = false;
 
         $(document).ready(function () {
             loadSubmittedRegistrations();
@@ -373,6 +399,7 @@
                 currentSportIsTeam = false;
 
                 // Khóa chọn VĐV
+                $('#athleteSelectHint span').html('Vui lòng chọn <strong>Môn thi đấu trong giải</strong> ở bước 1 để mở danh sách chọn vận động viên.');
                 $('#athleteSelectHint').slideDown();
                 $('#athleteListContainer').css({ 'opacity': '0.45', 'pointer-events': 'none' });
                 $('#athleteSearch').prop('disabled', true);
@@ -383,11 +410,18 @@
                 return;
             }
 
-            // Mở khóa chọn VĐV
-            $('#athleteSelectHint').slideUp();
-            $('#athleteListContainer').css({ 'opacity': '1', 'pointer-events': 'auto' });
-            $('#athleteSearch').prop('disabled', false);
-            $('#checkFilterGender').prop('disabled', false);
+            if (registrationLocksLoaded) {
+                $('#athleteSelectHint').slideUp();
+                $('#athleteListContainer').css({ 'opacity': '1', 'pointer-events': 'auto' });
+                $('#athleteSearch').prop('disabled', false);
+                $('#checkFilterGender').prop('disabled', false);
+            } else {
+                $('#athleteSelectHint span').text('Đang kiểm tra danh sách vận động viên đã đăng ký môn này...');
+                $('#athleteSelectHint').slideDown();
+                $('#athleteListContainer').css({ 'opacity': '0.45', 'pointer-events': 'none' });
+                $('#athleteSearch').prop('disabled', true);
+                $('#checkFilterGender').prop('disabled', true);
+            }
 
             const name = selectedOption.getAttribute('data-name');
             const isTeam = selectedOption.getAttribute('data-team') === 'true';
@@ -421,6 +455,7 @@
 
             // Tự động bỏ chọn các VĐV không đúng giới tính nếu trước đó có chọn
             cleanInvalidGenderAthletes(gender);
+            updateAthleteCheckboxes();
             filterAthletes();
         }
 
@@ -478,6 +513,16 @@
                 return;
             }
 
+            if (!registrationLocksLoaded) {
+                Swal.fire('Thông báo', 'Hệ thống đang kiểm tra danh sách đăng ký của môn. Vui lòng thử lại sau giây lát.', 'info');
+                return;
+            }
+
+            if (getRegisteredAthleteIdsForSelectedSport().has(Number(id))) {
+                Swal.fire('Vận động viên đã đăng ký', 'Vận động viên này đã có hồ sơ đăng ký môn thi đấu đang chọn nên không thể chọn thêm.', 'info');
+                return;
+            }
+
             const selectedOption = select.options[select.selectedIndex];
             const sportGender = selectedOption ? selectedOption.getAttribute('data-gender') : null;
             const athleteItem = $(`[data-id="${id}"]`);
@@ -515,18 +560,41 @@
         }
 
         function updateAthleteCheckboxes() {
+            const sportSelected = !!$('#selectSport').val();
+            const registeredAthleteIds = getRegisteredAthleteIdsForSelectedSport();
+            selectedAthletes = selectedAthletes.filter(id => !registeredAthleteIds.has(Number(id)));
+
             $('.athlete-checkbox').each(function () {
                 const id = parseInt($(this).val());
-                const isSelected = selectedAthletes.includes(id);
+                const isRegistered = registeredAthleteIds.has(id);
+                const isSelected = !isRegistered && selectedAthletes.includes(id);
                 $(this).prop('checked', isSelected);
-                if (isSelected) {
-                    $(`#athleteCard_${id}`).addClass('selected');
-                } else {
-                    $(`#athleteCard_${id}`).removeClass('selected');
-                }
+                $(this).prop('disabled', isRegistered || !sportSelected || !registrationLocksLoaded);
+                const $card = $(`#athleteCard_${id}`);
+                $card.toggleClass('selected', isSelected);
+                $card.toggleClass('is-registered', isRegistered);
+                $card.attr('aria-disabled', isRegistered ? 'true' : 'false');
+                $card.attr('title', isRegistered ? 'Vận động viên đã đăng ký môn thi đấu này' : '');
+                $card.find('.athlete-registration-status').toggleClass('d-none', !isRegistered);
             });
 
             $('#selectedCountBadge').text(`Đã chọn: ${selectedAthletes.length} VĐV`);
+        }
+
+        function getRegisteredAthleteIdsForSelectedSport() {
+            const sportId = Number($('#selectSport').val() || 0);
+            if (!sportId) return new Set();
+
+            const registeredIds = new Set();
+            submittedRegistrations.forEach(registration => {
+                if (Number(registration.giaiDauMonTheThaoId) !== sportId || registration.trangThai === 'TuChoi') return;
+
+                const athleteIds = registration.vanDongVienIds ||
+                    (registration.thanhVienDois || []).map(member => member.vanDongVienId);
+                athleteIds.forEach(id => registeredIds.add(Number(id)));
+            });
+
+            return registeredIds;
         }
 
         function submitRegistrationForm() {
@@ -629,13 +697,28 @@
         }
 
         function loadSubmittedRegistrations() {
+            registrationLocksLoaded = false;
+            updateAthleteCheckboxes();
+            if ($('#selectSport').val()) {
+                $('#athleteSelectHint span').text('Đang kiểm tra danh sách vận động viên đã đăng ký môn này...');
+                $('#athleteSelectHint').show();
+                $('#athleteListContainer').css({ 'opacity': '0.45', 'pointer-events': 'none' });
+                $('#athleteSearch').prop('disabled', true);
+                $('#checkFilterGender').prop('disabled', true);
+            }
             $('#submittedTableBody').html(`<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-success me-2"></div>Đang tải danh sách hồ sơ...</td></tr>`);
 
             $.get(`/DonVi/DangKy/GetRegistrations?giaiDauId=${giaiDauId}`, function (res) {
                 if (res.success && res.data) {
                     submittedRegistrations = res.data;
+                    registrationLocksLoaded = true;
                     $('#regCountBadge').text(submittedRegistrations.length);
                     renderSubmittedTable(submittedRegistrations);
+                    if ($('#selectSport').val()) {
+                        onSportChanged();
+                    } else {
+                        updateAthleteCheckboxes();
+                    }
                 } else {
                     $('#submittedTableBody').html(`<tr><td colspan="7" class="text-center py-4 text-danger">Không thể tải hồ sơ.</td></tr>`);
                 }

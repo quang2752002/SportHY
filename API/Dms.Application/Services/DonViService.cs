@@ -30,7 +30,7 @@ namespace Dms.Application.Services
         /// <param name="keyword">Từ khóa tìm kiếm theo tên, mã, người đại diện</param>
         /// <param name="khoiId">Lọc theo khối áp dụng (tùy chọn)</param>
         /// <param name="trangThai">Lọc theo trạng thái hoạt động (tùy chọn)</param>
-        /// <returns>Kết quả phân trang danh sách đơn vị</returns>
+        /// <returns>Kết quả phân trang danh sách đơn vị kèm số VĐV chưa bị xóa mềm của từng đơn vị</returns>
         public async Task<PagedResult<DonViDto>> GetPagedAsync(
             int pageIndex,
             int pageSize,
@@ -50,12 +50,28 @@ namespace Dms.Application.Services
                 {
                     d => d.Khoi!,
                     d => d.DonViCha!,
-                    d => d.VanDongViens,
                     d => d.Dois
                 }
             );
 
-            var dtos = _mapper.Map<IEnumerable<DonViDto>>(pagedEntities.Items);
+            var dtos = _mapper.Map<List<DonViDto>>(pagedEntities.Items);
+            var donViIds = dtos.Select(d => d.Id).ToList();
+            if (donViIds.Count > 0)
+            {
+                var athletes = await _unitOfWork.VanDongViens.FindAsync(v =>
+                    v.IsDeleted != true &&
+                    v.DonViId.HasValue &&
+                    donViIds.Contains(v.DonViId.Value));
+                var athleteCounts = athletes
+                    .GroupBy(v => v.DonViId!.Value)
+                    .ToDictionary(group => group.Key, group => group.Count());
+
+                foreach (var donVi in dtos)
+                {
+                    donVi.SoVanDongVien = athleteCounts.TryGetValue(donVi.Id, out var count) ? count : 0;
+                }
+            }
+
             return new PagedResult<DonViDto>(dtos, pagedEntities.TotalCount, pageIndex, pageSize);
         }
 

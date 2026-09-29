@@ -15,7 +15,7 @@ namespace Dms.Application.Interfaces
         /// <param name="keyword">Từ khóa tìm kiếm theo tên, mã, người đại diện</param>
         /// <param name="khoiId">Lọc theo khối áp dụng (tùy chọn)</param>
         /// <param name="trangThai">Lọc theo trạng thái hoạt động (tùy chọn)</param>
-        /// <returns>Kết quả phân trang danh sách đơn vị</returns>
+        /// <returns>Kết quả phân trang danh sách đơn vị kèm số VĐV chưa bị xóa mềm của từng đơn vị</returns>
         Task<PagedResult<DonViDto>> GetPagedAsync(int pageIndex, int pageSize, string? keyword = null, int? khoiId = null, bool? trangThai = null);
 
         /// <summary>

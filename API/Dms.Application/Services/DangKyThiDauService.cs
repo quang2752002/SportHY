@@ -118,7 +118,7 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
-        /// Tạo mới hồ sơ đăng ký thi đấu, kiểm tra tính hợp lệ về thời hạn đăng ký, giới tính, số lượng VĐV, trùng lặp VĐV, bắt buộc tên đội với môn đồng đội và tự động giải mã HTML entities.
+        /// Tạo mới hồ sơ đăng ký thi đấu; từ chối đơn vị đang tạm dừng và kiểm tra hạn đăng ký, giới tính, số lượng VĐV, trùng lặp VĐV, tên đội bắt buộc với môn đồng đội, đồng thời giải mã HTML entities.
         /// </summary>
         /// <param name="dto">Dữ liệu đăng ký thi đấu</param>
         /// <param name="createdBy">Tài khoản tạo hồ sơ</param>
@@ -227,6 +227,34 @@ namespace Dms.Application.Services
 
             int? resolvedDoiId = dto.DoiId;
             var vdvEntities = (await _unitOfWork.VanDongViens.FindAsync(v => vdvIds.Contains(v.Id))).ToList();
+
+            var donViIdsCanKiemTra = vdvEntities
+                .Where(v => v.DonViId.HasValue)
+                .Select(v => v.DonViId!.Value)
+                .ToHashSet();
+            if (dto.DonViId.HasValue)
+            {
+                donViIdsCanKiemTra.Add(dto.DonViId.Value);
+            }
+
+            if (resolvedDoiId.HasValue)
+            {
+                var doiHienTai = await _unitOfWork.Dois.GetByIdAsync(resolvedDoiId.Value);
+                if (doiHienTai?.IsDeleted != true && doiHienTai?.DonViId.HasValue == true)
+                {
+                    donViIdsCanKiemTra.Add(doiHienTai.DonViId.Value);
+                }
+            }
+
+            if (donViIdsCanKiemTra.Count > 0)
+            {
+                var cacDonVi = await _unitOfWork.DonVis.FindAsync(d =>
+                    donViIdsCanKiemTra.Contains(d.Id) && d.IsDeleted != true);
+                if (cacDonVi.Any(d => !d.TrangThai))
+                {
+                    throw new InvalidOperationException("Đơn vị đang tạm dừng nên không thể đăng ký thi đấu.");
+                }
+            }
 
             // Tự động tạo Doi + ThanhVienDoi nếu chưa có DoiId
             if (!resolvedDoiId.HasValue && vdvIds.Any())

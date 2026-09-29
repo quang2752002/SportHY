@@ -45,6 +45,12 @@ namespace API.Areas.DonVi.Controllers
             ViewBag.FilterScope = filterScope ?? "my_unit";
 
             var allMatches = (await _tranDauService.GetAllAsync(giaiDauId: selectedGiaiDauId))?.ToList() ?? new();
+            ViewBag.SportNames = allMatches
+                .Select(match => match.TenMonTheThao)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(name => name)
+                .ToList();
 
             // Lấy danh sách ID đăng ký của đơn vị trong giải này
             var unitRegIds = new HashSet<int>();

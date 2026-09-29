@@ -3,9 +3,18 @@
     ViewData["Title"] = "Đăng Ký Thi Đấu Giải";
     var currentUnit = ViewBag.CurrentDonVi as DonViDto;
     var unitRegs = ViewBag.UnitRegistrations as List<DangKyThiDauDto> ?? new();
+    bool isUnitSuspended = currentUnit != null && !currentUnit.TrangThai;
 }
 
 <div class="d-flex flex-column gap-4">
+    @if (isUnitSuspended)
+    {
+        <div class="alert alert-danger border-danger mb-0">
+            <i class="fa-solid fa-ban me-2"></i>
+            Đơn vị đang tạm dừng nên không thể đăng ký thi đấu mới. Bạn vẫn có thể mở từng giải để xem hồ sơ đã nộp.
+        </div>
+    }
+
     <!-- Header -->
     <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3">
         <div>
@@ -131,7 +140,7 @@
                         <div class="p-3 bg-light border-top">
                             <a href="/DonVi/DangKy/ChiTiet/@t.Id" class="btn btn-sm btn-donvi-primary w-100 rounded-pill py-2 d-flex align-items-center justify-content-center gap-2">
                                 <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                                <span>Đăng Ký / Xem Hồ Sơ</span>
+                                <span>@(isUnitSuspended ? "Xem Hồ Sơ" : "Đăng Ký / Xem Hồ Sơ")</span>
                             </a>
                         </div>
                     </div>
