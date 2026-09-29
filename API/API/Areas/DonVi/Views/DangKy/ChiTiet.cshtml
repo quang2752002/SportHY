@@ -5,7 +5,8 @@
     var athletes = ViewBag.Athletes as List<VanDongVienDto> ?? new();
     var categories = ViewBag.Categories as List<DanhMucMonTheThaoDto> ?? new();
     var sports = Model.MonTheThaos ?? new();
-    bool isExpired = Model.HanDangKy.HasValue && Model.HanDangKy.Value < DateTime.Now;
+    var todayInVietnam = DateTime.UtcNow.AddHours(7).Date;
+    bool isExpired = Model.HanDangKy.HasValue && Model.HanDangKy.Value.Date < todayInVietnam;
     bool isUnitSuspended = currentUnit != null && !currentUnit.TrangThai;
     bool canRegister = !isExpired && !isUnitSuspended;
 }

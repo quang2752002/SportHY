@@ -792,9 +792,9 @@
                     setElementValidation($hdk, false, msg);
                     if (!firstErrorElem) firstErrorElem = $hdk;
                 }
-            } else if (parsedHdk.iso <= todayStr) {
+            } else if (parsedHdk.iso < todayStr) {
                 isValid = false;
-                const msg = 'Hạn nộp hồ sơ đăng ký phải lớn hơn ngày hiện tại.';
+                const msg = 'Hạn nộp hồ sơ đăng ký không được trước ngày hiện tại.';
                 if (!errorMessage) errorMessage = msg;
                 if (showFeedback) {
                     setElementValidation($hdk, false, msg);

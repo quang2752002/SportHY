@@ -118,7 +118,7 @@ namespace API.Areas.DonVi.Controllers
 
             try
             {
-                var created = await _dangKyThiDauService.CreateAsync(dto, username, isPrivileged: true);
+                var created = await _dangKyThiDauService.CreateAsync(dto, username);
                 return Json(new { success = true, message = "Đã nộp hồ sơ đăng ký thi đấu thành công! Hồ sơ đã được duyệt.", data = created });
             }
             catch (Exception ex)

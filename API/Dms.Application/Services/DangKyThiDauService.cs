@@ -141,9 +141,9 @@ namespace Dms.Application.Services
                 if (giaiDau != null)
                 {
                     var deadline = giaiDau.HanDangKy ?? giaiDau.NgayBatDau;
-                    if (DateTime.Now > deadline || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.KetThuc || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.Huy)
+                    if (DateTime.UtcNow.AddHours(7).Date > deadline.Date || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.KetThuc || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.Huy)
                     {
-                        throw new InvalidOperationException($"Giải đấu \"{giaiDau.Ten}\" đã hết hạn đăng ký thi đấu (Hạn chót: {deadline:dd/MM/yyyy HH:mm}). Không thể gửi thêm hồ sơ mới.");
+                        throw new InvalidOperationException($"Giải đấu \"{giaiDau.Ten}\" đã hết hạn đăng ký thi đấu (Hạn chót: {deadline:dd/MM/yyyy}). Không thể gửi thêm hồ sơ mới.");
                     }
                 }
             }
@@ -374,9 +374,9 @@ namespace Dms.Application.Services
                     if (giaiDau != null)
                     {
                         var deadline = giaiDau.HanDangKy ?? giaiDau.NgayBatDau;
-                        if (DateTime.Now > deadline || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.KetThuc || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.Huy)
+                        if (DateTime.UtcNow.AddHours(7).Date > deadline.Date || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.KetThuc || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.Huy)
                         {
-                            throw new InvalidOperationException($"Giải đấu \"{giaiDau.Ten}\" đã hết hạn đăng ký thi đấu (Hạn chót: {deadline:dd/MM/yyyy HH:mm}). Không thể chỉnh sửa hồ sơ.");
+                            throw new InvalidOperationException($"Giải đấu \"{giaiDau.Ten}\" đã hết hạn đăng ký thi đấu (Hạn chót: {deadline:dd/MM/yyyy}). Không thể chỉnh sửa hồ sơ.");
                         }
                     }
                 }
@@ -469,9 +469,9 @@ namespace Dms.Application.Services
                     if (giaiDau != null)
                     {
                         var deadline = giaiDau.HanDangKy ?? giaiDau.NgayBatDau;
-                        if (DateTime.Now > deadline || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.KetThuc || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.Huy)
+                        if (DateTime.UtcNow.AddHours(7).Date > deadline.Date || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.KetThuc || giaiDau.TrangThai == Dms.Domain.Enums.TrangThaiGiaiDau.Huy)
                         {
-                            throw new InvalidOperationException($"Giải đấu \"{giaiDau.Ten}\" đã hết hạn đăng ký thi đấu (Hạn chót: {deadline:dd/MM/yyyy HH:mm}). Không thể xóa hoặc hủy hồ sơ.");
+                            throw new InvalidOperationException($"Giải đấu \"{giaiDau.Ten}\" đã hết hạn đăng ký thi đấu (Hạn chót: {deadline:dd/MM/yyyy}). Không thể xóa hoặc hủy hồ sơ.");
                         }
                     }
                 }

@@ -276,7 +276,7 @@ namespace Dms.Application.Services
 
         /// <summary>
         /// Tạo mới giải đấu, thực hiện kiểm tra tính hợp lệ của thời gian tổ chức:
-        /// Hạn nộp hồ sơ, ngày bắt đầu, ngày kết thúc phải lớn hơn ngày hiện tại;
+        /// Hạn nộp hồ sơ có thể là ngày hiện tại (có hiệu lực đến hết ngày đó); ngày bắt đầu và ngày kết thúc phải lớn hơn ngày hiện tại;
         /// Hạn nộp hồ sơ phải nhỏ hơn ngày bắt đầu; ngày bắt đầu phải nhỏ hơn ngày kết thúc.
         /// </summary>
         /// <param name="dto">Dữ liệu thông tin giải đấu cần tạo mới</param>
@@ -295,8 +295,8 @@ namespace Dms.Application.Services
             if (!dto.HanDangKy.HasValue || dto.HanDangKy.Value == default)
                 throw new ArgumentException("Vui lòng chọn hạn nộp hồ sơ đăng ký.");
 
-            if (dto.HanDangKy.Value.Date <= today)
-                throw new ArgumentException("Hạn nộp hồ sơ đăng ký phải lớn hơn ngày hiện tại.");
+            if (dto.HanDangKy.Value.Date < today)
+                throw new ArgumentException("Hạn nộp hồ sơ đăng ký không được trước ngày hiện tại.");
 
             if (dto.NgayBatDau.Date <= today)
                 throw new ArgumentException("Ngày bắt đầu giải đấu phải lớn hơn ngày hiện tại.");
@@ -432,7 +432,7 @@ namespace Dms.Application.Services
 
         /// <summary>
         /// Cập nhật thông tin giải đấu, thực hiện kiểm tra tính hợp lệ của thời gian tổ chức:
-        /// Hạn nộp hồ sơ, ngày bắt đầu, ngày kết thúc phải lớn hơn ngày hiện tại;
+        /// Hạn nộp hồ sơ có thể là ngày hiện tại (có hiệu lực đến hết ngày đó); ngày bắt đầu và ngày kết thúc phải lớn hơn ngày hiện tại;
         /// Hạn nộp hồ sơ phải nhỏ hơn ngày bắt đầu; ngày bắt đầu phải nhỏ hơn ngày kết thúc.
         /// </summary>
         /// <param name="id">ID giải đấu cần cập nhật</param>
@@ -452,8 +452,8 @@ namespace Dms.Application.Services
             if (!dto.HanDangKy.HasValue || dto.HanDangKy.Value == default)
                 throw new ArgumentException("Vui lòng chọn hạn nộp hồ sơ đăng ký.");
 
-            if (dto.HanDangKy.Value.Date <= today)
-                throw new ArgumentException("Hạn nộp hồ sơ đăng ký phải lớn hơn ngày hiện tại.");
+            if (dto.HanDangKy.Value.Date < today)
+                throw new ArgumentException("Hạn nộp hồ sơ đăng ký không được trước ngày hiện tại.");
 
             if (dto.NgayBatDau.Date <= today)
                 throw new ArgumentException("Ngày bắt đầu giải đấu phải lớn hơn ngày hiện tại.");

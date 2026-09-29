@@ -4,6 +4,7 @@
     var currentUnit = ViewBag.CurrentDonVi as DonViDto;
     var unitRegs = ViewBag.UnitRegistrations as List<DangKyThiDauDto> ?? new();
     bool isUnitSuspended = currentUnit != null && !currentUnit.TrangThai;
+    var todayInVietnam = DateTime.UtcNow.AddHours(7).Date;
 }
 
 <div class="d-flex flex-column gap-4">
@@ -67,7 +68,7 @@
             @foreach (var t in Model)
             {
                 var myCount = unitRegs.Count(r => r.GiaiDauId == t.Id);
-                var isExpired = t.HanDangKy.HasValue && t.HanDangKy.Value < DateTime.Now;
+                var isExpired = t.HanDangKy.HasValue && t.HanDangKy.Value.Date < todayInVietnam;
 
                 string statusClass = t.TrangThai switch
                 {
