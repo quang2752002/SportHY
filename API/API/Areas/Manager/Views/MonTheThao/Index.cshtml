@@ -204,356 +204,869 @@
     </div>
 </div>
 
-<!-- Modal Cấu hình Thể thức & Luật thi đấu -->
-<div class="modal fade" id="modalTheThuc" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header bg-gradient bg-primary text-white px-4 py-3 border-0">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-sliders fs-5"></i>
-                    <div>
-                        <h5 class="modal-title fw-bold mb-0 text-white" id="formatModalTitle">Cấu Hình Thể Thức & Luật Thi Đấu</h5>
-                        <div class="small opacity-75" id="formatModalSubtitle">Tùy biến số hiệp, điểm số, thời gian, tie-break, penalty và quy cách xếp hạng</div>
+<!-- ========== STYLES: FORMAT MODAL ========== -->
+<style>
+#modalTheThuc .fmt-tab-card {
+    background:#fff; border:2px solid #e5e7eb; border-radius:12px;
+    padding:16px; cursor:pointer; transition:all .2s ease;
+    position:relative; user-select:none;
+}
+#modalTheThuc .fmt-tab-card:hover { border-color:#a5b4fc; }
+#modalTheThuc .fmt-tab-card.fmt-active    { border-color:#4f46e5; }
+#modalTheThuc .fmt-tab-card.fmt-active-rr  { border-color:#2563eb; }
+#modalTheThuc .fmt-tab-card.fmt-active-grp { border-color:#16a34a; }
+#modalTheThuc .fmt-tab-card.fmt-active-perf{ border-color:#9ca3af; }
+#modalTheThuc .fmt-tab-dot {
+    position:absolute; top:10px; right:12px;
+    width:8px; height:8px; border-radius:50%;
+    background:#22c55e; display:none;
+}
+#modalTheThuc .fmt-tab-card[class*="fmt-active"] .fmt-tab-dot { display:block; }
+#modalTheThuc .fmt-tab-icon { font-size:18px; margin-bottom:8px; color:#9ca3af; }
+#modalTheThuc .fmt-tab-card.fmt-active     .fmt-tab-icon { color:#4f46e5; }
+#modalTheThuc .fmt-tab-card.fmt-active-rr  .fmt-tab-icon { color:#2563eb; }
+#modalTheThuc .fmt-tab-card.fmt-active-grp .fmt-tab-icon { color:#16a34a; }
+#modalTheThuc .fmt-tab-name { font-size:14px; font-weight:700; color:#111827; }
+#modalTheThuc .fmt-tab-sub  { font-size:11px; color:#9ca3af; margin-top:2px; }
+
+#modalTheThuc .fmt-section {
+    background:#fff; border-radius:12px; padding:20px;
+    margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,.07);
+}
+#modalTheThuc .fmt-section-hdr { display:flex; align-items:flex-start; gap:14px; margin-bottom:18px; }
+#modalTheThuc .fmt-ico-circle {
+    width:40px; height:40px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; flex-shrink:0;
+}
+#modalTheThuc .fmt-ico-blue   { background:#eff6ff; color:#3b82f6; }
+#modalTheThuc .fmt-ico-orange  { background:#fff7ed; color:#f97316; }
+#modalTheThuc .fmt-ico-indigo  { background:#eef2ff; color:#6366f1; }
+#modalTheThuc .fmt-ico-green   { background:#f0fdf4; color:#22c55e; }
+#modalTheThuc .fmt-ico-yellow  { background:#fffbeb; color:#eab308; }
+
+#modalTheThuc .fmt-input-box {
+    border:1.5px solid #e5e7eb; border-radius:10px; padding:14px;
+    background:#fff; height:100%;
+}
+#modalTheThuc .fmt-lbl { font-size:12px; color:#6b7280; font-weight:500; margin-bottom:6px; }
+#modalTheThuc .fmt-big-input {
+    width:100%; border:none; outline:none;
+    font-size:32px; font-weight:700; color:#111827;
+    background:transparent; display:block; margin-bottom:4px;
+    -moz-appearance:textfield;
+}
+#modalTheThuc .fmt-big-input::-webkit-outer-spin-button,
+#modalTheThuc .fmt-big-input::-webkit-inner-spin-button { -webkit-appearance:none; }
+#modalTheThuc .fmt-big-input.computed { color:#7c3aed; }
+#modalTheThuc .fmt-unit-row { font-size:13px; color:#6b7280; }
+#modalTheThuc .fmt-computed-box { background:#faf5ff!important; border-color:#e9d5ff!important; }
+#modalTheThuc .fmt-computed-hint { font-size:11px; color:#9ca3af; margin-top:6px; }
+
+#modalTheThuc .fmt-qbtns { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+#modalTheThuc .fmt-qbtn {
+    font-size:11px; font-weight:600; padding:3px 10px;
+    border:1.5px solid #d1d5db; border-radius:20px;
+    background:transparent; color:#6b7280; cursor:pointer;
+    transition:all .15s; line-height:1.5;
+}
+#modalTheThuc .fmt-qbtn:hover { border-color:#6366f1; color:#6366f1; background:#eef2ff; }
+#modalTheThuc .fmt-qbtn.active { background:#6366f1; border-color:#6366f1; color:#fff; }
+
+#modalTheThuc .fmt-toggle-row {
+    display:flex; align-items:flex-start; justify-content:space-between;
+    padding:14px 16px; border:1.5px solid #e5e7eb; border-radius:10px;
+    gap:12px; margin-bottom:10px; background:#fff;
+}
+#modalTheThuc .fmt-toggle-row:last-child { margin-bottom:0; }
+#modalTheThuc .fmt-toggle-title { font-size:14px; font-weight:600; color:#111827; }
+#modalTheThuc .fmt-toggle-desc  { font-size:12px; color:#9ca3af; margin-top:2px; }
+
+#modalTheThuc .fmt-toggle { position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0; }
+#modalTheThuc .fmt-toggle input { opacity:0; width:0; height:0; }
+#modalTheThuc .fmt-slider {
+    position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
+    background:#d1d5db; border-radius:26px; transition:.25s;
+}
+#modalTheThuc .fmt-slider:before {
+    content:""; position:absolute;
+    height:20px; width:20px; left:3px; bottom:3px;
+    background:white; border-radius:50%; transition:.25s;
+    box-shadow:0 1px 4px rgba(0,0,0,.2);
+}
+#modalTheThuc .fmt-toggle input:checked + .fmt-slider.orange { background:#f97316; }
+#modalTheThuc .fmt-toggle input:checked + .fmt-slider.blue   { background:#4f46e5; }
+#modalTheThuc .fmt-toggle input:checked + .fmt-slider.green  { background:#22c55e; }
+#modalTheThuc .fmt-toggle input:checked + .fmt-slider:before { transform:translateX(20px); }
+
+#modalTheThuc .fmt-score-card { border-radius:10px; padding:16px; border:1.5px solid; }
+#modalTheThuc .fmt-score-card.green  { background:#f0fdf4; border-color:#86efac; }
+#modalTheThuc .fmt-score-card.yellow { background:#fffbeb; border-color:#fde68a; }
+#modalTheThuc .fmt-score-card.red    { background:#fef2f2; border-color:#fca5a5; }
+#modalTheThuc .fmt-score-lbl { font-size:12px; font-weight:600; display:flex; justify-content:space-between; margin-bottom:8px; }
+#modalTheThuc .fmt-score-card.green  .fmt-score-lbl { color:#16a34a; }
+#modalTheThuc .fmt-score-card.yellow .fmt-score-lbl { color:#d97706; }
+#modalTheThuc .fmt-score-card.red    .fmt-score-lbl { color:#dc2626; }
+#modalTheThuc .fmt-score-val {
+    border:none; background:transparent; outline:none;
+    font-size:36px; font-weight:700; width:100%;
+    -moz-appearance:textfield;
+}
+#modalTheThuc .fmt-score-val::-webkit-outer-spin-button,
+#modalTheThuc .fmt-score-val::-webkit-inner-spin-button { -webkit-appearance:none; }
+#modalTheThuc .fmt-score-card.green  .fmt-score-val { color:#15803d; }
+#modalTheThuc .fmt-score-card.yellow .fmt-score-val { color:#d97706; }
+#modalTheThuc .fmt-score-card.red    .fmt-score-val { color:#dc2626; }
+#modalTheThuc .fmt-score-hint { font-size:11px; color:#9ca3af; margin-top:4px; }
+
+#modalTheThuc .fmt-criteria-row {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 14px; border:1.5px solid #e5e7eb; border-radius:8px;
+    margin-bottom:8px; background:#fff; transition:all .15s;
+}
+#modalTheThuc .fmt-criteria-row:hover { border-color:#c7d2fe; }
+#modalTheThuc .fmt-criteria-cb { width:18px; height:18px; border-radius:4px; flex-shrink:0; cursor:pointer; accent-color:#6366f1; }
+#modalTheThuc .fmt-criteria-cb.orange { accent-color:#f97316; }
+#modalTheThuc .fmt-num-badge { font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; flex-shrink:0; background:#eef2ff; color:#6366f1; }
+#modalTheThuc .fmt-num-badge.orange { background:#fff7ed; color:#f97316; }
+#modalTheThuc .fmt-criteria-title { font-size:13px; font-weight:600; color:#111827; }
+#modalTheThuc .fmt-criteria-desc  { font-size:11px; color:#9ca3af; }
+#modalTheThuc .fmt-arr-btn {
+    width:28px; height:28px; border:1.5px solid #e5e7eb; border-radius:6px;
+    background:#fff; color:#6b7280; cursor:pointer; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:10px;
+    transition:all .15s;
+}
+#modalTheThuc .fmt-arr-btn:hover { border-color:#6366f1; color:#6366f1; background:#eef2ff; }
+#modalTheThuc .fmt-overtime-sub {
+    background:#f8fafc; border:1.5px solid #e2e8f0;
+    border-radius:10px; padding:16px; margin-top:12px;
+}
+#modalTheThuc .fmt-inline-score-input {
+    border:none; outline:none; background:transparent;
+    font-weight:700; font-size:16px; text-align:center; width:56px;
+}
+</style>
+
+<!-- ========== MODAL CẤU HÌNH THỂ THỨC (THIẾT KẾ MỚI) ========== -->
+<div class="modal fade" id="modalTheThuc" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-height:92vh">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="max-height:92vh;display:flex;flex-direction:column">
+
+            <!-- ── HEADER ── -->
+            <div class="d-flex align-items-center px-4 py-3 bg-white gap-3" style="border-bottom:1px solid #e5e7eb;flex-shrink:0">
+                <div class="d-flex align-items-center justify-content-center rounded-3 text-white" style="width:42px;height:42px;background:#4f46e5;flex-shrink:0">
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h5 class="fw-bold mb-0" style="font-size:16px;color:#111827">Cấu Hình Thể Thức &amp; Luật Thi Đấu</h5>
+                        <span class="fw-semibold px-2 py-1 rounded-2" style="background:#eef2ff;color:#4f46e5;font-size:11px;border:1px solid #c7d2fe">Chuẩn Điều Lệ</span>
+                        <span class="fw-semibold px-2 py-1 rounded-2 d-none" id="badgeModalSportName" style="background:#f0fdf4;color:#16a34a;font-size:11px;border:1px solid #86efac"></span>
+                    </div>
+                    <div class="mt-1" id="formatModalSubtitle" style="font-size:12px;color:#9ca3af">Thiết lập số hiệp, thời lượng từng hiệp, hiệp phụ, điểm số và tiêu chí xếp hạng</div>
+                </div>
+                <div class="d-flex align-items-center gap-2 ms-auto">
+                    <div class="input-group input-group-sm" style="width:240px">
+                        <span class="input-group-text bg-white" style="border-color:#e5e7eb"><i class="fa-solid fa-book-open text-muted fa-xs"></i></span>
+                        <select id="fmtPresetSelect" class="form-select form-select-sm" style="border-color:#e5e7eb;font-size:12px" onchange="applyPresetFromSelect(this.value)">
+                            <option value="">-- Gợi ý mẫu điều lệ nhanh --</option>
+                            <option value="football">⚽ Bóng đá (Bảng+KO · 2x45p)</option>
+                            <option value="futsal">🥅 Futsal (Bảng+KO · 2x20p)</option>
+                            <option value="volleyball">🏐 Bóng chuyền (Bảng+KO · 5 set)</option>
+                            <option value="basketball">🏀 Bóng rổ (KO · 4x12p)</option>
+                            <option value="badminton">🏸 Cầu lông (KO · 3 set)</option>
+                            <option value="tabletennis">🏓 Bóng bàn (Vòng tròn · 5 set)</option>
+                            <option value="athletics">🏃 Điền kinh (Tính giờ)</option>
+                            <option value="swimming">🏊 Bơi lội (Tính giờ)</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFormatForm()" title="Đặt lại mặc định" style="width:32px;height:32px;padding:0">
+                        <i class="fa-solid fa-rotate fa-xs"></i>
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <form id="formTheThuc" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
+                <input type="hidden" id="fmtMonId" value="">
+                <input type="hidden" id="fmtHinhThucThiDau" value="LoaiTrucTiep">
+
+                <!-- ── FORMAT SELECTOR (sticky) ── -->
+                <div class="px-4 py-3 bg-white" style="border-bottom:1px solid #e5e7eb;flex-shrink:0">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold text-uppercase" style="font-size:11px;color:#6b7280;letter-spacing:.08em">CHỌN THỂ THỨC THI ĐẤU</span>
+                        <span style="font-size:12px;color:#9ca3af">Hiển thị trọn vẹn toàn bộ thông số trên cùng màn hình</span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-3">
+                            <div class="fmt-tab-card fmt-active" id="tabCard_LoaiTrucTiep" onclick="switchFormat('LoaiTrucTiep')">
+                                <div class="fmt-tab-dot"></div>
+                                <div class="fmt-tab-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+                                <div class="fmt-tab-name">Loại Trực Tiếp</div>
+                                <div class="fmt-tab-sub">Hiệp đấu · Hiệp phụ · Tranh 3-4</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="fmt-tab-card" id="tabCard_VongBang" onclick="switchFormat('VongBang')">
+                                <div class="fmt-tab-dot"></div>
+                                <div class="fmt-tab-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+                                <div class="fmt-tab-name">Vòng Tròn 1 Lượt</div>
+                                <div class="fmt-tab-sub">Điểm số T-H-B · Tiêu chí phụ</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="fmt-tab-card" id="tabCard_KetHopVongBangVaLoaiTrucTiep" onclick="switchFormat('KetHopVongBangVaLoaiTrucTiep')">
+                                <div class="fmt-tab-dot"></div>
+                                <div class="fmt-tab-icon"><i class="fa-solid fa-layer-group"></i></div>
+                                <div class="fmt-tab-name">Bảng &amp; Loại Trực Tiếp</div>
+                                <div class="fmt-tab-sub">Bảng đấu · Suất đi tiếp · Bê hòa</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="fmt-tab-card" id="tabCard_TinhDiemXepHang" onclick="switchFormat('TinhDiemXepHang')">
+                                <div class="fmt-tab-dot"></div>
+                                <div class="fmt-tab-icon"><i class="fa-solid fa-stopwatch"></i></div>
+                                <div class="fmt-tab-name">Tính Giờ / Thành Tích</div>
+                                <div class="fmt-tab-sub">Lượt thi · Đo lường &amp; Tính điểm</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="formTheThuc">
-                <input type="hidden" id="fmtMonId" value="">
-                <div class="modal-body p-4 bg-light">
-                    <!-- Quick Presets -->
-                    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white">
-                        <div class="card-body p-3">
-                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                                <div class="d-flex align-items-center gap-2 text-primary fw-bold small">
-                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                    <span>Mẫu cấu hình chuẩn quốc tế (Nhanh):</span>
-                                </div>
-                                <div class="d-flex flex-wrap gap-2">
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('badminton')">
-                                        🏸 Cầu lông (Best of 3, 21đ)
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('volleyball')">
-                                        🏐 Bóng chuyền (Best of 5, 25đ)
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('football')">
-                                        ⚽ Bóng đá (Hiệp phụ + Penalty)
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('tabletennis')">
-                                        🏓 Bóng bàn (Best of 5, 11đ)
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('athletics')">
-                                        🏃 Điền kinh 100m (8 Làn)
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="applyPreset('swimming')">
-                                        🏊 Bơi lội (8 Làn)
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Main Format Configuration -->
-                    <div class="row g-3 align-items-center">
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-secondary">
-                                <i class="fa-solid fa-sitemap text-primary me-1"></i> Sơ đồ thi đấu của môn
-                            </label>
-                            <select id="fmtHinhThucThiDau" class="form-select fw-semibold border-primary-subtle" onchange="onBracketFormatChange()">
-                                <option value="LoaiTrucTiep">Loại trực tiếp (Knockout)</option>
-                                <option value="VongBang">Vòng tròn tính điểm</option>
-                                <option value="KetHopVongBangVaLoaiTrucTiep">Bảng + Knockout</option>
-                                <option value="TinhDiemXepHang">Đo thành tích / Chạy làn</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-secondary">
-                                <i class="fa-solid fa-stopwatch text-success me-1"></i> Cơ chế tính điểm trận (Scoring) <span class="text-danger">*</span>
-                            </label>
-                            <select id="fmtLoaiTheThuc" class="form-select fw-semibold border-success-subtle" onchange="onFormatTypeChange()">
-                                <option value="SetDiem"> Đấu Set / Hiệp tính điểm (Cầu lông, Bóng chuyền, Bóng bàn...)</option>
-                                <option value="ThoiGianHiep"> Tính theo tỉ số trận đấu (Bóng đá, Futsal, Bóng rổ...)</option>
-                                <option value="TinhDiemXepHang">Đo thành tích / Chạy làn (Điền kinh, Bơi lội...)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="alert alert-info border-0 rounded-3 py-2 px-3 mb-0 small" id="fmtTypeNote">
-                                <i class="fa-solid fa-circle-info me-1"></i>
-                                Hệ thống tự động áp dụng giao diện chấm điểm và bảng xếp hạng tương ứng cho môn này.
-                            </div>
-                        </div>
-                        <div class="col-12" id="fmtBracketTipContainer">
-                            <!-- Chú thích tương thích thông minh -->
-                        </div>
-                        <div class="col-12">
-                            <div class="p-3 bg-light rounded-3 border">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="fmtCoThePhat">
-                                    <label class="form-check-label fw-bold small" for="fmtCoThePhat">Môn này áp dụng thẻ phạt (thẻ vàng/thẻ đỏ)</label>
-                                    <div class="form-text">Khi tắt, giao diện và máy chủ sẽ từ chối cập nhật sự kiện thẻ cho môn này.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- ── SCROLLABLE CONTENT ── -->
+                <div class="flex-grow-1 overflow-auto px-4 py-4" id="fmtPanelArea" style="background:#f3f4f6;min-height:0">
 
-                    <!-- Panel: Đấu Set Điểm -->
-                    <div class="card border-0 shadow-sm rounded-3 mt-3 bg-white" id="panelSetDiem">
-                        <div class="card-header bg-white border-bottom py-3">
-                            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                                <i class="fa-solid fa-list-ol text-primary"></i> Quy định Game / Set đấu & Luật Deuce
-                            </h6>
-                        </div>
-                        <div class="card-body p-4">
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Số hiệp tối đa (Best of X)</label>
-                                    <input type="number" class="form-control" id="fmtSoHiepToiDa" value="3" min="1" max="15">
-                                    <small class="text-muted">VD: 3 (thắng 2), 5 (thắng 3)</small>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Số hiệp thắng để thắng trận</label>
-                                    <input type="number" class="form-control" id="fmtSoHiepThang" value="2" min="1" max="10">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Điểm chuẩn mỗi hiệp thường</label>
-                                    <input type="number" class="form-control" id="fmtDiemMoiHiep" value="21" min="1">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Điểm hiệp quyết định (Hiệp cuối/tie-break)</label>
-                                    <input type="number" class="form-control" id="fmtDiemHiepQuyetDinh" value="21" min="1">
-                                    <small class="text-muted">VD: Bóng chuyền set 5 là 15đ</small>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Cách biệt điểm tối thiểu (Deuce)</label>
-                                    <input type="number" class="form-control" id="fmtCachBiet" value="2" min="1">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Điểm tối đa kịch trần (Cap point)</label>
-                                    <input type="number" class="form-control" id="fmtDiemToiDa" value="30" min="1">
-                                    <small class="text-muted">VD: Cầu lông chạm 30 trước là thắng; 0 = không giới hạn</small>
-                                </div>
-                                <div class="col-12 mt-2">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="fmtCachTinhDiemTheoSet">
-                                        <label class="form-check-label fw-semibold small" for="fmtCachTinhDiemTheoSet">
-                                            Quy đổi điểm BXH vòng bảng theo tỉ số set (Kiểu Bóng chuyền FIVB: 3-0/3-1 = 3đ; 3-2 = 2đ; 2-3 = 1đ)
-                                        </label>
+                    <!-- ====== TAB 1: LOẠI TRỰC TIẾP ====== -->
+                    <div id="mechLoaiTrucTiep" class="format-mechanism-panel">
+
+                        <!-- SECTION 1: Match Time -->
+                        <div class="fmt-section">
+                            <div class="fmt-section-hdr">
+                                <div class="fmt-ico-circle fmt-ico-blue"><i class="fa-regular fa-clock"></i></div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <h6 class="fw-bold mb-0" style="color:#111827">1. Cấu Hình Số Hiệp &amp; Thời Lượng Trận Đấu</h6>
+                                        <span class="fw-semibold px-2 py-1 rounded-2" style="background:#eff6ff;color:#3b82f6;border:1px solid #bfdbfe;font-size:10px">Hiệp &amp; Thời Gian</span>
+                                    </div>
+                                    <p class="mb-0 mt-1" style="font-size:12px;color:#9ca3af">Điều chỉnh số hiệp đấu, thời lượng từng hiệp và thời gian nghỉ giữa hiệp. Tự động tính toán tổng thời gian thi đấu chính thức.</p>
+                                    <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
+                                        <span style="font-size:11px;color:#9ca3af;font-weight:600">Gợi ý:</span>
+                                        <button type="button" class="fmt-qbtn" onclick="applyKoTimePreset(2,45,15)">Bóng đá (2 x 45p)</button>
+                                        <button type="button" class="fmt-qbtn" onclick="applyKoTimePreset(2,20,10)">Futsal (2 x 20p)</button>
+                                        <button type="button" class="fmt-qbtn" onclick="applyKoTimePreset(4,12,5)">Bóng rổ (4 x 12p)</button>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Panel: Tính Thời Gian Hiệp -->
-                    <div class="card border-0 shadow-sm rounded-3 mt-3 bg-white d-none" id="panelThoiGianHiep">
-                        <div class="card-header bg-white border-bottom py-3">
-                            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                                <i class="fa-solid fa-stopwatch text-primary"></i> Quy định Thời gian, Hiệp phụ & Sút Luân lưu Penalty
-                            </h6>
-                        </div>
-                        <div class="card-body p-4">
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Thời gian hiệp chính (phút)</label>
-                                    <input type="number" class="form-control" id="fmtThoiGianChinh" value="45" min="1">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Điểm vòng bảng: Thắng / Hòa / Thua</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control text-center" id="fmtDiemThang" value="3" title="Thắng">
-                                        <input type="number" class="form-control text-center" id="fmtDiemHoa" value="1" title="Hòa">
-                                        <input type="number" class="form-control text-center" id="fmtDiemThua" value="0" title="Thua">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check mt-4">
-                                        <input class="form-check-input" type="checkbox" id="fmtChoPhepHoaVongBang" checked>
-                                        <label class="form-check-label fw-semibold small" for="fmtChoPhepHoaVongBang">Cho phép kết quả Hòa ở vòng bảng</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-light rounded-3 border">
-                                        <div class="form-check form-switch mb-2">
-                                            <input class="form-check-input" type="checkbox" id="fmtCoHiepPhu">
-                                            <label class="form-check-label fw-bold small" for="fmtCoHiepPhu">Áp dụng Hiệp phụ (Khi hòa ở Knockout)</label>
-                                        </div>
-                                        <div class="row g-2 mt-1">
-                                            <div class="col-6">
-                                                <label class="form-label small text-muted">Số hiệp phụ</label>
-                                                <input type="number" class="form-control form-control-sm" id="fmtSoHiepPhu" value="2">
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label small text-muted">Phút mỗi hiệp phụ</label>
-                                                <input type="number" class="form-control form-control-sm" id="fmtThoiGianPhu" value="15">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-light rounded-3 border">
-                                        <div class="form-check form-switch mb-2">
-                                            <input class="form-check-input" type="checkbox" id="fmtCoPenalty" checked>
-                                            <label class="form-check-label fw-bold small" for="fmtCoPenalty">Áp dụng Sút luân lưu Penalty</label>
-                                        </div>
-                                        <div class="mt-1">
-                                            <label class="form-label small text-muted">Số lượt sút luân lưu cơ bản mỗi đội</label>
-                                            <input type="number" class="form-control form-control-sm" id="fmtSoLuotPen" value="5">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Panel: Đo thành tích / Chạy làn -->
-                    <div class="card border-0 shadow-sm rounded-3 mt-3 bg-white d-none" id="panelTinhDiemXepHang">
-                        <div class="card-header bg-white border-bottom py-3">
-                            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                                <i class="fa-solid fa-person-running text-primary"></i> Quy cách Đợt chạy/Lượt bơi, Làn thi đấu & Tiến vào Chung kết
-                            </h6>
-                        </div>
-                        <div class="card-body p-4">
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Loại đo lường thành tích</label>
-                                    <select id="fmtLoaiDo" class="form-select">
-                                        <option value="ThoiGian">⏱️ Thời gian (Giây / mili-giây)</option>
-                                        <option value="KhoangCach">📏 Khoảng cách (Mét / cm)</option>
-                                        <option value="DiemSo">🎯 Điểm số ban giám khảo</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Tiêu chí xếp hạng</label>
-                                    <select id="fmtTieuChiThanhTich" class="form-select">
-                                        <option value="CangNhoCangTot">Nhỏ hơn là tốt hơn (Thời gian ngắn nhất thắng)</option>
-                                        <option value="CangLonCangTot">Lớn hơn là tốt hơn (Xa nhất / Cao nhất thắng)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Số làn / VĐV mỗi lượt thi</label>
-                                    <input type="number" class="form-control" id="fmtSoVdvLuot" value="8" min="1" max="12">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small">Chiều xếp theo chỉ số phụ</label>
-                                    <select id="fmtTieuChiPhuCangNhoCangTot" class="form-select">
-                                        <option value="true">Giá trị nhỏ hơn xếp trên</option>
-                                        <option value="false">Giá trị lớn hơn xếp trên</option>
-                                    </select>
-                                    <small class="form-text">Dùng để phân định thứ hạng khi thành tích chính bằng nhau.</small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small">Tên tiêu chí phụ</label>
-                                    <input type="text" class="form-control" id="fmtTenTieuChiPhuThanhTich" maxlength="100" placeholder="VD: Lần nhảy tốt thứ hai">
-                                    <small class="form-text">Tên này hiển thị trên bảng nhập kết quả cho trọng tài.</small>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Quy cách chọn vào Chung kết</label>
-                                    <select id="fmtQuyCachVaoCk" class="form-select">
-                                        <option value="TopNToanVong">Lấy Top N thành tích tốt nhất toàn vòng</option>
-                                        <option value="TopNTheoBang">Nhất & Nhì mỗi đợt + Top thành tích</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Số vòng thi đấu</label>
-                                    <select id="fmtSoVongThi" class="form-select">
-                                        <option value="1">1 vòng (Chung kết tính giờ trực tiếp)</option>
-                                        <option value="2" selected>2 vòng (Vòng loại → Chung kết Top 8)</option>
-                                        <option value="3">3 vòng (Sơ loại → Bán kết → Chung kết)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Phương thức xếp lượt</label>
-                                    <select id="fmtPhuongThucPhanNhom" class="form-select">
-                                        <option value="random" selected>Bốc thăm ngẫu nhiên</option>
-                                        <option value="performance_seed">Xếp theo hạt giống / thành tích</option>
-                                        <option value="registration_order">Theo thứ tự đăng ký</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Panel: Cấu hình Thời lượng trận & Chia Bảng (Tự Động Xếp Lịch) - Luôn hiển thị cho mọi môn -->
-                    <div class="card border border-primary-subtle shadow-sm rounded-3 mt-3 bg-white" id="panelThoiLuongVaChiaBang">
-                        <div class="card-header bg-primary-subtle bg-opacity-25 border-bottom py-3 d-flex justify-content-between align-items-center">
-                            <h6 class="fw-bold mb-0 text-primary d-flex align-items-center gap-2">
-                                <i class="fa-solid fa-clock-rotate-left"></i> Quy định Thời Lượng & Chia Bảng (Đồng bộ Tự Động Xếp Lịch)
-                            </h6>
-                            <span class="badge bg-primary text-white small px-2 py-1 shadow-2xs">Đồng bộ sang Lịch Thi Đấu</span>
-                        </div>
-                        <div class="card-body p-4">
-                            <div class="alert alert-light border border-info-subtle text-muted rounded-3 py-2 px-3 small mb-3 d-flex align-items-center gap-2">
-                                <i class="fa-solid fa-circle-info text-primary fs-6"></i>
-                                <span>Cấu hình tại đây được hệ thống <strong>tự động đồng bộ vào thuật toán Xếp Lịch Thi Đấu</strong> tại <code>Lịch thi đấu</code> mà không cần người dùng cấu hình lại.</span>
                             </div>
                             <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small">
-                                        <i class="fa-solid fa-stopwatch text-primary me-1"></i><span id="lblThoiLuongTran">Thời lượng mỗi trận / lượt (phút)</span> <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="number" class="form-control" id="fmtThoiLuongTranPhut" value="60" min="1" max="300" required>
-                                    <small class="text-muted" id="subThoiLuongTran">Tổng thời lượng thi đấu dự kiến của 1 trận đấu/lượt thi</small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold small">
-                                        <i class="fa-solid fa-mug-hot text-primary me-1"></i><span id="lblNghiGiuaTran">Nghỉ giữa 2 trận (phút)</span> <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="number" class="form-control" id="fmtNghiGiuaTranPhut" value="15" min="0" max="180" required>
-                                    <small class="text-muted" id="subNghiGiuaTran">Thời gian giãn cách, dọn dẹp vệ sinh sân bãi giữa 2 trận liên tiếp</small>
-                                </div>
-
-                                <!-- Cấu hình chia bảng & vòng Knockout -->
-                                <div class="col-12" id="boxFormatGroupConfig">
-                                    <div class="p-3 bg-light rounded-3 border">
-                                        <div class="d-flex align-items-center justify-content-between mb-2">
-                                            <div class="d-flex align-items-center">
-                                                <i class="fa-solid fa-table-cells-large text-primary me-2 fs-6"></i>
-                                                <strong class="text-primary small">Cấu hình Chia Bảng Đấu & Vòng Knockout</strong>
-                                            </div>
-                                            <span class="badge bg-secondary-subtle text-secondary small" id="badgeGroupFormatStatus">Áp dụng khi thi đấu Bảng / Knockout</span>
+                                <!-- Số hiệp -->
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="fmt-lbl"><i class="fa-solid fa-bolt text-warning fa-xs me-1"></i>Số hiệp trận đấu</div>
+                                            <span class="fw-bold" style="font-size:12px;color:#4f46e5" id="ko_soHiepLabel">2 Hiệp</span>
                                         </div>
+                                        <input type="number" class="fmt-big-input" id="ko_soHiep" value="2" min="1" max="10" oninput="updateKoComputedTime()">
+                                        <div class="fmt-qbtns">
+                                            <button type="button" class="fmt-qbtn koHiepBtn" onclick="setFmtVal('ko_soHiep','ko_soHiepLabel',1,'Hiệp','koHiepBtn',this)">1 Hiệp</button>
+                                            <button type="button" class="fmt-qbtn koHiepBtn active" onclick="setFmtVal('ko_soHiep','ko_soHiepLabel',2,'Hiệp','koHiepBtn',this)">2 Hiệp</button>
+                                            <button type="button" class="fmt-qbtn koHiepBtn" onclick="setFmtVal('ko_soHiep','ko_soHiepLabel',3,'Hiệp','koHiepBtn',this)">3 Hiệp</button>
+                                            <button type="button" class="fmt-qbtn koHiepBtn" onclick="setFmtVal('ko_soHiep','ko_soHiepLabel',4,'Hiệp','koHiepBtn',this)">4 Hiệp</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Thời gian/hiệp -->
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="fmt-lbl"><i class="fa-regular fa-clock text-primary fa-xs me-1"></i>Thời gian từng hiệp</div>
+                                            <span class="fw-bold" style="font-size:12px;color:#4f46e5" id="ko_tgHiepLabel">45 Phút</span>
+                                        </div>
+                                        <div class="d-flex align-items-end gap-1">
+                                            <input type="number" class="fmt-big-input" id="ko_tgHiep" value="45" min="1" max="120" oninput="updateKoComputedTime()">
+                                            <span class="fmt-unit-row pb-1">Phút</span>
+                                        </div>
+                                        <div class="fmt-qbtns">
+                                            <button type="button" class="fmt-qbtn koTgHiepBtn" onclick="setFmtVal('ko_tgHiep','ko_tgHiepLabel',15,'Phút','koTgHiepBtn',this)">15p</button>
+                                            <button type="button" class="fmt-qbtn koTgHiepBtn" onclick="setFmtVal('ko_tgHiep','ko_tgHiepLabel',20,'Phút','koTgHiepBtn',this)">20p</button>
+                                            <button type="button" class="fmt-qbtn koTgHiepBtn" onclick="setFmtVal('ko_tgHiep','ko_tgHiepLabel',30,'Phút','koTgHiepBtn',this)">30p</button>
+                                            <button type="button" class="fmt-qbtn koTgHiepBtn active" onclick="setFmtVal('ko_tgHiep','ko_tgHiepLabel',45,'Phút','koTgHiepBtn',this)">45p</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Nghỉ giữa hiệp -->
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="fmt-lbl"><i class="fa-solid fa-mug-hot text-warning fa-xs me-1"></i>Nghỉ giữa hiệp</div>
+                                            <span class="fw-bold" style="font-size:12px;color:#4f46e5" id="ko_nghiLabel">15 Phút</span>
+                                        </div>
+                                        <div class="d-flex align-items-end gap-1">
+                                            <input type="number" class="fmt-big-input" id="ko_nghi" value="15" min="0" max="60" oninput="$('#ko_nghiLabel').text(this.value+' Phút')">
+                                            <span class="fmt-unit-row pb-1">Phút</span>
+                                        </div>
+                                        <div class="fmt-qbtns">
+                                            <button type="button" class="fmt-qbtn koNghiBtn" onclick="setFmtVal('ko_nghi','ko_nghiLabel',5,'Phút','koNghiBtn',this)">5p</button>
+                                            <button type="button" class="fmt-qbtn koNghiBtn" onclick="setFmtVal('ko_nghi','ko_nghiLabel',10,'Phút','koNghiBtn',this)">10p</button>
+                                            <button type="button" class="fmt-qbtn koNghiBtn active" onclick="setFmtVal('ko_nghi','ko_nghiLabel',15,'Phút','koNghiBtn',this)">15p</button>
+                                            <button type="button" class="fmt-qbtn koNghiBtn" onclick="setFmtVal('ko_nghi','ko_nghiLabel',20,'Phút','koNghiBtn',this)">20p</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Tổng thời gian (computed) -->
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box fmt-computed-box">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="fmt-lbl" style="color:#7c3aed"><i class="fa-solid fa-calendar-check fa-xs me-1"></i>Thời gian cả trận</div>
+                                            <span class="fw-semibold px-2 py-1 rounded-2" style="background:#f3f0ff;color:#7c3aed;border:1px solid #ddd6fe;font-size:10px">Chính thức</span>
+                                        </div>
+                                        <div class="d-flex align-items-end gap-1">
+                                            <input type="number" class="fmt-big-input computed" id="ko_totalTime" value="90" readonly>
+                                            <span class="fmt-unit-row pb-1" style="color:#7c3aed">Phút</span>
+                                        </div>
+                                        <div class="fmt-computed-hint" id="ko_totalTimeHint">2 hiệp x 45p = 90 phút</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2: Hạng 3 + Overtime -->
+                        <div class="fmt-section">
+                            <div class="fmt-section-hdr">
+                                <div class="fmt-ico-circle fmt-ico-orange"><i class="fa-solid fa-medal"></i></div>
+                                <div>
+                                    <h6 class="fw-bold mb-0" style="color:#111827">2. Trận Tranh Hạng 3 - 4 &amp; Quy Tắc Hiệp Phụ (Overtime)</h6>
+                                    <p class="mb-0 mt-1" style="font-size:12px;color:#9ca3af">Thiết lập tổ chức trận tranh hạng ba và các thông số hiệp phụ, luân lưu phân thắng bại khi có tỷ số hòa.</p>
+                                </div>
+                            </div>
+
+                            <!-- Toggle: Tranh hạng 3 -->
+                            <div class="fmt-toggle-row">
+                                <div class="flex-grow-1">
+                                    <div class="fmt-toggle-title">Tổ chức trận tranh Hạng 3 - 4 (Tranh Huy Chương Đồng)</div>
+                                    <div class="fmt-toggle-desc">Trận đấu phân định vị trí thứ 3 và thứ 4 giữa 2 đội thua tại vòng Bán Kết</div>
+                                </div>
+                                <label class="fmt-toggle" style="margin-top:2px">
+                                    <input type="checkbox" id="ko_coTranhHangBa" checked>
+                                    <span class="fmt-slider orange"></span>
+                                </label>
+                            </div>
+
+                            <!-- Toggle: Hiệp phụ -->
+                            <div class="fmt-toggle-row">
+                                <div class="flex-grow-1">
+                                    <div class="fmt-toggle-title">Áp dụng Hiệp Phụ (Overtime) khi hòa trong giờ thi đấu chính thức</div>
+                                    <div class="fmt-toggle-desc">Cho phép thi đấu thêm hiệp phụ nếu kết thúc thời gian chính thức hai đội có tỷ số hòa</div>
+                                    <!-- Sub: overtime fields -->
+                                    <div id="ko_overtimeSub" class="fmt-overtime-sub">
                                         <div class="row g-3">
                                             <div class="col-md-4">
-                                                <label class="form-label fw-semibold small">Số bảng đấu</label>
-                                                <select class="form-select form-select-sm" id="fmtSoBang">
-                                                    <option value="0" selected>Tự động chia theo số đội</option>
-                                                    <option value="1">1 bảng đấu (Vòng tròn 1 bảng)</option>
-                                                    <option value="2">2 bảng đấu (Bảng A & Bảng B)</option>
-                                                    <option value="3">3 bảng đấu (Bảng A, B, C)</option>
-                                                    <option value="4">4 bảng đấu (Bảng A, B, C, D)</option>
-                                                    <option value="6">6 bảng đấu (Bảng A đến F)</option>
-                                                    <option value="8">8 bảng đấu (Bảng A đến H)</option>
-                                                </select>
-                                                <small class="text-muted">Chọn số bảng hoặc để thuật toán tự tính</small>
+                                                <div class="fmt-input-box bg-white" style="border-color:#e2e8f0">
+                                                    <div class="d-flex justify-content-between"><div class="fmt-lbl">Số hiệp phụ</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="ko_soHiepPhuLabel">2 Hiệp</span></div>
+                                                    <div class="d-flex align-items-end gap-1">
+                                                        <input type="number" class="fmt-big-input" id="ko_soHiepPhu" value="2" min="1" max="4" oninput="updateKoPhuComputedTime()" style="font-size:26px">
+                                                        <span class="fmt-unit-row pb-1">Hiệp</span>
+                                                    </div>
+                                                    <div class="fmt-qbtns">
+                                                        <button type="button" class="fmt-qbtn koPhuHiepBtn" onclick="setFmtVal('ko_soHiepPhu','ko_soHiepPhuLabel',1,'Hiệp','koPhuHiepBtn',this);updateKoPhuComputedTime()">1 hiệp</button>
+                                                        <button type="button" class="fmt-qbtn koPhuHiepBtn active" onclick="setFmtVal('ko_soHiepPhu','ko_soHiepPhuLabel',2,'Hiệp','koPhuHiepBtn',this);updateKoPhuComputedTime()">2 hiệp</button>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label fw-semibold small">Số đội mỗi bảng <span class="text-danger">*</span></label>
-                                                <input type="number" class="form-control form-control-sm" id="fmtSoDoiMoiBang" value="4" min="2" max="16">
-                                                <small class="text-muted">Dùng khi chọn Tự động chia (mặc định 4)</small>
+                                                <div class="fmt-input-box bg-white" style="border-color:#e2e8f0">
+                                                    <div class="d-flex justify-content-between"><div class="fmt-lbl">Thời gian từng hiệp phụ</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="ko_tgPhuLabel">15 Phút</span></div>
+                                                    <div class="d-flex align-items-end gap-1">
+                                                        <input type="number" class="fmt-big-input" id="ko_tgHiepPhu" value="15" min="1" oninput="updateKoPhuComputedTime()" style="font-size:26px">
+                                                        <span class="fmt-unit-row pb-1">Phút/hiệp</span>
+                                                    </div>
+                                                    <div class="fmt-qbtns">
+                                                        <button type="button" class="fmt-qbtn koPhuTgBtn" onclick="setFmtVal('ko_tgHiepPhu','ko_tgPhuLabel',5,'Phút','koPhuTgBtn',this);updateKoPhuComputedTime()">5p</button>
+                                                        <button type="button" class="fmt-qbtn koPhuTgBtn" onclick="setFmtVal('ko_tgHiepPhu','ko_tgPhuLabel',10,'Phút','koPhuTgBtn',this);updateKoPhuComputedTime()">10p</button>
+                                                        <button type="button" class="fmt-qbtn koPhuTgBtn active" onclick="setFmtVal('ko_tgHiepPhu','ko_tgPhuLabel',15,'Phút','koPhuTgBtn',this);updateKoPhuComputedTime()">15p</button>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label fw-semibold small">Đội vào Vòng Knockout</label>
-                                                <select class="form-select form-select-sm" id="fmtSoDoiMoiBangVaoVongTrong">
-                                                    <option value="1">Chỉ Nhất bảng</option>
-                                                    <option value="2" selected>Top 2 (Nhất & Nhì mỗi bảng)</option>
-                                                    <option value="3">Top 3 mỗi bảng</option>
-                                                    <option value="4">Top 4 mỗi bảng</option>
-                                                </select>
-                                                <small class="text-muted">Tiến vào Bán kết / Chung kết</small>
+                                                <div class="fmt-input-box fmt-computed-box">
+                                                    <div class="d-flex justify-content-between"><div class="fmt-lbl" style="color:#7c3aed">Tổng thời gian hiệp phụ</div><span class="fw-semibold px-2 py-1 rounded-2" style="background:#f3f0ff;color:#7c3aed;border:1px solid #ddd6fe;font-size:10px">Tất cả hiệp</span></div>
+                                                    <div class="d-flex align-items-end gap-1">
+                                                        <input type="number" class="fmt-big-input computed" id="ko_totalPhuTime" value="30" readonly style="font-size:26px">
+                                                        <span class="fmt-unit-row pb-1" style="color:#7c3aed">Phút</span>
+                                                    </div>
+                                                    <div class="fmt-computed-hint" id="ko_totalPhuTimeHint">2 hiệp phụ x 15p = 30 phút</div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                                <label class="fmt-toggle" style="margin-top:2px;flex-shrink:0">
+                                    <input type="checkbox" id="ko_coHiepPhu" checked onchange="$('#ko_overtimeSub').toggle(this.checked)">
+                                    <span class="fmt-slider blue"></span>
+                                </label>
+                            </div>
+
+                            <!-- Toggle: Penalty -->
+                            <div class="fmt-toggle-row">
+                                <div class="flex-grow-1">
+                                    <div class="fmt-toggle-title">Đá luân lưu 11m (Penalty Shootout)</div>
+                                    <div class="fmt-toggle-desc">Phân định thắng thua bằng loạt sút luân lưu nếu kết thúc các hiệp phụ vẫn hòa</div>
+                                </div>
+                                <label class="fmt-toggle" style="margin-top:2px">
+                                    <input type="checkbox" id="ko_coPenalty" checked>
+                                    <span class="fmt-slider green"></span>
+                                </label>
                             </div>
                         </div>
                     </div>
+
+                    <!-- ====== TAB 2: VÒNG TRÒN 1 LƯỢT ====== -->
+                    <div id="mechVongBang" class="format-mechanism-panel d-none">
+
+                        <!-- SECTION 1: Match Time -->
+                        <div class="fmt-section">
+                            <div class="fmt-section-hdr">
+                                <div class="fmt-ico-circle fmt-ico-blue"><i class="fa-regular fa-clock"></i></div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <h6 class="fw-bold mb-0" style="color:#111827">1. Cấu Hình Thời Lượng Trận Đấu</h6>
+                                        <span class="fw-semibold px-2 py-1 rounded-2" style="background:#eff6ff;color:#3b82f6;border:1px solid #bfdbfe;font-size:10px">Thời Gian</span>
+                                    </div>
+                                    <p class="mb-0 mt-1" style="font-size:12px;color:#9ca3af">Thiết lập số hiệp và thời lượng trận đấu trong vòng tròn. Dùng để tự động xếp lịch thi đấu.</p>
+                                    <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
+                                        <span style="font-size:11px;color:#9ca3af;font-weight:600">Gợi ý:</span>
+                                        <button type="button" class="fmt-qbtn" onclick="applyRrTimePreset(2,45,15)">Bóng đá (2 x 45p)</button>
+                                        <button type="button" class="fmt-qbtn" onclick="applyRrTimePreset(2,20,10)">Futsal (2 x 20p)</button>
+                                        <button type="button" class="fmt-qbtn" onclick="applyRrTimePreset(3,25,10)">Bóng bàn (5 set)</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box">
+                                        <div class="d-flex justify-content-between"><div class="fmt-lbl">Số hiệp trận đấu</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="rr_soHiepLabel">2 Hiệp</span></div>
+                                        <input type="number" class="fmt-big-input" id="rr_soHiep" value="2" min="1" oninput="updateRrComputedTime()">
+                                        <div class="fmt-qbtns">
+                                            <button type="button" class="fmt-qbtn rrHiepBtn" onclick="setFmtVal('rr_soHiep','rr_soHiepLabel',1,'Hiệp','rrHiepBtn',this)">1 Hiệp</button>
+                                            <button type="button" class="fmt-qbtn rrHiepBtn active" onclick="setFmtVal('rr_soHiep','rr_soHiepLabel',2,'Hiệp','rrHiepBtn',this)">2 Hiệp</button>
+                                            <button type="button" class="fmt-qbtn rrHiepBtn" onclick="setFmtVal('rr_soHiep','rr_soHiepLabel',3,'Hiệp','rrHiepBtn',this)">3 Hiệp</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box">
+                                        <div class="d-flex justify-content-between"><div class="fmt-lbl">Thời gian từng hiệp</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="rr_tgHiepLabel">45 Phút</span></div>
+                                        <div class="d-flex align-items-end gap-1">
+                                            <input type="number" class="fmt-big-input" id="rr_tgHiep" value="45" min="1" oninput="updateRrComputedTime()">
+                                            <span class="fmt-unit-row pb-1">Phút</span>
+                                        </div>
+                                        <div class="fmt-qbtns">
+                                            <button type="button" class="fmt-qbtn rrTgBtn" onclick="setFmtVal('rr_tgHiep','rr_tgHiepLabel',20,'Phút','rrTgBtn',this)">20p</button>
+                                            <button type="button" class="fmt-qbtn rrTgBtn" onclick="setFmtVal('rr_tgHiep','rr_tgHiepLabel',30,'Phút','rrTgBtn',this)">30p</button>
+                                            <button type="button" class="fmt-qbtn rrTgBtn active" onclick="setFmtVal('rr_tgHiep','rr_tgHiepLabel',45,'Phút','rrTgBtn',this)">45p</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box">
+                                        <div class="d-flex justify-content-between"><div class="fmt-lbl">Nghỉ giữa hiệp</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="rr_nghiLabel">15 Phút</span></div>
+                                        <div class="d-flex align-items-end gap-1">
+                                            <input type="number" class="fmt-big-input" id="rr_nghi" value="15" min="0" oninput="$('#rr_nghiLabel').text(this.value+' Phút')">
+                                            <span class="fmt-unit-row pb-1">Phút</span>
+                                        </div>
+                                        <div class="fmt-qbtns">
+                                            <button type="button" class="fmt-qbtn rrNghiBtn" onclick="setFmtVal('rr_nghi','rr_nghiLabel',5,'Phút','rrNghiBtn',this)">5p</button>
+                                            <button type="button" class="fmt-qbtn rrNghiBtn" onclick="setFmtVal('rr_nghi','rr_nghiLabel',10,'Phút','rrNghiBtn',this)">10p</button>
+                                            <button type="button" class="fmt-qbtn rrNghiBtn active" onclick="setFmtVal('rr_nghi','rr_nghiLabel',15,'Phút','rrNghiBtn',this)">15p</button>
+                                            <button type="button" class="fmt-qbtn rrNghiBtn" onclick="setFmtVal('rr_nghi','rr_nghiLabel',20,'Phút','rrNghiBtn',this)">20p</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box fmt-computed-box">
+                                        <div class="d-flex justify-content-between"><div class="fmt-lbl" style="color:#7c3aed">Thời gian cả trận</div><span class="fw-semibold px-2 py-1 rounded-2" style="background:#f3f0ff;color:#7c3aed;border:1px solid #ddd6fe;font-size:10px">Tổng</span></div>
+                                        <div class="d-flex align-items-end gap-1">
+                                            <input type="number" class="fmt-big-input computed" id="rr_totalTime" value="90" readonly>
+                                            <span class="fmt-unit-row pb-1" style="color:#7c3aed">Phút</span>
+                                        </div>
+                                        <div class="fmt-computed-hint" id="rr_totalTimeHint">2 hiệp x 45p = 90 phút</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2: Điểm số -->
+                        <div class="fmt-section">
+                            <div class="fmt-section-hdr">
+                                <div class="fmt-ico-circle fmt-ico-yellow"><i class="fa-solid fa-trophy"></i></div>
+                                <div>
+                                    <h6 class="fw-bold mb-0" style="color:#111827">2. Điểm Số Mỗi Trận Đấu (Thắng / Hòa / Thua)</h6>
+                                    <p class="mb-0 mt-1" style="font-size:12px;color:#9ca3af">Thiết lập số điểm được cộng cho các đội sau mỗi trận thắng, hòa và thua trong bảng xếp hạng.</p>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="fmt-score-card green">
+                                        <div class="fmt-score-lbl"><span>Điểm trận Thắng</span><span class="fw-normal" style="font-size:11px;opacity:.8">Mặc định: 3đ</span></div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="number" class="fmt-score-val" id="rr_diemThang" value="3" min="0" step="0.5">
+                                            <span style="font-size:13px;color:#15803d;font-weight:600">Điểm</span>
+                                        </div>
+                                        <div class="fmt-score-hint">Cộng cho đội giành chiến thắng sau trận</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="fmt-score-card yellow">
+                                        <div class="fmt-score-lbl"><span>Điểm trận Hòa</span><span class="fw-normal" style="font-size:11px;opacity:.8">Mặc định: 1đ</span></div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="number" class="fmt-score-val" id="rr_diemHoa" value="1" min="0" step="0.5">
+                                            <span style="font-size:13px;color:#d97706;font-weight:600">Điểm</span>
+                                        </div>
+                                        <div class="fmt-score-hint">Chia đều 1 điểm cho mỗi đội khi hòa</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="fmt-score-card red">
+                                        <div class="fmt-score-lbl"><span>Điểm trận Thua</span><span class="fw-normal" style="font-size:11px;opacity:.8">Mặc định: 0đ</span></div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="number" class="fmt-score-val" id="rr_diemThua" value="0" min="-10" step="0.5">
+                                            <span style="font-size:13px;color:#dc2626;font-weight:600">Điểm</span>
+                                        </div>
+                                        <div class="fmt-score-hint">Không có điểm khi thua trận</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 3: Tiebreaker -->
+                        <div class="fmt-section">
+                            <div class="fmt-section-hdr">
+                                <div class="fmt-ico-circle fmt-ico-indigo"><i class="fa-solid fa-list-ol"></i></div>
+                                <div>
+                                    <h6 class="fw-bold mb-0" style="color:#111827">3. Tiêu Chí Phụ Khi Xếp Hạng (Khi Bằng Điểm)</h6>
+                                    <p class="mb-0 mt-1" style="font-size:12px;color:#9ca3af">Khi các đội có cùng số điểm, hệ thống phân định thứ hạng theo đúng thứ tự ưu tiên bên dưới. Bấm mũi tên để thay đổi thứ bậc.</p>
+                                </div>
+                            </div>
+                            <div id="rr_criteriaList">
+                                <div class="fmt-criteria-row" data-criteria-id="DiemDoiDauTrucTiep">
+                                    <input type="checkbox" class="fmt-criteria-cb" checked>
+                                    <span class="fmt-num-badge">#1</span>
+                                    <div class="flex-grow-1"><div class="fmt-criteria-title">Điểm đối đầu trực tiếp</div><div class="fmt-criteria-desc">Tổng số điểm trong các trận đối đầu giữa các đội bằng điểm</div></div>
+                                    <div class="d-flex gap-1"><button type="button" class="fmt-arr-btn" onclick="moveCriteria('rr_criteriaList',this,-1)"><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="fmt-arr-btn" onclick="moveCriteria('rr_criteriaList',this,1)"><i class="fa-solid fa-chevron-down"></i></button></div>
+                                </div>
+                                <div class="fmt-criteria-row" data-criteria-id="HieuSoDoiDau">
+                                    <input type="checkbox" class="fmt-criteria-cb" checked>
+                                    <span class="fmt-num-badge">#2</span>
+                                    <div class="flex-grow-1"><div class="fmt-criteria-title">Hiệu số đối đầu</div><div class="fmt-criteria-desc">Hiệu số bàn thắng/bại trong các trận trực tiếp</div></div>
+                                    <div class="d-flex gap-1"><button type="button" class="fmt-arr-btn" onclick="moveCriteria('rr_criteriaList',this,-1)"><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="fmt-arr-btn" onclick="moveCriteria('rr_criteriaList',this,1)"><i class="fa-solid fa-chevron-down"></i></button></div>
+                                </div>
+                                <div class="fmt-criteria-row" data-criteria-id="HieuSoToanGiai">
+                                    <input type="checkbox" class="fmt-criteria-cb" checked>
+                                    <span class="fmt-num-badge">#3</span>
+                                    <div class="flex-grow-1"><div class="fmt-criteria-title">Hiệu số toàn giải</div><div class="fmt-criteria-desc">Hiệu số bàn thắng/bại của tất cả các trận trong giải</div></div>
+                                    <div class="d-flex gap-1"><button type="button" class="fmt-arr-btn" onclick="moveCriteria('rr_criteriaList',this,-1)"><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="fmt-arr-btn" onclick="moveCriteria('rr_criteriaList',this,1)"><i class="fa-solid fa-chevron-down"></i></button></div>
+                                </div>
+                                <div class="fmt-criteria-row" data-criteria-id="TongBanThang">
+                                    <input type="checkbox" class="fmt-criteria-cb" checked>
+                                    <span class="fmt-num-badge">#4</span>
+                                    <div class="flex-grow-1"><div class="fmt-criteria-title">Tổng số bàn thắng ghi được</div><div class="fmt-criteria-desc">Đội ghi được nhiều bàn thắng hơn trong toàn giải</div></div>
+                                    <div class="d-flex gap-1"><button type="button" class="fmt-arr-btn" onclick="moveCriteria('rr_criteriaList',this,-1)"><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="fmt-arr-btn" onclick="moveCriteria('rr_criteriaList',this,1)"><i class="fa-solid fa-chevron-down"></i></button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ====== TAB 3: BẢNG & LOẠI TRỰC TIẾP ====== -->
+                    <div id="mechKetHop" class="format-mechanism-panel d-none">
+
+                        <!-- SECTION 1: Match Time -->
+                        <div class="fmt-section">
+                            <div class="fmt-section-hdr">
+                                <div class="fmt-ico-circle fmt-ico-blue"><i class="fa-regular fa-clock"></i></div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <h6 class="fw-bold mb-0" style="color:#111827">1. Cấu Hình Thời Lượng Trận Đấu</h6>
+                                        <span class="fw-semibold px-2 py-1 rounded-2" style="background:#eff6ff;color:#3b82f6;border:1px solid #bfdbfe;font-size:10px">Thời Gian</span>
+                                    </div>
+                                    <p class="mb-0 mt-1" style="font-size:12px;color:#9ca3af">Áp dụng cho cả vòng bảng lẫn vòng knockout. Dùng để tự động xếp lịch thi đấu.</p>
+                                    <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
+                                        <span style="font-size:11px;color:#9ca3af;font-weight:600">Gợi ý:</span>
+                                        <button type="button" class="fmt-qbtn" onclick="applyCombTimePreset(2,45,15)">Bóng đá (2 x 45p)</button>
+                                        <button type="button" class="fmt-qbtn" onclick="applyCombTimePreset(2,20,10)">Futsal (2 x 20p)</button>
+                                        <button type="button" class="fmt-qbtn" onclick="applyCombTimePreset(4,10,5)">Bóng rổ (4 x 10p)</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box">
+                                        <div class="d-flex justify-content-between"><div class="fmt-lbl">Số hiệp trận đấu</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="comb_soHiepLabel">2 Hiệp</span></div>
+                                        <input type="number" class="fmt-big-input" id="comb_soHiep" value="2" min="1" oninput="updateCombComputedTime()">
+                                        <div class="fmt-qbtns">
+                                            <button type="button" class="fmt-qbtn combHiepBtn" onclick="setFmtVal('comb_soHiep','comb_soHiepLabel',1,'Hiệp','combHiepBtn',this)">1 Hiệp</button>
+                                            <button type="button" class="fmt-qbtn combHiepBtn active" onclick="setFmtVal('comb_soHiep','comb_soHiepLabel',2,'Hiệp','combHiepBtn',this)">2 Hiệp</button>
+                                            <button type="button" class="fmt-qbtn combHiepBtn" onclick="setFmtVal('comb_soHiep','comb_soHiepLabel',4,'Hiệp','combHiepBtn',this)">4 Hiệp</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box">
+                                        <div class="d-flex justify-content-between"><div class="fmt-lbl">Thời gian từng hiệp</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="comb_tgHiepLabel">45 Phút</span></div>
+                                        <div class="d-flex align-items-end gap-1">
+                                            <input type="number" class="fmt-big-input" id="comb_tgHiep" value="45" min="1" oninput="updateCombComputedTime()">
+                                            <span class="fmt-unit-row pb-1">Phút</span>
+                                        </div>
+                                        <div class="fmt-qbtns">
+                                            <button type="button" class="fmt-qbtn combTgBtn" onclick="setFmtVal('comb_tgHiep','comb_tgHiepLabel',20,'Phút','combTgBtn',this)">20p</button>
+                                            <button type="button" class="fmt-qbtn combTgBtn" onclick="setFmtVal('comb_tgHiep','comb_tgHiepLabel',30,'Phút','combTgBtn',this)">30p</button>
+                                            <button type="button" class="fmt-qbtn combTgBtn active" onclick="setFmtVal('comb_tgHiep','comb_tgHiepLabel',45,'Phút','combTgBtn',this)">45p</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box">
+                                        <div class="d-flex justify-content-between"><div class="fmt-lbl">Nghỉ giữa hiệp</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="comb_nghiLabel">15 Phút</span></div>
+                                        <div class="d-flex align-items-end gap-1">
+                                            <input type="number" class="fmt-big-input" id="comb_nghi" value="15" min="0" oninput="$('#comb_nghiLabel').text(this.value+' Phút')">
+                                            <span class="fmt-unit-row pb-1">Phút</span>
+                                        </div>
+                                        <div class="fmt-qbtns">
+                                            <button type="button" class="fmt-qbtn combNghiBtn" onclick="setFmtVal('comb_nghi','comb_nghiLabel',5,'Phút','combNghiBtn',this)">5p</button>
+                                            <button type="button" class="fmt-qbtn combNghiBtn" onclick="setFmtVal('comb_nghi','comb_nghiLabel',10,'Phút','combNghiBtn',this)">10p</button>
+                                            <button type="button" class="fmt-qbtn combNghiBtn active" onclick="setFmtVal('comb_nghi','comb_nghiLabel',15,'Phút','combNghiBtn',this)">15p</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="fmt-input-box fmt-computed-box">
+                                        <div class="d-flex justify-content-between"><div class="fmt-lbl" style="color:#7c3aed">Thời gian cả trận</div><span class="fw-semibold px-2 py-1 rounded-2" style="background:#f3f0ff;color:#7c3aed;border:1px solid #ddd6fe;font-size:10px">Tổng</span></div>
+                                        <div class="d-flex align-items-end gap-1">
+                                            <input type="number" class="fmt-big-input computed" id="comb_totalTime" value="90" readonly>
+                                            <span class="fmt-unit-row pb-1" style="color:#7c3aed">Phút</span>
+                                        </div>
+                                        <div class="fmt-computed-hint" id="comb_totalTimeHint">2 hiệp x 45p = 90 phút</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2: Group + KO Config -->
+                        <div class="fmt-section">
+                            <div class="fmt-section-hdr">
+                                <div class="fmt-ico-circle fmt-ico-green"><i class="fa-solid fa-layer-group"></i></div>
+                                <div>
+                                    <h6 class="fw-bold mb-0" style="color:#111827">2. Cấu Trúc Bảng Đấu &amp; Suất Thắng Hạng Vòng Knockout</h6>
+                                    <p class="mb-0 mt-1" style="font-size:12px;color:#9ca3af">Thiết lập số lượng bảng đấu, tiêu chuẩn chọn đội vào vòng Knockout và số điểm mỗi trận đấu.</p>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="fmt-input-box">
+                                        <div class="fmt-lbl mb-2">Số lượng bảng đấu</div>
+                                        <select class="form-select" id="comb_soBang">
+                                            <option value="0">Tự động (theo tổng số đội đăng ký)</option>
+                                            <option value="2">2 Bảng đấu (Bảng A, B)</option>
+                                            <option value="3">3 Bảng đấu (Bảng A, B, C)</option>
+                                            <option value="4" selected>4 Bảng đấu (Bảng A, B, C, D)</option>
+                                            <option value="6">6 Bảng đấu (Bảng A đến F)</option>
+                                            <option value="8">8 Bảng đấu (Bảng A đến H)</option>
+                                        </select>
+                                        <div class="fmt-computed-hint mt-1">Các đội thi đấu vòng tròn trong từng bảng để xếp hạng</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="fmt-input-box">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="fmt-lbl">Suất vào vòng loại trực tiếp (Knockout)</div>
+                                            <span class="fw-semibold px-2 py-1 rounded-2" style="background:#f3f0ff;color:#7c3aed;border:1px solid #ddd6fe;font-size:10px">Chọn Suất</span>
+                                        </div>
+                                        <select class="form-select" id="comb_soDoiMoiBangVaoVongTrong">
+                                            <option value="1">Chỉ Nhất bảng (Vào Bán kết/Chung kết)</option>
+                                            <option value="2" selected>Đội Nhất và Nhì mỗi bảng (Thông dụng)</option>
+                                            <option value="3">Top 3 mỗi bảng</option>
+                                            <option value="4">Top 4 mỗi bảng</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Inline scores -->
+                            <div class="p-3 mb-3 rounded-3" style="background:#f8f9fa;border:1.5px solid #e5e7eb">
+                                <div class="d-flex align-items-center gap-4 flex-wrap">
+                                    <span class="fw-semibold" style="font-size:13px;color:#6b7280">Điểm vòng bảng:</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold" style="color:#16a34a">Thắng</span>
+                                        <div class="d-flex align-items-center border rounded-3 bg-white px-2" style="border-color:#d1d5db!important">
+                                            <input type="number" id="comb_diemThang" value="3" min="0" class="fmt-inline-score-input" style="color:#16a34a">
+                                            <span class="text-muted small">đ</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold" style="color:#d97706">Hòa</span>
+                                        <div class="d-flex align-items-center border rounded-3 bg-white px-2" style="border-color:#d1d5db!important">
+                                            <input type="number" id="comb_diemHoa" value="1" min="0" class="fmt-inline-score-input" style="color:#d97706">
+                                            <span class="text-muted small">đ</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold" style="color:#dc2626">Thua</span>
+                                        <div class="d-flex align-items-center border rounded-3 bg-white px-2" style="border-color:#d1d5db!important">
+                                            <input type="number" id="comb_diemThua" value="0" min="-10" class="fmt-inline-score-input" style="color:#dc2626">
+                                            <span class="text-muted small">đ</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Toggle: Tranh hạng ba -->
+                            <div class="fmt-toggle-row">
+                                <div class="flex-grow-1">
+                                    <div class="fmt-toggle-title">Tổ chức trận tranh Hạng Ba (Huy Chương Đồng)</div>
+                                    <div class="fmt-toggle-desc">Trận đấu giữa 2 đội thua Bán Kết</div>
+                                </div>
+                                <label class="fmt-toggle" style="margin-top:2px">
+                                    <input type="checkbox" id="comb_coTranhHangBa" checked>
+                                    <span class="fmt-slider orange"></span>
+                                </label>
+                            </div>
+
+                            <!-- Toggle: Hiệp phụ -->
+                            <div class="fmt-toggle-row">
+                                <div class="flex-grow-1">
+                                    <div class="fmt-toggle-title">Áp dụng Hiệp Phụ (Overtime) khi hòa trong giờ thi đấu chính thức</div>
+                                    <div class="fmt-toggle-desc">Áp dụng cho các trận vòng Knockout: Cho phép thi đấu hiệp phụ khi hòa trong giờ chính thức</div>
+                                    <!-- Sub: overtime fields -->
+                                    <div id="comb_overtimeSub" class="fmt-overtime-sub">
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <div class="fmt-input-box bg-white" style="border-color:#e2e8f0">
+                                                    <div class="d-flex justify-content-between"><div class="fmt-lbl">Số hiệp phụ</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="comb_soHiepPhuLabel">2 Hiệp</span></div>
+                                                    <div class="d-flex align-items-end gap-1">
+                                                        <input type="number" class="fmt-big-input" id="comb_soHiepPhu" value="2" min="1" max="4" oninput="updateCombPhuComputedTime()" style="font-size:26px">
+                                                        <span class="fmt-unit-row pb-1">Hiệp</span>
+                                                    </div>
+                                                    <div class="fmt-qbtns">
+                                                        <button type="button" class="fmt-qbtn combPhuHiepBtn" onclick="setFmtVal('comb_soHiepPhu','comb_soHiepPhuLabel',1,'Hiệp','combPhuHiepBtn',this);updateCombPhuComputedTime()">1 hiệp</button>
+                                                        <button type="button" class="fmt-qbtn combPhuHiepBtn active" onclick="setFmtVal('comb_soHiepPhu','comb_soHiepPhuLabel',2,'Hiệp','combPhuHiepBtn',this);updateCombPhuComputedTime()">2 hiệp</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="fmt-input-box bg-white" style="border-color:#e2e8f0">
+                                                    <div class="d-flex justify-content-between"><div class="fmt-lbl">Thời gian từng hiệp phụ</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="comb_tgPhuLabel">15 Phút</span></div>
+                                                    <div class="d-flex align-items-end gap-1">
+                                                        <input type="number" class="fmt-big-input" id="comb_tgHiepPhu" value="15" min="1" oninput="updateCombPhuComputedTime()" style="font-size:26px">
+                                                        <span class="fmt-unit-row pb-1">Phút/hiệp</span>
+                                                    </div>
+                                                    <div class="fmt-qbtns">
+                                                        <button type="button" class="fmt-qbtn combPhuTgBtn" onclick="setFmtVal('comb_tgHiepPhu','comb_tgPhuLabel',5,'Phút','combPhuTgBtn',this);updateCombPhuComputedTime()">5p</button>
+                                                        <button type="button" class="fmt-qbtn combPhuTgBtn" onclick="setFmtVal('comb_tgHiepPhu','comb_tgPhuLabel',10,'Phút','combPhuTgBtn',this);updateCombPhuComputedTime()">10p</button>
+                                                        <button type="button" class="fmt-qbtn combPhuTgBtn active" onclick="setFmtVal('comb_tgHiepPhu','comb_tgPhuLabel',15,'Phút','combPhuTgBtn',this);updateCombPhuComputedTime()">15p</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="fmt-input-box fmt-computed-box">
+                                                    <div class="d-flex justify-content-between"><div class="fmt-lbl" style="color:#7c3aed">Tổng thời gian hiệp phụ</div><span class="fw-semibold px-2 py-1 rounded-2" style="background:#f3f0ff;color:#7c3aed;border:1px solid #ddd6fe;font-size:10px">Tất cả hiệp</span></div>
+                                                    <div class="d-flex align-items-end gap-1">
+                                                        <input type="number" class="fmt-big-input computed" id="comb_totalPhuTime" value="30" readonly style="font-size:26px">
+                                                        <span class="fmt-unit-row pb-1" style="color:#7c3aed">Phút</span>
+                                                    </div>
+                                                    <div class="fmt-computed-hint" id="comb_totalPhuTimeHint">2 hiệp phụ x 15p = 30 phút</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <label class="fmt-toggle" style="margin-top:2px;flex-shrink:0">
+                                    <input type="checkbox" id="comb_coHiepPhu" checked onchange="$('#comb_overtimeSub').toggle(this.checked)">
+                                    <span class="fmt-slider blue"></span>
+                                </label>
+                            </div>
+
+                            <!-- Toggle: Penalty -->
+                            <div class="fmt-toggle-row">
+                                <div class="flex-grow-1">
+                                    <div class="fmt-toggle-title">Đá luân lưu 11m (Penalty Shootout)</div>
+                                    <div class="fmt-toggle-desc">Phân định thắng thua bằng loạt sút luân lưu nếu kết thúc các hiệp phụ vẫn hòa tại vòng loại trực tiếp</div>
+                                </div>
+                                <label class="fmt-toggle" style="margin-top:2px">
+                                    <input type="checkbox" id="comb_coPenalty" checked>
+                                    <span class="fmt-slider green"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 3: Tiebreaker for Group Stage -->
+                        <div class="fmt-section">
+                            <div class="fmt-section-hdr">
+                                <div class="fmt-ico-circle fmt-ico-orange"><i class="fa-solid fa-list-ol"></i></div>
+                                <div>
+                                    <h6 class="fw-bold mb-0" style="color:#111827">3. Tiêu Chí Xét Duyệt Nếu Bằng Điểm Ở Vòng Bảng</h6>
+                                    <p class="mb-0 mt-1" style="font-size:12px;color:#9ca3af">Khi các đội có cùng số điểm trong cùng một bảng đấu, thứ hạng sẽ được phân định theo thứ tự ưu tiên bên dưới.</p>
+                                </div>
+                            </div>
+                            <div id="comb_criteriaList">
+                                <div class="fmt-criteria-row" data-criteria-id="DiemDoiDauTrucTiep">
+                                    <input type="checkbox" class="fmt-criteria-cb orange" checked>
+                                    <span class="fmt-num-badge orange">#1</span>
+                                    <div class="flex-grow-1"><div class="fmt-criteria-title">Điểm đối đầu trực tiếp</div><div class="fmt-criteria-desc">Tổng số điểm đối đầu giữa các đội bằng điểm trong bảng</div></div>
+                                    <div class="d-flex gap-1"><button type="button" class="fmt-arr-btn" onclick="moveCriteria('comb_criteriaList',this,-1)"><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="fmt-arr-btn" onclick="moveCriteria('comb_criteriaList',this,1)"><i class="fa-solid fa-chevron-down"></i></button></div>
+                                </div>
+                                <div class="fmt-criteria-row" data-criteria-id="HieuSoDoiDauTrongBang">
+                                    <input type="checkbox" class="fmt-criteria-cb orange" checked>
+                                    <span class="fmt-num-badge orange">#2</span>
+                                    <div class="flex-grow-1"><div class="fmt-criteria-title">Hiệu số đối đầu trong bảng</div><div class="fmt-criteria-desc">Hiệu số bàn thắng/bại trong các trận gặp nhau trực tiếp</div></div>
+                                    <div class="d-flex gap-1"><button type="button" class="fmt-arr-btn" onclick="moveCriteria('comb_criteriaList',this,-1)"><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="fmt-arr-btn" onclick="moveCriteria('comb_criteriaList',this,1)"><i class="fa-solid fa-chevron-down"></i></button></div>
+                                </div>
+                                <div class="fmt-criteria-row" data-criteria-id="HieuSoToanBang">
+                                    <input type="checkbox" class="fmt-criteria-cb orange" checked>
+                                    <span class="fmt-num-badge orange">#3</span>
+                                    <div class="flex-grow-1"><div class="fmt-criteria-title">Hiệu số toàn bảng đấu</div><div class="fmt-criteria-desc">Hiệu số bàn thắng/bại của tất cả các trận trong bảng</div></div>
+                                    <div class="d-flex gap-1"><button type="button" class="fmt-arr-btn" onclick="moveCriteria('comb_criteriaList',this,-1)"><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="fmt-arr-btn" onclick="moveCriteria('comb_criteriaList',this,1)"><i class="fa-solid fa-chevron-down"></i></button></div>
+                                </div>
+                                <div class="fmt-criteria-row" data-criteria-id="TongBanThang">
+                                    <input type="checkbox" class="fmt-criteria-cb orange" checked>
+                                    <span class="fmt-num-badge orange">#4</span>
+                                    <div class="flex-grow-1"><div class="fmt-criteria-title">Tổng số bàn thắng ghi được</div><div class="fmt-criteria-desc">Đội ghi được nhiều bàn thắng hơn trong toàn bảng</div></div>
+                                    <div class="d-flex gap-1"><button type="button" class="fmt-arr-btn" onclick="moveCriteria('comb_criteriaList',this,-1)"><i class="fa-solid fa-chevron-up"></i></button><button type="button" class="fmt-arr-btn" onclick="moveCriteria('comb_criteriaList',this,1)"><i class="fa-solid fa-chevron-down"></i></button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ====== TAB 4: TÍNH GIỜ / THÀNH TÍCH (giữ lại, làm sau) ====== -->
+                    <div id="mechTinhDiem" class="format-mechanism-panel d-none">
+                        <div class="fmt-section">
+                            <div class="d-flex flex-column align-items-center justify-content-center py-5 text-center gap-3">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:64px;height:64px;background:#fffbeb">
+                                    <i class="fa-solid fa-stopwatch fs-3" style="color:#eab308"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold" style="color:#111827">Tab Tính Giờ / Thành Tích</h6>
+                                    <p class="text-muted small mb-0">Tính năng đang được phát triển và sẽ được cập nhật sớm.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- end scrollable area -->
+
+                <!-- ── FOOTER (sticky) ── -->
+                <div class="d-flex align-items-center justify-content-between px-4 py-3 bg-white" style="border-top:1px solid #e5e7eb;flex-shrink:0">
+                    <div class="small" style="color:#4f46e5">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Cấu hình sẽ được lưu và cập nhật trực tiếp vào bản điều lệ của giải.
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn rounded-3 px-4 fw-bold" id="btnSaveTheThuc" style="background:#4f46e5;color:#fff;border:none">
+                            <i class="fa-solid fa-check me-1"></i> Lưu Cấu Hình
+                        </button>
+                    </div>
                 </div>
-                <div class="modal-footer border-top px-4 py-3 bg-white">
-                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Đóng</button>
-                    <button type="submit" class="btn btn-primary rounded-3 px-4 shadow-sm" id="btnSaveTheThuc">
-                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình Thể Thức
-                    </button>
-                </div>
+
             </form>
         </div>
     </div>
@@ -909,347 +1422,399 @@
             return $('<div>').text(text).html();
         }
 
-        // ================= CẤU HÌNH THỂ THỨC & LUẬT THI ĐẤU =================
-        function onFormatTypeChange() {
-            const loai = $('#fmtLoaiTheThuc').val();
-            $('#panelSetDiem').toggleClass('d-none', loai !== 'SetDiem');
-            $('#panelThoiGianHiep').toggleClass('d-none', loai !== 'ThoiGianHiep');
-            $('#panelTinhDiemXepHang').toggleClass('d-none', loai !== 'TinhDiemXepHang');
+        // ================= CẤU HÌNH THỂ THỨC & LUẬT THI ĐẤU (THIẾT KẾ MỚI) =================
 
-            if (loai === 'SetDiem') {
-                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Set điểm:</strong> Nhập điểm từng hiệp, áp dụng Deuce 2đ & trần điểm.');
-                $('#lblThoiLuongTran').text('Thời lượng mỗi trận đấu (phút)');
-                $('#lblNghiGiuaTran').text('Nghỉ giữa 2 trận liên tiếp (phút)');
-                $('#subThoiLuongTran').text('Tổng thời lượng thi đấu dự kiến của 1 trận đấu');
-                $('#subNghiGiuaTran').text('Thời gian giãn cách chuẩn bị sân bãi giữa 2 trận liên tiếp');
-                $('#boxFormatGroupConfig').removeClass('d-none');
-            } else if (loai === 'ThoiGianHiep') {
-                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Thời gian:</strong> Tính tỉ số phút, hiệp phụ & luân lưu Penalty.');
-                $('#lblThoiLuongTran').text('Thời lượng mỗi trận đấu (phút)');
-                $('#lblNghiGiuaTran').text('Nghỉ giữa 2 trận liên tiếp (phút)');
-                $('#subThoiLuongTran').text('Tổng thời lượng thi đấu dự kiến của 1 trận đấu');
-                $('#subNghiGiuaTran').text('Thời gian giãn cách chuẩn bị sân bãi giữa 2 trận liên tiếp');
-                $('#boxFormatGroupConfig').removeClass('d-none');
-            } else {
-                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Đo thành tích:</strong> Xếp hạng theo làn chạy/bơi, kiểm tra kỷ lục & vé Chung kết.');
-                $('#lblThoiLuongTran').text('Thời lượng mỗi lượt thi / Heat (phút)');
-                $('#lblNghiGiuaTran').text('Nghỉ giữa 2 lượt thi liên tiếp (phút)');
-                $('#subThoiLuongTran').text('Tổng thời lượng thi đấu dự kiến của 1 lượt thi/đợt chạy');
-                $('#subNghiGiuaTran').text('Thời gian giãn cách chuẩn bị làn bơi/đường chạy giữa 2 đợt');
-                $('#boxFormatGroupConfig').addClass('d-none');
-            }
-            onBracketFormatChange();
+        let currentFormat = 'LoaiTrucTiep';
+
+        // Switch tab + highlight card
+        function switchFormat(format) {
+            currentFormat = format;
+            $('#fmtHinhThucThiDau').val(format);
+
+            // Tab card styles
+            const tabMap = {
+                'LoaiTrucTiep': 'fmt-active',
+                'VongBang': 'fmt-active-rr',
+                'KetHopVongBangVaLoaiTrucTiep': 'fmt-active-grp',
+                'TinhDiemXepHang': 'fmt-active-perf'
+            };
+            $('.fmt-tab-card').removeClass('fmt-active fmt-active-rr fmt-active-grp fmt-active-perf');
+            $(`#tabCard_${format}`).addClass(tabMap[format]);
+
+            // Panel visibility
+            const panelMap = {
+                'LoaiTrucTiep': 'mechLoaiTrucTiep',
+                'VongBang': 'mechVongBang',
+                'KetHopVongBangVaLoaiTrucTiep': 'mechKetHop',
+                'TinhDiemXepHang': 'mechTinhDiem'
+            };
+            $('.format-mechanism-panel').addClass('d-none');
+            $(`#${panelMap[format]}`).removeClass('d-none');
         }
 
-        function onBracketFormatChange() {
-            const hinhThuc = $('#fmtHinhThucThiDau').val();
-            const loaiTheThuc = $('#fmtLoaiTheThuc').val();
-            let tipHtml = '';
+        // Compatibility alias
+        function onFormatSelectChange() { switchFormat($('#fmtHinhThucThiDau').val()); }
 
-            if (hinhThuc === 'LoaiTrucTiep') {
-                tipHtml = `
-                    <div class="alert alert-light border border-info-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-circle-info text-info fs-6"></i>
-                        <span>Sơ đồ <strong>Loại trực tiếp (Knockout)</strong>: Các mục cấu hình chia bảng vẫn được lưu làm mẫu dự phòng nếu môn chuyển sang đấu bảng.</span>
-                    </div>`;
-                $('#badgeGroupFormatStatus').text('Dự phòng (Khi chuyển sang vòng bảng)');
-            } else if (hinhThuc === 'TinhDiemXepHang' && loaiTheThuc !== 'TinhDiemXepHang') {
-                tipHtml = `
-                    <div class="alert alert-warning border border-warning-subtle text-warning-emphasis rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation text-warning fs-6"></i>
-                        <span>Sơ đồ <strong>Đo thành tích</strong>: Khuyên dùng cơ chế tính điểm <strong>🏅 Đo thành tích / Chạy làn</strong> để hệ thống bấm giờ và chia làn thi đấu chuẩn xác.</span>
-                    </div>`;
-                $('#badgeGroupFormatStatus').text('Không áp dụng cho đo thành tích');
-            } else if (hinhThuc === 'VongBang' || hinhThuc === 'KetHopVongBangVaLoaiTrucTiep') {
-                tipHtml = `
-                    <div class="alert alert-light border border-success-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-circle-check text-success fs-6"></i>
-                        <span>Môn có <strong>Vòng bảng</strong>: Thông số Số bảng, Số đội/bảng và Số đội vào Knockout bên dưới sẽ được tự động nạp sang Lịch Thi Đấu.</span>
-                    </div>`;
-                $('#badgeGroupFormatStatus').text('Đang áp dụng trực tiếp cho giải');
-            } else {
-                $('#badgeGroupFormatStatus').text('Cấu hình mặc định');
+        // Set field value + update label + mark active button
+        function setFmtVal(inputId, labelId, value, unit, groupClass, btn) {
+            $(`#${inputId}`).val(value);
+            if (labelId) $(`#${labelId}`).text(`${value} ${unit}`);
+            if (groupClass) {
+                $(`.${groupClass}`).removeClass('active');
+                if (btn) $(btn).addClass('active');
             }
-
-            $('#fmtBracketTipContainer').html(tipHtml);
+            updateAllComputedTimes();
         }
 
+        // ---- Computed time updaters ----
+        function updateKoComputedTime() {
+            const h = parseInt($('#ko_soHiep').val()) || 0;
+            const t = parseInt($('#ko_tgHiep').val()) || 0;
+            const total = h * t;
+            $('#ko_totalTime').val(total);
+            $('#ko_totalTimeHint').text(`${h} hiệp x ${t}p = ${total} phút`);
+            $('#ko_soHiepLabel').text(`${h} Hiệp`);
+            $('#ko_tgHiepLabel').text(`${t} Phút`);
+        }
+        function updateKoPhuComputedTime() {
+            const h = parseInt($('#ko_soHiepPhu').val()) || 0;
+            const t = parseInt($('#ko_tgHiepPhu').val()) || 0;
+            const total = h * t;
+            $('#ko_totalPhuTime').val(total);
+            $('#ko_totalPhuTimeHint').text(`${h} hiệp phụ x ${t}p = ${total} phút`);
+            $('#ko_soHiepPhuLabel').text(`${h} Hiệp`);
+            $('#ko_tgPhuLabel').text(`${t} Phút`);
+        }
+        function updateRrComputedTime() {
+            const h = parseInt($('#rr_soHiep').val()) || 0;
+            const t = parseInt($('#rr_tgHiep').val()) || 0;
+            const total = h * t;
+            $('#rr_totalTime').val(total);
+            $('#rr_totalTimeHint').text(`${h} hiệp x ${t}p = ${total} phút`);
+            $('#rr_soHiepLabel').text(`${h} Hiệp`);
+            $('#rr_tgHiepLabel').text(`${t} Phút`);
+        }
+        function updateCombComputedTime() {
+            const h = parseInt($('#comb_soHiep').val()) || 0;
+            const t = parseInt($('#comb_tgHiep').val()) || 0;
+            const total = h * t;
+            $('#comb_totalTime').val(total);
+            $('#comb_totalTimeHint').text(`${h} hiệp x ${t}p = ${total} phút`);
+            $('#comb_soHiepLabel').text(`${h} Hiệp`);
+            $('#comb_tgHiepLabel').text(`${t} Phút`);
+        }
+        function updateCombPhuComputedTime() {
+            const h = parseInt($('#comb_soHiepPhu').val()) || 0;
+            const t = parseInt($('#comb_tgHiepPhu').val()) || 0;
+            const total = h * t;
+            $('#comb_totalPhuTime').val(total);
+            $('#comb_totalPhuTimeHint').text(`${h} hiệp phụ x ${t}p = ${total} phút`);
+            $('#comb_soHiepPhuLabel').text(`${h} Hiệp`);
+            $('#comb_tgPhuLabel').text(`${t} Phút`);
+        }
+        function updateAllComputedTimes() {
+            updateKoComputedTime();
+            updateKoPhuComputedTime();
+            updateRrComputedTime();
+            updateCombComputedTime();
+            updateCombPhuComputedTime();
+        }
+
+        // ---- Quick time presets (inline buttons) ----
+        function applyKoTimePreset(hiep, tg, nghi) {
+            $('#ko_soHiep').val(hiep); $('#ko_tgHiep').val(tg); $('#ko_nghi').val(nghi);
+            $('#ko_nghiLabel').text(`${nghi} Phút`);
+            updateKoComputedTime();
+            setActiveQbtn('.koHiepBtn', hiep); setActiveQbtn('.koTgHiepBtn', tg); setActiveQbtn('.koNghiBtn', nghi);
+        }
+        function applyRrTimePreset(hiep, tg, nghi) {
+            $('#rr_soHiep').val(hiep); $('#rr_tgHiep').val(tg); $('#rr_nghi').val(nghi);
+            $('#rr_nghiLabel').text(`${nghi} Phút`);
+            updateRrComputedTime();
+            setActiveQbtn('.rrHiepBtn', hiep); setActiveQbtn('.rrTgBtn', tg); setActiveQbtn('.rrNghiBtn', nghi);
+        }
+        function applyCombTimePreset(hiep, tg, nghi) {
+            $('#comb_soHiep').val(hiep); $('#comb_tgHiep').val(tg); $('#comb_nghi').val(nghi);
+            $('#comb_nghiLabel').text(`${nghi} Phút`);
+            updateCombComputedTime();
+            setActiveQbtn('.combHiepBtn', hiep); setActiveQbtn('.combTgBtn', tg); setActiveQbtn('.combNghiBtn', nghi);
+        }
+        function setActiveQbtn(selector, value) {
+            $(selector).each(function() {
+                const btnTxt = $(this).text().trim();
+                const btnVal = parseFloat(btnTxt);
+                $(this).toggleClass('active', btnVal === parseFloat(value));
+            });
+        }
+
+        // ---- Criteria up/down ----
+        function moveCriteria(listId, btn, direction) {
+            const $row = $(btn).closest('.fmt-criteria-row');
+            const $list = $(`#${listId}`);
+            const $rows = $list.find('.fmt-criteria-row');
+            const idx = $rows.index($row);
+            if (direction === -1 && idx > 0) {
+                $row.insertBefore($rows.eq(idx - 1));
+            } else if (direction === 1 && idx < $rows.length - 1) {
+                $row.insertAfter($rows.eq(idx + 1));
+            }
+            $list.find('.fmt-criteria-row').each(function(i) {
+                $(this).find('.fmt-num-badge').text(`#${i + 1}`);
+            });
+        }
+
+        // ---- Open modal ----
         function openFormatModal(monId, monTen, hinhThucThiDau) {
             $('#fmtMonId').val(monId);
-            $('#formatModalTitle').text(`Cấu Hình Thể Thức & Luật Thi Đấu - ${monTen}`);
-            $('#formatModalSubtitle').html(`Mã môn #${monId}: <strong>${monTen}</strong> • Tùy chỉnh luật và bracket engine`);
+            $('#badgeModalSportName').text(monTen || `#${monId}`).removeClass('d-none');
+            $('#formatModalSubtitle').html(`Môn: <strong>${escapeHtml(monTen)}</strong> &nbsp;·&nbsp; Tùy biến sơ đồ thi đấu và tự động xếp lịch`);
 
-            // Mặc định ban đầu
             resetFormatForm();
-            if (hinhThucThiDau) {
-                $('#fmtHinhThucThiDau').val(hinhThucThiDau);
-            }
 
-            // Lấy cấu hình từ server
-            $.get('/Manager/CauHinhTheThuc/GetConfig', { monTheThaoId: monId }, function (res) {
+            $.get('/Manager/CauHinhTheThuc/GetConfig', { monTheThaoId: monId }, function(res) {
                 if (res && res.success && res.data) {
                     populateFormatForm(res.data);
                 } else {
+                    if (hinhThucThiDau) switchFormat(hinhThucThiDau);
                     guessPreset(monTen);
                 }
                 $('#modalTheThuc').modal('show');
-            }).fail(function () {
+            }).fail(function() {
+                if (hinhThucThiDau) switchFormat(hinhThucThiDau);
                 guessPreset(monTen);
                 $('#modalTheThuc').modal('show');
             });
         }
 
+        // ---- Reset form ----
         function resetFormatForm() {
-            $('#fmtHinhThucThiDau').val('LoaiTrucTiep');
-            $('#fmtLoaiTheThuc').val('SetDiem');
-            $('#fmtSoHiepToiDa').val(3);
-            $('#fmtSoHiepThang').val(2);
-            $('#fmtDiemMoiHiep').val(21);
-            $('#fmtDiemHiepQuyetDinh').val(21);
-            $('#fmtCachBiet').val(2);
-            $('#fmtDiemToiDa').val(30);
-            $('#fmtCachTinhDiemTheoSet').prop('checked', false);
+            // KO defaults
+            applyKoTimePreset(2, 45, 15);
+            $('#ko_coTranhHangBa').prop('checked', true);
+            $('#ko_coHiepPhu').prop('checked', true);
+            $('#ko_overtimeSub').show();
+            $('#ko_soHiepPhu').val(2); $('#ko_tgHiepPhu').val(15);
+            updateKoPhuComputedTime();
+            setActiveQbtn('.koPhuHiepBtn', 2); setActiveQbtn('.koPhuTgBtn', 15);
+            $('#ko_coPenalty').prop('checked', true);
 
-            $('#fmtThoiGianChinh').val(45);
-            $('#fmtDiemThang').val(3);
-            $('#fmtDiemHoa').val(1);
-            $('#fmtDiemThua').val(0);
-            $('#fmtChoPhepHoaVongBang').prop('checked', true);
-            $('#fmtCoHiepPhu').prop('checked', false);
-            $('#fmtSoHiepPhu').val(2);
-            $('#fmtThoiGianPhu').val(15);
-            $('#fmtCoPenalty').prop('checked', true);
-            $('#fmtSoLuotPen').val(5);
-            $('#fmtCoThePhat').prop('checked', false);
+            // RR defaults
+            applyRrTimePreset(2, 45, 15);
+            $('#rr_diemThang').val(3); $('#rr_diemHoa').val(1); $('#rr_diemThua').val(0);
 
-            $('#fmtLoaiDo').val('ThoiGian');
-            $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
-            $('#fmtTieuChiPhuCangNhoCangTot').val('true');
-            $('#fmtTenTieuChiPhuThanhTich').val('Chỉ số phụ');
-            $('#fmtSoVdvLuot').val(8);
-            $('#fmtQuyCachVaoCk').val('TopNToanVong');
-            $('#fmtSoVdvVaoCk').val(8);
-            $('#fmtKyLuc').val('');
+            // Comb defaults
+            applyCombTimePreset(2, 45, 15);
+            $('#comb_soBang').val(4);
+            $('#comb_soDoiMoiBangVaoVongTrong').val(2);
+            $('#comb_diemThang').val(3); $('#comb_diemHoa').val(1); $('#comb_diemThua').val(0);
+            $('#comb_coTranhHangBa').prop('checked', true);
+            $('#comb_coHiepPhu').prop('checked', true);
+            $('#comb_overtimeSub').show();
+            $('#comb_soHiepPhu').val(2); $('#comb_tgHiepPhu').val(15);
+            updateCombPhuComputedTime();
+            setActiveQbtn('.combPhuHiepBtn', 2); setActiveQbtn('.combPhuTgBtn', 15);
+            $('#comb_coPenalty').prop('checked', true);
 
-            $('#fmtThoiLuongTranPhut').val(60);
-            $('#fmtNghiGiuaTranPhut').val(15);
-            $('#fmtSoBang').val(0);
-            $('#fmtSoDoiMoiBang').val(4);
-            $('#fmtSoDoiMoiBangVaoVongTrong').val(2);
-            $('#fmtSoVongThi').val(2);
-            $('#fmtPhuongThucPhanNhom').val('random');
-
-            onFormatTypeChange();
+            $('#fmtPresetSelect').val('');
+            switchFormat('LoaiTrucTiep');
         }
 
+        // ---- Populate from API data ----
         function populateFormatForm(data) {
-            if (data.hinhThucThiDau) {
-                $('#fmtHinhThucThiDau').val(data.hinhThucThiDau);
+            const format = data.hinhThucThiDau || 'LoaiTrucTiep';
+
+            if (format === 'LoaiTrucTiep') {
+                const h = data.soHiepToiDa || 2, t = data.thoiGianHiepChinhPhut || 45, n = data.nghiGiuaTranPhut ?? 15;
+                applyKoTimePreset(h, t, n);
+                const coHiepPhu = !!data.coHiepPhu;
+                $('#ko_coTranhHangBa').prop('checked', data.coTranhHangBa !== false);
+                $('#ko_coHiepPhu').prop('checked', coHiepPhu);
+                $('#ko_overtimeSub').toggle(coHiepPhu);
+                if (coHiepPhu) {
+                    const ph = data.soHiepPhu || 2, pt = data.thoiGianHiepPhuPhut || 15;
+                    $('#ko_soHiepPhu').val(ph); $('#ko_tgHiepPhu').val(pt);
+                    updateKoPhuComputedTime();
+                    setActiveQbtn('.koPhuHiepBtn', ph); setActiveQbtn('.koPhuTgBtn', pt);
+                }
+                $('#ko_coPenalty').prop('checked', data.coPenalty !== false);
+            } else if (format === 'VongBang') {
+                const h = data.soHiepToiDa || 2, t = data.thoiGianHiepChinhPhut || 45, n = data.nghiGiuaTranPhut ?? 15;
+                applyRrTimePreset(h, t, n);
+                $('#rr_diemThang').val(data.diemThang ?? 3);
+                $('#rr_diemHoa').val(data.diemHoa ?? 1);
+                $('#rr_diemThua').val(data.diemThua ?? 0);
+            } else if (format === 'KetHopVongBangVaLoaiTrucTiep') {
+                const h = data.soHiepToiDa || 2, t = data.thoiGianHiepChinhPhut || 45, n = data.nghiGiuaTranPhut ?? 15;
+                applyCombTimePreset(h, t, n);
+                $('#comb_soBang').val(data.soBang || 4);
+                $('#comb_soDoiMoiBangVaoVongTrong').val(data.soDoiMoiBangVaoVongTrong || 2);
+                $('#comb_diemThang').val(data.diemThang ?? 3);
+                $('#comb_diemHoa').val(data.diemHoa ?? 1);
+                $('#comb_diemThua').val(data.diemThua ?? 0);
+                $('#comb_coTranhHangBa').prop('checked', data.coTranhHangBa !== false);
+                const coHiepPhu = !!data.coHiepPhu;
+                $('#comb_coHiepPhu').prop('checked', coHiepPhu);
+                $('#comb_overtimeSub').toggle(coHiepPhu);
+                if (coHiepPhu) {
+                    const ph = data.soHiepPhu || 2, pt = data.thoiGianHiepPhuPhut || 15;
+                    $('#comb_soHiepPhu').val(ph); $('#comb_tgHiepPhu').val(pt);
+                    updateCombPhuComputedTime();
+                    setActiveQbtn('.combPhuHiepBtn', ph); setActiveQbtn('.combPhuTgBtn', pt);
+                }
+                $('#comb_coPenalty').prop('checked', data.coPenalty !== false);
             }
-            $('#fmtLoaiTheThuc').val(data.loaiTheThuc || 'SetDiem');
-            $('#fmtSoHiepToiDa').val(data.soHiepToiDa || 3);
-            $('#fmtSoHiepThang').val(data.soHiepThangDeThangTran || 2);
-            $('#fmtDiemMoiHiep').val(data.diemMoiHiep || 21);
-            $('#fmtDiemHiepQuyetDinh').val(data.diemHiepQuyetDinh || 21);
-            $('#fmtCachBiet').val(data.cachBietDiemToiThieu ?? 2);
-            $('#fmtDiemToiDa').val(data.diemToiDaMoiHiep || '');
-            $('#fmtCachTinhDiemTheoSet').prop('checked', !!data.cachTinhDiemTheoSet);
 
-            $('#fmtThoiGianChinh').val(data.thoiGianHiepChinhPhut || 45);
-            $('#fmtDiemThang').val(data.diemThang ?? 3);
-            $('#fmtDiemHoa').val(data.diemHoa ?? 1);
-            $('#fmtDiemThua').val(data.diemThua ?? 0);
-            $('#fmtChoPhepHoaVongBang').prop('checked', data.choPhepHoaVongBang !== false);
-            $('#fmtCoHiepPhu').prop('checked', !!data.coHiepPhu);
-            $('#fmtSoHiepPhu').val(data.soHiepPhu || 2);
-            $('#fmtThoiGianPhu').val(data.thoiGianHiepPhuPhut || 15);
-            $('#fmtCoPenalty').prop('checked', data.coPenalty !== false);
-            $('#fmtSoLuotPen').val(data.soLuotPenaltyMoiDoi || 5);
-            $('#fmtCoThePhat').prop('checked', data.coThePhat === true);
-
-            $('#fmtLoaiDo').val(data.loaiDoThanhTich || 'ThoiGian');
-            $('#fmtTieuChiThanhTich').val(data.tieuChiXepHangThanhTich || 'CangNhoCangTot');
-            $('#fmtTieuChiPhuCangNhoCangTot').val(data.tieuChiPhuCangNhoCangTot === false ? 'false' : 'true');
-            $('#fmtTenTieuChiPhuThanhTich').val(data.tenTieuChiPhuThanhTich || 'Chỉ số phụ');
-            $('#fmtSoVdvLuot').val(data.soVdvMoiLuotThi || 8);
-            $('#fmtQuyCachVaoCk').val(data.quyCachTienVaoChungKet || 'TopNToanVong');
-            $('#fmtSoVdvVaoCk').val(data.soVdvVaoChungKet || 8);
-            $('#fmtKyLuc').val(data.kyLucHienTai || '');
-
-            $('#fmtThoiLuongTranPhut').val(data.thoiLuongTranPhut || 60);
-            $('#fmtNghiGiuaTranPhut').val(data.nghiGiuaTranPhut ?? 15);
-            $('#fmtSoBang').val(data.soBang || 0);
-            $('#fmtSoDoiMoiBang').val(data.soDoiMoiBang || 4);
-            $('#fmtSoDoiMoiBangVaoVongTrong').val(data.soDoiMoiBangVaoVongTrong || 2);
-            $('#fmtSoVongThi').val(data.soVongThi || 2);
-            $('#fmtPhuongThucPhanNhom').val(data.phuongThucPhanNhom || 'random');
-
-            onFormatTypeChange();
+            switchFormat(format);
         }
 
+        // ---- Auto-guess preset from sport name ----
         function guessPreset(name) {
-            const lower = (name || '').toLowerCase();
-            if (lower.includes('cầu lông') || lower.includes('badminton')) {
-                applyPreset('badminton');
-            } else if (lower.includes('bóng chuyền') || lower.includes('volleyball')) {
-                applyPreset('volleyball');
-            } else if (lower.includes('bóng bàn') || lower.includes('table tennis')) {
-                applyPreset('tabletennis');
-            } else if (lower.includes('bóng đá') || lower.includes('football') || lower.includes('futsal')) {
-                applyPreset('football');
-            } else if (lower.includes('điền kinh') || lower.includes('chạy') || lower.includes('100m')) {
-                applyPreset('athletics');
-            } else if (lower.includes('bơi')) {
-                applyPreset('swimming');
-            } else {
-                applyPreset('badminton');
-            }
+            const s = (name || '').toLowerCase();
+            if (s.includes('bóng đá') || s.includes('football')) applyPreset('football');
+            else if (s.includes('futsal')) applyPreset('futsal');
+            else if (s.includes('bóng chuyền') || s.includes('volleyball')) applyPreset('volleyball');
+            else if (s.includes('bóng rổ') || s.includes('basketball')) applyPreset('basketball');
+            else if (s.includes('bóng bàn') || s.includes('table tennis')) applyPreset('tabletennis');
+            else if (s.includes('cầu lông') || s.includes('badminton')) applyPreset('badminton');
+            else if (s.includes('điền kinh') || s.includes('chạy')) applyPreset('athletics');
+            else if (s.includes('bơi') || s.includes('swimming')) applyPreset('swimming');
         }
 
+        // ---- Apply preset from dropdown ----
+        function applyPresetFromSelect(val) {
+            if (val) { applyPreset(val); setTimeout(() => $('#fmtPresetSelect').val(''), 100); }
+        }
+
+        // ---- Apply preset ----
         function applyPreset(preset) {
-            if (preset === 'badminton') {
-                $('#fmtHinhThucThiDau').val('LoaiTrucTiep');
-                $('#fmtLoaiTheThuc').val('SetDiem');
-                $('#fmtSoHiepToiDa').val(3);
-                $('#fmtSoHiepThang').val(2);
-                $('#fmtDiemMoiHiep').val(21);
-                $('#fmtDiemHiepQuyetDinh').val(21);
-                $('#fmtCachBiet').val(2);
-                $('#fmtDiemToiDa').val(30);
-                $('#fmtCachTinhDiemTheoSet').prop('checked', false);
-                $('#fmtThoiLuongTranPhut').val(45);
-                $('#fmtNghiGiuaTranPhut').val(15);
-                $('#fmtSoBang').val(0);
-                $('#fmtSoDoiMoiBang').val(4);
-            } else if (preset === 'volleyball') {
-                $('#fmtHinhThucThiDau').val('KetHopVongBangVaLoaiTrucTiep');
-                $('#fmtLoaiTheThuc').val('SetDiem');
-                $('#fmtSoHiepToiDa').val(5);
-                $('#fmtSoHiepThang').val(3);
-                $('#fmtDiemMoiHiep').val(25);
-                $('#fmtDiemHiepQuyetDinh').val(15);
-                $('#fmtCachBiet').val(2);
-                $('#fmtDiemToiDa').val('');
-                $('#fmtCachTinhDiemTheoSet').prop('checked', true);
-                $('#fmtThoiLuongTranPhut').val(75);
-                $('#fmtNghiGiuaTranPhut').val(15);
-                $('#fmtSoBang').val(2);
-                $('#fmtSoDoiMoiBang').val(4);
-            } else if (preset === 'football') {
-                $('#fmtHinhThucThiDau').val('KetHopVongBangVaLoaiTrucTiep');
-                $('#fmtLoaiTheThuc').val('ThoiGianHiep');
-                $('#fmtThoiGianChinh').val(45);
-                $('#fmtDiemThang').val(3);
-                $('#fmtDiemHoa').val(1);
-                $('#fmtDiemThua').val(0);
-                $('#fmtChoPhepHoaVongBang').prop('checked', true);
-                $('#fmtCoHiepPhu').prop('checked', true);
-                $('#fmtSoHiepPhu').val(2);
-                $('#fmtThoiGianPhu').val(15);
-                $('#fmtCoPenalty').prop('checked', true);
-                $('#fmtSoLuotPen').val(5);
-                $('#fmtCoThePhat').prop('checked', true);
-                $('#fmtThoiLuongTranPhut').val(60);
-                $('#fmtNghiGiuaTranPhut').val(15);
-                $('#fmtSoBang').val(0);
-                $('#fmtSoDoiMoiBang').val(4);
-                $('#fmtSoDoiMoiBangVaoVongTrong').val(2);
-            } else if (preset === 'tabletennis') {
-                $('#fmtHinhThucThiDau').val('VongBang');
-                $('#fmtLoaiTheThuc').val('SetDiem');
-                $('#fmtSoHiepToiDa').val(5);
-                $('#fmtSoHiepThang').val(3);
-                $('#fmtDiemMoiHiep').val(11);
-                $('#fmtDiemHiepQuyetDinh').val(11);
-                $('#fmtCachBiet').val(2);
-                $('#fmtDiemToiDa').val('');
-                $('#fmtCachTinhDiemTheoSet').prop('checked', false);
-                $('#fmtThoiLuongTranPhut').val(35);
-                $('#fmtNghiGiuaTranPhut').val(10);
-                $('#fmtSoBang').val(0);
-                $('#fmtSoDoiMoiBang').val(4);
-            } else if (preset === 'athletics') {
-                $('#fmtHinhThucThiDau').val('TinhDiemXepHang');
-                $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
-                $('#fmtLoaiDo').val('ThoiGian');
-                $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
-                $('#fmtSoVdvLuot').val(8);
-                $('#fmtQuyCachVaoCk').val('TopNToanVong');
-                $('#fmtSoVdvVaoCk').val(8);
-                $('#fmtKyLuc').val(9.58);
-                $('#fmtThoiLuongTranPhut').val(20);
-                $('#fmtNghiGiuaTranPhut').val(10);
-                $('#fmtSoVongThi').val(2);
-                $('#fmtPhuongThucPhanNhom').val('performance_seed');
-            } else if (preset === 'swimming') {
-                $('#fmtHinhThucThiDau').val('TinhDiemXepHang');
-                $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
-                $('#fmtLoaiDo').val('ThoiGian');
-                $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
-                $('#fmtSoVdvLuot').val(8);
-                $('#fmtQuyCachVaoCk').val('TopNToanVong');
-                $('#fmtSoVdvVaoCk').val(8);
-                $('#fmtKyLuc').val(20.91);
-                $('#fmtThoiLuongTranPhut').val(20);
-                $('#fmtNghiGiuaTranPhut').val(10);
-                $('#fmtSoVongThi').val(2);
-                $('#fmtPhuongThucPhanNhom').val('performance_seed');
+            switch (preset) {
+                case 'football':
+                    switchFormat('KetHopVongBangVaLoaiTrucTiep');
+                    applyCombTimePreset(2, 45, 15);
+                    $('#comb_soBang').val(4); $('#comb_soDoiMoiBangVaoVongTrong').val(2);
+                    $('#comb_diemThang').val(3); $('#comb_diemHoa').val(1); $('#comb_diemThua').val(0);
+                    $('#comb_coTranhHangBa').prop('checked', true);
+                    $('#comb_coHiepPhu').prop('checked', true); $('#comb_overtimeSub').show();
+                    $('#comb_soHiepPhu').val(2); $('#comb_tgHiepPhu').val(15); updateCombPhuComputedTime();
+                    setActiveQbtn('.combPhuHiepBtn', 2); setActiveQbtn('.combPhuTgBtn', 15);
+                    $('#comb_coPenalty').prop('checked', true); break;
+                case 'futsal':
+                    switchFormat('KetHopVongBangVaLoaiTrucTiep');
+                    applyCombTimePreset(2, 20, 10);
+                    $('#comb_soBang').val(4); $('#comb_soDoiMoiBangVaoVongTrong').val(2);
+                    $('#comb_diemThang').val(3); $('#comb_diemHoa').val(1); $('#comb_diemThua').val(0);
+                    $('#comb_coTranhHangBa').prop('checked', true);
+                    $('#comb_coHiepPhu').prop('checked', true); $('#comb_overtimeSub').show();
+                    $('#comb_soHiepPhu').val(2); $('#comb_tgHiepPhu').val(5); updateCombPhuComputedTime();
+                    setActiveQbtn('.combPhuHiepBtn', 2); setActiveQbtn('.combPhuTgBtn', 5);
+                    $('#comb_coPenalty').prop('checked', true); break;
+                case 'volleyball':
+                    switchFormat('KetHopVongBangVaLoaiTrucTiep');
+                    applyCombTimePreset(5, 25, 15);
+                    $('#comb_soBang').val(2); $('#comb_soDoiMoiBangVaoVongTrong').val(2);
+                    $('#comb_diemThang').val(3); $('#comb_diemHoa').val(1);
+                    $('#comb_coTranhHangBa').prop('checked', true);
+                    $('#comb_coHiepPhu').prop('checked', false); $('#comb_overtimeSub').hide();
+                    $('#comb_coPenalty').prop('checked', false); break;
+                case 'basketball':
+                    switchFormat('LoaiTrucTiep');
+                    applyKoTimePreset(4, 12, 5);
+                    $('#ko_coTranhHangBa').prop('checked', true);
+                    $('#ko_coHiepPhu').prop('checked', true); $('#ko_overtimeSub').show();
+                    $('#ko_soHiepPhu').val(1); $('#ko_tgHiepPhu').val(5); updateKoPhuComputedTime();
+                    setActiveQbtn('.koPhuHiepBtn', 1); setActiveQbtn('.koPhuTgBtn', 5);
+                    $('#ko_coPenalty').prop('checked', false); break;
+                case 'badminton':
+                    switchFormat('LoaiTrucTiep');
+                    applyKoTimePreset(3, 30, 15);
+                    $('#ko_coHiepPhu').prop('checked', false); $('#ko_overtimeSub').hide();
+                    $('#ko_coPenalty').prop('checked', false);
+                    $('#ko_coTranhHangBa').prop('checked', true); break;
+                case 'tabletennis':
+                    switchFormat('VongBang');
+                    applyRrTimePreset(5, 15, 10);
+                    $('#rr_diemThang').val(2); $('#rr_diemHoa').val(1); $('#rr_diemThua').val(0); break;
+                case 'athletics':
+                case 'swimming':
+                    switchFormat('TinhDiemXepHang'); break;
             }
-            onFormatTypeChange();
-            SportApp.toast('info', `Đã áp dụng mẫu luật: ${preset.toUpperCase()}`);
+            if (window.SportApp && SportApp.toast) SportApp.toast('info', `Đã áp dụng mẫu: ${preset.toUpperCase()}`);
         }
 
-        $('#formTheThuc').on('submit', function (e) {
+        // ---- Form submit handler ----
+        $('#formTheThuc').on('submit', function(e) {
             e.preventDefault();
             saveFormatData();
         });
 
+        // ---- Save data ----
         function saveFormatData() {
             const monId = parseInt($('#fmtMonId').val());
-            if (!monId) return;
+            if (!monId) { Swal.fire('Lỗi', 'Không tìm thấy ID môn thể thao.', 'error'); return; }
 
-            const loaiTheThuc = $('#fmtLoaiTheThuc').val();
-            const payload = {
-                monTheThaoId: monId,
-                hinhThucThiDau: $('#fmtHinhThucThiDau').val() || undefined,
-                loaiTheThuc: loaiTheThuc,
-                soHiepToiDa: parseInt($('#fmtSoHiepToiDa').val()) || 3,
-                soHiepThangDeThangTran: parseInt($('#fmtSoHiepThang').val()) || 2,
-                diemMoiHiep: parseInt($('#fmtDiemMoiHiep').val()) || 21,
-                diemHiepQuyetDinh: parseInt($('#fmtDiemHiepQuyetDinh').val()) || 21,
-                cachBietDiemToiThieu: parseInt($('#fmtCachBiet').val()) || 2,
-                diemToiDaMoiHiep: $('#fmtDiemToiDa').val() ? parseInt($('#fmtDiemToiDa').val()) : null,
-                cachTinhDiemTheoSet: $('#fmtCachTinhDiemTheoSet').is(':checked'),
+            const hinhThuc = currentFormat;
+            let payload = { monTheThaoId: monId, hinhThucThiDau: hinhThuc };
 
-                thoiGianHiepChinhPhut: parseInt($('#fmtThoiGianChinh').val()) || 45,
-                diemThang: parseFloat($('#fmtDiemThang').val()) || 3,
-                diemHoa: parseFloat($('#fmtDiemHoa').val()) || 1,
-                diemThua: parseFloat($('#fmtDiemThua').val()) || 0,
-                choPhepHoaVongBang: $('#fmtChoPhepHoaVongBang').is(':checked'),
-                coHiepPhu: $('#fmtCoHiepPhu').is(':checked'),
-                soHiepPhu: parseInt($('#fmtSoHiepPhu').val()) || 2,
-                thoiGianHiepPhuPhut: parseInt($('#fmtThoiGianPhu').val()) || 15,
-                coPenalty: $('#fmtCoPenalty').is(':checked'),
-                soLuotPenaltyMoiDoi: parseInt($('#fmtSoLuotPen').val()) || 5,
-                coThePhat: $('#fmtCoThePhat').is(':checked'),
-
-                loaiDoThanhTich: $('#fmtLoaiDo').val(),
-                tieuChiXepHangThanhTich: $('#fmtTieuChiThanhTich').val(),
-                tenTieuChiPhuThanhTich: ($('#fmtTenTieuChiPhuThanhTich').val() || '').trim(),
-                tieuChiPhuCangNhoCangTot: $('#fmtTieuChiPhuCangNhoCangTot').val() === 'true',
-                soVdvMoiLuotThi: parseInt($('#fmtSoVdvLuot').val()) || 8,
-                quyCachTienVaoChungKet: $('#fmtQuyCachVaoCk').val(),
-                soVdvVaoChungKet: parseInt($('#fmtSoVdvVaoCk').val()) || 8,
-                kyLucHienTai: $('#fmtKyLuc').val() ? parseFloat($('#fmtKyLuc').val()) : null,
-
-                thoiLuongTranPhut: parseInt($('#fmtThoiLuongTranPhut').val()) || 60,
-                nghiGiuaTranPhut: parseInt($('#fmtNghiGiuaTranPhut').val()) ?? 15,
-                soBang: parseInt($('#fmtSoBang').val()) || 0,
-                soDoiMoiBang: parseInt($('#fmtSoDoiMoiBang').val()) || 4,
-                soDoiMoiBangVaoVongTrong: parseInt($('#fmtSoDoiMoiBangVaoVongTrong').val()) || 2,
-                soVongThi: parseInt($('#fmtSoVongThi').val()) || 2,
-                phuongThucPhanNhom: $('#fmtPhuongThucPhanNhom').val() || 'random'
-            };
+            if (hinhThuc === 'LoaiTrucTiep') {
+                payload.soHiepToiDa            = parseInt($('#ko_soHiep').val()) || 2;
+                payload.thoiGianHiepChinhPhut  = parseInt($('#ko_tgHiep').val()) || 45;
+                payload.nghiGiuaTranPhut        = parseInt($('#ko_nghi').val()) || 15;
+                payload.thoiLuongTranPhut       = parseInt($('#ko_totalTime').val()) || 90;
+                payload.coTranhHangBa           = $('#ko_coTranhHangBa').is(':checked');
+                payload.coHiepPhu               = $('#ko_coHiepPhu').is(':checked');
+                payload.soHiepPhu               = parseInt($('#ko_soHiepPhu').val()) || 2;
+                payload.thoiGianHiepPhuPhut      = parseInt($('#ko_tgHiepPhu').val()) || 15;
+                payload.coPenalty               = $('#ko_coPenalty').is(':checked');
+                payload.soLuotPenaltyMoiDoi     = 5;
+                payload.loaiTheThuc             = 'ThoiGianHiep';
+                payload.soBang                  = 0;
+                payload.soDoiMoiBang             = 2;
+                payload.soDoiMoiBangVaoVongTrong = 1;
+            } else if (hinhThuc === 'VongBang') {
+                payload.soHiepToiDa            = parseInt($('#rr_soHiep').val()) || 2;
+                payload.thoiGianHiepChinhPhut  = parseInt($('#rr_tgHiep').val()) || 45;
+                payload.nghiGiuaTranPhut        = parseInt($('#rr_nghi').val()) || 15;
+                payload.thoiLuongTranPhut       = parseInt($('#rr_totalTime').val()) || 90;
+                payload.diemThang               = parseFloat($('#rr_diemThang').val()) || 3;
+                payload.diemHoa                 = parseFloat($('#rr_diemHoa').val()) || 1;
+                payload.diemThua                = parseFloat($('#rr_diemThua').val()) || 0;
+                payload.choPhepHoaVongBang       = true;
+                payload.loaiTheThuc             = 'ThoiGianHiep';
+                payload.soBang                  = 1;
+                payload.soDoiMoiBang             = 4;
+                payload.soDoiMoiBangVaoVongTrong = 1;
+                // Criteria order
+                const crit = [];
+                $('#rr_criteriaList .fmt-criteria-row').each(function() {
+                    if ($(this).find('.fmt-criteria-cb').is(':checked')) crit.push($(this).data('criteria-id'));
+                });
+                payload.tieuChiXepHang = crit;
+            } else if (hinhThuc === 'KetHopVongBangVaLoaiTrucTiep') {
+                payload.soHiepToiDa              = parseInt($('#comb_soHiep').val()) || 2;
+                payload.thoiGianHiepChinhPhut    = parseInt($('#comb_tgHiep').val()) || 45;
+                payload.nghiGiuaTranPhut          = parseInt($('#comb_nghi').val()) || 15;
+                payload.thoiLuongTranPhut         = parseInt($('#comb_totalTime').val()) || 90;
+                payload.soBang                    = parseInt($('#comb_soBang').val()) || 4;
+                payload.soDoiMoiBangVaoVongTrong  = parseInt($('#comb_soDoiMoiBangVaoVongTrong').val()) || 2;
+                payload.diemThang                 = parseFloat($('#comb_diemThang').val()) || 3;
+                payload.diemHoa                   = parseFloat($('#comb_diemHoa').val()) || 1;
+                payload.diemThua                  = parseFloat($('#comb_diemThua').val()) || 0;
+                payload.coTranhHangBa             = $('#comb_coTranhHangBa').is(':checked');
+                payload.coHiepPhu                 = $('#comb_coHiepPhu').is(':checked');
+                payload.soHiepPhu                 = parseInt($('#comb_soHiepPhu').val()) || 2;
+                payload.thoiGianHiepPhuPhut       = parseInt($('#comb_tgHiepPhu').val()) || 15;
+                payload.coPenalty                 = $('#comb_coPenalty').is(':checked');
+                payload.soLuotPenaltyMoiDoi       = 5;
+                payload.choPhepHoaVongBang        = true;
+                payload.loaiTheThuc               = 'ThoiGianHiep';
+                const crit = [];
+                $('#comb_criteriaList .fmt-criteria-row').each(function() {
+                    if ($(this).find('.fmt-criteria-cb').is(':checked')) crit.push($(this).data('criteria-id'));
+                });
+                payload.tieuChiXepHang = crit;
+            } else if (hinhThuc === 'TinhDiemXepHang') {
+                payload.loaiTheThuc = 'TinhDiemXepHang';
+            }
 
             const $btn = $('#btnSaveTheThuc');
             $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu...');
@@ -1259,21 +1824,26 @@
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(payload),
-                success: function (res) {
-                    $btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình Thể Thức');
+                success: function(res) {
+                    $btn.prop('disabled', false).html('<i class="fa-solid fa-check me-1"></i> Lưu Cấu Hình');
                     if (res && res.success) {
                         $('#modalTheThuc').modal('hide');
-                        SportApp.toast('success', res.message || 'Đã lưu cấu hình thể thức thành công!');
+                        if (window.SportApp && SportApp.toast) SportApp.toast('success', res.message || 'Đã lưu cấu hình thể thức!');
+                        else Swal.fire('Thành công', res.message || 'Đã lưu thành công!', 'success');
                         loadData(currentPage);
-                    } else {
-                        Swal.fire('Lỗi', res.message || 'Không thể lưu cấu hình thể thức.', 'error');
-                    }
+                    } else { Swal.fire('Lỗi', res.message || 'Không thể lưu cấu hình.', 'error'); }
                 },
-                error: function (xhr) {
-                    $btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình Thể Thức');
-                    Swal.fire('Lỗi', 'Không thể kết nối máy chủ để lưu cấu hình.', 'error');
+                error: function() {
+                    $btn.prop('disabled', false).html('<i class="fa-solid fa-check me-1"></i> Lưu Cấu Hình');
+                    Swal.fire('Lỗi', 'Không thể kết nối máy chủ.', 'error');
                 }
             });
         }
+
+        // Init on page load
+        $(document).ready(function() {
+            updateAllComputedTimes();
+            switchFormat('LoaiTrucTiep');
+        });
     </script>
 }

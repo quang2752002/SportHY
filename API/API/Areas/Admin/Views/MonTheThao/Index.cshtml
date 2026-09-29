@@ -223,16 +223,13 @@
                     <div class="row g-3 align-items-center">
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-secondary">
-                                <i class="fa-solid fa-sitemap text-primary me-1"></i> Sơ đồ thi đấu của môn
+                                <i class="fa-solid fa-sitemap text-primary me-1"></i> Thể thức thi đấu
                             </label>
                             <select id="fmtHinhThucThiDau" class="form-select fw-semibold border-primary-subtle" onchange="onBracketFormatChange()">
                                 <option value="LoaiTrucTiep">Loại trực tiếp (Knockout)</option>
-                                <option value="VongBang">Vòng tròn tính điểm / Bảng</option>
-                                <option value="KetHopVongBangVaLoaiTrucTiep">Bảng + Knockout</option>
-                                <option value="NhanhThangNhanhThua">Nhánh thắng - thua (Double Elim)</option>
-                                <option value="HeThuySi">Hệ Thụy Sĩ (Swiss System - Cờ vua)</option>
+                                <option value="VongBang">Vòng tròn tính điểm </option>
+                                <option value="KetHopVongBangVaLoaiTrucTiep">Bảng + Knockout</option>                            
                                 <option value="TinhDiemXepHang">Đo thành tích / Chạy làn</option>
-                                <option value="Khac">Khác</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -1133,6 +1130,21 @@
                 success: function (res) {
                     $btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình Thể Thức');
                     if (res && res.success) {
+                        $('#modalTheThuc').modal('hide');
+                        SportApp.toast('success', res.message || 'Đã lưu cấu hình thể thức thành công!');
+                        loadData(currentPage);
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể lưu cấu hình thể thức.', 'error');
+                    }
+                },
+                error: function (xhr) {
+                    $btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình Thể Thức');
+                    Swal.fire('Lỗi', 'Không thể kết nối máy chủ để lưu cấu hình.', 'error');
+                }
+            });
+        }
+    </script>
+}
                         $('#modalTheThuc').modal('hide');
                         SportApp.toast('success', res.message || 'Đã lưu cấu hình thể thức thành công!');
                         loadData(currentPage);
