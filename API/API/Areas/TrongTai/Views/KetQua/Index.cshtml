@@ -33,7 +33,8 @@
     int? initExtraTime2 = ViewBag.ExtraTimeScore2 as int?;
     int? initPen1 = Model?.DiemPenaltyDoi1;
     int? initPen2 = Model?.DiemPenaltyDoi2;
-    string? matchStatus = Model?.TrangThai;
+    string matchStatus = Model?.TrangThai ?? "ChuaDau";
+    bool isMatchInProgress = matchStatus == "DangDau";
     DateTime? actualStartTime = Model?.ThoiGianBatDau;
     DateTime? actualEndTime = Model?.ThoiGianKetThuc;
     int elapsedSeconds = (matchStatus == "DangDau" || matchStatus == "KetThuc") && actualStartTime.HasValue
@@ -281,6 +282,12 @@
                     <span>Đồng hồ bắt đầu khi chuyển trận sang trạng thái đang thi đấu.</span>
                 }
             </small>
+            @if (isHeatMatch && matchStatus == "ChuaDau")
+            {
+                <button type="button" id="btnStartMatch" class="btn btn-primary rounded-pill px-4 py-2 fw-bold" onclick="startMatch()">
+                    <i class="fa-solid fa-play me-1"></i> Bắt đầu lượt thi
+                </button>
+            }
         </div>
 
         @if (isHeatMatch)
@@ -331,25 +338,27 @@
                                             <input type="text" class="form-control form-control-sm text-center font-monospace fs-6 heat-time-input"
                                                    placeholder="VD: 10.45"
                                                    value="@(savedHeatResult?.GiaTri?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                   @(isMatchInProgress ? "" : "disabled")
                                                    onchange="onLaneTimeChanged(this)" />
                                         </td>
                                         <td>
                                             <input type="number" step="0.01" class="form-control form-control-sm text-center font-monospace heat-tiebreak-input"
                                                    placeholder="@(matchFormat?.TenTieuChiPhuThanhTich ?? "Nhập chỉ số phụ")"
-                                                   value="@(savedHeatResult?.GiaTriPhu?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" onchange="recalculateHeatRanks()" />
+                                                   value="@(savedHeatResult?.GiaTriPhu?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                   @(isMatchInProgress ? "" : "disabled") onchange="recalculateHeatRanks()" />
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm w-100" role="group">
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_ok_@tp.Id" value="ThamGia" @(savedHeatResult?.TrangThai == null || savedHeatResult.TrangThai == "ThamGia" ? "checked" : "") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_ok_@tp.Id" value="ThamGia" @(savedHeatResult?.TrangThai == null || savedHeatResult.TrangThai == "ThamGia" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
                                                 <label class="btn btn-outline-success" for="laneSt_ok_@tp.Id">Hợp lệ</label>
 
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dns_@tp.Id" value="DNS" @(savedHeatResult?.TrangThai == "DNS" ? "checked" : "") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dns_@tp.Id" value="DNS" @(savedHeatResult?.TrangThai == "DNS" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
                                                 <label class="btn btn-outline-secondary" for="laneSt_dns_@tp.Id" title="Did Not Start">DNS</label>
 
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dnf_@tp.Id" value="DNF" @(savedHeatResult?.TrangThai == "DNF" ? "checked" : "") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dnf_@tp.Id" value="DNF" @(savedHeatResult?.TrangThai == "DNF" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
                                                 <label class="btn btn-outline-warning" for="laneSt_dnf_@tp.Id" title="Did Not Finish">DNF</label>
 
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dq_@tp.Id" value="DQ" @(savedHeatResult?.TrangThai == "DQ" ? "checked" : "") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dq_@tp.Id" value="DQ" @(savedHeatResult?.TrangThai == "DQ" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
                                                 <label class="btn btn-outline-danger" for="laneSt_dq_@tp.Id" title="Disqualified">DQ</label>
                                             </div>
                                         </td>
@@ -501,20 +510,20 @@
                             <small class="text-secondary text-truncate d-block mb-3">@(Model.DonViDoi1 ?? "Đơn vị chủ quản")</small>
 
                             <div class="display-2 fw-bold font-monospace text-primary my-2" id="displayScore1">@(isSetSport ? initLiveSetScore1 : initScore1)</div>
-                            <small class="text-secondary d-block mb-2" id="subLabelScore1">@(isSetSport ? "Điểm set hiện tại" : "Bàn thắng / Điểm")</small>
+                            <small class="text-secondary d-block mb-2" id="subLabelScore1">@(isSetSport ? "Điểm set đang đấu" : "Tổng tỷ số (cộng các hiệp)")</small>
 
                             <div class="score-adjustment" role="group" aria-label="Điều chỉnh điểm đội 1">
                                 <span class="score-adjustment-caption">Điều chỉnh điểm</span>
                                 <div class="score-adjustment-actions">
-                                    <button type="button" class="score-adjustment-button score-adjustment-subtract" id="btnSubtractScore1" title="Trừ 1 điểm đội 1" aria-label="Trừ 1 điểm đội 1" onclick="adjustScore(1, -1)">
+                                    <button type="button" class="score-adjustment-button score-adjustment-subtract" id="btnSubtractScore1" title="Trừ 1 điểm đội 1" aria-label="Trừ 1 điểm đội 1" onclick="adjustScore(1, -1)" @(isMatchInProgress ? "" : "disabled")>
                                         <i class="fa-solid fa-minus" aria-hidden="true"></i><span>1</span>
                                     </button>
                                     <span class="score-adjustment-divider" aria-hidden="true"></span>
-                                    <button type="button" class="score-adjustment-button score-adjustment-add-primary" title="Cộng 1 điểm đội 1" aria-label="Cộng 1 điểm đội 1" onclick="adjustScore(1, 1)">
+                                    <button type="button" id="btnAddScore1Primary" class="score-adjustment-button score-adjustment-add-primary" title="Cộng 1 điểm đội 1" aria-label="Cộng 1 điểm đội 1" onclick="adjustScore(1, 1)" @(isMatchInProgress ? "" : "disabled")>
                                         <i class="fa-solid fa-plus" aria-hidden="true"></i><span>1</span>
                                     </button>
-                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 2 điểm đội 1" aria-label="Cộng 2 điểm đội 1" onclick="adjustScore(1, 2)">+2</button>
-                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 3 điểm đội 1" aria-label="Cộng 3 điểm đội 1" onclick="adjustScore(1, 3)">+3</button>
+                                    <button type="button" id="btnAddScore1Two" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 2 điểm đội 1" aria-label="Cộng 2 điểm đội 1" onclick="adjustScore(1, 2)" @(isMatchInProgress ? "" : "disabled")>+2</button>
+                                    <button type="button" id="btnAddScore1Three" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 3 điểm đội 1" aria-label="Cộng 3 điểm đội 1" onclick="adjustScore(1, 3)" @(isMatchInProgress ? "" : "disabled")>+3</button>
                                 </div>
                             </div>
                         </div>
@@ -523,6 +532,12 @@
                     <!-- Dấu phân cách & Trạng thái giữa -->
                     <div class="col-md-2 my-2 my-md-0">
                         <div class="display-3 fw-bold text-secondary font-monospace">:</div>
+                        @if (matchStatus == "ChuaDau")
+                        {
+                            <button type="button" id="btnStartMatch" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="startMatch()">
+                                <i class="fa-solid fa-play me-1"></i> Bắt đầu
+                            </button>
+                        }
                         @if (isSetSport)
                         {
                             <div class="badge bg-primary rounded-pill px-3 py-1" id="displayMatchSetScore">Set thắng @initScore1 - @initScore2</div>
@@ -542,6 +557,10 @@
                             }
                         </div>
 
+                        @if (isTimeSport)
+                        {
+                            <div id="activePeriodLabel" class="small text-primary fw-semibold mt-2"></div>
+                        }
                         <div id="setAdvantageNotice" class="mt-2 text-warning small fw-bold"></div>
                     </div>
 
@@ -552,20 +571,20 @@
                             <small class="text-secondary text-truncate d-block mb-3">@(Model.DonViDoi2 ?? "Đơn vị chủ quản")</small>
 
                             <div class="display-2 fw-bold font-monospace text-primary my-2" id="displayScore2">@(isSetSport ? initLiveSetScore2 : initScore2)</div>
-                            <small class="text-secondary d-block mb-2" id="subLabelScore2">@(isSetSport ? "Điểm set hiện tại" : "Bàn thắng / Điểm")</small>
+                            <small class="text-secondary d-block mb-2" id="subLabelScore2">@(isSetSport ? "Điểm set đang đấu" : "Tổng tỷ số (cộng các hiệp)")</small>
 
                             <div class="score-adjustment" role="group" aria-label="Điều chỉnh điểm đội 2">
                                 <span class="score-adjustment-caption">Điều chỉnh điểm</span>
                                 <div class="score-adjustment-actions">
-                                    <button type="button" class="score-adjustment-button score-adjustment-subtract" id="btnSubtractScore2" title="Trừ 1 điểm đội 2" aria-label="Trừ 1 điểm đội 2" onclick="adjustScore(2, -1)">
+                                    <button type="button" class="score-adjustment-button score-adjustment-subtract" id="btnSubtractScore2" title="Trừ 1 điểm đội 2" aria-label="Trừ 1 điểm đội 2" onclick="adjustScore(2, -1)" @(isMatchInProgress ? "" : "disabled")>
                                         <i class="fa-solid fa-minus" aria-hidden="true"></i><span>1</span>
                                     </button>
                                     <span class="score-adjustment-divider" aria-hidden="true"></span>
-                                    <button type="button" class="score-adjustment-button score-adjustment-add-primary" title="Cộng 1 điểm đội 2" aria-label="Cộng 1 điểm đội 2" onclick="adjustScore(2, 1)">
+                                    <button type="button" id="btnAddScore2Primary" class="score-adjustment-button score-adjustment-add-primary" title="Cộng 1 điểm đội 2" aria-label="Cộng 1 điểm đội 2" onclick="adjustScore(2, 1)" @(isMatchInProgress ? "" : "disabled")>
                                         <i class="fa-solid fa-plus" aria-hidden="true"></i><span>1</span>
                                     </button>
-                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 2 điểm đội 2" aria-label="Cộng 2 điểm đội 2" onclick="adjustScore(2, 2)">+2</button>
-                                    <button type="button" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 3 điểm đội 2" aria-label="Cộng 3 điểm đội 2" onclick="adjustScore(2, 3)">+3</button>
+                                    <button type="button" id="btnAddScore2Two" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 2 điểm đội 2" aria-label="Cộng 2 điểm đội 2" onclick="adjustScore(2, 2)" @(isMatchInProgress ? "" : "disabled")>+2</button>
+                                    <button type="button" id="btnAddScore2Three" class="score-adjustment-button score-adjustment-add-secondary" title="Cộng 3 điểm đội 2" aria-label="Cộng 3 điểm đội 2" onclick="adjustScore(2, 3)" @(isMatchInProgress ? "" : "disabled")>+3</button>
                                 </div>
                             </div>
                         </div>
@@ -592,12 +611,12 @@
                             <div class="row g-3 align-items-center">
                                 <div class="col-md-5 text-center">
                                     <label class="form-label small fw-semibold">Hiệp phụ: @(Model.TenDoi1 ?? "Đội 1")</label>
-                                    <input type="number" id="inputExtraTime1" class="form-control form-control-lg text-center font-monospace fw-bold" min="0" step="1" value="@(initExtraTime1?.ToString() ?? "")" onchange="onTieBreakScoreChanged()" />
+                                    <input type="number" id="inputExtraTime1" class="form-control form-control-lg text-center font-monospace fw-bold" min="0" step="1" value="@(initExtraTime1?.ToString() ?? "")" @(isMatchInProgress ? "" : "disabled") onchange="onTieBreakScoreChanged()" />
                                 </div>
                                 <div class="col-md-2 text-center"><span class="fs-4 fw-bold text-warning">VS</span></div>
                                 <div class="col-md-5 text-center">
                                     <label class="form-label small fw-semibold">Hiệp phụ: @(Model.TenDoi2 ?? "Đội 2")</label>
-                                    <input type="number" id="inputExtraTime2" class="form-control form-control-lg text-center font-monospace fw-bold" min="0" step="1" value="@(initExtraTime2?.ToString() ?? "")" onchange="onTieBreakScoreChanged()" />
+                                    <input type="number" id="inputExtraTime2" class="form-control form-control-lg text-center font-monospace fw-bold" min="0" step="1" value="@(initExtraTime2?.ToString() ?? "")" @(isMatchInProgress ? "" : "disabled") onchange="onTieBreakScoreChanged()" />
                                 </div>
                             </div>
                         </div>
@@ -609,12 +628,12 @@
                             <div class="row g-3 align-items-center">
                                 <div class="col-md-5 text-center">
                                     <label class="form-label small fw-semibold">Luân lưu: @(Model.TenDoi1 ?? "Đội 1")</label>
-                                    <input type="number" id="inputPenalty1" class="form-control form-control-lg text-center font-monospace fw-bold fs-3" min="0" max="50" value="@(initPen1?.ToString() ?? "")" onchange="onPenaltyScoreChanged()" />
+                                    <input type="number" id="inputPenalty1" class="form-control form-control-lg text-center font-monospace fw-bold fs-3" min="0" max="50" value="@(initPen1?.ToString() ?? "")" @(isMatchInProgress ? "" : "disabled") onchange="onPenaltyScoreChanged()" />
                                 </div>
                                 <div class="col-md-2 text-center"><span class="fs-4 fw-bold text-danger">VS</span></div>
                                 <div class="col-md-5 text-center">
                                     <label class="form-label small fw-semibold">Luân lưu: @(Model.TenDoi2 ?? "Đội 2")</label>
-                                    <input type="number" id="inputPenalty2" class="form-control form-control-lg text-center font-monospace fw-bold fs-3" min="0" max="50" value="@(initPen2?.ToString() ?? "")" onchange="onPenaltyScoreChanged()" />
+                                    <input type="number" id="inputPenalty2" class="form-control form-control-lg text-center font-monospace fw-bold fs-3" min="0" max="50" value="@(initPen2?.ToString() ?? "")" @(isMatchInProgress ? "" : "disabled") onchange="onPenaltyScoreChanged()" />
                                 </div>
                             </div>
                         </div>
@@ -634,8 +653,8 @@
                                 </h6>
                                 <small class="text-muted">@(isSetSport ? "Luật deuce & chạm trần tự động tính" : "Ghi nhận tỷ số các hiệp")</small>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5" onclick="addNewSet()">
-                                <i class="fa-solid fa-plus me-1"></i> Thêm Hiệp
+                            <button type="button" id="btnAddPeriod" class="btn btn-sm btn-outline-primary rounded-pill px-2.5" onclick="addNewSet()" @(isMatchInProgress ? "" : "disabled")>
+                                <i class="fa-solid fa-plus me-1"></i> @(isSetSport ? "Bắt đầu set tiếp theo" : "Sang hiệp tiếp theo")
                             </button>
                         </div>
 
@@ -665,7 +684,7 @@
                             <h6 class="fw-bold text-dark mb-0">
                                 <i class="fa-solid fa-timeline text-success me-2"></i> Diễn Biến & Sự Kiện (Bàn thắng, Thẻ phạt, Lỗi)
                             </h6>
-                            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5" onclick="openEventModal()">
+                            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5" onclick="openEventModal()" @(isMatchInProgress ? "" : "disabled")>
                                 <i class="fa-solid fa-plus me-1"></i> Thêm Sự Kiện
                             </button>
                         </div>
@@ -686,15 +705,20 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label small fw-semibold">Trạng thái trận đấu</label>
-                    <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="statusOption" id="stChuaDau" value="ChuaDau" @(Model.TrangThai == "ChuaDau" ? "checked" : "") onchange="onStatusChanged()" />
-                        <label class="btn btn-outline-secondary" for="stChuaDau"><i class="fa-solid fa-clock me-1"></i> Chưa đấu</label>
-
-                        <input type="radio" class="btn-check" name="statusOption" id="stDangDau" value="DangDau" @(Model.TrangThai == "DangDau" ? "checked" : "") onchange="onStatusChanged()" />
-                        <label class="btn btn-outline-danger" for="stDangDau"><i class="fa-solid fa-circle-play me-1"></i> Đang diễn ra</label>
-
-                        <input type="radio" class="btn-check" name="statusOption" id="stKetThuc" value="KetThuc" @(Model.TrangThai == "KetThuc" ? "checked" : "") onchange="onStatusChanged()" />
-                        <label class="btn btn-outline-success" for="stKetThuc"><i class="fa-solid fa-flag-checkered me-1"></i> Đã kết thúc</label>
+                    <div class="form-control bg-light d-flex align-items-center gap-2">
+                        @if (matchStatus == "DangDau")
+                        {
+                            <span class="badge bg-danger"><i class="fa-solid fa-circle-play me-1"></i>Đang diễn ra</span>
+                        }
+                        else if (matchStatus == "KetThuc")
+                        {
+                            <span class="badge bg-success"><i class="fa-solid fa-flag-checkered me-1"></i>Đã kết thúc</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary"><i class="fa-solid fa-clock me-1"></i>Chưa đấu</span>
+                        }
+                        <span class="small text-muted">Trạng thái được cập nhật bằng nút Bắt đầu và Hoàn tất trận.</span>
                     </div>
                 </div>
 
@@ -708,7 +732,7 @@
                     }
                     else
                     {
-                        <select id="selectWinner" class="form-select">
+                        <select id="selectWinner" class="form-select" @(isMatchInProgress ? "" : "disabled")>
                             <option value="">-- Chưa xác định kết quả --</option>
                             <option value="1" selected="@(initWinner == "1" ? "selected" : null)">🏆 @(Model.TenDoi1 ?? "Đội 1") Thắng</option>
                             <option value="2" selected="@(initWinner == "2" ? "selected" : null)">🏆 @(Model.TenDoi2 ?? "Đội 2") Thắng</option>
@@ -724,21 +748,42 @@
             <label class="form-label small fw-bold text-dark mb-2">
                 <i class="fa-solid fa-comment-dots text-secondary me-1"></i> Nhận Xét / Ghi Chú Của Trọng Tài
             </label>
-            <textarea id="matchNotes" class="form-control" rows="2" placeholder="Ghi chú về tinh thần thi đấu, sự cố sân bãi, điều kiện thời tiết nếu có...">@initNotes</textarea>
+            <textarea id="matchNotes" class="form-control" rows="2" placeholder="Ghi chú về tinh thần thi đấu, sự cố sân bãi, điều kiện thời tiết nếu có..." @(isMatchInProgress ? "" : "disabled")>@initNotes</textarea>
         </div>
 
         <!-- Floating Action Bar -->
         <div class="card-custom p-3 d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 shadow-sm bg-white sticky-bottom" style="z-index: 1020;">
-            <span class="small text-muted">
-                <i class="fa-solid fa-circle-check text-success me-1"></i> Khi <strong>Hoàn Tất Trận Đấu</strong>, hệ thống tự động cập nhật BXH vòng bảng hoặc đẩy đội thắng vào nhánh Knockout tiếp theo.
+            <span class="small text-muted" aria-live="polite">
+                @if (isMatchInProgress)
+                {
+                    @if (isHeatMatch)
+                    {
+                        <span id="scoreAutoSaveStatus"><i class="fa-solid fa-circle-info text-primary me-1"></i>Nhập thành tích từng làn; hệ thống sẽ kiểm tra trước khi hoàn tất lượt thi.</span>
+                    }
+                    else
+                    {
+                        <span id="scoreAutoSaveStatus"><i class="fa-solid fa-cloud-arrow-up text-primary me-1"></i>Tỷ số và điểm từng hiệp sẽ tự lưu sau mỗi lần điều chỉnh.</span>
+                    }
+                }
+                else if (matchStatus == "ChuaDau")
+                {
+                    <span><i class="fa-solid fa-circle-info text-primary me-1"></i>Bấm <strong>@(isHeatMatch ? "Bắt đầu lượt thi" : "Bắt đầu")</strong> để mở quyền nhập kết quả.</span>
+                }
+                else
+                {
+                    <span><i class="fa-solid fa-circle-check text-success me-1"></i>Trận đã kết thúc; kết quả không thể chỉnh sửa.</span>
+                }
             </span>
             <div class="d-flex gap-2 w-100 w-md-auto justify-content-end">
+                @if (isMatchInProgress && !isHeatMatch)
+                {
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold" id="btnSaveDraft" onclick="saveDraftResult()">
                     <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Tạm Diễn Biến
                 </button>
                 <button type="button" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm" id="btnCompleteMatch" onclick="completeMatchFinal()">
                     <i class="fa-solid fa-trophy me-1"></i> Hoàn Tất & Xác Nhận Kết Quả
                 </button>
+                }
             </div>
         </div>
         </fieldset>
@@ -805,6 +850,7 @@
 @section Scripts {
     <script>
         const matchId = @(Model?.Id ?? 0);
+        const matchStatus = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(matchStatus));
         let score1 = @initScore1;
         let score2 = @initScore2;
         let pen1 = @(initPen1.HasValue ? initPen1.Value.ToString() : "null");
@@ -820,9 +866,12 @@
         const hasPenalty = @(hasPenalty ? "true" : "false");
         const hasPenaltyCards = @(hasPenaltyCards ? "true" : "false");
         const matchWasInProgress = @(matchStatus == "DangDau" ? "true" : "false");
+        let scoreSaveTimer = null;
+        let scoreSaveInProgress = false;
+        let pendingScoreSave = null;
+        let lastAutoSaveFailed = false;
         let elapsedMatchSeconds = @elapsedSeconds;
         let matchClockStartedAt = matchWasInProgress ? Date.now() : null;
-        let matchClockHasStarted = matchWasInProgress;
 
         const sportConfig = @Html.Raw(matchFormat != null ? System.Text.Json.JsonSerializer.Serialize(matchFormat) : "null");
         const tenDoi1 = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model?.TenDoi1 ?? "Đội 1"));
@@ -845,6 +894,7 @@
             if (eventModalElement) eventModal = new bootstrap.Modal(eventModalElement);
             renderMatchClock();
             setInterval(renderMatchClock, 1000);
+            $('.score-adjustment-add-secondary').toggleClass('d-none', isSetSport);
 
             if (!isHeatMatch) {
                 if (setScoresList.length === 0 && isSetSport) {
@@ -852,6 +902,7 @@
                 }
                 if (!isSetSport) {
                     reconcileCurrentPeriodScores();
+                    recalculatePeriodTotals();
                 }
                 renderSets();
                 renderEvents();
@@ -863,6 +914,10 @@
                 recalculateHeatRanks();
             }
             updateScoreSubtractButtons();
+            updatePeriodControls();
+
+            $('#matchNotes').on('change blur', function () { queueScoreAutoSave(); });
+            $('#selectWinner').on('change', function () { queueScoreAutoSave(); });
 
             $('#eventForm').on('submit', function (e) {
                 e.preventDefault();
@@ -891,6 +946,11 @@
                         badge = '<span class="badge bg-warning text-dark font-monospace">Deuce</span>';
                     }
                 }
+                if (!isSetSport) {
+                    badge = idx === setScoresList.length - 1
+                        ? '<span class="badge bg-primary-subtle text-primary">Đang nhập</span>'
+                        : '<span class="badge bg-secondary-subtle text-secondary">Hiệp trước</span>';
+                }
 
                 const score1Cell = isEditing
                     ? `<input type="number" id="editSetScore1_${idx}" class="form-control form-control-sm text-center font-monospace fw-bold" min="0" step="1" value="${s.score1}" aria-label="Điểm đội 1 set ${s.setNumber}" />`
@@ -899,10 +959,10 @@
                     ? `<input type="number" id="editSetScore2_${idx}" class="form-control form-control-sm text-center font-monospace fw-bold" min="0" step="1" value="${s.score2}" aria-label="Điểm đội 2 set ${s.setNumber}" />`
                     : `<span class="font-monospace fw-bold">${s.score2}</span>`;
                 const actionButtons = isEditing
-                    ? `<button type="button" class="btn btn-sm btn-success" title="Lưu điểm set" onclick="saveSetEdit(${idx})"><i class="fa-solid fa-check"></i></button>
+                    ? `<button type="button" class="btn btn-sm btn-success" title="Lưu điểm set" onclick="saveSetEdit(${idx})" ${matchStatus === 'DangDau' ? '' : 'disabled'}><i class="fa-solid fa-check"></i></button>
                        <button type="button" class="btn btn-sm btn-outline-secondary" title="Hủy sửa" onclick="cancelSetEdit()"><i class="fa-solid fa-xmark"></i></button>`
-                    : `<button type="button" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa điểm set" onclick="beginSetEdit(${idx})"><i class="fa-solid fa-pen-to-square me-1"></i>Sửa</button>
-                       <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa set" onclick="removeSet(${idx})"><i class="fa-solid fa-trash-can"></i></button>`;
+                    : `<button type="button" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa điểm set" onclick="beginSetEdit(${idx})" ${matchStatus === 'DangDau' ? '' : 'disabled'}><i class="fa-solid fa-pen-to-square me-1"></i>Sửa</button>
+                       <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa set" onclick="removeSet(${idx})" ${matchStatus === 'DangDau' ? '' : 'disabled'}><i class="fa-solid fa-trash-can"></i></button>`;
 
                 const tr = `
                     <tr>
@@ -924,19 +984,20 @@
                 ? sportConfig.DiemHiepQuyetDinh
                 : (sportConfig.DiemMoiHiep || 21);
             const diffMin = sportConfig.CachBietDiemToiThieu || 2;
-            const cap = sportConfig.DiemToiDaMoiHiep || 30;
+            const cap = Number(sportConfig.DiemToiDaMoiHiep) || 0;
 
             if (s1 >= targetPts && (s1 - s2) >= diffMin) return { isSetWon: true, winner: 1, isDeuce: false };
             if (s2 >= targetPts && (s2 - s1) >= diffMin) return { isSetWon: true, winner: 2, isDeuce: false };
 
-            if (cap > 0 && s1 >= cap) return { isSetWon: true, winner: 1, isDeuce: false };
-            if (cap > 0 && s2 >= cap) return { isSetWon: true, winner: 2, isDeuce: false };
+            if (cap > 0 && s1 >= cap && s1 > s2) return { isSetWon: true, winner: 1, isDeuce: false };
+            if (cap > 0 && s2 >= cap && s2 > s1) return { isSetWon: true, winner: 2, isDeuce: false };
 
             const isDeuce = (s1 >= targetPts - 1 && s2 >= targetPts - 1 && Math.abs(s1 - s2) < diffMin);
             return { isSetWon: false, winner: 0, isDeuce: isDeuce };
         }
 
         function beginSetEdit(idx) {
+            if (matchStatus !== 'DangDau') return;
             if (editingSetIndex !== null) {
                 Swal.fire('Đang chỉnh sửa set', 'Hãy lưu hoặc hủy set đang sửa trước.', 'info');
                 return;
@@ -947,6 +1008,7 @@
         }
 
         function saveSetEdit(idx) {
+            if (matchStatus !== 'DangDau') return;
             const rawScore1 = $(`#editSetScore1_${idx}`).val();
             const rawScore2 = $(`#editSetScore2_${idx}`).val();
             const newScore1 = Number(rawScore1);
@@ -961,6 +1023,11 @@
             editingSetIndex = null;
             renderSets();
             if (isSetSport) recalculateSetsWon();
+            else {
+                recalculatePeriodTotals();
+                checkTieBreakCondition();
+            }
+            queueScoreAutoSave();
         }
 
         function cancelSetEdit() {
@@ -975,13 +1042,17 @@
         }
 
         function updateScoreSubtractButtons() {
-            const currentSet = setScoresList.length > 0
+            const currentPeriod = setScoresList.length > 0
                 ? setScoresList[setScoresList.length - 1]
                 : { score1: 0, score2: 0 };
-            const currentScore1 = isSetSport ? currentSet.score1 : score1;
-            const currentScore2 = isSetSport ? currentSet.score2 : score2;
-            $('#btnSubtractScore1').prop('disabled', currentScore1 <= 0);
-            $('#btnSubtractScore2').prop('disabled', currentScore2 <= 0);
+            const currentSetComplete = isSetSport && evaluateSingleSet(currentPeriod.setNumber, currentPeriod.score1, currentPeriod.score2).isSetWon;
+            const setsToWin = Number(sportConfig?.SoHiepThangDeThangTran) || 2;
+            const matchAlreadyDecided = isSetSport && (score1 >= setsToWin || score2 >= setsToWin);
+            const canAdjust = matchStatus === 'DangDau' && !currentSetComplete && !matchAlreadyDecided;
+            $('#btnSubtractScore1').prop('disabled', !canAdjust || currentPeriod.score1 <= 0);
+            $('#btnSubtractScore2').prop('disabled', !canAdjust || currentPeriod.score2 <= 0);
+            $('#btnAddScore1Primary, #btnAddScore1Two, #btnAddScore1Three, #btnAddScore2Primary, #btnAddScore2Two, #btnAddScore2Three')
+                .prop('disabled', !canAdjust);
         }
 
         function reconcileCurrentPeriodScores() {
@@ -994,6 +1065,18 @@
             const currentPeriod = setScoresList[setScoresList.length - 1];
             currentPeriod.score1 += Math.max(0, score1 - recordedScore1);
             currentPeriod.score2 += Math.max(0, score2 - recordedScore2);
+        }
+
+        function recalculatePeriodTotals() {
+            score1 = setScoresList.reduce((sum, period) => sum + Number(period.score1 || 0), 0);
+            score2 = setScoresList.reduce((sum, period) => sum + Number(period.score2 || 0), 0);
+            $('#displayScore1').text(score1);
+            $('#displayScore2').text(score2);
+            if ($('#activePeriodLabel').length) {
+                const activeNumber = setScoresList.length ? setScoresList[setScoresList.length - 1].setNumber : 1;
+                $('#activePeriodLabel').text(`Đang nhập điểm: Hiệp ${activeNumber}`);
+            }
+            updateScoreSubtractButtons();
         }
 
         function recalculateSetsWon() {
@@ -1021,52 +1104,105 @@
                 $('#autoWinnerAlert').removeClass('d-none');
                 $('#autoWinnerText').text(`${tenDoi1} đã thắng ${won1} set -> Đủ điều kiện thắng trận!`);
                 $('#selectWinner').val('1');
-                $('#stKetThuc').prop('checked', true);
-                onStatusChanged();
             } else if (won2 >= setsToWin) {
                 $('#autoWinnerAlert').removeClass('d-none');
                 $('#autoWinnerText').text(`${tenDoi2} đã thắng ${won2} set -> Đủ điều kiện thắng trận!`);
                 $('#selectWinner').val('2');
-                $('#stKetThuc').prop('checked', true);
-                onStatusChanged();
             } else {
                 $('#autoWinnerAlert').addClass('d-none');
             }
+            updatePeriodControls();
+        }
+
+        function updatePeriodControls() {
+            const button = $('#btnAddPeriod');
+            if (!button.length) return;
+
+            const maxPeriods = Number(sportConfig?.SoHiepToiDa) || (isSetSport ? 3 : 2);
+            if (isSetSport) {
+                const setsToWin = Number(sportConfig?.SoHiepThangDeThangTran) || 2;
+                const previousSet = setScoresList.length ? setScoresList[setScoresList.length - 1] : null;
+                const previousSetWon = previousSet && evaluateSingleSet(previousSet.setNumber, previousSet.score1, previousSet.score2).isSetWon;
+                const matchDecided = score1 >= setsToWin || score2 >= setsToWin;
+                const canStartNext = matchStatus === 'DangDau' && previousSetWon && !matchDecided && setScoresList.length < maxPeriods;
+                const nextLabel = setScoresList.length ? `Bắt đầu set ${setScoresList.length + 1}` : 'Bắt đầu set 1';
+                button.prop('disabled', !canStartNext).html(`<i class="fa-solid fa-plus me-1"></i>${nextLabel}`);
+                return;
+            }
+
+            const canStartNext = matchStatus === 'DangDau' && setScoresList.length < maxPeriods;
+            const nextLabel = canStartNext ? `Sang hiệp ${setScoresList.length + 1}` : `Đủ ${maxPeriods} hiệp chính`;
+            button.prop('disabled', !canStartNext).html(`<i class="fa-solid fa-plus me-1"></i>${nextLabel}`);
         }
 
         function addNewSet() {
+            if (matchStatus !== 'DangDau') return;
             if (!ensureNoSetEdit()) return;
             const nextNum = setScoresList.length + 1;
-            const maxSets = sportConfig?.SoHiepToiDa || 5;
+            const maxSets = Number(sportConfig?.SoHiepToiDa) || (isSetSport ? 3 : 2);
             if (nextNum > maxSets) {
-                Swal.fire('Thông báo', `Môn thi đấu này được cấu hình tối đa ${maxSets} hiệp!`, 'info');
+                Swal.fire('Đã đạt giới hạn', isSetSport
+                    ? `Môn này được cấu hình tối đa ${maxSets} set.`
+                    : `Môn này được cấu hình ${maxSets} hiệp chính.`, 'info');
                 return;
+            }
+            if (isSetSport) {
+                const setsToWin = Number(sportConfig?.SoHiepThangDeThangTran) || 2;
+                const previousSet = setScoresList[setScoresList.length - 1];
+                if (score1 >= setsToWin || score2 >= setsToWin) {
+                    Swal.fire('Trận đã đủ set thắng', 'Không thể bắt đầu thêm set sau khi đã xác định bên thắng.', 'info');
+                    return;
+                }
+                if (!previousSet || !evaluateSingleSet(previousSet.setNumber, previousSet.score1, previousSet.score2).isSetWon) {
+                    Swal.fire('Set hiện tại chưa kết thúc', 'Chỉ bắt đầu set tiếp theo sau khi set hiện tại đã có đội thắng theo luật.', 'info');
+                    return;
+                }
             }
             setScoresList.push({ setNumber: nextNum, score1: 0, score2: 0 });
             renderSets();
-            recalculateSetsWon();
+            if (isSetSport) recalculateSetsWon();
+            else recalculatePeriodTotals();
+            updatePeriodControls();
+            queueScoreAutoSave();
         }
 
         function removeSet(idx) {
+            if (matchStatus !== 'DangDau') return;
             if (!ensureNoSetEdit()) return;
             setScoresList.splice(idx, 1);
             setScoresList.forEach((s, i) => s.setNumber = i + 1);
             if (isSetSport) recalculateSetsWon();
+            else recalculatePeriodTotals();
             renderSets();
+            updatePeriodControls();
+            queueScoreAutoSave();
         }
 
         function adjustScore(team, delta) {
+            if (matchStatus !== 'DangDau') {
+                Swal.fire('Trận chưa bắt đầu', 'Chỉ có thể điều chỉnh điểm khi trận đang diễn ra.', 'info');
+                return;
+            }
             if (!ensureNoSetEdit()) return;
             if (isSetSport) {
-                // Với môn set điểm, tăng điểm của set cuối cùng đang đấu
+                // Với môn theo set, cộng điểm pha đấu vào set hiện tại.
                 if (setScoresList.length === 0) setScoresList.push({ setNumber: 1, score1: 0, score2: 0 });
                 const lastSet = setScoresList[setScoresList.length - 1];
+                if (evaluateSingleSet(lastSet.setNumber, lastSet.score1, lastSet.score2).isSetWon) {
+                    Swal.fire('Set đã kết thúc', 'Hãy bắt đầu set tiếp theo hoặc sửa lại điểm set đã ghi.', 'info');
+                    return;
+                }
+                const setsToWin = Number(sportConfig?.SoHiepThangDeThangTran) || 2;
+                if (score1 >= setsToWin || score2 >= setsToWin) {
+                    Swal.fire('Trận đã đủ set thắng', 'Không thể cộng thêm điểm sau khi trận đã xác định đội thắng.', 'info');
+                    return;
+                }
                 if (team === 1) lastSet.score1 = Math.max(0, lastSet.score1 + delta);
                 else lastSet.score2 = Math.max(0, lastSet.score2 + delta);
                 renderSets();
                 recalculateSetsWon();
             } else {
-                // Với môn tính tỷ số theo hiệp, ghi điểm vào hiệp hiện tại đồng thời cập nhật tỷ số chung.
+                // Với môn tính điểm theo hiệp, chỉ sửa hiệp hiện tại rồi cộng lại toàn bộ các hiệp.
                 if (setScoresList.length === 0) {
                     setScoresList.push({ setNumber: 1, score1: 0, score2: 0 });
                 }
@@ -1074,23 +1210,17 @@
                 if (team === 1) currentPeriod.score1 = Math.max(0, currentPeriod.score1 + delta);
                 else currentPeriod.score2 = Math.max(0, currentPeriod.score2 + delta);
 
-                if (team === 1) {
-                    score1 = Math.max(0, score1 + delta);
-                    $('#displayScore1').text(score1);
-                } else {
-                    score2 = Math.max(0, score2 + delta);
-                    $('#displayScore2').text(score2);
-                }
                 renderSets();
-                updateScoreSubtractButtons();
+                recalculatePeriodTotals();
                 checkTieBreakCondition();
             }
+            queueScoreAutoSave();
         }
 
         function checkTieBreakCondition() {
             if (isSetSport || isHeatMatch) return;
             refreshTieBreakUI();
-            if ($('input[name="statusOption"]:checked').val() === 'KetThuc') {
+            if (matchStatus === 'KetThuc') {
                 const outcome = getTimedMatchOutcome();
                 $('#selectWinner').val(outcome.winner || '');
             }
@@ -1158,38 +1288,14 @@
             extraTime2 = readOptionalScore('#inputExtraTime2');
             refreshTieBreakUI();
             checkTieBreakCondition();
+            queueScoreAutoSave();
         }
 
         function onPenaltyScoreChanged() {
             pen1 = readOptionalScore('#inputPenalty1');
             pen2 = readOptionalScore('#inputPenalty2');
             checkTieBreakCondition();
-        }
-
-        function onStatusChanged() {
-            const st = $('input[name="statusOption"]:checked').val();
-            if (st === 'DangDau' && matchClockStartedAt === null) {
-                if (!matchClockHasStarted) elapsedMatchSeconds = 0;
-                matchClockStartedAt = Date.now();
-                matchClockHasStarted = true;
-            } else if (st !== 'DangDau' && matchClockStartedAt !== null) {
-                elapsedMatchSeconds += Math.floor((Date.now() - matchClockStartedAt) / 1000);
-                matchClockStartedAt = null;
-            }
-            let badgeHtml = '';
-            if (st === 'DangDau') {
-                badgeHtml = '<span class="badge bg-danger rounded-pill px-3 py-1.5"><i class="fa-solid fa-circle-play me-1"></i>Đang diễn ra</span>';
-            } else if (st === 'KetThuc') {
-                badgeHtml = '<span class="badge bg-success rounded-pill px-3 py-1.5"><i class="fa-solid fa-flag-checkered me-1"></i>Đã kết thúc</span>';
-                if (!isSetSport && !isHeatMatch) {
-                    const outcome = getTimedMatchOutcome();
-                    $('#selectWinner').val(outcome.winner || '');
-                }
-            } else {
-                badgeHtml = '<span class="badge bg-secondary rounded-pill px-3 py-1.5"><i class="fa-solid fa-clock me-1"></i>Chưa đấu</span>';
-            }
-            $('#badgeMatchStatus').html(badgeHtml);
-            if (!isSetSport && !isHeatMatch) refreshTieBreakUI();
+            queueScoreAutoSave();
         }
 
         function renderMatchClock() {
@@ -1334,6 +1440,7 @@
         }
 
         function openEventModal() {
+            if (matchStatus !== 'DangDau') return;
             $('#evMinute').val(1);
             $('#evPlayer').val('');
             $('#evNotes').val('');
@@ -1341,6 +1448,7 @@
         }
 
         function addEvent() {
+            if (matchStatus !== 'DangDau') return;
             const eventType = $('#evType').val();
             if (!hasPenaltyCards && (eventType === 'yellow_card' || eventType === 'red_card')) {
                 Swal.fire('Không áp dụng thẻ', 'Môn thi đấu này không được cấu hình thẻ phạt.', 'warning');
@@ -1357,11 +1465,14 @@
             eventsList.push(ev);
             renderEvents();
             eventModal.hide();
+            queueScoreAutoSave();
         }
 
         function removeEvent(idx) {
+            if (matchStatus !== 'DangDau') return;
             eventsList.splice(idx, 1);
             renderEvents();
+            queueScoreAutoSave();
         }
 
         // ====================================================================
@@ -1427,9 +1538,8 @@
             return true;
         }
 
-        function saveDraftResult() {
-            if (!ensureNoSetEdit()) return;
-            const payload = {
+        function buildResultPayload() {
+            return {
                 tranDauId: matchId,
                 score1: score1,
                 score2: score2,
@@ -1438,43 +1548,123 @@
                 extraTimeScore1: readOptionalScore('#inputExtraTime1'),
                 extraTimeScore2: readOptionalScore('#inputExtraTime2'),
                 winner: $('#selectWinner').val(),
-                trangThai: $('input[name="statusOption"]:checked').val(),
-                setScores: setScoresList,
-                events: eventsList,
+                trangThai: matchStatus,
+                setScores: setScoresList.map(set => ({ ...set })),
+                events: eventsList.map(event => ({ ...event })),
                 ghiChu: $('#matchNotes').val().trim()
             };
+        }
 
-            $('#btnSaveDraft').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Đang lưu...');
+        function queueScoreAutoSave(immediate = false) {
+            if (matchStatus !== 'DangDau') return;
+            pendingScoreSave = buildResultPayload();
+            lastAutoSaveFailed = false;
+            $('#btnCompleteMatch').prop('disabled', true);
+            $('#scoreAutoSaveStatus').removeClass('text-danger text-success').addClass('text-muted')
+                .html('<i class="fa-solid fa-cloud-arrow-up text-primary me-1"></i>Đang lưu tỷ số và điểm từng hiệp...');
+            if (scoreSaveTimer !== null) {
+                clearTimeout(scoreSaveTimer);
+                scoreSaveTimer = null;
+            }
+            if (immediate) {
+                flushScoreAutoSave();
+            } else {
+                scoreSaveTimer = setTimeout(function () {
+                    scoreSaveTimer = null;
+                    flushScoreAutoSave();
+                }, 250);
+            }
+        }
 
+        function flushScoreAutoSave() {
+            if (scoreSaveInProgress || !pendingScoreSave) return;
+            const payload = pendingScoreSave;
+            pendingScoreSave = null;
+            scoreSaveInProgress = true;
             $.ajax({
                 url: '/TrongTai/KetQua/SaveResult',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(payload),
                 success: function (res) {
-                    $('#btnSaveDraft').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Tạm Diễn Biến');
                     if (res.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Đã lưu bản nháp!',
-                            text: res.message,
-                            timer: 1800,
-                            showConfirmButton: false
-                        });
+                        lastAutoSaveFailed = false;
+                        const savedAt = new Date().toLocaleTimeString('vi-VN');
+                        $('#scoreAutoSaveStatus').removeClass('text-danger text-muted').addClass('text-success')
+                            .html(`<i class="fa-solid fa-circle-check me-1"></i>Đã tự lưu tỷ số và điểm từng hiệp lúc ${savedAt}.`);
                     } else {
-                        Swal.fire('Lỗi', res.message || 'Không thể lưu bản nháp', 'error');
+                        lastAutoSaveFailed = true;
+                        $('#scoreAutoSaveStatus').removeClass('text-success text-muted').addClass('text-danger')
+                            .text(res.message || 'Không thể tự lưu điểm. Hãy thử bấm Lưu Tạm Diễn Biến.');
                     }
                 },
-                error: function () {
-                    $('#btnSaveDraft').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Tạm Diễn Biến');
-                    Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
+                error: function (xhr) {
+                    lastAutoSaveFailed = true;
+                    const message = xhr.responseJSON?.message || 'Mất kết nối máy chủ; điểm chưa được xác nhận đã lưu.';
+                    $('#scoreAutoSaveStatus').removeClass('text-success text-muted').addClass('text-danger').text(message);
+                },
+                complete: function () {
+                    scoreSaveInProgress = false;
+                    if (pendingScoreSave) {
+                        flushScoreAutoSave();
+                        return;
+                    }
+                    $('#btnCompleteMatch').prop('disabled', lastAutoSaveFailed);
+                }
+            });
+        }
+
+        function saveDraftResult() {
+            if (matchStatus !== 'DangDau') return;
+            if (!ensureNoSetEdit()) return;
+            queueScoreAutoSave(true);
+        }
+
+        function startMatch() {
+            const button = $('#btnStartMatch');
+            if (!button.length || matchStatus !== 'ChuaDau') return;
+            button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Đang bắt đầu...');
+            $.ajax({
+                url: '/TrongTai/KetQua/StartMatch',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ tranDauId: matchId }),
+                success: function (res) {
+                    if (res.success) {
+                        window.location.reload();
+                        return;
+                    }
+                    button.prop('disabled', false).html('<i class="fa-solid fa-play me-1"></i>Bắt đầu');
+                    Swal.fire('Không thể bắt đầu', res.message || 'Không thể chuyển trận sang trạng thái đang diễn ra.', 'error');
+                },
+                error: function (xhr) {
+                    button.prop('disabled', false).html('<i class="fa-solid fa-play me-1"></i>Bắt đầu');
+                    const message = xhr.responseJSON?.message || 'Không thể kết nối máy chủ để bắt đầu trận.';
+                    Swal.fire('Không thể bắt đầu', message, 'error');
                 }
             });
         }
 
         function completeMatchFinal() {
+            if (matchStatus !== 'DangDau') {
+                Swal.fire('Chưa thể hoàn tất', 'Chỉ có thể hoàn tất trận khi trận đang diễn ra.', 'info');
+                return;
+            }
+            if (lastAutoSaveFailed || scoreSaveInProgress || pendingScoreSave || scoreSaveTimer !== null) {
+                Swal.fire('Điểm chưa được lưu', 'Hãy đợi hệ thống tự lưu xong hoặc bấm “Lưu Tạm Diễn Biến” để thử lưu lại trước khi chốt trận.', 'warning');
+                return;
+            }
             if (!ensureNoSetEdit()) return;
             if (isHeatMatch && !validateHeatTieBreaks()) return;
+            if (!isHeatMatch && isTimeSport) {
+                const expectedPeriods = Number(sportConfig?.SoHiepToiDa) || 2;
+                if (setScoresList.length !== expectedPeriods) {
+                    Swal.fire('Chưa đủ hiệp chính', `Cần ghi nhận đủ ${expectedPeriods} hiệp trước khi chốt trận.`, 'warning');
+                    return;
+                }
+                recalculatePeriodTotals();
+            }
+            if (!isHeatMatch && isSetSport) recalculateSetsWon();
             let winnerVal = $('#selectWinner').val();
 
             if (!isHeatMatch && !isSetSport) {

@@ -5,9 +5,27 @@
     var allReferees = ViewBag.AllReferees as List<Dms.Application.DTOs.TrongTaiDto> ?? new();
     int? selectedMonId = ViewBag.SelectedMonId is int selectedId ? selectedId : null;
     int? selectedRefereeId = ViewBag.SelectedRefereeId is int selectedReferee ? selectedReferee : null;
+    int? targetMatchId = ViewBag.TargetMatchId is int targetId ? targetId : null;
     var selectedSport = selectedMonId.HasValue
         ? sportList.FirstOrDefault(sport => sport.Id == selectedMonId.Value)
         : null;
+}
+
+@section Styles {
+    <style>
+        .assignment-match-row.assignment-match-row-target > td {
+            background-color: #fff8db !important;
+            box-shadow: inset 0 3px 0 #f0ad00, inset 0 -3px 0 #f0ad00;
+        }
+
+        .assignment-match-row-target > td:first-child {
+            box-shadow: inset 4px 3px 0 #f0ad00, inset 0 -3px 0 #f0ad00;
+        }
+
+        .assignment-match-row-target > td:last-child {
+            box-shadow: inset 0 3px 0 #f0ad00, inset -4px -3px 0 #f0ad00;
+        }
+    </style>
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
@@ -142,7 +160,7 @@
         <table class="table table-bordered table-hover align-middle mb-0">
             <thead class="table-light text-muted small text-uppercase">
                 <tr>
-                    <th style="width: 140px;">Thông Tin Trận</th>
+                    <th style="min-width: 200px;">Thông Tin Trận</th>
                     <th style="min-width: 140px;">Môn Thi Đấu</th>
                     <th style="width: 130px;">Thời Gian & Sân</th>
                     <th style="min-width: 180px;">Trọng Tài Chính <span class="text-danger">*</span></th>
@@ -157,10 +175,20 @@
                 {
                     foreach (var item in Model)
                     {
-                        <tr>
+                        <tr id="match-row-@item.TranDauId"
+                            class="assignment-match-row @(targetMatchId == item.TranDauId ? "assignment-match-row-target" : string.Empty)"
+                            data-match-id="@item.TranDauId">
                             <td>
                                 <div class="fw-bold text-dark">#@item.SoTran - @item.TenTran</div>
                                 <div class="badge bg-light text-secondary border small mt-1">@item.TenVongDau</div>
+                                @if (!string.IsNullOrWhiteSpace(item.TenBenThiDau1) || !string.IsNullOrWhiteSpace(item.TenBenThiDau2))
+                                {
+                                    <div class="small text-primary mt-2" title="@item.TenBenThiDau1 vs @item.TenBenThiDau2">
+                                        <span class="fw-semibold">@item.TenBenThiDau1</span>
+                                        <span class="text-muted mx-1">vs</span>
+                                        <span class="fw-semibold">@item.TenBenThiDau2</span>
+                                    </div>
+                                }
                             </td>
                             <td>
                                 <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
@@ -373,10 +401,27 @@
 @section Scripts {
     <script>
         var giaiDauId = @(ViewBag.SelectedGiaiDauId ?? 0);
+        var targetMatchId = @(targetMatchId ?? 0);
         var monTheThaoId = @(ViewBag.SelectedMonId ?? "null");
         var selectedDate = '@(ViewBag.SelectedDate ?? "")';
         var draftChanges = {};
         var refereeFilterStorageKey = 'phanCongRefereeFilter_' + giaiDauId;
+
+        function focusTargetMatch() {
+            if (!targetMatchId) return;
+
+            var targetRow = document.querySelector('[data-match-id="' + targetMatchId + '"]');
+            if (!targetRow) return;
+
+            targetRow.classList.add('assignment-match-row-target');
+            window.setTimeout(function () {
+                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                var firstAction = targetRow.querySelector('.referee-slot button');
+                if (firstAction) firstAction.focus({ preventScroll: true });
+            }, 150);
+        }
+
+        document.addEventListener('DOMContentLoaded', focusTargetMatch);
         var conflictRequestToken = 0;
         var currentWarningData = {
             isOverloaded: false,
@@ -472,7 +517,7 @@
                         <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1 draft-remove" title="Hủy phân công"><i class="fa-solid fa-xmark"></i></button>
                     </div>`);
                 slot.find('.draft-edit').on('click', function () { openAssignModal(tranDauId, vaiTro); });
-                slot.find('.draft-remove').on('click', function () { openAssignModal(tranDauId, vaiTro); });
+                slot.find('.draft-remove').on('click', function () { removeRefereeAssignment(tranDauId, vaiTro); });
             } else {
                 slot.html(`
                     <span class="text-muted small fst-italic px-1">Chưa gán</span>
@@ -491,6 +536,23 @@
             };
             renderSlot(tranDauId, vaiTro);
             updateDraftIndicator();
+        }
+
+        function removeRefereeAssignment(tranDauId, vaiTro) {
+            var current = getEffectiveSlot(tranDauId, vaiTro);
+            if (!current.id) return;
+
+            stageAssignmentChange(tranDauId, vaiTro, null, false);
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: `Đã đánh dấu hủy ${vaiTro.toLowerCase()}`,
+                text: 'Bấm “Lưu nháp” để xác nhận thay đổi.',
+                showConfirmButton: false,
+                timer: 2200,
+                timerProgressBar: true
+            });
         }
 
         function updateDraftIndicator() {

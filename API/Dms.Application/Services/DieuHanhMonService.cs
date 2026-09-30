@@ -560,6 +560,12 @@ namespace Dms.Application.Services
                 return (false, "Trận đã kết thúc; không thể đổi ngược trạng thái tại màn điều hành môn.");
             }
 
+            if (status == "DangDau" && match.TrangThai != "DangDau")
+            {
+                var startBlockReason = await _tranDauService.GetRoundStartBlockReasonAsync(tranDauId);
+                if (startBlockReason != null) return (false, startBlockReason);
+            }
+
             var previousStatus = match.TrangThai;
             var now = DateTime.UtcNow;
             if (status == "DangDau" && previousStatus != "DangDau")

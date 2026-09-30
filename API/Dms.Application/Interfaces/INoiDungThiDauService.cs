@@ -1,5 +1,6 @@
 using Dms.Application.DTOs;
 using Dms.Domain.Common;
+using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -23,6 +24,24 @@ namespace Dms.Application.Interfaces
         Task<VanDongVienDto> CreateAsync(CreateUpdateVanDongVienDto dto, string? createdBy = null);
         Task<VanDongVienDto?> UpdateAsync(int id, CreateUpdateVanDongVienDto dto, string? updatedBy = null);
         Task<bool> DeleteAsync(int id);
+
+        /// <summary>Đọc và kiểm tra tệp Excel để tạo danh sách tạm cho màn hình xem trước, chưa ghi dữ liệu vào cơ sở dữ liệu.</summary>
+        /// <param name="fileStream">Luồng dữ liệu của tệp Excel .xlsx cần nhập.</param>
+        /// <param name="fileName">Tên tệp dùng để kiểm tra phần mở rộng và thông báo lỗi.</param>
+        /// <param name="donViId">Mã định danh đơn vị đang quản lý danh sách vận động viên.</param>
+        /// <returns>Dữ liệu tạm gồm các dòng vận động viên và lỗi để người dùng chỉnh sửa trước khi lưu.</returns>
+        Task<VanDongVienImportPreviewDto> PreviewFromExcelAsync(Stream fileStream, string fileName, int donViId);
+
+        /// <summary>Kiểm tra và lưu toàn bộ danh sách vận động viên đã được chỉnh sửa từ màn hình xem trước.</summary>
+        /// <param name="rows">Danh sách dòng vận động viên người dùng xác nhận lưu.</param>
+        /// <param name="donViId">Mã định danh đơn vị sở hữu danh sách vận động viên.</param>
+        /// <param name="createdBy">Tài khoản thực hiện thao tác lưu dữ liệu.</param>
+        /// <returns>Kết quả lưu; nếu còn lỗi thì không lưu bất kỳ dòng nào.</returns>
+        Task<VanDongVienImportResultDto> SaveImportedAsync(IEnumerable<VanDongVienImportRowDto> rows, int donViId, string? createdBy = null);
+
+        /// <summary>Tạo tệp Excel mẫu chứa tiêu đề cột, định dạng nhập liệu và hướng dẫn sử dụng cho danh sách vận động viên.</summary>
+        /// <returns>Mảng byte của tệp Excel mẫu .xlsx.</returns>
+        Task<byte[]> GenerateImportTemplateAsync();
     }
 
     public interface IDoiService
@@ -170,13 +189,36 @@ namespace Dms.Application.Interfaces
         Task<List<HeatParticipantResultDto>> GetHeatResultsByMatchIdAsync(int tranDauId);
 
         /// <summary>
+        /// Lấy điểm đã lưu của từng hiệp hoặc set theo thứ tự thi đấu để khôi phục màn ghi nhận kết quả.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu cần đọc điểm từng hiệp/set.</param>
+        /// <returns>Danh sách điểm của hai bên trong từng hiệp/set, sắp xếp tăng dần theo số thứ tự.</returns>
+        Task<List<SetScoreDto>> GetMatchPeriodScoresAsync(int tranDauId);
+
+        /// <summary>
         /// Lưu tỷ số và tiến độ trận đấu mà không thay đổi danh sách đội hoặc phân công trọng tài.
         /// </summary>
         /// <param name="id">ID trận đấu cần cập nhật.</param>
         /// <param name="dto">Tỷ số, trạng thái, ghi chú và kết quả cần lưu.</param>
         /// <param name="updatedBy">Tài khoản thực hiện cập nhật.</param>
+        /// <param name="requireInProgress">Chỉ cho phép lưu kết quả khi trận hiện đang diễn ra.</param>
         /// <returns>True nếu trận được cập nhật; false nếu không tìm thấy trận.</returns>
-        Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null);
+        Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null, bool requireInProgress = false);
+
+        /// <summary>
+        /// Bắt đầu một trận đang chờ thi đấu và ghi nhận thời điểm bắt đầu thực tế.
+        /// </summary>
+        /// <param name="id">ID trận đấu cần bắt đầu.</param>
+        /// <param name="updatedBy">Tài khoản trọng tài thực hiện thao tác.</param>
+        /// <returns>True nếu trận đã được bắt đầu hoặc đang diễn ra; false nếu không tìm thấy trận.</returns>
+        Task<bool> StartMatchAsync(int id, string? updatedBy = null);
+
+        /// <summary>
+        /// Kiểm tra các trận thuộc những vòng trước của cùng môn đã kết thúc hết hay chưa.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu dự kiến bắt đầu.</param>
+        /// <returns>Thông báo lý do nếu còn trận vòng trước chưa xong; null nếu được phép bắt đầu.</returns>
+        Task<string?> GetRoundStartBlockReasonAsync(int tranDauId);
 
         /// <summary>
         /// Cập nhật nội dung biên bản mà không thay đổi kết quả, thời gian, đội hoặc phân công trận đấu.

@@ -237,8 +237,8 @@
                                 <i class="fa-solid fa-stopwatch text-success me-1"></i> Cơ chế tính điểm trận (Scoring) <span class="text-danger">*</span>
                             </label>
                             <select id="fmtLoaiTheThuc" class="form-select fw-semibold border-success-subtle" onchange="onFormatTypeChange()">
-                                <option value="SetDiem">🎯 Đấu Set / Hiệp tính điểm (Cầu lông, Bóng chuyền, Bóng bàn...)</option>
-                                <option value="ThoiGianHiep">⏱️ Tính thời gian hiệp (Bóng đá, Futsal, Bóng rổ...)</option>
+                                <option value="SetDiem">🎯 Điểm mỗi pha trong set; tỉ số trận là số set thắng (Cầu lông, Bóng chuyền...)</option>
+                                <option value="ThoiGianHiep">⏱️ Điểm mỗi hiệp cộng thành tỉ số trận (Bóng đá, Futsal, Bóng rổ...)</option>
                                 <option value="TinhDiemXepHang">🏅 Đo thành tích / Chạy làn (Điền kinh, Bơi lội...)</option>
                             </select>
                         </div>
@@ -319,6 +319,11 @@
                         </div>
                         <div class="card-body p-4">
                             <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Số hiệp chính</label>
+                                    <input type="number" class="form-control" id="fmtSoHiepChinh" value="2" min="1" max="15">
+                                    <small class="text-muted">VD: Bóng đá có 2 hiệp; tỉ số trận bằng tổng điểm các hiệp.</small>
+                                </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Thời gian hiệp chính (phút)</label>
                                     <input type="number" class="form-control" id="fmtThoiGianChinh" value="45" min="1">
@@ -790,14 +795,14 @@
             $('#panelTinhDiemXepHang').toggleClass('d-none', loai !== 'TinhDiemXepHang');
 
             if (loai === 'SetDiem') {
-                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Set điểm:</strong> Nhập điểm từng hiệp, áp dụng Deuce 2đ & trần điểm.');
+                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Đấu theo set:</strong> Nút điểm cập nhật điểm set hiện tại; tỉ số trận là số set thắng.');
                 $('#lblThoiLuongTran').text('Thời lượng mỗi trận đấu (phút)');
                 $('#lblNghiGiuaTran').text('Nghỉ giữa 2 trận liên tiếp (phút)');
                 $('#subThoiLuongTran').text('Tổng thời lượng thi đấu dự kiến của 1 trận đấu');
                 $('#subNghiGiuaTran').text('Thời gian giãn cách chuẩn bị sân bãi giữa 2 trận liên tiếp');
                 $('#boxFormatGroupConfig').removeClass('d-none');
             } else if (loai === 'ThoiGianHiep') {
-                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Thời gian:</strong> Tính tỉ số phút, hiệp phụ & luân lưu Penalty.');
+                $('#fmtTypeNote').html('<i class="fa-solid fa-circle-info me-1"></i> <strong>Cộng điểm theo hiệp:</strong> Nút điểm cập nhật hiệp đang đấu; tỉ số trận tự cộng điểm tất cả hiệp chính.');
                 $('#lblThoiLuongTran').text('Thời lượng mỗi trận đấu (phút)');
                 $('#lblNghiGiuaTran').text('Nghỉ giữa 2 trận liên tiếp (phút)');
                 $('#subThoiLuongTran').text('Tổng thời lượng thi đấu dự kiến của 1 trận đấu');
@@ -884,6 +889,7 @@
             $('#fmtCachTinhDiemTheoSet').prop('checked', false);
 
             $('#fmtThoiGianChinh').val(45);
+            $('#fmtSoHiepChinh').val(2);
             $('#fmtDiemThang').val(3);
             $('#fmtDiemHoa').val(1);
             $('#fmtDiemThua').val(0);
@@ -929,6 +935,7 @@
             $('#fmtCachTinhDiemTheoSet').prop('checked', !!data.cachTinhDiemTheoSet);
 
             $('#fmtThoiGianChinh').val(data.thoiGianHiepChinhPhut || 45);
+            $('#fmtSoHiepChinh').val(data.soHiepToiDa || 2);
             $('#fmtDiemThang').val(data.diemThang ?? 3);
             $('#fmtDiemHoa').val(data.diemHoa ?? 1);
             $('#fmtDiemThua').val(data.diemThua ?? 0);
@@ -1011,6 +1018,7 @@
             } else if (preset === 'football') {
                 $('#fmtHinhThucThiDau').val('KetHopVongBangVaLoaiTrucTiep');
                 $('#fmtLoaiTheThuc').val('ThoiGianHiep');
+                $('#fmtSoHiepChinh').val(2);
                 $('#fmtThoiGianChinh').val(45);
                 $('#fmtDiemThang').val(3);
                 $('#fmtDiemHoa').val(1);
@@ -1077,11 +1085,20 @@
             if (!monId) return;
 
             const loaiTheThuc = $('#fmtLoaiTheThuc').val();
+            const soHiepToiDa = loaiTheThuc === 'ThoiGianHiep'
+                ? parseInt($('#fmtSoHiepChinh').val())
+                : parseInt($('#fmtSoHiepToiDa').val());
+            if (!Number.isInteger(soHiepToiDa) || soHiepToiDa < 1 || soHiepToiDa > 15) {
+                Swal.fire('Cấu hình chưa hợp lệ', loaiTheThuc === 'ThoiGianHiep'
+                    ? 'Vui lòng nhập số hiệp chính từ 1 đến 15.'
+                    : 'Vui lòng nhập số set tối đa từ 1 đến 15.', 'warning');
+                return;
+            }
             const payload = {
                 monTheThaoId: monId,
                 hinhThucThiDau: $('#fmtHinhThucThiDau').val() || undefined,
                 loaiTheThuc: loaiTheThuc,
-                soHiepToiDa: parseInt($('#fmtSoHiepToiDa').val()) || 3,
+                soHiepToiDa: soHiepToiDa,
                 soHiepThangDeThangTran: parseInt($('#fmtSoHiepThang').val()) || 2,
                 diemMoiHiep: parseInt($('#fmtDiemMoiHiep').val()) || 21,
                 diemHiepQuyetDinh: parseInt($('#fmtDiemHiepQuyetDinh').val()) || 21,

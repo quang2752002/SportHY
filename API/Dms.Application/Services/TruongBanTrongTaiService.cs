@@ -498,6 +498,16 @@ namespace Dms.Application.Services
             }
         }
 
+        /// <summary>
+        /// Lấy danh sách trận đấu kèm tên hai bên thi đấu và thông tin trọng tài đã phân công.
+        /// Với môn đồng đội, tên bên thi đấu là tên đội; với môn cá nhân, tên bên thi đấu là tên vận động viên.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu cần lấy trận.</param>
+        /// <param name="monTheThaoId">ID môn thể thao cần lọc, hoặc null để lấy mọi môn.</param>
+        /// <param name="status">Trạng thái trận đấu cần lọc, hoặc null để lấy mọi trạng thái.</param>
+        /// <param name="date">Ngày thi đấu cần lọc, hoặc null để lấy mọi ngày.</param>
+        /// <param name="trongTaiId">ID trọng tài cần lọc theo phân công, hoặc null để lấy mọi trọng tài.</param>
+        /// <returns>Danh sách trận đấu có tên hai bên thi đấu và các vị trí trọng tài tương ứng.</returns>
         public async Task<List<MatchAssignmentDto>> GetMatchAssignmentsAsync(
             int giaiDauId,
             int? monTheThaoId,
@@ -543,6 +553,29 @@ namespace Dms.Application.Services
 
             var allMons = (await _unitOfWork.MonTheThaos.FindAsync(m => m.IsDeleted != true)).ToDictionary(m => m.Id);
 
+            var participants = matchIds.Count > 0
+                ? (await _unitOfWork.ThanhPhanTranDaus.FindAsync(p => matchIds.Contains(p.TranDauId) && p.IsDeleted != true))
+                    .OrderBy(p => p.ViTri ?? p.SoLane ?? int.MaxValue)
+                    .ToList()
+                : new List<ThanhPhanTranDau>();
+            var registrationIds = participants.Select(p => p.DangKyThiDauId).Distinct().ToList();
+            var registrations = registrationIds.Count > 0
+                ? (await _unitOfWork.DangKyThiDaus.FindAsync(r => registrationIds.Contains(r.Id) && r.IsDeleted != true)).ToList()
+                : new List<DangKyThiDau>();
+            var registrationMap = registrations.ToDictionary(r => r.Id);
+            var teamIds = registrations.Where(r => r.DoiId.HasValue).Select(r => r.DoiId!.Value).Distinct().ToList();
+            var teams = teamIds.Count > 0
+                ? (await _unitOfWork.Dois.FindAsync(team => teamIds.Contains(team.Id) && team.IsDeleted != true)).ToDictionary(team => team.Id)
+                : new Dictionary<int, Doi>();
+            var teamMembers = teamIds.Count > 0
+                ? (await _unitOfWork.ThanhVienDois.FindAsync(member => teamIds.Contains(member.DoiId) && member.IsDeleted != true)).ToList()
+                : new List<ThanhVienDoi>();
+            var athleteIds = teamMembers.Select(member => member.VanDongVienId).Distinct().ToList();
+            var athletes = athleteIds.Count > 0
+                ? (await _unitOfWork.VanDongViens.FindAsync(athlete => athleteIds.Contains(athlete.Id) && athlete.IsDeleted != true))
+                    .ToDictionary(athlete => athlete.Id)
+                : new Dictionary<int, VanDongVien>();
+
             var vongDauIds = matches.Select(m => m.VongDauId).Distinct().ToList();
             var vongDaus = (await _unitOfWork.VongDaus.FindAsync(v => vongDauIds.Contains(v.Id))).ToDictionary(v => v.Id);
 
@@ -553,8 +586,45 @@ namespace Dms.Application.Services
             {
                 var gdm = gdmList.FirstOrDefault(x => x.Id == m.GiaiDauMonTheThaoId);
                 string tenMon = (gdm != null && allMons.TryGetValue(gdm.MonTheThaoId, out var s)) ? s.Ten : "Môn";
+                var isTeamSport = gdm != null && allMons.TryGetValue(gdm.MonTheThaoId, out var sport) && sport.LaMonDongDoi;
                 string tenVong = vongDaus.TryGetValue(m.VongDauId, out var vd) ? vd.Ten : "Vòng";
                 string tenSan = (m.SanDauId.HasValue && sanDaus.TryGetValue(m.SanDauId.Value, out var sd)) ? sd.Ten : "Chưa xếp sân";
+                var matchParticipants = participants.Where(participant => participant.TranDauId == m.Id).ToList();
+                string? GetParticipantName(ThanhPhanTranDau participant)
+                {
+                    if (!registrationMap.TryGetValue(participant.DangKyThiDauId, out var registration))
+                    {
+                        return null;
+                    }
+
+                    if (isTeamSport)
+                    {
+                        if (registration.DoiId.HasValue && teams.TryGetValue(registration.DoiId.Value, out var team) && !string.IsNullOrWhiteSpace(team.Ten))
+                        {
+                            return team.Ten;
+                        }
+                        return registration.TenDangKy;
+                    }
+
+                    var athlete = teamMembers
+                        .Where(member => member.DoiId == registration.DoiId && registration.DoiId.HasValue)
+                        .OrderByDescending(member => member.LaDoiTruong)
+                        .Select(member => athletes.TryGetValue(member.VanDongVienId, out var foundAthlete) ? foundAthlete.HoTen : null)
+                        .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name));
+                    if (!string.IsNullOrWhiteSpace(athlete))
+                    {
+                        return athlete;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(registration.TenDangKy))
+                    {
+                        return registration.TenDangKy;
+                    }
+
+                    return registration.DoiId.HasValue && teams.TryGetValue(registration.DoiId.Value, out var fallbackTeam)
+                        ? fallbackTeam.Ten
+                        : null;
+                }
 
                 var matchPcs = phanCongs.Where(pc => pc.TranDauId == m.Id).ToList();
 
@@ -584,6 +654,8 @@ namespace Dms.Application.Services
                     TranDauId = m.Id,
                     SoTran = m.SoTran,
                     TenTran = m.TenTran ?? $"Trận số {m.SoTran}",
+                    TenBenThiDau1 = matchParticipants.ElementAtOrDefault(0) is { } participant1 ? GetParticipantName(participant1) : null,
+                    TenBenThiDau2 = matchParticipants.ElementAtOrDefault(1) is { } participant2 ? GetParticipantName(participant2) : null,
                     TenMon = tenMon,
                     TenVongDau = tenVong,
                     TenSanDau = tenSan,
