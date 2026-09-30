@@ -170,13 +170,29 @@ namespace Dms.Application.Interfaces
         Task<List<HeatParticipantResultDto>> GetHeatResultsByMatchIdAsync(int tranDauId);
 
         /// <summary>
+        /// Lấy điểm đã lưu của từng hiệp hoặc set theo thứ tự thi đấu để khôi phục màn ghi nhận kết quả.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu cần đọc điểm từng hiệp/set.</param>
+        /// <returns>Danh sách điểm của hai bên trong từng hiệp/set, sắp xếp tăng dần theo số thứ tự.</returns>
+        Task<List<SetScoreDto>> GetMatchPeriodScoresAsync(int tranDauId);
+
+        /// <summary>
         /// Lưu tỷ số và tiến độ trận đấu mà không thay đổi danh sách đội hoặc phân công trọng tài.
         /// </summary>
         /// <param name="id">ID trận đấu cần cập nhật.</param>
         /// <param name="dto">Tỷ số, trạng thái, ghi chú và kết quả cần lưu.</param>
         /// <param name="updatedBy">Tài khoản thực hiện cập nhật.</param>
+        /// <param name="requireInProgress">Chỉ cho phép lưu kết quả khi trận hiện đang diễn ra.</param>
         /// <returns>True nếu trận được cập nhật; false nếu không tìm thấy trận.</returns>
-        Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null);
+        Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null, bool requireInProgress = false);
+
+        /// <summary>
+        /// Bắt đầu một trận đang chờ thi đấu và ghi nhận thời điểm bắt đầu thực tế.
+        /// </summary>
+        /// <param name="id">ID trận đấu cần bắt đầu.</param>
+        /// <param name="updatedBy">Tài khoản trọng tài thực hiện thao tác.</param>
+        /// <returns>True nếu trận đã được bắt đầu hoặc đang diễn ra; false nếu không tìm thấy trận.</returns>
+        Task<bool> StartMatchAsync(int id, string? updatedBy = null);
 
         /// <summary>
         /// Cập nhật nội dung biên bản mà không thay đổi kết quả, thời gian, đội hoặc phân công trận đấu.

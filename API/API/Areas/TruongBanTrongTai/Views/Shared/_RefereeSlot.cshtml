@@ -21,10 +21,10 @@
             @currentName
         </span>
         <div class="btn-group btn-group-sm">
-            <button class="btn btn-sm btn-link text-primary p-0 px-1" onclick="openAssignModal(@tranDauId, '@vaiTro')" title="Đổi trọng tài">
+            <button type="button" class="btn btn-sm btn-link text-primary p-0 px-1" onclick="openAssignModal(@tranDauId, '@vaiTro')" title="Đổi trọng tài">
                 <i class="fa-solid fa-pen-to-square"></i>
             </button>
-            <button class="btn btn-sm btn-link text-danger p-0 px-1" onclick="openAssignModal(@tranDauId, '@vaiTro')" title="Hủy phân công">
+            <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1" onclick="removeRefereeAssignment(@tranDauId, '@vaiTro')" title="Hủy phân công">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -32,7 +32,7 @@
     else
     {
         <span class="text-muted small fst-italic px-1">Chưa gán</span>
-        <button class="btn btn-sm btn-outline-primary py-0 px-2 small" onclick="openAssignModal(@tranDauId, '@vaiTro')">
+        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 small" onclick="openAssignModal(@tranDauId, '@vaiTro')">
             <i class="fa-solid fa-plus me-1"></i> Gán
         </button>
     }
