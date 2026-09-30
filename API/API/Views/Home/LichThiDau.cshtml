@@ -1483,6 +1483,33 @@
         }
 
         // ==================== HIỂN THỊ BẢNG ĐẤU ====================
+        function sortGroupMembers(members) {
+            return (Array.isArray(members) ? members : [])
+                .map((member, index) => ({ member, index }))
+                .sort((left, right) => {
+                    const a = left.member;
+                    const b = right.member;
+
+                    const byPoints = Number(b.diem ?? 0) - Number(a.diem ?? 0);
+                    if (byPoints !== 0) return byPoints;
+
+                    const aGoalDiff = Number(a.diemGhiDuoc ?? 0) - Number(a.diemBiGhi ?? 0);
+                    const bGoalDiff = Number(b.diemGhiDuoc ?? 0) - Number(b.diemBiGhi ?? 0);
+                    const byGoalDiff = bGoalDiff - aGoalDiff;
+                    if (byGoalDiff !== 0) return byGoalDiff;
+
+                    const byScoredPoints = Number(b.diemGhiDuoc ?? 0) - Number(a.diemGhiDuoc ?? 0);
+                    if (byScoredPoints !== 0) return byScoredPoints;
+
+                    const byWins = Number(b.soThang ?? 0) - Number(a.soThang ?? 0);
+                    if (byWins !== 0) return byWins;
+
+                    const byStoredRank = (Number(a.xepHang) || Number.MAX_SAFE_INTEGER) - (Number(b.xepHang) || Number.MAX_SAFE_INTEGER);
+                    return byStoredRank !== 0 ? byStoredRank : left.index - right.index;
+                })
+                .map(item => item.member);
+        }
+
         function renderGroups() {
             if (currentGmtId <= 0) {
                 showNoSportSelected();
@@ -1499,7 +1526,7 @@
 
             let html = '';
             allGroups.forEach(g => {
-                const members = g.thanhViens || [];
+                const members = sortGroupMembers(g.thanhViens || []);
                 let rowsHtml = '';
 
                 if (members.length === 0) {
@@ -1512,7 +1539,7 @@
                     `;
                 } else {
                     members.forEach((m, idx) => {
-                        const rank = m.xepHang || (idx + 1);
+                        const rank = idx + 1;
                         const isQualify = rank <= 2;
                         const rankBadge = isQualify 
                             ? `<span class="badge rounded-circle bg-success text-white" style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;">${rank}</span>`
