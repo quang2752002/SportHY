@@ -14,39 +14,87 @@ namespace API.Areas.Manager.Controllers
         private readonly IGiaiDauService _giaiDauService;
         private readonly IDonViService _donViService;
         private readonly IMonTheThaoService _monTheThaoService;
+        private readonly IDanhMucMonTheThaoService _danhMucMonTheThaoService;
 
         public HuyChuongController(
             IHuyChuongService huyChuongService,
             IThuKyGiaiService thuKyGiaiService,
             IGiaiDauService giaiDauService,
             IDonViService donViService,
-            IMonTheThaoService monTheThaoService)
+            IMonTheThaoService monTheThaoService,
+            IDanhMucMonTheThaoService danhMucMonTheThaoService)
         {
             _huyChuongService = huyChuongService;
             _thuKyGiaiService = thuKyGiaiService;
             _giaiDauService = giaiDauService;
             _donViService = donViService;
             _monTheThaoService = monTheThaoService;
+            _danhMucMonTheThaoService = danhMucMonTheThaoService;
         }
 
+        /// <summary>
+        /// Trang hiển thị bảng tổng sắp và quản lý huy chương giải đấu
+        /// </summary>
         [HttpGet]
-        public async Task<IActionResult> Index([FromQuery] int? giaiDauId = null)
+        public async Task<IActionResult> Index([FromQuery] int? giaiDauId = null, [FromQuery] int? danhMucId = null, [FromQuery] int? monTheThaoId = null)
         {
-            ViewBag.GiaiDaus = await _giaiDauService.GetAllAsync();
+            var tournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
+            var categories = (await _danhMucMonTheThaoService.GetAllAsync())?.ToList() ?? new();
+
+            ViewBag.Tournaments = tournaments;
+            ViewBag.Categories = categories;
+            ViewBag.SelectedGiaiDauId = giaiDauId ?? 0;
+            ViewBag.SelectedDanhMucId = danhMucId ?? 0;
+            ViewBag.SelectedMonTheThaoId = monTheThaoId ?? 0;
+
+            ViewBag.GiaiDaus = tournaments;
             ViewBag.DonVis = await _donViService.GetAllAsync();
-            ViewBag.SelectedGiaiDauId = giaiDauId;
             return View();
         }
 
         /// <summary>
-        /// Lấy bảng tổng sắp huy chương toàn đoàn sử dụng chung backend với trang /BangXepHang, hỗ trợ lọc theo môn
+        /// Lấy bảng tổng sắp huy chương toàn đoàn sử dụng chung backend với trang /BangXepHang, hỗ trợ lọc theo môn và danh mục
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetMedalRankings([FromQuery] int? giaiDauId = null, [FromQuery] int? monTheThaoId = null)
+        public async Task<IActionResult> GetMedalRankings([FromQuery] int? giaiDauId = null, [FromQuery] int? danhMucId = null, [FromQuery] int? monTheThaoId = null)
         {
             try
             {
-                var result = await _thuKyGiaiService.GetBangTongSapHuyChuongAsync(giaiDauId, null, monTheThaoId);
+                var result = await _thuKyGiaiService.GetBangTongSapHuyChuongAsync(giaiDauId, danhMucId, monTheThaoId);
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách bảng xếp hạng huy chương gom nhóm theo từng danh mục môn thể thao
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetRankingsByDanhMuc([FromQuery] int? giaiDauId = null)
+        {
+            try
+            {
+                var result = await _thuKyGiaiService.GetBangXepHangTheoDanhMucAsync(giaiDauId);
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Lấy kết quả huy chương theo từng môn thi đấu trong giải
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetRankingsByMonTheThao([FromQuery] int? giaiDauId = null, [FromQuery] int? danhMucId = null)
+        {
+            try
+            {
+                var result = await _thuKyGiaiService.GetBangXepHangTheoMonAsync(giaiDauId, danhMucId);
                 return Json(new { success = true, data = result });
             }
             catch (Exception ex)
@@ -89,16 +137,6 @@ namespace API.Areas.Manager.Controllers
         }
 
         /// <summary>
-        /// Lấy danh sách chi tiết các huy chương đã trao, hỗ trợ lọc theo môn
-        /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int? giaiDauId = null, [FromQuery] int? monTheThaoId = null)
-        {
-            var result = await _huyChuongService.GetAllAsync(giaiDauId, monTheThaoId);
-            return Json(new { success = true, data = result });
-        }
-
-        /// <summary>
         /// Tự động quét kết quả các trận đấu và bảng đấu để trao và đồng bộ huy chương
         /// </summary>
         [HttpPost]
@@ -114,30 +152,6 @@ namespace API.Areas.Manager.Controllers
             {
                 return Json(new { success = false, message = ex.Message });
             }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Save([FromBody] CreateUpdateHuyChuongDto dto)
-        {
-            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Manager";
-
-            try
-            {
-                var created = await _huyChuongService.CreateAsync(dto, username);
-                return Json(new { success = true, message = "Trao huy chương thành công!", data = created });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var success = await _huyChuongService.DeleteAsync(id);
-            if (!success) return Json(new { success = false, message = "Không tìm thấy huy chương để xóa." });
-            return Json(new { success = true, message = "Đã thu hồi huy chương thành công!" });
         }
     }
 }

@@ -218,6 +218,7 @@ namespace Dms.Application.DTOs
     /// </summary>
     public class KetQuaHuyChuongMonDto
     {
+        public int? HuyChuongId { get; set; }
         public int DangKyThiDauId { get; set; }
         public int XepHang { get; set; }
         public string TenLoaiHuyChuong { get; set; } = string.Empty;

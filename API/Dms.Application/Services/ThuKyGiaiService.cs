@@ -1469,6 +1469,7 @@ namespace Dms.Application.Services
 
                 results.Add(new KetQuaHuyChuongMonDto
                 {
+                    HuyChuongId = medal.Id,
                     DangKyThiDauId = dangKy.Id,
                     XepHang = medal.XepHang > 0 ? medal.XepHang : medalRank,
                     TenLoaiHuyChuong = loai?.Ten ?? (medalRank == 1 ? "Vàng" : medalRank == 2 ? "Bạc" : "Đồng"),
