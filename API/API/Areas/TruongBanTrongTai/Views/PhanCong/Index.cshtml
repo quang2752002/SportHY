@@ -142,7 +142,7 @@
         <table class="table table-bordered table-hover align-middle mb-0">
             <thead class="table-light text-muted small text-uppercase">
                 <tr>
-                    <th style="width: 140px;">Thông Tin Trận</th>
+                    <th style="min-width: 200px;">Thông Tin Trận</th>
                     <th style="min-width: 140px;">Môn Thi Đấu</th>
                     <th style="width: 130px;">Thời Gian & Sân</th>
                     <th style="min-width: 180px;">Trọng Tài Chính <span class="text-danger">*</span></th>
@@ -161,6 +161,14 @@
                             <td>
                                 <div class="fw-bold text-dark">#@item.SoTran - @item.TenTran</div>
                                 <div class="badge bg-light text-secondary border small mt-1">@item.TenVongDau</div>
+                                @if (!string.IsNullOrWhiteSpace(item.TenBenThiDau1) || !string.IsNullOrWhiteSpace(item.TenBenThiDau2))
+                                {
+                                    <div class="small text-primary mt-2" title="@item.TenBenThiDau1 vs @item.TenBenThiDau2">
+                                        <span class="fw-semibold">@item.TenBenThiDau1</span>
+                                        <span class="text-muted mx-1">vs</span>
+                                        <span class="fw-semibold">@item.TenBenThiDau2</span>
+                                    </div>
+                                }
                             </td>
                             <td>
                                 <span class="badge bg-warning-subtle text-dark border border-warning-subtle">

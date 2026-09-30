@@ -60,6 +60,8 @@ namespace Dms.Application.DTOs
         public int TranDauId { get; set; }
         public int SoTran { get; set; }
         public string TenTran { get; set; } = string.Empty;
+        public string? TenBenThiDau1 { get; set; }
+        public string? TenBenThiDau2 { get; set; }
         public string TenMon { get; set; } = string.Empty;
         public string TenVongDau { get; set; } = string.Empty;
         public string TenSanDau { get; set; } = string.Empty;

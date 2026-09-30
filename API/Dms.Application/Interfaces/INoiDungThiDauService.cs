@@ -195,6 +195,13 @@ namespace Dms.Application.Interfaces
         Task<bool> StartMatchAsync(int id, string? updatedBy = null);
 
         /// <summary>
+        /// Kiểm tra các trận thuộc những vòng trước của cùng môn đã kết thúc hết hay chưa.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu dự kiến bắt đầu.</param>
+        /// <returns>Thông báo lý do nếu còn trận vòng trước chưa xong; null nếu được phép bắt đầu.</returns>
+        Task<string?> GetRoundStartBlockReasonAsync(int tranDauId);
+
+        /// <summary>
         /// Cập nhật nội dung biên bản mà không thay đổi kết quả, thời gian, đội hoặc phân công trận đấu.
         /// </summary>
         /// <param name="id">ID trận đấu có biên bản cần cập nhật.</param>

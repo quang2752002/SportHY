@@ -371,6 +371,12 @@ namespace Dms.Application.Services
             {
                 throw new InvalidOperationException("Chỉ được cập nhật điểm khi trận đấu đang diễn ra. Hãy bắt đầu trận trước.");
             }
+            if (string.Equals(dto.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(entity.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase))
+            {
+                var startBlockReason = await GetRoundStartBlockReasonAsync(id);
+                if (startBlockReason != null) throw new InvalidOperationException(startBlockReason);
+            }
             if (dto.Score1 < 0 || dto.Score2 < 0 || !new[] { "ChuaDau", "DangDau", "KetThuc" }.Contains(dto.TrangThai))
             {
                 throw new ArgumentException("Tỷ số hoặc trạng thái trận đấu không hợp lệ.");
@@ -696,6 +702,9 @@ namespace Dms.Application.Services
                 throw new InvalidOperationException("Chỉ có thể bắt đầu trận đang ở trạng thái chưa đấu.");
             }
 
+            var startBlockReason = await GetRoundStartBlockReasonAsync(id);
+            if (startBlockReason != null) throw new InvalidOperationException(startBlockReason);
+
             var nowUtc = DateTime.UtcNow;
             entity.TrangThai = "DangDau";
             entity.ThoiGianBatDau = nowUtc;
@@ -705,6 +714,45 @@ namespace Dms.Application.Services
             _unitOfWork.TranDaus.Update(entity);
             await _unitOfWork.CompleteAsync();
             return true;
+        }
+
+        /// <summary>
+        /// Kiểm tra mọi trận thuộc các vòng có thứ tự thấp hơn trong cùng môn đã kết thúc trước khi bắt đầu trận.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu dự kiến bắt đầu.</param>
+        /// <returns>Thông báo chặn nếu còn trận ở vòng trước chưa kết thúc; null nếu đủ điều kiện bắt đầu.</returns>
+        public async Task<string?> GetRoundStartBlockReasonAsync(int tranDauId)
+        {
+            var match = (await _unitOfWork.TranDaus.FindAsync(item =>
+                item.Id == tranDauId && item.IsDeleted != true)).FirstOrDefault();
+            if (match == null) return "Không tìm thấy trận đấu.";
+
+            var currentRound = (await _unitOfWork.VongDaus.FindAsync(round =>
+                round.Id == match.VongDauId && round.IsDeleted != true)).FirstOrDefault();
+            if (currentRound == null) return "Không xác định được vòng đấu của trận này nên chưa thể bắt đầu.";
+
+            var previousRounds = (await _unitOfWork.VongDaus.FindAsync(round =>
+                round.GiaiDauMonTheThaoId == match.GiaiDauMonTheThaoId &&
+                round.ThuTu < currentRound.ThuTu &&
+                round.IsDeleted != true))
+                .OrderBy(round => round.ThuTu)
+                .ToList();
+            if (previousRounds.Count == 0) return null;
+
+            var previousRoundIds = previousRounds.Select(round => round.Id).ToHashSet();
+            var unfinishedMatches = (await _unitOfWork.TranDaus.FindAsync(previousMatch =>
+                    previousMatch.GiaiDauMonTheThaoId == match.GiaiDauMonTheThaoId &&
+                    previousRoundIds.Contains(previousMatch.VongDauId) &&
+                    previousMatch.Id != match.Id &&
+                    previousMatch.IsDeleted != true))
+                .Where(previousMatch => !new[] { "KetThuc", "DaDau", "DaKetThuc", "HoanThanh" }
+                    .Contains(previousMatch.TrangThai, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+            if (unfinishedMatches.Count == 0) return null;
+
+            var unfinishedRoundIds = unfinishedMatches.Select(item => item.VongDauId).ToHashSet();
+            var firstUnfinishedRound = previousRounds.First(round => unfinishedRoundIds.Contains(round.Id));
+            return $"Chưa thể bắt đầu trận ở vòng \"{currentRound.Ten}\": vòng trước \"{firstUnfinishedRound.Ten}\" còn {unfinishedMatches.Count} trận chưa kết thúc. Vui lòng hoàn tất các trận vòng trước.";
         }
 
         /// <summary>
@@ -912,6 +960,13 @@ namespace Dms.Application.Services
 
             var entity = paged.Items.FirstOrDefault();
             if (entity == null) return null;
+
+            if (string.Equals(dto.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(entity.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase))
+            {
+                var startBlockReason = await GetRoundStartBlockReasonAsync(id);
+                if (startBlockReason != null) throw new InvalidOperationException(startBlockReason);
+            }
 
             entity.VongDauId = dto.VongDauId;
             entity.BangDauId = dto.BangDauId;
