@@ -160,6 +160,19 @@ namespace Dms.Application.Interfaces
         Task<IEnumerable<TranDauDto>> GetAccessibleMatchesAsync(int? giaiDauId, int? trongTaiId, bool allowAllMatches);
 
         /// <summary>
+        /// Lọc và sắp xếp trận trên màn nhiệm vụ trọng tài: trận đang diễn ra trước, trận sắp diễn ra kế tiếp
+        /// theo thời gian gần nhất, và trận đã kết thúc ở cuối danh sách.
+        /// </summary>
+        /// <param name="matches">Các trận đã được giới hạn theo phạm vi mà người dùng được phép xem.</param>
+        /// <param name="monTheThaoId">Mã môn thể thao cần lọc; null nếu không lọc.</param>
+        /// <param name="danhMucMonTheThaoId">Mã danh mục môn cần lọc; null nếu không lọc.</param>
+        /// <returns>Danh sách trận sau khi lọc và sắp xếp theo mức độ ưu tiên điều hành.</returns>
+        Task<IEnumerable<TranDauDto>> GetOrderedRefereeTaskMatchesAsync(
+            IEnumerable<TranDauDto> matches,
+            int? monTheThaoId = null,
+            int? danhMucMonTheThaoId = null);
+
+        /// <summary>
         /// Kiểm tra người gọi có thể truy cập trận dựa trên quyền giám sát hoặc phân công trọng tài thực tế.
         /// </summary>
         /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
@@ -176,13 +189,29 @@ namespace Dms.Application.Interfaces
         Task<List<HeatParticipantResultDto>> GetHeatResultsByMatchIdAsync(int tranDauId);
 
         /// <summary>
+        /// Lấy điểm đã lưu của từng hiệp hoặc set theo thứ tự thi đấu để khôi phục màn ghi nhận kết quả.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu cần đọc điểm từng hiệp/set.</param>
+        /// <returns>Danh sách điểm của hai bên trong từng hiệp/set, sắp xếp tăng dần theo số thứ tự.</returns>
+        Task<List<SetScoreDto>> GetMatchPeriodScoresAsync(int tranDauId);
+
+        /// <summary>
         /// Lưu tỷ số và tiến độ trận đấu mà không thay đổi danh sách đội hoặc phân công trọng tài.
         /// </summary>
         /// <param name="id">ID trận đấu cần cập nhật.</param>
         /// <param name="dto">Tỷ số, trạng thái, ghi chú và kết quả cần lưu.</param>
         /// <param name="updatedBy">Tài khoản thực hiện cập nhật.</param>
+        /// <param name="requireInProgress">Chỉ cho phép lưu kết quả khi trận hiện đang diễn ra.</param>
         /// <returns>True nếu trận được cập nhật; false nếu không tìm thấy trận.</returns>
-        Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null);
+        Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null, bool requireInProgress = false);
+
+        /// <summary>
+        /// Bắt đầu một trận đang chờ thi đấu và ghi nhận thời điểm bắt đầu thực tế.
+        /// </summary>
+        /// <param name="id">ID trận đấu cần bắt đầu.</param>
+        /// <param name="updatedBy">Tài khoản trọng tài thực hiện thao tác.</param>
+        /// <returns>True nếu trận đã được bắt đầu hoặc đang diễn ra; false nếu không tìm thấy trận.</returns>
+        Task<bool> StartMatchAsync(int id, string? updatedBy = null);
 
         /// <summary>
         /// Cập nhật nội dung biên bản mà không thay đổi kết quả, thời gian, đội hoặc phân công trận đấu.

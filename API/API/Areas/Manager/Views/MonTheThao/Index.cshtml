@@ -437,6 +437,52 @@
                 <!-- ── SCROLLABLE CONTENT ── -->
                 <div class="flex-grow-1 overflow-auto px-4 py-4" id="fmtPanelArea" style="background:#f3f4f6;min-height:0">
 
+                    <!-- Scoring rules are independent from the tournament bracket/competition format below. -->
+                    <div class="fmt-section mb-4" id="scoreModeSection">
+                        <div class="fmt-section-hdr">
+                            <div class="fmt-ico-circle fmt-ico-blue"><i class="fa-solid fa-calculator"></i></div>
+                            <div class="flex-grow-1">
+                                <h6 class="fw-bold mb-0" style="color:#111827">Cách tính điểm trong trận</h6>
+                                <p class="mb-0 mt-1" style="font-size:12px;color:#6b7280">Thiết lập này quyết định cách trọng tài nhập điểm và cách hệ thống tính tỉ số trận; độc lập với thể thức vòng bảng/loại trực tiếp ở phía trên.</p>
+                            </div>
+                        </div>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12">
+                                <label for="fmtLoaiTheThuc" class="form-label fw-semibold small">Cơ chế tính điểm</label>
+                                <select id="fmtLoaiTheThuc" class="form-select" onchange="onScoringModeChange()">
+                                    <option value="ThoiGianHiep">Điểm theo hiệp — cộng điểm các hiệp thành tỉ số trận (bóng đá, futsal, bóng rổ)</option>
+                                    <option value="SetDiem">Điểm theo set — tính điểm trong set, tỉ số trận là số set thắng (cầu lông, bóng chuyền, bóng bàn)</option>
+                                    <option value="TinhDiemXepHang">Đo thành tích — xếp hạng theo thời gian / cự ly</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <div id="scoreModeSummary" class="alert alert-primary py-2 mb-0 small" role="status"></div>
+                            </div>
+                        </div>
+                        <div id="setScoringOptions" class="row g-3 mt-1 align-items-stretch">
+                            <div class="col-12 col-sm-6 col-lg d-flex flex-column">
+                                <label class="form-label fw-semibold small d-block" for="scoreSetsToWin" style="min-height:2.5rem">Số set thắng để thắng trận</label>
+                                <input type="number" class="form-control" id="scoreSetsToWin" min="1" max="15" value="2">
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg d-flex flex-column">
+                                <label class="form-label fw-semibold small d-block" for="scorePointsPerSet" style="min-height:2.5rem">Điểm đích mỗi set</label>
+                                <input type="number" class="form-control" id="scorePointsPerSet" min="1" max="200" value="21">
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg d-flex flex-column">
+                                <label class="form-label fw-semibold small d-block" for="scoreDecidingSetPoints" style="min-height:2.5rem">Điểm đích set quyết định</label>
+                                <input type="number" class="form-control" id="scoreDecidingSetPoints" min="1" max="200" value="21">
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg d-flex flex-column">
+                                <label class="form-label fw-semibold small d-block" for="scoreMinimumLead" style="min-height:2.5rem">Cách biệt tối thiểu</label>
+                                <input type="number" class="form-control" id="scoreMinimumLead" min="1" max="20" value="2">
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg d-flex flex-column">
+                                <label class="form-label fw-semibold small d-block" for="scorePointCap" style="min-height:2.5rem">Điểm trần (0 = không giới hạn)</label>
+                                <input type="number" class="form-control" id="scorePointCap" min="0" max="200" value="30">
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- ====== TAB 1: LOẠI TRỰC TIẾP ====== -->
                     <div id="mechLoaiTrucTiep" class="format-mechanism-panel">
 
@@ -463,7 +509,7 @@
                                 <div class="col-md-3">
                                     <div class="fmt-input-box">
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <div class="fmt-lbl"><i class="fa-solid fa-bolt text-warning fa-xs me-1"></i>Số hiệp trận đấu</div>
+                                            <div class="fmt-lbl"><i class="fa-solid fa-bolt text-warning fa-xs me-1"></i><span id="ko_periodTitle">Số hiệp/set trận đấu</span></div>
                                             <span class="fw-bold" style="font-size:12px;color:#4f46e5" id="ko_soHiepLabel">2 Hiệp</span>
                                         </div>
                                         <input type="number" class="fmt-big-input" id="ko_soHiep" value="2" min="1" max="10" oninput="updateKoComputedTime()">
@@ -644,7 +690,7 @@
                             <div class="row g-3">
                                 <div class="col-md-3">
                                     <div class="fmt-input-box">
-                                        <div class="d-flex justify-content-between"><div class="fmt-lbl">Số hiệp trận đấu</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="rr_soHiepLabel">2 Hiệp</span></div>
+                                        <div class="d-flex justify-content-between"><div class="fmt-lbl">Số hiệp/set trận đấu</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="rr_soHiepLabel">2 Hiệp</span></div>
                                         <input type="number" class="fmt-big-input" id="rr_soHiep" value="2" min="1" oninput="updateRrComputedTime()">
                                         <div class="fmt-qbtns">
                                             <button type="button" class="fmt-qbtn rrHiepBtn" onclick="setFmtVal('rr_soHiep','rr_soHiepLabel',1,'Hiệp','rrHiepBtn',this)">1 Hiệp</button>
@@ -800,7 +846,7 @@
                             <div class="row g-3">
                                 <div class="col-md-3">
                                     <div class="fmt-input-box">
-                                        <div class="d-flex justify-content-between"><div class="fmt-lbl">Số hiệp trận đấu</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="comb_soHiepLabel">2 Hiệp</span></div>
+                                        <div class="d-flex justify-content-between"><div class="fmt-lbl">Số hiệp/set trận đấu</div><span class="fw-bold" style="font-size:12px;color:#4f46e5" id="comb_soHiepLabel">2 Hiệp</span></div>
                                         <input type="number" class="fmt-big-input" id="comb_soHiep" value="2" min="1" oninput="updateCombComputedTime()">
                                         <div class="fmt-qbtns">
                                             <button type="button" class="fmt-qbtn combHiepBtn" onclick="setFmtVal('comb_soHiep','comb_soHiepLabel',1,'Hiệp','combHiepBtn',this)">1 Hiệp</button>
@@ -1425,11 +1471,19 @@
         // ================= CẤU HÌNH THỂ THỨC & LUẬT THI ĐẤU (THIẾT KẾ MỚI) =================
 
         let currentFormat = 'LoaiTrucTiep';
+        let lastHeadToHeadScoringMode = 'ThoiGianHiep';
 
         // Switch tab + highlight card
         function switchFormat(format) {
             currentFormat = format;
             $('#fmtHinhThucThiDau').val(format);
+            if (format === 'TinhDiemXepHang') {
+                const selectedMode = $('#fmtLoaiTheThuc').val();
+                if (selectedMode && selectedMode !== 'TinhDiemXepHang') lastHeadToHeadScoringMode = selectedMode;
+                $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
+            } else if ($('#fmtLoaiTheThuc').val() === 'TinhDiemXepHang') {
+                $('#fmtLoaiTheThuc').val(lastHeadToHeadScoringMode || 'ThoiGianHiep');
+            }
 
             // Tab card styles
             const tabMap = {
@@ -1450,6 +1504,45 @@
             };
             $('.format-mechanism-panel').addClass('d-none');
             $(`#${panelMap[format]}`).removeClass('d-none');
+            onScoringModeChange();
+        }
+
+        function getPeriodUnit() {
+            return $('#fmtLoaiTheThuc').val() === 'SetDiem' ? 'Set' : 'Hiệp';
+        }
+
+        function onScoringModeChange() {
+            const mode = $('#fmtLoaiTheThuc').val() || 'ThoiGianHiep';
+            if (mode === 'TinhDiemXepHang' && currentFormat !== 'TinhDiemXepHang') {
+                switchFormat('TinhDiemXepHang');
+                return;
+            }
+            if (mode !== 'TinhDiemXepHang') lastHeadToHeadScoringMode = mode;
+            const periodUnit = mode === 'SetDiem' ? 'Set' : 'Hiệp';
+            $('#fmtLoaiTheThuc').prop('disabled', currentFormat === 'TinhDiemXepHang');
+            $('#setScoringOptions').toggleClass('d-none', mode !== 'SetDiem');
+            $('#scoreModeSummary').toggleClass('alert-primary', mode === 'ThoiGianHiep')
+                .toggleClass('alert-success', mode === 'SetDiem')
+                .toggleClass('alert-warning', mode === 'TinhDiemXepHang');
+
+            if (mode === 'SetDiem') {
+                $('#scoreModeSummary').html('<strong>Điểm theo set:</strong> trọng tài nhập điểm từng pha trong set hiện tại; set kết thúc theo điểm đích/cách biệt; tỉ số trận là số set thắng.');
+            } else if (mode === 'TinhDiemXepHang') {
+                $('#scoreModeSummary').html('<strong>Đo thành tích:</strong> ghi thành tích từng vận động viên/làn và xếp hạng; không cộng tỉ số hai đội.');
+            } else {
+                $('#scoreModeSummary').html('<strong>Điểm theo hiệp:</strong> trọng tài nhập điểm trong hiệp hiện tại; tỉ số trận bằng tổng điểm các hiệp chính.');
+            }
+
+            $('#ko_periodTitle').text(mode === 'SetDiem' ? 'Số set trận đấu' : 'Số hiệp trận đấu');
+            $('#ko_soHiepLabel, #rr_soHiepLabel, #comb_soHiepLabel').each(function () {
+                const value = parseInt(String($(this).text()), 10) || 0;
+                $(this).text(`${value} ${periodUnit}`);
+            });
+            $('.koHiepBtn, .rrHiepBtn, .combHiepBtn').each(function () {
+                const value = parseInt($(this).text(), 10);
+                if (Number.isInteger(value)) $(this).text(`${value} ${periodUnit}`);
+            });
+            updateAllComputedTimes();
         }
 
         // Compatibility alias
@@ -1458,6 +1551,7 @@
         // Set field value + update label + mark active button
         function setFmtVal(inputId, labelId, value, unit, groupClass, btn) {
             $(`#${inputId}`).val(value);
+            if (['koHiepBtn', 'rrHiepBtn', 'combHiepBtn'].includes(groupClass)) unit = getPeriodUnit();
             if (labelId) $(`#${labelId}`).text(`${value} ${unit}`);
             if (groupClass) {
                 $(`.${groupClass}`).removeClass('active');
@@ -1471,9 +1565,10 @@
             const h = parseInt($('#ko_soHiep').val()) || 0;
             const t = parseInt($('#ko_tgHiep').val()) || 0;
             const total = h * t;
+            const periodUnit = getPeriodUnit();
             $('#ko_totalTime').val(total);
-            $('#ko_totalTimeHint').text(`${h} hiệp x ${t}p = ${total} phút`);
-            $('#ko_soHiepLabel').text(`${h} Hiệp`);
+            $('#ko_totalTimeHint').text(`${h} ${periodUnit.toLowerCase()} x ${t}p = ${total} phút`);
+            $('#ko_soHiepLabel').text(`${h} ${periodUnit}`);
             $('#ko_tgHiepLabel').text(`${t} Phút`);
         }
         function updateKoPhuComputedTime() {
@@ -1489,18 +1584,20 @@
             const h = parseInt($('#rr_soHiep').val()) || 0;
             const t = parseInt($('#rr_tgHiep').val()) || 0;
             const total = h * t;
+            const periodUnit = getPeriodUnit();
             $('#rr_totalTime').val(total);
-            $('#rr_totalTimeHint').text(`${h} hiệp x ${t}p = ${total} phút`);
-            $('#rr_soHiepLabel').text(`${h} Hiệp`);
+            $('#rr_totalTimeHint').text(`${h} ${periodUnit.toLowerCase()} x ${t}p = ${total} phút`);
+            $('#rr_soHiepLabel').text(`${h} ${periodUnit}`);
             $('#rr_tgHiepLabel').text(`${t} Phút`);
         }
         function updateCombComputedTime() {
             const h = parseInt($('#comb_soHiep').val()) || 0;
             const t = parseInt($('#comb_tgHiep').val()) || 0;
             const total = h * t;
+            const periodUnit = getPeriodUnit();
             $('#comb_totalTime').val(total);
-            $('#comb_totalTimeHint').text(`${h} hiệp x ${t}p = ${total} phút`);
-            $('#comb_soHiepLabel').text(`${h} Hiệp`);
+            $('#comb_totalTimeHint').text(`${h} ${periodUnit.toLowerCase()} x ${t}p = ${total} phút`);
+            $('#comb_soHiepLabel').text(`${h} ${periodUnit}`);
             $('#comb_tgHiepLabel').text(`${t} Phút`);
         }
         function updateCombPhuComputedTime() {
@@ -1588,6 +1685,14 @@
 
         // ---- Reset form ----
         function resetFormatForm() {
+            $('#fmtLoaiTheThuc').val('ThoiGianHiep');
+            $('#scoreSetsToWin').val(2);
+            $('#scorePointsPerSet').val(21);
+            $('#scoreDecidingSetPoints').val(21);
+            $('#scoreMinimumLead').val(2);
+            $('#scorePointCap').val(30);
+            lastHeadToHeadScoringMode = 'ThoiGianHiep';
+
             // KO defaults
             applyKoTimePreset(2, 45, 15);
             $('#ko_coTranhHangBa').prop('checked', true);
@@ -1617,11 +1722,20 @@
 
             $('#fmtPresetSelect').val('');
             switchFormat('LoaiTrucTiep');
+            onScoringModeChange();
         }
 
         // ---- Populate from API data ----
         function populateFormatForm(data) {
             const format = data.hinhThucThiDau || 'LoaiTrucTiep';
+            const scoringMode = data.loaiTheThuc || (format === 'TinhDiemXepHang' ? 'TinhDiemXepHang' : 'ThoiGianHiep');
+            $('#fmtLoaiTheThuc').val(scoringMode);
+            lastHeadToHeadScoringMode = scoringMode === 'TinhDiemXepHang' ? 'ThoiGianHiep' : scoringMode;
+            $('#scoreSetsToWin').val(data.soHiepThangDeThangTran ?? 2);
+            $('#scorePointsPerSet').val(data.diemMoiHiep ?? 21);
+            $('#scoreDecidingSetPoints').val(data.diemHiepQuyetDinh ?? 21);
+            $('#scoreMinimumLead').val(data.cachBietDiemToiThieu ?? 2);
+            $('#scorePointCap').val(data.diemToiDaMoiHiep ?? 0);
 
             if (format === 'LoaiTrucTiep') {
                 const h = data.soHiepToiDa || 2, t = data.thoiGianHiepChinhPhut || 45, n = data.nghiGiuaTranPhut ?? 15;
@@ -1689,6 +1803,7 @@
         function applyPreset(preset) {
             switch (preset) {
                 case 'football':
+                    $('#fmtLoaiTheThuc').val('ThoiGianHiep');
                     switchFormat('KetHopVongBangVaLoaiTrucTiep');
                     applyCombTimePreset(2, 45, 15);
                     $('#comb_soBang').val(4); $('#comb_soDoiMoiBangVaoVongTrong').val(2);
@@ -1699,6 +1814,7 @@
                     setActiveQbtn('.combPhuHiepBtn', 2); setActiveQbtn('.combPhuTgBtn', 15);
                     $('#comb_coPenalty').prop('checked', true); break;
                 case 'futsal':
+                    $('#fmtLoaiTheThuc').val('ThoiGianHiep');
                     switchFormat('KetHopVongBangVaLoaiTrucTiep');
                     applyCombTimePreset(2, 20, 10);
                     $('#comb_soBang').val(4); $('#comb_soDoiMoiBangVaoVongTrong').val(2);
@@ -1709,6 +1825,9 @@
                     setActiveQbtn('.combPhuHiepBtn', 2); setActiveQbtn('.combPhuTgBtn', 5);
                     $('#comb_coPenalty').prop('checked', true); break;
                 case 'volleyball':
+                    $('#fmtLoaiTheThuc').val('SetDiem');
+                    $('#scoreSetsToWin').val(3); $('#scorePointsPerSet').val(25);
+                    $('#scoreDecidingSetPoints').val(15); $('#scoreMinimumLead').val(2); $('#scorePointCap').val(0);
                     switchFormat('KetHopVongBangVaLoaiTrucTiep');
                     applyCombTimePreset(5, 25, 15);
                     $('#comb_soBang').val(2); $('#comb_soDoiMoiBangVaoVongTrong').val(2);
@@ -1717,6 +1836,7 @@
                     $('#comb_coHiepPhu').prop('checked', false); $('#comb_overtimeSub').hide();
                     $('#comb_coPenalty').prop('checked', false); break;
                 case 'basketball':
+                    $('#fmtLoaiTheThuc').val('ThoiGianHiep');
                     switchFormat('LoaiTrucTiep');
                     applyKoTimePreset(4, 12, 5);
                     $('#ko_coTranhHangBa').prop('checked', true);
@@ -1725,19 +1845,27 @@
                     setActiveQbtn('.koPhuHiepBtn', 1); setActiveQbtn('.koPhuTgBtn', 5);
                     $('#ko_coPenalty').prop('checked', false); break;
                 case 'badminton':
+                    $('#fmtLoaiTheThuc').val('SetDiem');
+                    $('#scoreSetsToWin').val(2); $('#scorePointsPerSet').val(21);
+                    $('#scoreDecidingSetPoints').val(21); $('#scoreMinimumLead').val(2); $('#scorePointCap').val(30);
                     switchFormat('LoaiTrucTiep');
                     applyKoTimePreset(3, 30, 15);
                     $('#ko_coHiepPhu').prop('checked', false); $('#ko_overtimeSub').hide();
                     $('#ko_coPenalty').prop('checked', false);
                     $('#ko_coTranhHangBa').prop('checked', true); break;
                 case 'tabletennis':
+                    $('#fmtLoaiTheThuc').val('SetDiem');
+                    $('#scoreSetsToWin').val(3); $('#scorePointsPerSet').val(11);
+                    $('#scoreDecidingSetPoints').val(11); $('#scoreMinimumLead').val(2); $('#scorePointCap').val(0);
                     switchFormat('VongBang');
                     applyRrTimePreset(5, 15, 10);
                     $('#rr_diemThang').val(2); $('#rr_diemHoa').val(1); $('#rr_diemThua').val(0); break;
                 case 'athletics':
                 case 'swimming':
+                    $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
                     switchFormat('TinhDiemXepHang'); break;
             }
+            onScoringModeChange();
             if (window.SportApp && SportApp.toast) SportApp.toast('info', `Đã áp dụng mẫu: ${preset.toUpperCase()}`);
         }
 
@@ -1753,6 +1881,29 @@
             if (!monId) { Swal.fire('Lỗi', 'Không tìm thấy ID môn thể thao.', 'error'); return; }
 
             const hinhThuc = currentFormat;
+            const scoringMode = hinhThuc === 'TinhDiemXepHang' ? 'TinhDiemXepHang' : $('#fmtLoaiTheThuc').val();
+            const periodSelector = hinhThuc === 'VongBang' ? '#rr_soHiep'
+                : hinhThuc === 'KetHopVongBangVaLoaiTrucTiep' ? '#comb_soHiep' : '#ko_soHiep';
+            const periodCount = parseInt($(periodSelector).val(), 10);
+            if (scoringMode !== 'TinhDiemXepHang' && (!Number.isInteger(periodCount) || periodCount < 1 || periodCount > 15)) {
+                Swal.fire('Cấu hình chưa hợp lệ', 'Số hiệp/set tối đa phải từ 1 đến 15.', 'warning');
+                return;
+            }
+            if (scoringMode === 'SetDiem') {
+                const setsToWin = parseInt($('#scoreSetsToWin').val(), 10);
+                const pointsPerSet = parseInt($('#scorePointsPerSet').val(), 10);
+                const decidingSetPoints = parseInt($('#scoreDecidingSetPoints').val(), 10);
+                const minimumLead = parseInt($('#scoreMinimumLead').val(), 10);
+                const pointCap = parseInt($('#scorePointCap').val(), 10);
+                if (!Number.isInteger(setsToWin) || setsToWin < 1 || setsToWin > periodCount ||
+                    !Number.isInteger(pointsPerSet) || pointsPerSet < 1 ||
+                    !Number.isInteger(decidingSetPoints) || decidingSetPoints < 1 ||
+                    !Number.isInteger(minimumLead) || minimumLead < 1 ||
+                    !Number.isInteger(pointCap) || pointCap < 0) {
+                    Swal.fire('Cấu hình set chưa hợp lệ', 'Kiểm tra số set thắng, điểm đích, cách biệt và điểm trần; số set thắng phải không vượt quá số set tối đa.', 'warning');
+                    return;
+                }
+            }
             let payload = { monTheThaoId: monId, hinhThucThiDau: hinhThuc };
 
             if (hinhThuc === 'LoaiTrucTiep') {
@@ -1766,7 +1917,6 @@
                 payload.thoiGianHiepPhuPhut      = parseInt($('#ko_tgHiepPhu').val()) || 15;
                 payload.coPenalty               = $('#ko_coPenalty').is(':checked');
                 payload.soLuotPenaltyMoiDoi     = 5;
-                payload.loaiTheThuc             = 'ThoiGianHiep';
                 payload.soBang                  = 0;
                 payload.soDoiMoiBang             = 2;
                 payload.soDoiMoiBangVaoVongTrong = 1;
@@ -1779,7 +1929,6 @@
                 payload.diemHoa                 = parseFloat($('#rr_diemHoa').val()) || 1;
                 payload.diemThua                = parseFloat($('#rr_diemThua').val()) || 0;
                 payload.choPhepHoaVongBang       = true;
-                payload.loaiTheThuc             = 'ThoiGianHiep';
                 payload.soBang                  = 1;
                 payload.soDoiMoiBang             = 4;
                 payload.soDoiMoiBangVaoVongTrong = 1;
@@ -1806,7 +1955,6 @@
                 payload.coPenalty                 = $('#comb_coPenalty').is(':checked');
                 payload.soLuotPenaltyMoiDoi       = 5;
                 payload.choPhepHoaVongBang        = true;
-                payload.loaiTheThuc               = 'ThoiGianHiep';
                 const crit = [];
                 $('#comb_criteriaList .fmt-criteria-row').each(function() {
                     if ($(this).find('.fmt-criteria-cb').is(':checked')) crit.push($(this).data('criteria-id'));
@@ -1814,6 +1962,21 @@
                 payload.tieuChiXepHang = crit;
             } else if (hinhThuc === 'TinhDiemXepHang') {
                 payload.loaiTheThuc = 'TinhDiemXepHang';
+            }
+
+            payload.loaiTheThuc = scoringMode;
+            if (scoringMode !== 'TinhDiemXepHang') {
+                payload.soHiepToiDa = periodCount;
+            }
+            if (scoringMode === 'SetDiem') {
+                payload.soHiepThangDeThangTran = parseInt($('#scoreSetsToWin').val(), 10);
+                payload.diemMoiHiep = parseInt($('#scorePointsPerSet').val(), 10);
+                payload.diemHiepQuyetDinh = parseInt($('#scoreDecidingSetPoints').val(), 10);
+                payload.cachBietDiemToiThieu = parseInt($('#scoreMinimumLead').val(), 10);
+                payload.diemToiDaMoiHiep = parseInt($('#scorePointCap').val(), 10);
+                payload.cachTinhDiemTheoSet = true;
+            } else {
+                payload.cachTinhDiemTheoSet = false;
             }
 
             const $btn = $('#btnSaveTheThuc');

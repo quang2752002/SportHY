@@ -509,7 +509,7 @@
                         <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1 draft-remove" title="Hủy phân công"><i class="fa-solid fa-xmark"></i></button>
                     </div>`);
                 slot.find('.draft-edit').on('click', function () { openAssignModal(tranDauId, vaiTro); });
-                slot.find('.draft-remove').on('click', function () { openAssignModal(tranDauId, vaiTro); });
+                slot.find('.draft-remove').on('click', function () { removeRefereeAssignment(tranDauId, vaiTro); });
             } else {
                 slot.html(`
                     <span class="text-muted small fst-italic px-1">Chưa gán</span>
@@ -528,6 +528,23 @@
             };
             renderSlot(tranDauId, vaiTro);
             updateDraftIndicator();
+        }
+
+        function removeRefereeAssignment(tranDauId, vaiTro) {
+            var current = getEffectiveSlot(tranDauId, vaiTro);
+            if (!current.id) return;
+
+            stageAssignmentChange(tranDauId, vaiTro, null, false);
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: `Đã đánh dấu hủy ${vaiTro.toLowerCase()}`,
+                text: 'Bấm “Lưu nháp” để xác nhận thay đổi.',
+                showConfirmButton: false,
+                timer: 2200,
+                timerProgressBar: true
+            });
         }
 
         function updateDraftIndicator() {

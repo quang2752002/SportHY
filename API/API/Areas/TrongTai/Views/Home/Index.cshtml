@@ -1,9 +1,14 @@
 @model List<TranDauDto>
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{
     ViewData["Title"] = "Nhiệm Vụ Phân Công Trọng Tài";
     var currentRef = ViewBag.CurrentReferee as TrongTaiDto;
     var tournaments = ViewBag.Tournaments as List<GiaiDauDto> ?? new();
+    var sportOptions = ViewBag.SportOptions as List<SelectListItem> ?? new();
+    var categoryOptions = ViewBag.CategoryOptions as List<SelectListItem> ?? new();
     int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
+    int? selectedSportId = ViewBag.SelectedSportId as int?;
+    int? selectedCategoryId = ViewBag.SelectedCategoryId as int?;
     string filterScope = ViewBag.FilterScope as string ?? "my_matches";
     bool canBrowseAllMatches = ViewBag.CanBrowseAllMatches == true;
     var canRecordMatchIds = ViewBag.CanRecordMatchIds as HashSet<int> ?? new HashSet<int>();
@@ -100,7 +105,7 @@
     <div class="card-custom p-3">
         <form method="get" action="/TrongTai/Home" id="filterForm">
             <div class="row g-2 align-items-center">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label small fw-semibold mb-1">Chọn giải đấu</label>
                     <select name="giaiDauId" class="form-select form-select-sm" onchange="this.form.submit()">
                         @if (tournaments.Count == 0)
@@ -123,7 +128,7 @@
 
                 @if (canBrowseAllMatches)
                 {
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small fw-semibold mb-1">Phạm vi nhiệm vụ</label>
                         <select name="filterScope" class="form-select form-select-sm" onchange="this.form.submit()">
                             @if (filterScope == "my_matches")
@@ -140,7 +145,43 @@
                     </div>
                 }
 
-                <div class="@(canBrowseAllMatches ? "col-md-4" : "col-md-7")">
+                <div class="@(canBrowseAllMatches ? "col-md-2" : "col-md-3")">
+                    <label class="form-label small fw-semibold mb-1">Danh mục môn</label>
+                    <select name="danhMucMonTheThaoId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">-- Tất cả danh mục --</option>
+                        @foreach (var category in categoryOptions)
+                        {
+                            if (int.TryParse(category.Value, out var categoryId) && selectedCategoryId == categoryId)
+                            {
+                                <option value="@category.Value" selected="selected">@category.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@category.Value">@category.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="@(canBrowseAllMatches ? "col-md-2" : "col-md-3")">
+                    <label class="form-label small fw-semibold mb-1">Môn thi đấu</label>
+                    <select name="monTheThaoId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">-- Tất cả môn --</option>
+                        @foreach (var sport in sportOptions)
+                        {
+                            if (int.TryParse(sport.Value, out var sportId) && selectedSportId == sportId)
+                            {
+                                <option value="@sport.Value" selected="selected">@sport.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@sport.Value">@sport.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="@(canBrowseAllMatches ? "col-md-2" : "col-md-3")">
                     <label class="form-label small fw-semibold mb-1">Tìm kiếm trận đấu</label>
                     <input type="text" id="filterKeyword" class="form-control form-control-sm" placeholder="Tìm đội, sân bãi, môn thi..." oninput="filterMatchesClient()" />
                 </div>
@@ -190,7 +231,7 @@
                 string statusBadge = m.TrangThai switch
                 {
                     "DangDau" or "DangDienRa" => "<span class=\"badge bg-danger rounded-pill px-2.5 py-1\"><i class=\"fa-solid fa-circle-play me-1\"></i>Đang diễn ra</span>",
-                    "KetThuc" or "DaKetThuc" => "<span class=\"badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1\"><i class=\"fa-solid fa-flag-checkered me-1\"></i>Đã kết thúc</span>",
+                    "KetThuc" or "DaKetThuc" or "DaDau" => "<span class=\"badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1\"><i class=\"fa-solid fa-flag-checkered me-1\"></i>Đã kết thúc</span>",
                     _ => "<span class=\"badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2.5 py-1\"><i class=\"fa-solid fa-clock me-1\"></i>Chưa bắt đầu</span>"
                 };
 
@@ -198,8 +239,8 @@
                      data-text="@($"{m.TenTran} {m.TenMonTheThao} {m.TenVongDau} {m.TenDoi1} {m.TenDoi2} {m.TenSanDau}".ToLower())">
                     <div class="card-custom h-100 p-3.5 p-3 d-flex flex-column">
                         <!-- Card Header -->
-                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
-                            <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
                                 <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-1 font-monospace" style="font-size: 11px;">
                                     Trận @m.SoTran
                                 </span>
@@ -208,6 +249,10 @@
                                 {
                                     <span class="badge bg-light text-secondary border small">@m.TenVongDau</span>
                                 }
+                                <span class="badge bg-light text-primary border small">
+                                    <i class="fa-solid fa-clock me-1"></i>
+                                    @(m.ThoiGianDuKien.HasValue ? m.ThoiGianDuKien.Value.ToString("HH:mm - dd/MM/yyyy") : "Chưa định giờ")
+                                </span>
                             </div>
                             <div>
                                 @Html.Raw(statusBadge)
@@ -258,15 +303,11 @@
                             </div>
                         </div>
 
-                        <!-- Venue & Time -->
+                        <!-- Venue -->
                         <div class="d-flex flex-wrap align-items-center justify-content-between text-muted small my-2 py-2 border-top border-bottom" style="font-size: 12px;">
                             <div>
                                 <i class="fa-solid fa-location-dot text-danger me-1"></i>
                                 <span>@(string.IsNullOrEmpty(m.TenSanDau) ? "Chưa xếp sân" : $"{m.TenSanDau} ({m.TenCumSan})")</span>
-                            </div>
-                            <div>
-                                <i class="fa-solid fa-clock text-primary me-1"></i>
-                                <span>@(m.ThoiGianDuKien.HasValue ? m.ThoiGianDuKien.Value.ToString("HH:mm - dd/MM/yyyy") : "Chưa định giờ")</span>
                             </div>
                         </div>
 

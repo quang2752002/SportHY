@@ -277,7 +277,8 @@ namespace Dms.Application.Services
         /// <summary>
         /// Tạo mới giải đấu, thực hiện kiểm tra tính hợp lệ của thời gian tổ chức:
         /// Hạn nộp hồ sơ có thể là ngày hiện tại (có hiệu lực đến hết ngày đó); ngày bắt đầu và ngày kết thúc phải lớn hơn ngày hiện tại;
-        /// Hạn nộp hồ sơ phải nhỏ hơn ngày bắt đầu; ngày bắt đầu phải nhỏ hơn ngày kết thúc.
+        /// Hạn nộp hồ sơ phải nhỏ hơn ngày bắt đầu; ngày bắt đầu phải nhỏ hơn ngày kết thúc. Giải phải có ít nhất một môn;
+        /// nếu phạm vi tổ chức theo khối thì phải chọn ít nhất một khối tham gia.
         /// </summary>
         /// <param name="dto">Dữ liệu thông tin giải đấu cần tạo mới</param>
         /// <param name="createdBy">Tài khoản thực hiện tạo giải</param>
@@ -309,6 +310,12 @@ namespace Dms.Application.Services
 
             if (dto.NgayBatDau.Date >= dto.NgayKetThuc.Date)
                 throw new ArgumentException("Ngày bắt đầu phải nhỏ hơn ngày kết thúc (ngày kết thúc phải sau ngày bắt đầu).");
+
+            if (dto.MonTheThaoIds == null || !dto.MonTheThaoIds.Any())
+                throw new ArgumentException("Vui lòng chọn ít nhất một môn thi đấu cho giải.");
+
+            if (dto.PhamVi == PhamViGiaiDau.TheoKhoi && (dto.KhoiIds == null || !dto.KhoiIds.Any()))
+                throw new ArgumentException("Vui lòng chọn ít nhất một khối tham gia khi phạm vi tổ chức theo khối.");
 
             var entity = _mapper.Map<GiaiDau>(dto);
             entity.Created = DateTime.UtcNow;
@@ -433,7 +440,8 @@ namespace Dms.Application.Services
         /// <summary>
         /// Cập nhật thông tin giải đấu, thực hiện kiểm tra tính hợp lệ của thời gian tổ chức:
         /// Hạn nộp hồ sơ có thể là ngày hiện tại (có hiệu lực đến hết ngày đó); ngày bắt đầu và ngày kết thúc phải lớn hơn ngày hiện tại;
-        /// Hạn nộp hồ sơ phải nhỏ hơn ngày bắt đầu; ngày bắt đầu phải nhỏ hơn ngày kết thúc.
+        /// Hạn nộp hồ sơ phải nhỏ hơn ngày bắt đầu; ngày bắt đầu phải nhỏ hơn ngày kết thúc. Giải phải có ít nhất một môn;
+        /// nếu phạm vi tổ chức theo khối thì phải chọn ít nhất một khối tham gia.
         /// </summary>
         /// <param name="id">ID giải đấu cần cập nhật</param>
         /// <param name="dto">Dữ liệu cập nhật giải đấu</param>
@@ -466,6 +474,12 @@ namespace Dms.Application.Services
 
             if (dto.NgayBatDau.Date >= dto.NgayKetThuc.Date)
                 throw new ArgumentException("Ngày bắt đầu phải nhỏ hơn ngày kết thúc (ngày kết thúc phải sau ngày bắt đầu).");
+
+            if (dto.MonTheThaoIds == null || !dto.MonTheThaoIds.Any())
+                throw new ArgumentException("Vui lòng chọn ít nhất một môn thi đấu cho giải.");
+
+            if (dto.PhamVi == PhamViGiaiDau.TheoKhoi && (dto.KhoiIds == null || !dto.KhoiIds.Any()))
+                throw new ArgumentException("Vui lòng chọn ít nhất một khối tham gia khi phạm vi tổ chức theo khối.");
 
             var list = await _unitOfWork.GiaiDaus.FindAsync(g => g.Id == id && g.IsDeleted != true);
             var entity = list.FirstOrDefault();

@@ -41,68 +41,65 @@ namespace Dms.Application.Services
             return result;
         }
 
+        /// <summary>
+        /// Kiểm tra điểm từng set theo luật môn, đếm số set thắng và xác định bên thắng trận.
+        /// </summary>
+        /// <param name="request">Kết quả từng set do trọng tài gửi.</param>
+        /// <param name="config">Cấu hình điểm đích, điểm cách biệt và số set thắng để thắng trận.</param>
+        /// <param name="isKnockout">Cho biết trận có thuộc vòng loại trực tiếp; thể thức set luôn phải có đội thắng.</param>
+        /// <param name="result">Kết quả thẩm định được cập nhật trực tiếp vào đối tượng này.</param>
         private static void EvaluateSetBasedSport(
             CompleteMatchRequestDto request,
             CauHinhTheThucDto config,
             bool isKnockout,
             MatchEvaluationResult result)
         {
-            var sets = request.SetScores ?? new();
+            var sets = (request.SetScores ?? new()).OrderBy(set => set.SetNumber).ToList();
             int targetSets = config.SoHiepThangDeThangTran ?? 2;
             int setsWon1 = 0;
             int setsWon2 = 0;
 
-            int setIndex = 0;
-            foreach (var s in sets)
+            if (sets.Count == 0 || sets.Count > config.SoHiepToiDa || targetSets < 1 || targetSets > config.SoHiepToiDa)
             {
-                setIndex++;
-                bool isDecidingSet = (setIndex == config.SoHiepToiDa);
-                int minPoint = isDecidingSet ? (config.DiemHiepQuyetDinh ?? config.DiemMoiHiep ?? 21) : (config.DiemMoiHiep ?? 21);
-                int gap = config.CachBietDiemToiThieu;
-                int? maxCap = config.DiemToiDaMoiHiep;
+                result.IsValid = false;
+                result.ErrorMessage = "Cần nhập điểm từng set và kiểm tra cấu hình số set tối đa/số set thắng.";
+                return;
+            }
 
-                // Xác định đội thắng set
-                bool team1WonSet = false;
-                bool team2WonSet = false;
-
-                if (maxCap.HasValue && s.Score1 >= maxCap.Value && s.Score1 > s.Score2)
+            for (var index = 0; index < sets.Count; index++)
+            {
+                var set = sets[index];
+                if (set.SetNumber != index + 1 || set.Score1 < 0 || set.Score2 < 0)
                 {
-                    team1WonSet = true;
-                }
-                else if (maxCap.HasValue && s.Score2 >= maxCap.Value && s.Score2 > s.Score1)
-                {
-                    team2WonSet = true;
-                }
-                else if (s.Score1 >= minPoint && (s.Score1 - s.Score2) >= gap)
-                {
-                    team1WonSet = true;
-                }
-                else if (s.Score2 >= minPoint && (s.Score2 - s.Score1) >= gap)
-                {
-                    team2WonSet = true;
-                }
-                else
-                {
-                    // Nếu chưa đạt điểm tối thiểu chuẩn nhưng trận đã được yêu cầu kết thúc, so sánh điểm trực tiếp
-                    if (s.Score1 > s.Score2) team1WonSet = true;
-                    else if (s.Score2 > s.Score1) team2WonSet = true;
+                    result.IsValid = false;
+                    result.ErrorMessage = "Số thứ tự set phải liên tục và điểm không được âm.";
+                    return;
                 }
 
-                if (team1WonSet) setsWon1++;
-                else if (team2WonSet) setsWon2++;
-
-                // Nếu một đội đã đạt số set thắng yêu cầu thì có thể kết thúc trận sớm (ví dụ thắng 2-0 trong Best of 3)
-                if (setsWon1 == targetSets || setsWon2 == targetSets)
+                var setWinner = MatchScoreCalculator.GetSetWinner(config, set);
+                if (setWinner == 0)
                 {
-                    break;
+                    result.IsValid = false;
+                    result.ErrorMessage = $"Set {set.SetNumber} chưa kết thúc theo luật điểm của môn.";
+                    return;
+                }
+
+                if (setWinner == 1) setsWon1++;
+                else setsWon2++;
+
+                if (index < sets.Count - 1 && (setsWon1 >= targetSets || setsWon2 >= targetSets))
+                {
+                    result.IsValid = false;
+                    result.ErrorMessage = "Không thể ghi thêm set sau khi một đội đã đủ số set thắng.";
+                    return;
                 }
             }
 
-            // Nếu trọng tài đã nhập trực tiếp Score1, Score2 mà không có danh sách Set
-            if (sets.Count == 0)
+            if (setsWon1 < targetSets && setsWon2 < targetSets)
             {
-                setsWon1 = request.Score1;
-                setsWon2 = request.Score2;
+                result.IsValid = false;
+                result.ErrorMessage = $"Chưa đội nào thắng đủ {targetSets} set để kết thúc trận.";
+                return;
             }
 
             result.FinalScore1 = setsWon1;
@@ -142,6 +139,11 @@ namespace Dms.Application.Services
         {
             int s1 = request.Score1;
             int s2 = request.Score2;
+            if (string.Equals(config.LoaiTheThuc, "ThoiGianHiep", StringComparison.OrdinalIgnoreCase) && request.SetScores?.Count > 0)
+            {
+                s1 = request.SetScores.Sum(period => period.Score1);
+                s2 = request.SetScores.Sum(period => period.Score2);
+            }
 
             result.PenaltyScore1 = request.PenaltyScore1;
             result.PenaltyScore2 = request.PenaltyScore2;

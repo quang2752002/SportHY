@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace Dms.Application.Services
@@ -304,6 +305,37 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
+        /// Lọc và sắp xếp trận trên màn nhiệm vụ trọng tài: trận đang diễn ra trước, trận sắp diễn ra kế tiếp
+        /// theo thời gian gần nhất, và trận đã kết thúc ở cuối danh sách.
+        /// </summary>
+        /// <param name="matches">Các trận đã được giới hạn theo phạm vi mà người dùng được phép xem.</param>
+        /// <param name="monTheThaoId">Mã môn thể thao cần lọc; null nếu không lọc.</param>
+        /// <param name="danhMucMonTheThaoId">Mã danh mục môn cần lọc; null nếu không lọc.</param>
+        /// <returns>Danh sách trận sau khi lọc và sắp xếp theo mức độ ưu tiên điều hành.</returns>
+        public Task<IEnumerable<TranDauDto>> GetOrderedRefereeTaskMatchesAsync(
+            IEnumerable<TranDauDto> matches,
+            int? monTheThaoId = null,
+            int? danhMucMonTheThaoId = null)
+        {
+            var result = (matches ?? Enumerable.Empty<TranDauDto>())
+                .Where(match => !monTheThaoId.HasValue || match.MonTheThaoId == monTheThaoId.Value)
+                .Where(match => !danhMucMonTheThaoId.HasValue || match.DanhMucMonTheThaoId == danhMucMonTheThaoId.Value)
+                .OrderBy(match => match.TrangThai switch
+                {
+                    "DangDau" or "DangDienRa" => 0,
+                    "KetThuc" or "DaKetThuc" or "DaDau" => 2,
+                    _ => 1
+                })
+                .ThenBy(match => match.TrangThai == "KetThuc" || match.TrangThai == "DaKetThuc" || match.TrangThai == "DaDau"
+                    ? -(match.ThoiGianKetThuc ?? match.ThoiGianDuKien ?? DateTime.MinValue).Ticks
+                    : (match.ThoiGianDuKien ?? DateTime.MaxValue).Ticks)
+                .ThenBy(match => match.SoTran)
+                .ToList();
+
+            return Task.FromResult<IEnumerable<TranDauDto>>(result);
+        }
+
+        /// <summary>
         /// Verifies match access using the user's elevated tournament permission or an explicit referee assignment.
         /// </summary>
         /// <param name="tranDauId">The match ID to check.</param>
@@ -321,34 +353,48 @@ namespace Dms.Application.Services
 
         /// <summary>
         /// Updates a match's score and progress fields without rewriting its teams or referee assignments.
-        /// Before marking a tied match complete, validates the configured draw, extra-time, or penalty rule;
-        /// athletics heats must use the heat-result completion workflow.
+        /// When provided, persists the score for each period to HiepDau and KetQuaHiepDau; optionally
+        /// requires the match to already be in progress. Athletics heats must use their heat-result workflow.
         /// </summary>
         /// <param name="id">The match ID to update.</param>
         /// <param name="dto">The score, status, notes, and outcome to persist.</param>
         /// <param name="updatedBy">The account performing the update.</param>
+        /// <param name="requireInProgress">Whether the match must already be in progress before saving.</param>
         /// <returns>True when the match was updated; false when it does not exist.</returns>
-        public async Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null)
+        public async Task<bool> UpdateMatchProgressAsync(int id, UpdateMatchProgressDto dto, string? updatedBy = null, bool requireInProgress = false)
         {
             var entity = await _unitOfWork.TranDaus.GetByIdAsync(id);
             if (entity == null || entity.IsDeleted == true) return false;
+            if (requireInProgress &&
+                (!string.Equals(entity.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase) ||
+                 !string.Equals(dto.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("Chỉ được cập nhật điểm khi trận đấu đang diễn ra. Hãy bắt đầu trận trước.");
+            }
             if (dto.Score1 < 0 || dto.Score2 < 0 || !new[] { "ChuaDau", "DangDau", "KetThuc" }.Contains(dto.TrangThai))
             {
                 throw new ArgumentException("Tỷ số hoặc trạng thái trận đấu không hợp lệ.");
             }
 
+            var config = await _theThucService.GetConfigByTranDauIdAsync(id);
+            if (config == null)
+            {
+                throw new InvalidOperationException("Chưa tìm thấy cấu hình tính điểm của môn thi đấu.");
+            }
+            if (string.Equals(config.LoaiTheThuc, "TinhDiemXepHang", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Môn đo thành tích phải lưu kết quả theo từng vận động viên, không dùng tỷ số trận.");
+            }
+
+            var setScores = dto.SetScores ?? new List<SetScoreDto>();
+            ValidatePeriodScores(config, setScores, dto.TrangThai == "KetThuc");
+            var projectedScore = MatchScoreCalculator.CalculateCurrentScore(config, setScores);
+            dto.Score1 = projectedScore.Score1;
+            dto.Score2 = projectedScore.Score2;
+            dto.GhiChu = RewriteSnapshotScores(dto.GhiChu, dto.Score1, dto.Score2);
+
             if (dto.TrangThai == "KetThuc")
             {
-                var config = await _theThucService.GetConfigByTranDauIdAsync(id);
-                if (config?.LoaiTheThuc == "TinhDiemXepHang")
-                {
-                    throw new InvalidOperationException("Lượt thi thành tích cần gửi kết quả từng VĐV; không thể chốt bằng cập nhật tỷ số chung.");
-                }
-                if (dto.Score1 == dto.Score2 && config == null)
-                {
-                    throw new InvalidOperationException("Không tìm thấy cấu hình thể thức để kiểm tra kết quả hòa.");
-                }
-
                 if (dto.Score1 == dto.Score2)
                 {
                     var tieEvaluation = _scoringEngine.EvaluateMatchResult(
@@ -360,9 +406,10 @@ namespace Dms.Application.Services
                             PenaltyScore1 = dto.PenaltyScore1,
                             PenaltyScore2 = dto.PenaltyScore2,
                             ExtraTimeScore1 = dto.ExtraTimeScore1,
-                            ExtraTimeScore2 = dto.ExtraTimeScore2
+                            ExtraTimeScore2 = dto.ExtraTimeScore2,
+                            SetScores = setScores
                         },
-                        config!,
+                        config,
                         !entity.BangDauId.HasValue);
                     if (!tieEvaluation.IsValid)
                     {
@@ -403,6 +450,258 @@ namespace Dms.Application.Services
             entity.LastModified = nowUtc;
             entity.LastModifiedBy = updatedBy;
 
+            await SaveMatchSetScoresAsync(entity, setScores, updatedBy, nowUtc, dto.TrangThai == "KetThuc");
+
+            _unitOfWork.TranDaus.Update(entity);
+            await _unitOfWork.CompleteAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// Đồng bộ điểm từng hiệp của một trận đang diễn ra vào các bản ghi HiepDau và KetQuaHiepDau.
+        /// Các hiệp không còn có trong dữ liệu mới được xóa mềm cùng kết quả của chúng để giữ lịch sử hệ thống.
+        /// </summary>
+        /// <param name="match">Trận đấu đang được cập nhật.</param>
+        /// <param name="setScores">Danh sách thứ tự hiệp và điểm của hai bên.</param>
+        /// <param name="updatedBy">Tài khoản thực hiện cập nhật.</param>
+        /// <param name="nowUtc">Thời điểm UTC dùng chung cho các bản ghi cập nhật.</param>
+        /// <param name="markAllComplete">Đánh dấu mọi hiệp/set đã kết thúc khi chốt trận.</param>
+        /// <returns>Task hoàn tất khi dữ liệu từng hiệp đã được đồng bộ vào Unit of Work.</returns>
+        private async Task SaveMatchSetScoresAsync(TranDau match, List<SetScoreDto> setScores, string? updatedBy, DateTime nowUtc, bool markAllComplete = false)
+        {
+            var teamParticipants = (await _unitOfWork.ThanhPhanTranDaus.FindAsync(
+                participant => participant.TranDauId == match.Id && participant.IsDeleted != true)).ToList();
+            var team1 = teamParticipants.FirstOrDefault(participant => participant.ViTri == 1)
+                ?? teamParticipants.ElementAtOrDefault(0);
+            var team2 = teamParticipants.FirstOrDefault(participant => participant.ViTri == 2)
+                ?? teamParticipants.ElementAtOrDefault(1);
+            var periods = (await _unitOfWork.HiepDaus.FindAsync(
+                period => period.TranDauId == match.Id && period.LoaiHiep == "HiepChinh" && period.IsDeleted != true)).ToList();
+            var requestedNumbers = setScores.Select(set => set.SetNumber).ToHashSet();
+            var duplicatePeriods = periods
+                .GroupBy(period => period.SoHiep)
+                .SelectMany(group => group.Skip(1));
+
+            foreach (var obsoletePeriod in periods
+                .Where(period => !requestedNumbers.Contains(period.SoHiep))
+                .Concat(duplicatePeriods))
+            {
+                var obsoleteResults = await _unitOfWork.KetQuaHiepDaus.FindAsync(result =>
+                    result.HiepDauId == obsoletePeriod.Id && result.IsDeleted != true);
+                foreach (var obsoleteResult in obsoleteResults)
+                {
+                    _unitOfWork.KetQuaHiepDaus.Delete(obsoleteResult);
+                }
+                _unitOfWork.HiepDaus.Delete(obsoletePeriod);
+            }
+
+            var config = await _theThucService.GetConfigByTranDauIdAsync(match.Id);
+            var periodName = config?.LoaiTheThuc == "SetDiem" ? "Set" : "Hiệp";
+            var periodByNumber = periods
+                .Where(period => requestedNumbers.Contains(period.SoHiep))
+                .GroupBy(period => period.SoHiep)
+                .ToDictionary(group => group.Key, group => group.First());
+            var addedPeriod = false;
+
+            foreach (var set in setScores.OrderBy(item => item.SetNumber))
+            {
+                var isNewPeriod = false;
+                if (!periodByNumber.TryGetValue(set.SetNumber, out var period))
+                {
+                    period = new HiepDau
+                    {
+                        TranDauId = match.Id,
+                        SoHiep = set.SetNumber,
+                        LoaiHiep = "HiepChinh",
+                        Created = nowUtc,
+                        CreatedBy = updatedBy,
+                        IsDeleted = false
+                    };
+                    await _unitOfWork.HiepDaus.AddAsync(period);
+                    periodByNumber[set.SetNumber] = period;
+                    addedPeriod = true;
+                    isNewPeriod = true;
+                }
+
+                period.TenHiep = $"{periodName} {set.SetNumber}";
+                period.TrangThai = !markAllComplete && set.SetNumber == setScores.Max(item => item.SetNumber) ? "DangDau" : "KetThuc";
+                period.ThoiGianBatDau ??= nowUtc;
+                period.ThoiGianKetThuc = period.TrangThai == "KetThuc" ? period.ThoiGianKetThuc ?? nowUtc : null;
+                period.LastModified = nowUtc;
+                period.LastModifiedBy = updatedBy;
+                if (!isNewPeriod)
+                {
+                    _unitOfWork.HiepDaus.Update(period);
+                }
+            }
+
+            if (addedPeriod)
+            {
+                await _unitOfWork.CompleteAsync();
+            }
+
+            foreach (var set in setScores)
+            {
+                var period = periodByNumber[set.SetNumber];
+                await UpsertSetScoreAsync(period.Id, team1?.Id, set.Score1, updatedBy, nowUtc);
+                await UpsertSetScoreAsync(period.Id, team2?.Id, set.Score2, updatedBy, nowUtc);
+            }
+        }
+
+        /// <summary>
+        /// Tạo mới hoặc cập nhật điểm của một thành phần thi đấu trong một hiệp.
+        /// </summary>
+        /// <param name="periodId">ID hiệp chứa kết quả.</param>
+        /// <param name="participantId">ID đội/VĐV trong trận; nếu không có thì bỏ qua kết quả đó.</param>
+        /// <param name="score">Điểm được ghi nhận cho thành phần.</param>
+        /// <param name="updatedBy">Tài khoản thực hiện cập nhật.</param>
+        /// <param name="nowUtc">Thời điểm UTC dùng cho audit.</param>
+        /// <returns>Task hoàn tất sau khi bản ghi đã được thêm hoặc đưa vào trạng thái cập nhật.</returns>
+        private async Task UpsertSetScoreAsync(int periodId, int? participantId, int score, string? updatedBy, DateTime nowUtc)
+        {
+            if (!participantId.HasValue) return;
+
+            var existingScores = await _unitOfWork.KetQuaHiepDaus.FindAsync(result =>
+                result.HiepDauId == periodId && result.ThanhPhanTranDauId == participantId.Value && result.IsDeleted != true);
+            var result = existingScores.FirstOrDefault();
+            if (result == null)
+            {
+                await _unitOfWork.KetQuaHiepDaus.AddAsync(new KetQuaHiepDau
+                {
+                    HiepDauId = periodId,
+                    ThanhPhanTranDauId = participantId.Value,
+                    Diem = score,
+                    Created = nowUtc,
+                    CreatedBy = updatedBy,
+                    IsDeleted = false
+                });
+                return;
+            }
+
+            result.Diem = score;
+            result.LastModified = nowUtc;
+            result.LastModifiedBy = updatedBy;
+            _unitOfWork.KetQuaHiepDaus.Update(result);
+        }
+
+        /// <summary>
+        /// Kiểm tra cấu trúc điểm từng hiệp/set trước khi lưu hoặc chốt trận.
+        /// </summary>
+        /// <param name="config">Cấu hình tính điểm của môn.</param>
+        /// <param name="periodScores">Danh sách điểm từng hiệp/set gửi lên.</param>
+        /// <param name="requireComplete">Yêu cầu đủ số hiệp chính hoặc đã xác định đội thắng khi chốt trận.</param>
+        /// <returns>Không trả dữ liệu; ném lỗi nghiệp vụ nếu danh sách không hợp lệ.</returns>
+        private static void ValidatePeriodScores(CauHinhTheThucDto config, List<SetScoreDto> periodScores, bool requireComplete)
+        {
+            var maxPeriods = config.SoHiepToiDa;
+            if (maxPeriods < 1 || periodScores.Count == 0 || periodScores.Count > maxPeriods)
+            {
+                throw new InvalidOperationException("Số hiệp/set đã nhập không phù hợp với cấu hình môn thi đấu.");
+            }
+
+            var orderedPeriods = periodScores.OrderBy(period => period.SetNumber).ToList();
+            if (orderedPeriods.Where((period, index) => period.SetNumber != index + 1 || period.Score1 < 0 || period.Score2 < 0).Any())
+            {
+                throw new InvalidOperationException("Số thứ tự hiệp/set phải liên tục và điểm không được âm.");
+            }
+
+            if (string.Equals(config.LoaiTheThuc, "ThoiGianHiep", StringComparison.OrdinalIgnoreCase))
+            {
+                if (requireComplete && orderedPeriods.Count != maxPeriods)
+                {
+                    throw new InvalidOperationException($"Cần nhập đủ {maxPeriods} hiệp chính trước khi hoàn tất trận.");
+                }
+                return;
+            }
+
+            if (!string.Equals(config.LoaiTheThuc, "SetDiem", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Cơ chế tính điểm của môn thi đấu không được hỗ trợ.");
+            }
+
+            var targetSets = config.SoHiepThangDeThangTran.GetValueOrDefault(1);
+            if (targetSets < 1 || targetSets > maxPeriods)
+            {
+                throw new InvalidOperationException("Cấu hình số set thắng để thắng trận không hợp lệ.");
+            }
+
+            var won1 = 0;
+            var won2 = 0;
+            for (var index = 0; index < orderedPeriods.Count; index++)
+            {
+                var period = orderedPeriods[index];
+                var winner = MatchScoreCalculator.GetSetWinner(config, period);
+                var isLastPeriod = index == orderedPeriods.Count - 1;
+                if (winner == 0 && (!isLastPeriod || requireComplete))
+                {
+                    throw new InvalidOperationException($"Set {period.SetNumber} chưa kết thúc theo luật điểm của môn.");
+                }
+
+                if (winner == 1) won1++;
+                else if (winner == 2) won2++;
+
+                if (!isLastPeriod && (won1 >= targetSets || won2 >= targetSets))
+                {
+                    throw new InvalidOperationException("Không thể nhập thêm set sau khi một đội đã đủ số set thắng.");
+                }
+            }
+
+            if (requireComplete && won1 < targetSets && won2 < targetSets)
+            {
+                throw new InvalidOperationException($"Chưa đội nào thắng đủ {targetSets} set để kết thúc trận.");
+            }
+        }
+
+        /// <summary>
+        /// Đồng bộ hai tỉ số do máy chủ tính vào snapshot JSON để dữ liệu cũ và mới không bị lệch.
+        /// </summary>
+        /// <param name="snapshot">Snapshot kết quả JSON hiện tại.</param>
+        /// <param name="score1">Tỉ số chuẩn của đội 1.</param>
+        /// <param name="score2">Tỉ số chuẩn của đội 2.</param>
+        /// <returns>Snapshot đã cập nhật tỉ số, hoặc giá trị ban đầu nếu nội dung không phải JSON snapshot.</returns>
+        private static string? RewriteSnapshotScores(string? snapshot, int score1, int score2)
+        {
+            if (string.IsNullOrWhiteSpace(snapshot) || !snapshot.TrimStart().StartsWith("{", StringComparison.Ordinal))
+            {
+                return snapshot;
+            }
+
+            try
+            {
+                if (JsonNode.Parse(snapshot) is not JsonObject json) return snapshot;
+                json["score1"] = score1;
+                json["score2"] = score2;
+                return json.ToJsonString();
+            }
+            catch
+            {
+                return snapshot;
+            }
+        }
+
+        /// <summary>
+        /// Starts a scheduled match and records its actual start time without changing scores or match notes.
+        /// Repeated start requests are idempotent while the match is already in progress.
+        /// </summary>
+        /// <param name="id">The ID of the match to start.</param>
+        /// <param name="updatedBy">The referee account performing the operation.</param>
+        /// <returns>True when the match exists and is started or already in progress; false when it does not exist.</returns>
+        public async Task<bool> StartMatchAsync(int id, string? updatedBy = null)
+        {
+            var entity = await _unitOfWork.TranDaus.GetByIdAsync(id);
+            if (entity == null || entity.IsDeleted == true) return false;
+            if (string.Equals(entity.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase)) return true;
+            if (!string.Equals(entity.TrangThai, "ChuaDau", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Chỉ có thể bắt đầu trận đang ở trạng thái chưa đấu.");
+            }
+
+            var nowUtc = DateTime.UtcNow;
+            entity.TrangThai = "DangDau";
+            entity.ThoiGianBatDau = nowUtc;
+            entity.ThoiGianKetThuc = null;
+            entity.LastModified = nowUtc;
+            entity.LastModifiedBy = updatedBy;
             _unitOfWork.TranDaus.Update(entity);
             await _unitOfWork.CompleteAsync();
             return true;
@@ -460,6 +759,41 @@ namespace Dms.Application.Services
                     TrangThai = participant.TrangThai,
                     XepHang = result?.XepHang
                 };
+            }).ToList();
+        }
+
+        /// <summary>
+        /// Đọc điểm từng hiệp/set từ các bảng kết quả chuẩn để khôi phục chính xác màn trọng tài sau khi tải lại.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu cần đọc điểm.</param>
+        /// <returns>Danh sách điểm hai bên theo thứ tự hiệp/set; danh sách rỗng nếu trận chưa có điểm.</returns>
+        public async Task<List<SetScoreDto>> GetMatchPeriodScoresAsync(int tranDauId)
+        {
+            var periods = (await _unitOfWork.HiepDaus.FindAsync(period =>
+                    period.TranDauId == tranDauId && period.LoaiHiep == "HiepChinh" && period.IsDeleted != true))
+                .OrderBy(period => period.SoHiep)
+                .ToList();
+            if (periods.Count == 0) return new List<SetScoreDto>();
+
+            var participants = (await _unitOfWork.ThanhPhanTranDaus.FindAsync(participant =>
+                    participant.TranDauId == tranDauId && participant.IsDeleted != true))
+                .ToList();
+            var team1 = participants.FirstOrDefault(participant => participant.ViTri == 1)
+                ?? participants.ElementAtOrDefault(0);
+            var team2 = participants.FirstOrDefault(participant => participant.ViTri == 2)
+                ?? participants.ElementAtOrDefault(1);
+            var periodIds = periods.Select(period => period.Id).ToList();
+            var results = (await _unitOfWork.KetQuaHiepDaus.FindAsync(result =>
+                    periodIds.Contains(result.HiepDauId) && result.IsDeleted != true))
+                .ToList();
+
+            return periods.Select(period => new SetScoreDto
+            {
+                SetNumber = period.SoHiep,
+                Score1 = team1 == null ? 0 : (int)(results.FirstOrDefault(result =>
+                    result.HiepDauId == period.Id && result.ThanhPhanTranDauId == team1.Id)?.Diem ?? 0),
+                Score2 = team2 == null ? 0 : (int)(results.FirstOrDefault(result =>
+                    result.HiepDauId == period.Id && result.ThanhPhanTranDauId == team2.Id)?.Diem ?? 0)
             }).ToList();
         }
 
@@ -3615,6 +3949,13 @@ namespace Dms.Application.Services
                 return response;
             }
 
+            if (!string.Equals(match.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase))
+            {
+                response.Success = false;
+                response.Message = "Chỉ có thể hoàn tất trận khi trận đang diễn ra. Hãy bắt đầu trận trước.";
+                return response;
+            }
+
             var gdm = await _unitOfWork.GiaiDauMonTheThaos.GetByIdAsync(match.GiaiDauMonTheThaoId);
             if (gdm == null)
             {
@@ -3667,6 +4008,21 @@ namespace Dms.Application.Services
             }
 
             // 2. Môn thi đấu đối kháng (Bóng đá, Cầu lông, Bóng chuyền, Bóng bàn...)
+            var periodScores = request.SetScores ?? new List<SetScoreDto>();
+            try
+            {
+                ValidatePeriodScores(config, periodScores, requireComplete: true);
+                var projectedScore = MatchScoreCalculator.CalculateCurrentScore(config, periodScores);
+                request.Score1 = projectedScore.Score1;
+                request.Score2 = projectedScore.Score2;
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                return response;
+            }
+
             bool isKnockout = !match.BangDauId.HasValue;
             var evaluation = _scoringEngine.EvaluateMatchResult(request, config, isKnockout);
 
@@ -3744,61 +4100,7 @@ namespace Dms.Application.Services
 
             _unitOfWork.TranDaus.Update(match);
 
-            // Lưu chi tiết các hiệp đấu (HiepDau & KetQuaHiepDau)
-            if (request.SetScores != null && request.SetScores.Any())
-            {
-                // Xóa hiệp đấu cũ của trận này nếu có
-                var oldHds = (await _unitOfWork.HiepDaus.FindAsync(h => h.TranDauId == match.Id)).ToList();
-                foreach (var hd in oldHds)
-                {
-                    var oldKqs = (await _unitOfWork.KetQuaHiepDaus.FindAsync(kq => kq.HiepDauId == hd.Id)).ToList();
-                    foreach (var kq in oldKqs) _unitOfWork.KetQuaHiepDaus.Delete(kq);
-                    _unitOfWork.HiepDaus.Delete(hd);
-                }
-
-                foreach (var s in request.SetScores)
-                {
-                    var hiepEntity = new HiepDau
-                    {
-                        TranDauId = match.Id,
-                        SoHiep = s.SetNumber,
-                        LoaiHiep = "HiepChinh",
-                        TenHiep = $"Hiệp {s.SetNumber}",
-                        TrangThai = "KetThuc",
-                        Created = DateTime.UtcNow,
-                        CreatedBy = username,
-                        IsDeleted = false
-                    };
-                    await _unitOfWork.HiepDaus.AddAsync(hiepEntity);
-                    await _unitOfWork.CompleteAsync();
-
-                    if (team1 != null)
-                    {
-                        await _unitOfWork.KetQuaHiepDaus.AddAsync(new KetQuaHiepDau
-                        {
-                            HiepDauId = hiepEntity.Id,
-                            ThanhPhanTranDauId = team1.Id,
-                            Diem = s.Score1,
-                            Created = DateTime.UtcNow,
-                            CreatedBy = username,
-                            IsDeleted = false
-                        });
-                    }
-
-                    if (team2 != null)
-                    {
-                        await _unitOfWork.KetQuaHiepDaus.AddAsync(new KetQuaHiepDau
-                        {
-                            HiepDauId = hiepEntity.Id,
-                            ThanhPhanTranDauId = team2.Id,
-                            Diem = s.Score2,
-                            Created = DateTime.UtcNow,
-                            CreatedBy = username,
-                            IsDeleted = false
-                        });
-                    }
-                }
-            }
+            await SaveMatchSetScoresAsync(match, periodScores, username, DateTime.UtcNow, markAllComplete: true);
 
             await _unitOfWork.CompleteAsync();
 

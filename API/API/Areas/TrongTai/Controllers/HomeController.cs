@@ -3,6 +3,7 @@ using Dms.Application.Interfaces;
 using Dms.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +44,11 @@ namespace API.Areas.TrongTai.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? giaiDauId = null, string? filterScope = null)
+        public async Task<IActionResult> Index(
+            int? giaiDauId = null,
+            string? filterScope = null,
+            int? monTheThaoId = null,
+            int? danhMucMonTheThaoId = null)
         {
             var currentRef = await GetCurrentRefereeAsync();
             var canBrowseAll = CanBrowseAllMatches();
@@ -72,6 +77,29 @@ namespace API.Areas.TrongTai.Controllers
             var selectedScope = canBrowseAll && filterScope == "my_matches" ? "my_matches" : (canBrowseAll ? "all" : "my_matches");
             var displayMatches = selectedScope == "all" ? allMatches : assignedMatchesForTournament;
 
+            ViewBag.SportOptions = displayMatches
+                .Where(match => match.MonTheThaoId.HasValue)
+                .GroupBy(match => match.MonTheThaoId!.Value)
+                .Select(group => new SelectListItem
+                {
+                    Value = group.Key.ToString(),
+                    Text = group.Select(match => match.TenMonTheThao).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? "Môn chưa có tên"
+                })
+                .OrderBy(option => option.Text)
+                .ToList();
+            ViewBag.CategoryOptions = displayMatches
+                .Where(match => match.DanhMucMonTheThaoId.HasValue)
+                .GroupBy(match => match.DanhMucMonTheThaoId!.Value)
+                .Select(group => new SelectListItem
+                {
+                    Value = group.Key.ToString(),
+                    Text = group.Select(match => match.TenDanhMucMonTheThao).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? "Danh mục chưa phân loại"
+                })
+                .OrderBy(option => option.Text)
+                .ToList();
+            ViewBag.SelectedSportId = monTheThaoId;
+            ViewBag.SelectedCategoryId = danhMucMonTheThaoId;
+
             ViewBag.CanRecordMatchIds = currentRef == null
                 ? new HashSet<int>()
                 : await _refereeAccessService.GetHeadRefereeMatchIdsAsync(currentRef.Id, displayMatches.Select(match => match.Id).ToList());
@@ -80,11 +108,16 @@ namespace API.Areas.TrongTai.Controllers
             ViewBag.AllMatchesCount = canBrowseAll ? allMatches.Count : assignedMatchesForTournament.Count;
             ViewBag.MyAssignedCount = assignedMatchesForTournament.Count;
             ViewBag.LiveMatchesCount = displayMatches.Count(m => m.TrangThai == "DangDau" || m.TrangThai == "DangDienRa");
-            ViewBag.FinishedCount = displayMatches.Count(m => m.TrangThai == "KetThuc" || m.TrangThai == "DaKetThuc");
+            ViewBag.FinishedCount = displayMatches.Count(m => m.TrangThai == "KetThuc" || m.TrangThai == "DaKetThuc" || m.TrangThai == "DaDau");
             ViewBag.UpcomingCount = displayMatches.Count(m => m.TrangThai == "ChuaDau");
             ViewBag.NoMyMatchesNotice = !canBrowseAll && assignedMatchesForTournament.Count == 0;
 
-            return View(displayMatches);
+            var orderedMatches = await _tranDauService.GetOrderedRefereeTaskMatchesAsync(
+                displayMatches,
+                monTheThaoId,
+                danhMucMonTheThaoId);
+
+            return View(orderedMatches.ToList());
         }
 
         [HttpPost]

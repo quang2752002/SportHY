@@ -336,9 +336,9 @@
 <!-- Thanh bộ lọc & Chuyển đổi giao diện -->
 <div class="card card-custom mb-3 border shadow-sm">
     <div class="card-body p-3">
-        <div class="row g-2 align-items-center">
+        <div class="row g-2 align-items-end">
             <!-- Giải đấu -->
-            <div class="col-md-4 col-lg-2">
+            <div class="col-md-6 col-lg-3">
                 <label class="form-label small fw-semibold text-muted mb-1"><i class="fa-solid fa-trophy text-primary me-1"></i>Giải đấu <span class="text-danger">*</span></label>
                 <select id="mainGiaiDauSelect" class="form-select form-select-sm" onchange="onMainGiaiDauChanged(this.value)">
                     <option value="">-- Chọn giải đấu --</option>
@@ -356,7 +356,7 @@
                 </select>
             </div>
             <!-- Danh mục môn thi đấu -->
-            <div class="col-md-4 col-lg-2">
+            <div class="col-md-6 col-lg-3">
                 <label class="form-label small fw-semibold text-muted mb-1"><i class="fa-solid fa-layer-group text-primary me-1"></i>Danh mục môn</label>
                 <select id="mainDanhMucSelect" class="form-select form-select-sm" onchange="onMainDanhMucChanged(this.value)">
                     <option value="">-- Tất cả danh mục --</option>
@@ -367,28 +367,15 @@
                 </select>
             </div>
             <!-- Môn thi đấu -->
-            <div class="col-md-4 col-lg-2">
+            <div class="col-md-6 col-lg-3">
                 <label class="form-label small fw-semibold text-muted mb-1"><i class="fa-solid fa-volleyball text-primary me-1"></i>Môn thi đấu <span class="text-danger">*</span></label>
-                <select id="mainMonSelect" class="form-select form-select-sm" onchange="loadMainData()">
+                <select id="mainMonSelect" class="form-select form-select-sm" onchange="onMainMonChanged(this.value)">
                     <option value="">-- Chọn môn thể thao --</option>
                 </select>
             </div>
-            <!-- Vòng đấu -->
-            <div class="col-md-4 col-lg-2">
-                <label class="form-label small fw-semibold text-muted mb-1"><i class="fa-solid fa-code-branch text-primary me-1"></i>Vòng đấu</label>
-                <select id="mainVongDauSelect" class="form-select form-select-sm" onchange="loadMainData()">
-                    <option value="">-- Tất cả vòng --</option>
-                </select>
-            </div>
-            <!-- Bảng đấu -->
-            <div class="col-md-4 col-lg-2" id="mainBangDauCol">
-                <label class="form-label small fw-semibold text-muted mb-1"><i class="fa-solid fa-table-cells-large text-primary me-1"></i>Bảng đấu</label>
-                <select id="mainBangDauSelect" class="form-select form-select-sm" onchange="loadMainData()">
-                    <option value="">-- Tất cả bảng --</option>
-                </select>
-            </div>
             <!-- Chuyển chế độ xem: Nhánh/Bảng vs Lịch Thi Đấu -->
-            <div class="col-md-4 col-lg-2 d-flex align-items-end pt-3">
+            <div class="col-md-6 col-lg-3" id="mainViewSwitchCol">
+                <label class="form-label small fw-semibold text-muted mb-1 d-none d-lg-block invisible">&nbsp;</label>
                 <div class="btn-group btn-group-sm w-100" role="group">
                     <button type="button" class="btn btn-outline-primary active" id="btnViewLayout" onclick="switchView('layout')">
                         <i class="fa-solid fa-sitemap me-1"></i> Lịch Thi Đấu
@@ -396,7 +383,6 @@
                     <button type="button" class="btn btn-outline-primary d-none" id="btnViewBracket" onclick="switchView('bracket')">
                         <i class="fa-solid fa-diagram-project me-1"></i> Sơ Đồ Nhánh
                     </button>
-                   
                 </div>
             </div>
         </div>
@@ -428,12 +414,13 @@
                     <i class="fa-solid fa-arrow-left me-1"></i> Quay lại Danh sách
                 </button>
                 <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-primary active" id="btnSubBracketTree" onclick="switchBracketSubMode('tree')">
-                        <i class="fa-solid fa-network-wired me-1"></i> Sơ đồ Cây (Tree Bracket)
-                    </button>
                     <button type="button" class="btn btn-outline-secondary" id="btnSubBracketBranches" onclick="switchBracketSubMode('branches')">
                         <i class="fa-solid fa-table-columns me-1"></i> Phân Bảng & Hạt Giống (Bảng A / B)
                     </button>
+                    <button type="button" class="btn btn-primary active" id="btnSubBracketTree" onclick="switchBracketSubMode('tree')">
+                        <i class="fa-solid fa-network-wired me-1"></i> Sơ đồ Cây (Tree Bracket)
+                    </button>
+                   
                 </div>
             </div>
         </div>
@@ -563,7 +550,7 @@
 
         <!-- CỘT PHẢI: LAYOUT CÁC CẶP ĐẤU (CHỈ XEM) -->
         <div class="col-lg-8 col-xl-9">
-            <div class="card border shadow-sm h-100">
+            <div class="card border shadow-sm">
                 <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center border-bottom">
                     <span class="fw-bold text-dark small" id="mainMatchesHeaderTitle">
                         <i class="fa-solid fa-sitemap text-success me-1"></i>Layout Các Cặp Thi Đấu
@@ -575,7 +562,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="card-body p-3" id="mainMatchesPairContainer" style="max-height: 72vh; overflow-y: auto; background-color: #f8fafc;">
+                <div class="card-body p-3" id="mainMatchesPairContainer" style="background-color: #f8fafc;">
                     <!-- Các Card cặp đấu chỉ xem sẽ được render ở đây -->
                 </div>
             </div>
@@ -1000,8 +987,6 @@
                 allMainSports = [];
                 $('#mainDanhMucSelect').html('<option value="">-- Tất cả danh mục --</option>');
                 $('#mainMonSelect').html('<option value="">-- Chọn môn thể thao --</option>');
-                $('#mainVongDauSelect').html('<option value="">-- Tất cả vòng --</option>');
-                $('#mainBangDauSelect').html('<option value="">-- Tất cả bảng --</option>');
                 $('#layoutPlaceholder').removeClass('d-none');
                 $('#layoutWorkspace').addClass('d-none');
                 $('#layoutLoading').addClass('d-none');
@@ -1026,7 +1011,15 @@
                     });
                     $('#mainDanhMucSelect').html(dmOpts);
 
-                    renderMainMonSelect();
+                    // Tự động chọn danh mục môn đầu tiên theo môn thi đấu đầu tiên của giải
+                    const firstSport = allMainSports[0];
+                    if (firstSport && firstSport.danhMucId && dmMap.has(firstSport.danhMucId)) {
+                        $('#mainDanhMucSelect').val(firstSport.danhMucId);
+                        renderMainMonSelect(firstSport.danhMucId);
+                    } else {
+                        $('#mainDanhMucSelect').val('');
+                        renderMainMonSelect();
+                    }
                     loadMainData();
                 } else {
                     allMainSports = [];
@@ -1041,6 +1034,16 @@
 
         function onMainDanhMucChanged(danhMucId) {
             renderMainMonSelect(danhMucId);
+            loadMainData();
+        }
+
+        function onMainMonChanged(monId) {
+            if (monId) {
+                const sport = allMainSports.find(m => m.id == parseInt(monId));
+                if (sport && sport.danhMucId) {
+                    $('#mainDanhMucSelect').val(sport.danhMucId);
+                }
+            }
             loadMainData();
         }
 
@@ -1080,9 +1083,6 @@
                 return;
             }
 
-            const vongDauId = $('#mainVongDauSelect').val();
-            const bangDauId = $('#mainBangDauSelect').val();
-
             $('#layoutPlaceholder').addClass('d-none');
             $('#layoutWorkspace').addClass('d-none');
             $('#layoutLoading').removeClass('d-none');
@@ -1091,9 +1091,7 @@
                 url: '/Manager/LichThiDau/GetManualPairingData',
                 type: 'GET',
                 data: {
-                    giaiDauMonTheThaoId: parseInt(giaiDauMonTheThaoId),
-                    vongDauId: vongDauId ? parseInt(vongDauId) : undefined,
-                    bangDauId: bangDauId ? parseInt(bangDauId) : undefined
+                    giaiDauMonTheThaoId: parseInt(giaiDauMonTheThaoId)
                 },
                 success: function (res) {
                     $('#layoutLoading').addClass('d-none');
@@ -1111,15 +1109,10 @@
                             pairs: res.data.existingPairs || []
                         };
 
-                        // Cập nhật dropdown Vòng & Bảng
-                        updateMainVongDauSelect(mainViewData.vongDaus, vongDauId);
-                        updateMainBangDauSelect(mainViewData.bangDaus, bangDauId);
-
-                        // Kiểm tra hình thức thi đấu Loại trực tiếp (Knockout) hoặc Hỗn hợp / có trận Knockout
-                        const isKnockoutOnly = mainViewData.hinhThucThiDau === 'LoaiTrucTiep' || mainViewData.hinhThucThiDau == 1;
-                        const isHybrid = mainViewData.hinhThucThiDau === 'KetHopVongBangVaLoaiTrucTiep' || mainViewData.hinhThucThiDau == 3;
-                        const hasKnockoutMatches = mainViewData.pairs && mainViewData.pairs.some(p => isMatchKnockout(p));
-                        const showBracket = isKnockoutOnly || isHybrid || hasKnockoutMatches;
+                        // Chỉ hiển thị tab Sơ Đồ Nhánh khi môn thi đấu có thể thức Bảng Kết Hợp Knockout
+                        const isKnockoutOnly = mainViewData.hinhThucThiDau === 'LoaiTrucTiep' || mainViewData.hinhThucThiDau == 1 || mainViewData.hinhThucThiDau === '1';
+                        const isHybrid = mainViewData.hinhThucThiDau === 'KetHopVongBangVaLoaiTrucTiep' || mainViewData.hinhThucThiDau == 3 || mainViewData.hinhThucThiDau === '3';
+                        const showBracket = isHybrid;
 
                         if (showBracket) {
                             $('#btnViewBracket').removeClass('d-none');
@@ -1149,29 +1142,6 @@
                     $('#layoutPlaceholder').removeClass('d-none');
                 }
             });
-        }
-
-        function updateMainVongDauSelect(vongDaus, selectedId) {
-            let opts = '<option value="">-- Tất cả vòng --</option>';
-            vongDaus.forEach(v => {
-                const sel = (selectedId && parseInt(selectedId) === v.id) ? 'selected' : '';
-                opts += `<option value="${v.id}" ${sel}>${escapeHtml(v.ten)}</option>`;
-            });
-            $('#mainVongDauSelect').html(opts);
-        }
-
-        function updateMainBangDauSelect(bangDaus, selectedId) {
-            if (!bangDaus || bangDaus.length === 0) {
-                $('#mainBangDauCol').addClass('d-none');
-                return;
-            }
-            $('#mainBangDauCol').removeClass('d-none');
-            let opts = '<option value="">-- Tất cả bảng --</option>';
-            bangDaus.forEach(b => {
-                const sel = (selectedId && parseInt(selectedId) === b.id) ? 'selected' : '';
-                opts += `<option value="${b.id}" ${sel}>${escapeHtml(b.ten)}</option>`;
-            });
-            $('#mainBangDauSelect').html(opts);
         }
 
         function getParticipantDisplayName(team, isModal = false, fallback = 'Chưa xếp') {
@@ -1272,9 +1242,7 @@
                 $('#mainLeftWarningBanner').removeClass('d-none').html(`
                     <div class="alert alert-warning py-2 px-2 small mb-2 d-flex align-items-center justify-content-between">
                         <div><i class="fa-solid fa-triangle-exclamation me-1"></i>Chưa chia bảng đấu</div>
-                        <a href="/Manager/BangDau?giaiDauId=${curGiaiDau}&monId=${curMon}" class="btn btn-2xs btn-warning text-dark fw-bold">
-                            <i class="fa-solid fa-table-cells-large me-1"></i>Chia bảng ngay
-                        </a>
+                       
                     </div>
                 `);
                 renderMainParticipantsCard();
@@ -1357,12 +1325,11 @@
                 const displayName = escapeHtml(getParticipantDisplayName(team, false, `${participantLabel} #${team.dangKyThiDauId}`));
                 const unitName = team.tenDonVi ? escapeHtml(team.tenDonVi) : 'Tự do';
                 const sbdTag = team.soDangKy ? `<span class="badge bg-light text-muted border me-1" style="font-size: 0.7rem;">${escapeHtml(team.soDangKy)}</span>` : '';
-                const bangTag = team.tenBangDau ? `<span class="badge bg-info-subtle text-info border me-1" style="font-size: 0.7rem;"><i class="fa-solid fa-table-cells me-1"></i>${escapeHtml(team.tenBangDau)}</span>` : '';
 
                 const isPaired = pairedMap.has(team.dangKyThiDauId);
-                const statusBadge = isPaired
-                    ? `<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-check me-1"></i>${escapeHtml(pairedMap.get(team.dangKyThiDauId))}</span>`
-                    : `<span class="badge bg-light text-secondary border" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-dot me-1"></i>Chưa xếp</span>`;
+                const statusBadge = !isPaired
+                    ? `<span class="badge bg-light text-secondary border" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-dot me-1"></i>Chưa xếp</span>`
+                    : '';
 
                 // Thành viên VĐV (nếu là môn đồng đội)
                 const vdvList = (isTeamSport && team.vanDongVienNames && team.vanDongVienNames.length > 0)
@@ -1372,6 +1339,10 @@
                 const avatarLetter = displayName ? displayName.charAt(0).toUpperCase() : '#';
                 const bgColors = ['bg-primary', 'bg-success', 'bg-info', 'bg-warning', 'bg-danger', 'bg-secondary'];
                 const avatarBg = bgColors[idx % bgColors.length];
+
+                const bottomMetaHtml = sbdTag
+                    ? `<div class="d-flex flex-wrap align-items-center mt-1 pt-1 border-top" style="font-size: 0.72rem;">${sbdTag}</div>`
+                    : '';
 
                 const cardHtml = `
                     <div class="participant-item-card main-participant-item shadow-2xs">
@@ -1385,13 +1356,9 @@
                                     </small>
                                 </div>
                             </div>
-                            <div class="text-end flex-shrink-0">
-                                ${statusBadge}
-                            </div>
+                            ${statusBadge ? `<div class="text-end flex-shrink-0">${statusBadge}</div>` : ''}
                         </div>
-                        <div class="d-flex flex-wrap align-items-center mt-1 pt-1 border-top" style="font-size: 0.72rem;">
-                            ${sbdTag}${bangTag}
-                        </div>
+                        ${bottomMetaHtml}
                         ${vdvList}
                     </div>
                 `;
@@ -1906,11 +1873,7 @@
                             <button type="button" class="btn btn-outline-primary btn-sm shadow-sm fw-bold px-3" onclick="openManualPairingModal()">
                                 <i class="fa-solid fa-arrows-split-up-and-left me-1"></i> Xếp Cặp Thủ Công
                             </button>
-                            ${isHybrid || isRoundRobin ? `
-                                <a href="/Manager/BangDau?giaiDauId=${curGiaiDau}&monId=${curMon}" class="btn btn-outline-secondary btn-sm shadow-sm px-3">
-                                    <i class="fa-solid fa-table-cells-large me-1"></i> Chia Bảng Đấu
-                                </a>
-                            ` : ''}
+                           
                         </div>
                     </div>
                 `);

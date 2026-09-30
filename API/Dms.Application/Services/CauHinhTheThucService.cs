@@ -119,6 +119,21 @@ namespace Dms.Application.Services
         /// <returns>Cấu hình đã lưu sau khi cập nhật</returns>
         public async Task<CauHinhTheThucDto> UpsertConfigAsync(CreateUpdateCauHinhTheThucDto dto, string? username = null)
         {
+            if (!new[] { "SetDiem", "ThoiGianHiep", "TinhDiemXepHang" }
+                .Contains(dto.LoaiTheThuc, StringComparer.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Cơ chế tính điểm của môn không hợp lệ.");
+            }
+            if (dto.SoHiepToiDa < 1 || dto.SoHiepToiDa > 15)
+            {
+                throw new ArgumentException("Số hiệp chính hoặc set tối đa phải từ 1 đến 15.");
+            }
+            if (string.Equals(dto.LoaiTheThuc, "SetDiem", StringComparison.OrdinalIgnoreCase) &&
+                (!dto.SoHiepThangDeThangTran.HasValue || dto.SoHiepThangDeThangTran.Value < 1 || dto.SoHiepThangDeThangTran.Value > dto.SoHiepToiDa))
+            {
+                throw new ArgumentException("Số set thắng để thắng trận phải nằm trong giới hạn số set tối đa.");
+            }
+
             var configs = await _unitOfWork.CauHinhTheThucThiDaus.FindAsync(c =>
                 c.MonTheThaoId == dto.MonTheThaoId &&
                 c.GiaiDauMonTheThaoId == dto.GiaiDauMonTheThaoId &&

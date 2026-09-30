@@ -22,6 +22,20 @@
 </div>
 
 <form id="formGiaiDau" novalidate>
+    <ul class="nav nav-tabs mb-4" id="giaiDauCreateTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="createGeneralTab" data-bs-toggle="tab" data-bs-target="#createGeneralPane" type="button" role="tab" aria-controls="createGeneralPane" aria-selected="true">
+                <i class="fa-solid fa-circle-info me-1"></i>Thông tin & điều lệ
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="createSportsTab" data-bs-toggle="tab" data-bs-target="#createSportsPane" type="button" role="tab" aria-controls="createSportsPane" aria-selected="false">
+                <i class="fa-solid fa-volleyball me-1"></i>Môn thi đấu & khối tham gia
+            </button>
+        </li>
+    </ul>
+    <div class="tab-content" id="giaiDauCreateTabContent">
+    <div class="tab-pane fade show active" id="createGeneralPane" role="tabpanel" aria-labelledby="createGeneralTab" tabindex="0">
     <div class="row g-4">
         <!-- Cột trái: Thông tin chính & Môn thi đấu -->
         <div class="col-lg-8">
@@ -98,7 +112,7 @@
             </div>
 
             <!-- 2. Chọn Môn thi đấu tổ chức trong giải -->
-            <div class="card card-custom mb-4">
+            <div class="card card-custom mb-4" id="competitionSportCard">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="fw-bold text-dark mb-0">
@@ -112,6 +126,9 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <div id="sportSelectionError" class="alert alert-danger py-2 small d-none" role="alert">
+                        Vui lòng chọn ít nhất một môn thi đấu cho giải.
+                    </div>
                     @if (!monTheThaos.Any())
                     {
                         <div class="text-center py-4 text-muted">
@@ -390,13 +407,16 @@
             </div>
 
             <!-- Khối tham gia -->
-            <div class="card card-custom mb-4">
+            <div class="card card-custom mb-4" id="participatingBlocksCard">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold text-dark mb-0">
                         <i class="fa-solid fa-layer-group text-primary me-2"></i>Khối Tham Gia
                     </h6>
                 </div>
                 <div class="card-body">
+                    <div id="blockSelectionError" class="alert alert-danger py-2 small d-none" role="alert">
+                        Vui lòng chọn ít nhất một khối tham gia khi phạm vi tổ chức là “Theo khối ngành / đơn vị”.
+                    </div>
                     <p class="text-muted small mb-3">Chọn các khối đơn vị được phép đăng ký tham dự giải:</p>
                     <div class="d-flex flex-column gap-2" id="listKhoi">
                         @foreach (var khoi in khois)
@@ -432,18 +452,21 @@
                 </div>
             </div>
 
-            <!-- Nút Hành Động -->
-            <div class="card card-custom border-primary">
-                <div class="card-body p-3">
-                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mb-2" id="btnSubmit">
-                        <i class="fa-solid fa-floppy-disk me-1"></i> Hoàn Tất & Tạo Giải Đấu
-                    </button>
-                    <a href="/Manager/GiaiDau" class="btn btn-outline-secondary w-100">
-                        Hủy bỏ
-                    </a>
-                </div>
-            </div>
         </div>
+    </div>
+    </div>
+    <div class="tab-pane fade" id="createSportsPane" role="tabpanel" aria-labelledby="createSportsTab" tabindex="0">
+        <div class="row g-4">
+            <div class="col-lg-8" id="createSportsCardHost"></div>
+            <div class="col-lg-4" id="createBlocksCardHost"></div>
+        </div>
+    </div>
+    </div>
+    <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4">
+        <a href="/Manager/GiaiDau" class="btn btn-outline-secondary">Hủy bỏ</a>
+        <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold" id="btnSubmit">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Hoàn Tất & Tạo Giải Đấu
+        </button>
     </div>
 </form>
 
@@ -452,6 +475,9 @@
         let dieuLeIndex = 0;
 
         $(document).ready(function () {
+            $('#competitionSportCard').appendTo('#createSportsCardHost');
+            $('#participatingBlocksCard').appendTo('#createBlocksCardHost');
+
             // Tự động tạo slug và mã từ tên giải
             $('#ten').on('input', function () {
                 const name = $(this).val();
@@ -475,11 +501,23 @@
                 } else {
                     parent.removeClass('border-primary bg-primary-subtle');
                 }
+
+                if ($(this).hasClass('chk-mon') && $('.chk-mon:checked').length > 0) {
+                    $('#sportSelectionError').addClass('d-none');
+                }
+                if ($(this).hasClass('chk-khoi') && $('.chk-khoi:checked').length > 0) {
+                    $('#blockSelectionError').addClass('d-none');
+                }
+            });
+
+            $('#phamVi').on('change', function () {
+                if ($(this).val() !== 'TheoKhoi') $('#blockSelectionError').addClass('d-none');
             });
 
             // Chọn tất cả môn thi đấu
             $('#btnSelectAllMon').on('click', function () {
                 $('.chk-mon').prop('checked', true).closest('.form-check').addClass('border-primary bg-primary-subtle');
+                if ($('.chk-mon:checked').length > 0) $('#sportSelectionError').addClass('d-none');
             });
 
             $('#btnDeselectAllMon').on('click', function () {
@@ -860,6 +898,24 @@
                     text: dateCheck.errorMessage || 'Vui lòng kiểm tra lại các trường thông tin và thời gian giải đấu (được đánh dấu đỏ).',
                     confirmButtonText: 'Đã hiểu'
                 });
+                return;
+            }
+
+            const missingSports = $('.chk-mon:checked').length === 0;
+            const missingBlocks = $('#phamVi').val() === 'TheoKhoi' && $('.chk-khoi:checked').length === 0;
+            $('#sportSelectionError').toggleClass('d-none', !missingSports);
+            $('#blockSelectionError').toggleClass('d-none', !missingBlocks);
+            if (missingSports || missingBlocks) {
+                bootstrap.Tab.getOrCreateInstance(document.getElementById('createSportsTab')).show();
+                const message = missingSports
+                    ? 'Vui lòng chọn ít nhất một môn thi đấu cho giải.'
+                    : 'Vui lòng chọn ít nhất một khối tham gia.';
+                const targetSelector = missingSports ? '#competitionSportCard' : '#participatingBlocksCard';
+                setTimeout(() => {
+                    const $target = $(targetSelector);
+                    $('html, body').animate({ scrollTop: $target.offset().top - 20 }, 250);
+                }, 150);
+                Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: message, confirmButtonText: 'Đã hiểu' });
                 return;
             }
 

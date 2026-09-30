@@ -42,6 +42,11 @@ namespace API.Areas.TrongTai.Controllers
         public string? GhiChu { get; set; }
     }
 
+    public class StartMatchRequestDto
+    {
+        public int TranDauId { get; set; }
+    }
+
     public class KetQuaController : BaseTrongTaiController
     {
         private readonly IGiaiDauService _giaiDauService;
@@ -61,7 +66,11 @@ namespace API.Areas.TrongTai.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null, int? giaiDauMonTheThaoId = null)
+        public async Task<IActionResult> Index(
+            int? tranDauId = null,
+            int? giaiDauId = null,
+            int? giaiDauMonTheThaoId = null,
+            string? vaiTroPhanCong = null)
         {
             var currentReferee = await GetCurrentRefereeAsync();
             var canBrowseAll = CanBrowseAllMatches();
@@ -84,7 +93,34 @@ namespace API.Areas.TrongTai.Controllers
                 ? (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentReferee?.Id, canBrowseAll))?.ToList() ?? new()
                 : new List<TranDauDto>();
 
-            var availableSports = accessibleMatches
+            var accessibleMatchIds = accessibleMatches.Select(match => match.Id).ToList();
+            var mainRefereeMatchIds = currentReferee != null
+                ? await _refereeAccessService.GetHeadRefereeMatchIdsAsync(currentReferee.Id, accessibleMatchIds)
+                : new HashSet<int>();
+            var assistantRefereeMatchIds = currentReferee != null
+                ? await _refereeAccessService.GetAssistantRefereeMatchIdsAsync(currentReferee.Id, accessibleMatchIds)
+                : new HashSet<int>();
+
+            var selectedAssignmentRole = vaiTroPhanCong is "Chinh" or "Phu" ? vaiTroPhanCong : string.Empty;
+            var requestedMatch = tranDauId.HasValue
+                ? accessibleMatches.FirstOrDefault(match => match.Id == tranDauId.Value)
+                : null;
+            if (tranDauId.HasValue && requestedMatch == null) return Forbid();
+            if (requestedMatch != null)
+            {
+                if (mainRefereeMatchIds.Contains(requestedMatch.Id)) selectedAssignmentRole = "Chinh";
+                else if (assistantRefereeMatchIds.Contains(requestedMatch.Id)) selectedAssignmentRole = "Phu";
+            }
+
+            var roleFilteredMatches = selectedAssignmentRole switch
+            {
+                "Chinh" => accessibleMatches.Where(match => mainRefereeMatchIds.Contains(match.Id)).ToList(),
+                "Phu" => accessibleMatches.Where(match => assistantRefereeMatchIds.Contains(match.Id)).ToList(),
+                _ => accessibleMatches
+            };
+            ViewBag.SelectedAssignmentRole = selectedAssignmentRole;
+
+            var availableSports = roleFilteredMatches
                 .GroupBy(match => match.GiaiDauMonTheThaoId)
                 .Select(group => new KeyValuePair<int, string>(
                     group.Key,
@@ -98,10 +134,6 @@ namespace API.Areas.TrongTai.Controllers
                 giaiDauMonTheThaoId = null;
             }
 
-            var requestedMatch = tranDauId.HasValue
-                ? accessibleMatches.FirstOrDefault(match => match.Id == tranDauId.Value)
-                : null;
-            if (tranDauId.HasValue && requestedMatch == null) return Forbid();
             if (requestedMatch != null && requestedMatch.GiaiDauMonTheThaoId != giaiDauMonTheThaoId)
             {
                 giaiDauMonTheThaoId = requestedMatch.GiaiDauMonTheThaoId;
@@ -110,8 +142,8 @@ namespace API.Areas.TrongTai.Controllers
             ViewBag.Sports = availableSports;
             ViewBag.SelectedGiaiDauMonTheThaoId = giaiDauMonTheThaoId;
             var matches = giaiDauMonTheThaoId.HasValue
-                ? accessibleMatches.Where(match => match.GiaiDauMonTheThaoId == giaiDauMonTheThaoId.Value).ToList()
-                : accessibleMatches;
+                ? roleFilteredMatches.Where(match => match.GiaiDauMonTheThaoId == giaiDauMonTheThaoId.Value).ToList()
+                : roleFilteredMatches;
             ViewBag.Matches = matches;
 
             TranDauDto? currentMatch = null;
@@ -167,6 +199,17 @@ namespace API.Areas.TrongTai.Controllers
                 catch { }
             }
 
+            if (currentMatch != null && matchFormat != null && matchFormat.LoaiTheThuc != "TinhDiemXepHang")
+            {
+                var persistedPeriods = await _tranDauService.GetMatchPeriodScoresAsync(currentMatch.Id);
+                if (persistedPeriods.Count > 0)
+                {
+                    setScores = persistedPeriods;
+                }
+                score1 = currentMatch.TySoDoi1 ?? score1;
+                score2 = currentMatch.TySoDoi2 ?? score2;
+            }
+
             ViewBag.Score1 = score1;
             ViewBag.Score2 = score2;
             ViewBag.Winner = winner;
@@ -175,6 +218,31 @@ namespace API.Areas.TrongTai.Controllers
             ViewBag.Events = events;
 
             return View(currentMatch);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> StartMatch([FromBody] StartMatchRequestDto dto)
+        {
+            if (dto == null || dto.TranDauId <= 0)
+            {
+                return BadRequest(new { success = false, message = "Thông tin trận đấu không hợp lệ." });
+            }
+
+            var match = await _tranDauService.GetByIdAsync(dto.TranDauId);
+            if (match == null) return NotFound(new { success = false, message = "Không tìm thấy trận đấu." });
+            if (!await CanRecordMatchAsync(match)) return Forbid();
+
+            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
+            try
+            {
+                var started = await _tranDauService.StartMatchAsync(dto.TranDauId, username);
+                if (!started) return NotFound(new { success = false, message = "Không tìm thấy trận đấu." });
+                return Json(new { success = true, message = "Trận đấu đã bắt đầu. Trọng tài có thể nhập điểm." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { success = false, message = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -241,6 +309,7 @@ namespace API.Areas.TrongTai.Controllers
                     PenaltyScore2 = dto.PenaltyScore2,
                     ExtraTimeScore1 = dto.ExtraTimeScore1,
                     ExtraTimeScore2 = dto.ExtraTimeScore2,
+                    SetScores = dto.SetScores,
                     TrangThai = dto.TrangThai,
                     GhiChu = scoreJson,
                     IsHoa = isDraw,
@@ -248,7 +317,7 @@ namespace API.Areas.TrongTai.Controllers
                     DoiThuaDangKyId = loserId
                 };
 
-                await _tranDauService.UpdateMatchProgressAsync(dto.TranDauId, updateDto, username);
+                await _tranDauService.UpdateMatchProgressAsync(dto.TranDauId, updateDto, username, requireInProgress: true);
                 return Json(new { success = true, message = "Đã lưu kết quả, điểm số và diễn biến trận đấu thành công!" });
             }
             catch (Exception ex)
