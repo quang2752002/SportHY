@@ -60,6 +60,15 @@ namespace Dms.Application.Interfaces
         Task<HashSet<int>> GetHeadRefereeMatchIdsAsync(int refereeId, IReadOnlyCollection<int> tranDauIds);
 
         /// <summary>
+        /// Lấy các trận trong danh sách mà trọng tài được phân công ở vai trò trọng tài phụ.
+        /// Bao gồm trọng tài phụ 1 và trọng tài phụ 2, đồng thời chuẩn hóa các tên vai trò cũ.
+        /// </summary>
+        /// <param name="refereeId">ID hồ sơ trọng tài.</param>
+        /// <param name="tranDauIds">Danh sách ID trận cần kiểm tra.</param>
+        /// <returns>Tập ID trận có phân công trọng tài phụ còn hiệu lực.</returns>
+        Task<HashSet<int>> GetAssistantRefereeMatchIdsAsync(int refereeId, IReadOnlyCollection<int> tranDauIds);
+
+        /// <summary>
         /// Kiểm tra trận đấu có thuộc giải đấu được chỉ định hay không.
         /// </summary>
         /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>

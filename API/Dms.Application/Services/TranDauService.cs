@@ -304,6 +304,37 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
+        /// Lọc và sắp xếp trận trên màn nhiệm vụ trọng tài: trận đang diễn ra trước, trận sắp diễn ra kế tiếp
+        /// theo thời gian gần nhất, và trận đã kết thúc ở cuối danh sách.
+        /// </summary>
+        /// <param name="matches">Các trận đã được giới hạn theo phạm vi mà người dùng được phép xem.</param>
+        /// <param name="monTheThaoId">Mã môn thể thao cần lọc; null nếu không lọc.</param>
+        /// <param name="danhMucMonTheThaoId">Mã danh mục môn cần lọc; null nếu không lọc.</param>
+        /// <returns>Danh sách trận sau khi lọc và sắp xếp theo mức độ ưu tiên điều hành.</returns>
+        public Task<IEnumerable<TranDauDto>> GetOrderedRefereeTaskMatchesAsync(
+            IEnumerable<TranDauDto> matches,
+            int? monTheThaoId = null,
+            int? danhMucMonTheThaoId = null)
+        {
+            var result = (matches ?? Enumerable.Empty<TranDauDto>())
+                .Where(match => !monTheThaoId.HasValue || match.MonTheThaoId == monTheThaoId.Value)
+                .Where(match => !danhMucMonTheThaoId.HasValue || match.DanhMucMonTheThaoId == danhMucMonTheThaoId.Value)
+                .OrderBy(match => match.TrangThai switch
+                {
+                    "DangDau" or "DangDienRa" => 0,
+                    "KetThuc" or "DaKetThuc" or "DaDau" => 2,
+                    _ => 1
+                })
+                .ThenBy(match => match.TrangThai == "KetThuc" || match.TrangThai == "DaKetThuc" || match.TrangThai == "DaDau"
+                    ? -(match.ThoiGianKetThuc ?? match.ThoiGianDuKien ?? DateTime.MinValue).Ticks
+                    : (match.ThoiGianDuKien ?? DateTime.MaxValue).Ticks)
+                .ThenBy(match => match.SoTran)
+                .ToList();
+
+            return Task.FromResult<IEnumerable<TranDauDto>>(result);
+        }
+
+        /// <summary>
         /// Verifies match access using the user's elevated tournament permission or an explicit referee assignment.
         /// </summary>
         /// <param name="tranDauId">The match ID to check.</param>

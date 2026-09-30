@@ -141,6 +141,19 @@ namespace Dms.Application.Interfaces
         Task<IEnumerable<TranDauDto>> GetAccessibleMatchesAsync(int? giaiDauId, int? trongTaiId, bool allowAllMatches);
 
         /// <summary>
+        /// Lọc và sắp xếp trận trên màn nhiệm vụ trọng tài: trận đang diễn ra trước, trận sắp diễn ra kế tiếp
+        /// theo thời gian gần nhất, và trận đã kết thúc ở cuối danh sách.
+        /// </summary>
+        /// <param name="matches">Các trận đã được giới hạn theo phạm vi mà người dùng được phép xem.</param>
+        /// <param name="monTheThaoId">Mã môn thể thao cần lọc; null nếu không lọc.</param>
+        /// <param name="danhMucMonTheThaoId">Mã danh mục môn cần lọc; null nếu không lọc.</param>
+        /// <returns>Danh sách trận sau khi lọc và sắp xếp theo mức độ ưu tiên điều hành.</returns>
+        Task<IEnumerable<TranDauDto>> GetOrderedRefereeTaskMatchesAsync(
+            IEnumerable<TranDauDto> matches,
+            int? monTheThaoId = null,
+            int? danhMucMonTheThaoId = null);
+
+        /// <summary>
         /// Kiểm tra người gọi có thể truy cập trận dựa trên quyền giám sát hoặc phân công trọng tài thực tế.
         /// </summary>
         /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>

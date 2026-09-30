@@ -61,7 +61,11 @@ namespace API.Areas.TrongTai.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null, int? giaiDauMonTheThaoId = null)
+        public async Task<IActionResult> Index(
+            int? tranDauId = null,
+            int? giaiDauId = null,
+            int? giaiDauMonTheThaoId = null,
+            string? vaiTroPhanCong = null)
         {
             var currentReferee = await GetCurrentRefereeAsync();
             var canBrowseAll = CanBrowseAllMatches();
@@ -84,7 +88,34 @@ namespace API.Areas.TrongTai.Controllers
                 ? (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentReferee?.Id, canBrowseAll))?.ToList() ?? new()
                 : new List<TranDauDto>();
 
-            var availableSports = accessibleMatches
+            var accessibleMatchIds = accessibleMatches.Select(match => match.Id).ToList();
+            var mainRefereeMatchIds = currentReferee != null
+                ? await _refereeAccessService.GetHeadRefereeMatchIdsAsync(currentReferee.Id, accessibleMatchIds)
+                : new HashSet<int>();
+            var assistantRefereeMatchIds = currentReferee != null
+                ? await _refereeAccessService.GetAssistantRefereeMatchIdsAsync(currentReferee.Id, accessibleMatchIds)
+                : new HashSet<int>();
+
+            var selectedAssignmentRole = vaiTroPhanCong is "Chinh" or "Phu" ? vaiTroPhanCong : string.Empty;
+            var requestedMatch = tranDauId.HasValue
+                ? accessibleMatches.FirstOrDefault(match => match.Id == tranDauId.Value)
+                : null;
+            if (tranDauId.HasValue && requestedMatch == null) return Forbid();
+            if (requestedMatch != null)
+            {
+                if (mainRefereeMatchIds.Contains(requestedMatch.Id)) selectedAssignmentRole = "Chinh";
+                else if (assistantRefereeMatchIds.Contains(requestedMatch.Id)) selectedAssignmentRole = "Phu";
+            }
+
+            var roleFilteredMatches = selectedAssignmentRole switch
+            {
+                "Chinh" => accessibleMatches.Where(match => mainRefereeMatchIds.Contains(match.Id)).ToList(),
+                "Phu" => accessibleMatches.Where(match => assistantRefereeMatchIds.Contains(match.Id)).ToList(),
+                _ => accessibleMatches
+            };
+            ViewBag.SelectedAssignmentRole = selectedAssignmentRole;
+
+            var availableSports = roleFilteredMatches
                 .GroupBy(match => match.GiaiDauMonTheThaoId)
                 .Select(group => new KeyValuePair<int, string>(
                     group.Key,
@@ -98,10 +129,6 @@ namespace API.Areas.TrongTai.Controllers
                 giaiDauMonTheThaoId = null;
             }
 
-            var requestedMatch = tranDauId.HasValue
-                ? accessibleMatches.FirstOrDefault(match => match.Id == tranDauId.Value)
-                : null;
-            if (tranDauId.HasValue && requestedMatch == null) return Forbid();
             if (requestedMatch != null && requestedMatch.GiaiDauMonTheThaoId != giaiDauMonTheThaoId)
             {
                 giaiDauMonTheThaoId = requestedMatch.GiaiDauMonTheThaoId;
@@ -110,8 +137,8 @@ namespace API.Areas.TrongTai.Controllers
             ViewBag.Sports = availableSports;
             ViewBag.SelectedGiaiDauMonTheThaoId = giaiDauMonTheThaoId;
             var matches = giaiDauMonTheThaoId.HasValue
-                ? accessibleMatches.Where(match => match.GiaiDauMonTheThaoId == giaiDauMonTheThaoId.Value).ToList()
-                : accessibleMatches;
+                ? roleFilteredMatches.Where(match => match.GiaiDauMonTheThaoId == giaiDauMonTheThaoId.Value).ToList()
+                : roleFilteredMatches;
             ViewBag.Matches = matches;
 
             TranDauDto? currentMatch = null;
