@@ -474,33 +474,6 @@
                 <span class="d-none d-sm-inline fw-semibold text-dark" style="font-size: 14px;">
                     Cổng Ban Trọng Tài & Giám Sát
                 </span>
-                @if (managedTournaments.Count > 0)
-                {
-                    <span class="d-none d-sm-inline text-muted">•</span>
-                    <form method="get" id="formSelectGiaiDau" class="m-0 d-inline-flex align-items-center gap-1.5">
-                        <label for="selectGiaiDauId" class="small text-muted d-none d-md-inline mb-0" style="font-size: 12px;">Giải:</label>
-                        <select id="selectGiaiDauId" name="giaiDauId" class="form-select form-select-sm fw-semibold" style="min-width: 200px; max-width: 320px; border-color: #b8cfea; background-color: #f7faff;" onchange="document.getElementById('formSelectGiaiDau').submit();">
-                            @foreach (var g in managedTournaments)
-                            {
-                                if (ViewBag.SelectedGiaiDauId != null && (int)ViewBag.SelectedGiaiDauId == g.Id)
-                                {
-                                    <option value="@g.Id" selected>@g.Ten</option>
-                                }
-                                else
-                                {
-                                    <option value="@g.Id">@g.Ten</option>
-                                }
-                            }
-                        </select>
-                    </form>
-                }
-                else
-                {
-                    <span class="badge badge-soft-amber rounded-pill px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1">
-                        <i class="fa-solid fa-circle-info text-warning"></i>
-                        Chưa có giải đấu
-                    </span>
-                }
             </div>
         </div>
 
@@ -530,6 +503,43 @@
     <!-- Main Content Body -->
     <main class="trongtai-main">
         <div class="container-fluid p-0">
+            @if (managedTournaments.Count > 0)
+            {
+                <div class="card-custom p-3 mb-4">
+                    <form method="get" id="formSelectGiaiDau" action="@Context.Request.Path">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-4 col-lg-3">
+                                <label for="selectGiaiDauId" class="form-label small fw-semibold mb-1">Chọn giải đấu</label>
+                                <select id="selectGiaiDauId" name="giaiDauId" class="form-select form-select-sm fw-semibold" onchange="this.form.submit();">
+                                    @foreach (var g in managedTournaments)
+                                    {
+                                        if (ViewBag.SelectedGiaiDauId != null && (int)ViewBag.SelectedGiaiDauId == g.Id)
+                                        {
+                                            <option value="@g.Id" selected="selected">@g.Ten</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@g.Id">@g.Ten</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-8 col-lg-9 d-flex align-items-end">
+                                <span class="small text-muted">
+                                    <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                                    Các dữ liệu phân công và kiểm tra lịch đang hiển thị theo giải đấu đã chọn.
+                                </span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info border-0 shadow-sm py-2.5 mb-4">
+                    <i class="fa-solid fa-circle-info me-1"></i> Chưa có giải đấu được phân công cho Trưởng ban trọng tài.
+                </div>
+            }
             @RenderBody()
         </div>
     </main>

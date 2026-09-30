@@ -22,7 +22,7 @@ namespace API.Areas.TruongBanTrongTai.Controllers
             _refereeService = refereeService;
         }
 
-        public async Task<IActionResult> Index(int? giaiDauId, int? monTheThaoId, string? status, DateTime? date, int? trongTaiId)
+        public async Task<IActionResult> Index(int? giaiDauId, int? monTheThaoId, string? status, DateTime? date, int? trongTaiId, int? tranDauId)
         {
             var managedTournaments = await GetManagedTournamentsAsync();
             var currentReferee = await GetCurrentRefereeAsync();
@@ -48,6 +48,9 @@ namespace API.Areas.TruongBanTrongTai.Controllers
             }
 
             var assignments = await _truongBanService.GetMatchAssignmentsAsync(selectedGiaiDauId.Value, monTheThaoId, status, date, trongTaiId);
+            ViewBag.TargetMatchId = tranDauId.HasValue && assignments.Any(match => match.TranDauId == tranDauId.Value)
+                ? tranDauId
+                : null;
 
             // Môn thể thao và danh sách trọng tài phục vụ View
             var allMons = await _monTheThaoService.GetAllAsync();

@@ -5,9 +5,27 @@
     var allReferees = ViewBag.AllReferees as List<Dms.Application.DTOs.TrongTaiDto> ?? new();
     int? selectedMonId = ViewBag.SelectedMonId is int selectedId ? selectedId : null;
     int? selectedRefereeId = ViewBag.SelectedRefereeId is int selectedReferee ? selectedReferee : null;
+    int? targetMatchId = ViewBag.TargetMatchId is int targetId ? targetId : null;
     var selectedSport = selectedMonId.HasValue
         ? sportList.FirstOrDefault(sport => sport.Id == selectedMonId.Value)
         : null;
+}
+
+@section Styles {
+    <style>
+        .assignment-match-row.assignment-match-row-target > td {
+            background-color: #fff8db !important;
+            box-shadow: inset 0 3px 0 #f0ad00, inset 0 -3px 0 #f0ad00;
+        }
+
+        .assignment-match-row-target > td:first-child {
+            box-shadow: inset 4px 3px 0 #f0ad00, inset 0 -3px 0 #f0ad00;
+        }
+
+        .assignment-match-row-target > td:last-child {
+            box-shadow: inset 0 3px 0 #f0ad00, inset -4px -3px 0 #f0ad00;
+        }
+    </style>
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
@@ -157,7 +175,9 @@
                 {
                     foreach (var item in Model)
                     {
-                        <tr>
+                        <tr id="match-row-@item.TranDauId"
+                            class="assignment-match-row @(targetMatchId == item.TranDauId ? "assignment-match-row-target" : string.Empty)"
+                            data-match-id="@item.TranDauId">
                             <td>
                                 <div class="fw-bold text-dark">#@item.SoTran - @item.TenTran</div>
                                 <div class="badge bg-light text-secondary border small mt-1">@item.TenVongDau</div>
@@ -381,10 +401,27 @@
 @section Scripts {
     <script>
         var giaiDauId = @(ViewBag.SelectedGiaiDauId ?? 0);
+        var targetMatchId = @(targetMatchId ?? 0);
         var monTheThaoId = @(ViewBag.SelectedMonId ?? "null");
         var selectedDate = '@(ViewBag.SelectedDate ?? "")';
         var draftChanges = {};
         var refereeFilterStorageKey = 'phanCongRefereeFilter_' + giaiDauId;
+
+        function focusTargetMatch() {
+            if (!targetMatchId) return;
+
+            var targetRow = document.querySelector('[data-match-id="' + targetMatchId + '"]');
+            if (!targetRow) return;
+
+            targetRow.classList.add('assignment-match-row-target');
+            window.setTimeout(function () {
+                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                var firstAction = targetRow.querySelector('.referee-slot button');
+                if (firstAction) firstAction.focus({ preventScroll: true });
+            }, 150);
+        }
+
+        document.addEventListener('DOMContentLoaded', focusTargetMatch);
         var conflictRequestToken = 0;
         var currentWarningData = {
             isOverloaded: false,
