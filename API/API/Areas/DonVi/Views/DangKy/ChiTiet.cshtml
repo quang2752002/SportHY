@@ -673,18 +673,13 @@
                             showConfirmButton: false
                         });
 
-                        // Reset form
-                        $('#selectSport').val('');
+                        // Giữ nguyên danh mục và môn thi đấu để người dùng tiếp tục đăng ký.
                         $('#inputTenDoi').val('');
                         $('#inputGhiChu').val('');
                         selectedAthletes = [];
                         updateAthleteCheckboxes();
-                        onSportChanged();
 
-                        // Switch to tab "Hồ sơ đã gửi"
-                        const submittedTabTrigger = document.querySelector('#tab-submitted-reg');
-                        const tab = new bootstrap.Tab(submittedTabTrigger);
-                        tab.show();
+                        // Giữ nguyên tab đăng ký để người dùng tiếp tục thao tác trên trang hiện tại.
                         loadSubmittedRegistrations();
                     } else {
                         Swal.fire('Lỗi', res.message || 'Không thể gửi đăng ký', 'error');

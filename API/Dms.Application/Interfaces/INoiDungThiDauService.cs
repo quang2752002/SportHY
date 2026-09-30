@@ -1,5 +1,6 @@
 using Dms.Application.DTOs;
 using Dms.Domain.Common;
+using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -23,6 +24,24 @@ namespace Dms.Application.Interfaces
         Task<VanDongVienDto> CreateAsync(CreateUpdateVanDongVienDto dto, string? createdBy = null);
         Task<VanDongVienDto?> UpdateAsync(int id, CreateUpdateVanDongVienDto dto, string? updatedBy = null);
         Task<bool> DeleteAsync(int id);
+
+        /// <summary>Đọc và kiểm tra tệp Excel để tạo danh sách tạm cho màn hình xem trước, chưa ghi dữ liệu vào cơ sở dữ liệu.</summary>
+        /// <param name="fileStream">Luồng dữ liệu của tệp Excel .xlsx cần nhập.</param>
+        /// <param name="fileName">Tên tệp dùng để kiểm tra phần mở rộng và thông báo lỗi.</param>
+        /// <param name="donViId">Mã định danh đơn vị đang quản lý danh sách vận động viên.</param>
+        /// <returns>Dữ liệu tạm gồm các dòng vận động viên và lỗi để người dùng chỉnh sửa trước khi lưu.</returns>
+        Task<VanDongVienImportPreviewDto> PreviewFromExcelAsync(Stream fileStream, string fileName, int donViId);
+
+        /// <summary>Kiểm tra và lưu toàn bộ danh sách vận động viên đã được chỉnh sửa từ màn hình xem trước.</summary>
+        /// <param name="rows">Danh sách dòng vận động viên người dùng xác nhận lưu.</param>
+        /// <param name="donViId">Mã định danh đơn vị sở hữu danh sách vận động viên.</param>
+        /// <param name="createdBy">Tài khoản thực hiện thao tác lưu dữ liệu.</param>
+        /// <returns>Kết quả lưu; nếu còn lỗi thì không lưu bất kỳ dòng nào.</returns>
+        Task<VanDongVienImportResultDto> SaveImportedAsync(IEnumerable<VanDongVienImportRowDto> rows, int donViId, string? createdBy = null);
+
+        /// <summary>Tạo tệp Excel mẫu chứa tiêu đề cột, định dạng nhập liệu và hướng dẫn sử dụng cho danh sách vận động viên.</summary>
+        /// <returns>Mảng byte của tệp Excel mẫu .xlsx.</returns>
+        Task<byte[]> GenerateImportTemplateAsync();
     }
 
     public interface IDoiService
