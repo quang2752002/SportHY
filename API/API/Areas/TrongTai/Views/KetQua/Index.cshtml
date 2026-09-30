@@ -6,6 +6,7 @@
     var sports = ViewBag.Sports as List<KeyValuePair<int, string>> ?? new();
     int? selectedGiaiDauId = ViewBag.SelectedGiaiDauId as int?;
     int? selectedGiaiDauMonTheThaoId = ViewBag.SelectedGiaiDauMonTheThaoId as int?;
+    string selectedAssignmentRole = ViewBag.SelectedAssignmentRole as string ?? string.Empty;
     var matchFormat = ViewBag.MatchFormat as CauHinhTheThucDto;
     bool canRecordResult = ViewBag.CanRecordResult == true;
 
@@ -65,7 +66,7 @@
     <div class="card-custom p-3">
         <form method="get" action="/TrongTai/KetQua" id="pickerForm">
             <div class="row g-2 align-items-end">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label small fw-semibold mb-1">1. Chọn Giải Đấu</label>
                     <select name="giaiDauId" class="form-select form-select-sm" onchange="document.getElementById('sportSelect').value=''; document.getElementById('matchSelect').value=''; this.form.submit()">
                         @if (tournaments.Count == 0)
@@ -102,8 +103,31 @@
                         }
                     </select>
                 </div>
-                <div class="col-md-5">
-                    <label class="form-label small fw-semibold mb-1">3. Chọn Trận Đấu Cần Điều Hành</label>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold mb-1">3. Lọc theo vai trò</label>
+                    <select id="assignmentRoleSelect" name="vaiTroPhanCong" class="form-select form-select-sm" onchange="document.getElementById('sportSelect').value=''; document.getElementById('matchSelect').value=''; this.form.submit()">
+                        @if (selectedAssignmentRole == "Chinh")
+                        {
+                            <option value="">-- Tất cả vai trò --</option>
+                            <option value="Chinh" selected="selected">Trọng tài chính</option>
+                            <option value="Phu">Trọng tài phụ</option>
+                        }
+                        else if (selectedAssignmentRole == "Phu")
+                        {
+                            <option value="">-- Tất cả vai trò --</option>
+                            <option value="Chinh">Trọng tài chính</option>
+                            <option value="Phu" selected="selected">Trọng tài phụ</option>
+                        }
+                        else
+                        {
+                            <option value="" selected="selected">-- Tất cả vai trò --</option>
+                            <option value="Chinh">Trọng tài chính</option>
+                            <option value="Phu">Trọng tài phụ</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold mb-1">4. Chọn Trận Đấu Cần Điều Hành</label>
                     <select id="matchSelect" name="tranDauId" class="form-select form-select-sm" onchange="this.form.submit()">
                         @if (matches.Count == 0)
                         {

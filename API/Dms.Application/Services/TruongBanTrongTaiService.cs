@@ -202,6 +202,37 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
+        /// Lấy các trận trong danh sách mà trọng tài được phân công làm trọng tài phụ 1 hoặc phụ 2.
+        /// Các tên vai trò legacy được chuẩn hóa để kết quả bao quát cả dữ liệu phân công cũ.
+        /// </summary>
+        /// <param name="refereeId">ID hồ sơ trọng tài cần tra cứu.</param>
+        /// <param name="tranDauIds">Danh sách ID trận cần kiểm tra.</param>
+        /// <returns>Tập ID trận có phân công trọng tài phụ còn hiệu lực.</returns>
+        public async Task<HashSet<int>> GetAssistantRefereeMatchIdsAsync(int refereeId, IReadOnlyCollection<int> tranDauIds)
+        {
+            if (refereeId <= 0 || tranDauIds == null || tranDauIds.Count == 0)
+            {
+                return new HashSet<int>();
+            }
+
+            var matchIds = tranDauIds.Distinct().ToList();
+            var assignments = await _unitOfWork.PhanCongTrongTais.FindAsync(assignment =>
+                matchIds.Contains(assignment.TranDauId) &&
+                assignment.TrongTaiId == refereeId &&
+                assignment.IsDeleted != true);
+
+            return assignments
+                .Where(assignment =>
+                {
+                    var role = NormalizeRefereeRole(assignment.VaiTro);
+                    return string.Equals(role, "Trọng tài phụ 1", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(role, "Trọng tài phụ 2", StringComparison.OrdinalIgnoreCase);
+                })
+                .Select(assignment => assignment.TranDauId)
+                .ToHashSet();
+        }
+
+        /// <summary>
         /// Kiểm tra trận đấu có thuộc giải đấu được chỉ định hay không.
         /// </summary>
         /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
