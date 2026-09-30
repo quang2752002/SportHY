@@ -14,10 +14,16 @@
                 Đơn vị: <span class="fw-semibold text-emerald">@(currentUnit?.Ten ?? "Đoàn VĐV")</span> • Quản lý danh sách thành viên đoàn tham gia các giải
             </p>
         </div>
-        <button class="btn btn-donvi-primary rounded-pill px-3.5 py-2 d-inline-flex align-items-center gap-2" onclick="openCreateModal()">
-            <i class="fa-solid fa-user-plus"></i>
-            <span>Thêm Vận Động Viên</span>
-        </button>
+        <div class="d-flex flex-wrap justify-content-end gap-2">
+            <button class="btn btn-outline-success rounded-pill px-3.5 py-2 d-inline-flex align-items-center gap-2" onclick="openImportModal()">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>Nhập từ Excel</span>
+            </button>
+            <button class="btn btn-donvi-primary rounded-pill px-3.5 py-2 d-inline-flex align-items-center gap-2" onclick="openCreateModal()">
+                <i class="fa-solid fa-user-plus"></i>
+                <span>Thêm Vận Động Viên</span>
+            </button>
+        </div>
     </div>
 
     <!-- Filter Card -->
@@ -179,6 +185,95 @@
     </div>
 </div>
 
+<!-- Modal Nhập danh sách VĐV từ Excel -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white py-2.5 px-3">
+                <h6 class="modal-title fw-bold"><i class="fa-solid fa-file-excel me-2"></i>Nhập Vận Động Viên từ Excel</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="importForm" novalidate>
+                <div class="modal-body p-4">
+                    <div class="alert alert-success-subtle border border-success-subtle small mb-3">
+                        <div class="fw-semibold text-success mb-1"><i class="fa-solid fa-circle-info me-1"></i>Hướng dẫn nhanh</div>
+                        <div class="text-muted">Tải file mẫu, nhập mỗi vận động viên trên một dòng rồi tải lên. Mã VĐV sẽ được hệ thống tự tạo; ảnh đại diện có thể bổ sung sau.</div>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <span class="small text-muted">Định dạng hỗ trợ: <strong>.xlsx</strong>, tối đa 10 MB.</span>
+                        <a class="btn btn-sm btn-outline-success rounded-pill" href="/DonVi/VanDongVien/DownloadImportTemplate">
+                            <i class="fa-solid fa-download me-1"></i>Tải file Excel mẫu
+                        </a>
+                    </div>
+                    <label for="importExcelFile" class="form-label small fw-semibold">Chọn file Excel <span class="text-danger">*</span></label>
+                    <input type="file" id="importExcelFile" class="form-control" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required />
+                    <div class="invalid-feedback">Vui lòng chọn file Excel định dạng .xlsx.</div>
+                    <div class="form-text mt-2">Các cột bắt buộc: Họ tên, giới tính, ngày sinh, CCCD/định danh, số điện thoại, email và địa chỉ/quê quán.</div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-sm btn-donvi-primary px-3" id="btnImportExcel">
+                        <i class="fa-solid fa-file-import me-1"></i>Nhập dữ liệu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xem trước và chỉnh sửa danh sách VĐV từ Excel -->
+<div class="modal fade" id="importPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white py-2.5 px-3">
+                <div>
+                    <h6 class="modal-title fw-bold"><i class="fa-solid fa-table-list me-2"></i>Kiểm tra danh sách Vận Động Viên</h6>
+                    <div class="small opacity-75">Dữ liệu mới chỉ đang ở màn hình tạm, chưa được lưu vào hệ thống.</div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <div class="small" id="importPreviewSummary"></div>
+                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill" onclick="addImportPreviewRow()">
+                        <i class="fa-solid fa-plus me-1"></i>Thêm dòng
+                    </button>
+                </div>
+                <div class="alert alert-warning-subtle border border-warning-subtle small py-2 mb-3">
+                    <i class="fa-solid fa-circle-info me-1"></i>Hãy kiểm tra hoặc bổ sung thông tin. Nếu còn lỗi, hệ thống sẽ không lưu bất kỳ vận động viên nào.
+                </div>
+                <div class="table-responsive border rounded" style="max-height: 58vh;">
+                    <table class="table table-sm table-bordered align-middle mb-0" style="min-width: 1800px; font-size: 12px;">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th style="width: 52px;">Dòng</th>
+                                <th style="min-width: 190px;">Họ và tên *</th>
+                                <th style="min-width: 105px;">Giới tính *</th>
+                                <th style="min-width: 125px;">Ngày sinh *</th>
+                                <th style="min-width: 165px;">CCCD / Định danh *</th>
+                                <th style="min-width: 155px;">Số điện thoại *</th>
+                                <th style="min-width: 210px;">Email *</th>
+                                <th style="min-width: 245px;">Địa chỉ / Quê quán *</th>
+                                <th style="min-width: 115px;">Trạng thái</th>
+                                <th style="min-width: 330px;">Ảnh đại diện</th>
+                                <th style="min-width: 250px;">Lỗi cần sửa</th>
+                                <th style="width: 58px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="importPreviewBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-sm btn-donvi-primary px-3" id="btnSaveImported" onclick="saveImportedVdv()">
+                    <i class="fa-solid fa-floppy-disk me-1"></i>Lưu danh sách
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Xem Chi Tiết VĐV -->
 <div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -203,11 +298,16 @@
         const pageSize = 10;
         let vdvModal = null;
         let viewModal = null;
+        let importModal = null;
+        let importPreviewModal = null;
+        let pendingImportRows = [];
         let avatarPreviewObjectUrl = null;
 
         $(document).ready(function () {
             vdvModal = new bootstrap.Modal(document.getElementById('vdvModal'));
             viewModal = new bootstrap.Modal(document.getElementById('viewModal'));
+            importModal = new bootstrap.Modal(document.getElementById('importModal'));
+            importPreviewModal = new bootstrap.Modal(document.getElementById('importPreviewModal'));
             setAvatarPreview('');
             $('#vdvForm .invalid-feedback').each(function () {
                 $(this).data('defaultMessage', $(this).text());
@@ -265,6 +365,30 @@
                 e.preventDefault();
                 saveVdv();
             });
+
+            $('#importForm').on('submit', function (e) {
+                e.preventDefault();
+                importVdvFromExcel();
+            });
+
+            $('#importPreviewBody').on('input', '[data-field="hinhAnh"]', function () {
+                const rowElement = $(this).closest('.import-preview-row');
+                const index = Number(rowElement.data('index'));
+                const row = pendingImportRows[index];
+                if (!row) return;
+
+                row.hinhAnh = $(this).val().trim();
+                if (row.hinhAnh) {
+                    row.hinhAnhData = null;
+                    row.hinhAnhFileName = null;
+                    rowElement.find('[data-avatar-file]').val('');
+                }
+                applyImportAvatarPreview(rowElement, row);
+            });
+
+            $('#importPreviewBody').on('change', '[data-avatar-file]', function () {
+                handleImportAvatarFile(this);
+            });
         });
 
         function resetFilters() {
@@ -273,6 +397,12 @@
             $('#filterTrangThai').val('');
             currentPage = 1;
             loadData();
+        }
+
+        function openImportModal() {
+            $('#importForm')[0].reset();
+            $('#importForm').removeClass('was-validated');
+            importModal.show();
         }
 
         function loadData() {
@@ -629,6 +759,327 @@
             } finally {
                 $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Vận Động Viên');
             }
+        }
+
+        async function importVdvFromExcel() {
+            const form = $('#importForm')[0];
+            const fileInput = $('#importExcelFile')[0];
+            const file = fileInput.files && fileInput.files[0];
+            const extension = file ? file.name.split('.').pop().toLowerCase() : '';
+
+            fileInput.setCustomValidity('');
+            if (!file) {
+                fileInput.setCustomValidity('Vui lòng chọn file Excel cần nhập.');
+            } else if (extension !== 'xlsx') {
+                fileInput.setCustomValidity('Chỉ hỗ trợ file Excel định dạng .xlsx.');
+            } else if (file.size > 10 * 1024 * 1024) {
+                fileInput.setCustomValidity('File Excel không được vượt quá 10 MB.');
+            }
+
+            $('#importForm').addClass('was-validated');
+            if (!form.checkValidity()) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            $('#btnImportExcel').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Đang nhập...');
+
+            try {
+                const response = await $.ajax({
+                    url: '/DonVi/VanDongVien/ImportExcel',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false
+                });
+
+                if (response.success) {
+                    const importData = response.data || {};
+                    pendingImportRows = importData.rows || [];
+                    importModal.hide();
+                    renderImportPreview();
+                    importPreviewModal.show();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Không thể nhập dữ liệu',
+                        text: response.message || 'File Excel không hợp lệ.',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            } catch (error) {
+                const message = error.responseJSON?.message || 'Không thể kết nối đến máy chủ.';
+                Swal.fire('Lỗi', message, 'error');
+            } finally {
+                $('#btnImportExcel').prop('disabled', false).html('<i class="fa-solid fa-file-import me-1"></i>Nhập dữ liệu');
+            }
+        }
+
+        function renderImportPreview() {
+            const tbody = $('#importPreviewBody');
+            const validCount = pendingImportRows.filter(row => !(row.errors || []).length).length;
+            const errorCount = pendingImportRows.length - validCount;
+            $('#importPreviewSummary').html(`Tổng <strong>${pendingImportRows.length}</strong> dòng • <span class="text-success fw-semibold">${validCount} hợp lệ</span> • <span class="text-danger fw-semibold">${errorCount} cần sửa</span>`);
+
+            if (!pendingImportRows.length) {
+                tbody.html('<tr><td colspan="12" class="text-center py-4 text-muted">Không có dòng dữ liệu để kiểm tra.</td></tr>');
+                return;
+            }
+
+            tbody.html(pendingImportRows.map((row, index) => {
+                const errors = row.errors || [];
+                const rowNumber = row.rowNumber > 0 ? row.rowNumber : 'Mới';
+                const errorHtml = errors.length
+                    ? `<ul class="mb-0 ps-3 text-danger">${errors.map(error => `<li>${escapeHtml(error)}</li>`).join('')}</ul>`
+                    : '<span class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Hợp lệ</span>';
+                const gender = row.gioiTinh === 'Nữ' ? 'Nữ' : row.gioiTinh === 'Nam' ? 'Nam' : '';
+                const status = row.trangThai === false ? 'false' : 'true';
+
+                return `
+                    <tr class="import-preview-row ${errors.length ? 'table-danger' : ''}" data-index="${index}">
+                        <td class="text-center fw-semibold">${escapeHtml(rowNumber)}</td>
+                        <td><input type="text" class="form-control form-control-sm" data-field="hoTen" value="${escapeHtml(row.hoTen || '')}" maxlength="200"></td>
+                        <td><select class="form-select form-select-sm" data-field="gioiTinh"><option value="">-- Chọn --</option><option value="Nam" ${gender === 'Nam' ? 'selected' : ''}>Nam</option><option value="Nữ" ${gender === 'Nữ' ? 'selected' : ''}>Nữ</option></select></td>
+                        <td><input type="text" class="form-control form-control-sm" data-field="ngaySinh" value="${escapeHtml(row.ngaySinh || '')}" placeholder="dd/MM/yyyy" maxlength="10"></td>
+                        <td><input type="text" class="form-control form-control-sm" data-field="soCCCD" value="${escapeHtml(row.soCCCD || '')}" maxlength="12"></td>
+                        <td><input type="text" class="form-control form-control-sm" data-field="soDienThoai" value="${escapeHtml(row.soDienThoai || '')}" maxlength="30"></td>
+                        <td><input type="email" class="form-control form-control-sm" data-field="email" value="${escapeHtml(row.email || '')}" maxlength="200"></td>
+                        <td><input type="text" class="form-control form-control-sm" data-field="diaChi" value="${escapeHtml(row.diaChi || '')}" maxlength="500"></td>
+                        <td><select class="form-select form-select-sm" data-field="trangThai"><option value="true" ${status === 'true' ? 'selected' : ''}>Sẵn sàng</option><option value="false" ${status === 'false' ? 'selected' : ''}>Tạm ngừng</option></select></td>
+                        <td>
+                            <div class="d-flex align-items-start gap-2">
+                                <div class="rounded border bg-light d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden" style="width:42px;height:42px;">
+                                    <i class="fa-solid fa-user text-secondary" data-avatar-placeholder></i>
+                                    <img class="d-none w-100 h-100 object-fit-cover" data-avatar-preview alt="Ảnh đại diện xem trước">
+                                </div>
+                                <div class="flex-grow-1 min-width-0">
+                                    <input type="url" class="form-control form-control-sm" data-field="hinhAnh" value="${escapeHtml(row.hinhAnh || '')}" maxlength="1000" placeholder="URL https://...">
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <label class="btn btn-sm btn-outline-success py-0 px-2 mb-0">
+                                            <i class="fa-solid fa-image me-1"></i>Đổi ảnh
+                                            <input type="file" class="d-none" data-avatar-file accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                                        </label>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="clearImportAvatar(${index})">Xóa</button>
+                                        <span class="small text-muted text-truncate" data-avatar-name title="${escapeHtml(row.hinhAnhFileName || (row.hinhAnh ? 'Ảnh từ URL' : 'Chưa chọn ảnh'))}">${escapeHtml(row.hinhAnhFileName || (row.hinhAnh ? 'Ảnh từ URL' : 'Chưa chọn ảnh'))}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${errorHtml}</td>
+                        <td class="text-center"><button type="button" class="btn btn-sm btn-light border text-danger" title="Xóa dòng" onclick="removeImportPreviewRow(${index})"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+            }).join(''));
+            applyImportAvatarPreviews();
+        }
+
+        function applyImportAvatarPreviews() {
+            $('#importPreviewBody .import-preview-row').each(function () {
+                const index = Number($(this).data('index'));
+                const row = pendingImportRows[index];
+                if (row) {
+                    applyImportAvatarPreview($(this), row);
+                }
+            });
+        }
+
+        function applyImportAvatarPreview(rowElement, row) {
+            const image = rowElement.find('[data-avatar-preview]');
+            const placeholder = rowElement.find('[data-avatar-placeholder]');
+            const fileName = rowElement.find('[data-avatar-name]');
+            const dataUrl = String(row.hinhAnhData || '');
+            const imageUrl = /^data:image\/(?:jpeg|png|webp);base64,/i.test(dataUrl)
+                ? dataUrl
+                : (isSafeAvatarUrl(row.hinhAnh) ? String(row.hinhAnh).trim() : '');
+
+            if (imageUrl) {
+                image.attr('src', imageUrl).removeClass('d-none');
+                placeholder.addClass('d-none');
+            } else {
+                image.attr('src', '').addClass('d-none');
+                placeholder.removeClass('d-none');
+            }
+
+            const displayName = row.hinhAnhFileName || (row.hinhAnh ? 'Ảnh từ URL' : 'Chưa chọn ảnh');
+            fileName.text(displayName).attr('title', displayName);
+        }
+
+        function readImportAvatarAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ''));
+                reader.onerror = () => reject(new Error('Không thể đọc tệp ảnh.'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handleImportAvatarFile(input) {
+            const rowElement = $(input).closest('.import-preview-row');
+            const index = Number(rowElement.data('index'));
+            const row = pendingImportRows[index];
+            const file = input.files && input.files[0];
+            if (!row || !file) return;
+
+            const extension = file.name.split('.').pop().toLowerCase();
+            const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+            if (!allowedExtensions.includes(extension)) {
+                input.value = '';
+                Swal.fire('Ảnh không hợp lệ', 'Chỉ chấp nhận ảnh JPG, JPEG, PNG hoặc WEBP.', 'warning');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                input.value = '';
+                Swal.fire('Ảnh quá lớn', 'Ảnh đại diện không được vượt quá 5 MB.', 'warning');
+                return;
+            }
+
+            try {
+                row.hinhAnhData = await readImportAvatarAsDataUrl(file);
+                row.hinhAnhFileName = file.name;
+                row.hinhAnh = '';
+                rowElement.find('[data-field="hinhAnh"]').val('');
+                applyImportAvatarPreview(rowElement, row);
+            } catch (error) {
+                input.value = '';
+                Swal.fire('Lỗi đọc ảnh', error.message || 'Không thể đọc tệp ảnh.', 'error');
+            }
+        }
+
+        function clearImportAvatar(index) {
+            syncImportPreviewRows();
+            const row = pendingImportRows[index];
+            if (!row) return;
+
+            row.hinhAnh = '';
+            row.hinhAnhData = null;
+            row.hinhAnhFileName = null;
+            renderImportPreview();
+        }
+
+        function syncImportPreviewRows() {
+            $('#importPreviewBody .import-preview-row').each(function () {
+                const index = Number($(this).data('index'));
+                const row = pendingImportRows[index];
+                if (!row) return;
+
+                row.hoTen = $(this).find('[data-field="hoTen"]').val().trim();
+                row.gioiTinh = $(this).find('[data-field="gioiTinh"]').val();
+                row.ngaySinh = $(this).find('[data-field="ngaySinh"]').val().trim();
+                row.soCCCD = $(this).find('[data-field="soCCCD"]').val().trim();
+                row.soDienThoai = $(this).find('[data-field="soDienThoai"]').val().trim();
+                row.email = $(this).find('[data-field="email"]').val().trim();
+                row.diaChi = $(this).find('[data-field="diaChi"]').val().trim();
+                row.trangThai = $(this).find('[data-field="trangThai"]').val() === 'true';
+                row.trangThaiText = row.trangThai ? 'Sẵn sàng' : 'Tạm ngừng';
+                row.hinhAnh = $(this).find('[data-field="hinhAnh"]').val().trim();
+                if (row.hinhAnh) {
+                    row.hinhAnhData = null;
+                    row.hinhAnhFileName = null;
+                }
+            });
+        }
+
+        function addImportPreviewRow() {
+            syncImportPreviewRows();
+            pendingImportRows.push({
+                rowNumber: 0,
+                hoTen: '',
+                gioiTinh: '',
+                ngaySinh: '',
+                soCCCD: '',
+                soDienThoai: '',
+                email: '',
+                diaChi: '',
+                trangThai: true,
+                trangThaiText: 'Sẵn sàng',
+                hinhAnh: '',
+                hinhAnhData: null,
+                hinhAnhFileName: null,
+                errors: ['Dòng mới chưa được nhập đủ thông tin.']
+            });
+            renderImportPreview();
+            $('#importPreviewBody .import-preview-row:last [data-field="hoTen"]').trigger('focus');
+        }
+
+        function removeImportPreviewRow(index) {
+            syncImportPreviewRows();
+            pendingImportRows.splice(index, 1);
+            renderImportPreview();
+        }
+
+        async function saveImportedVdv() {
+            syncImportPreviewRows();
+            if (!pendingImportRows.length) {
+                Swal.fire('Thông báo', 'Danh sách tạm chưa có vận động viên nào.', 'info');
+                return;
+            }
+
+            const payload = pendingImportRows.map(row => ({
+                rowNumber: row.rowNumber,
+                hoTen: row.hoTen,
+                gioiTinh: row.gioiTinh,
+                ngaySinh: row.ngaySinh,
+                soCCCD: row.soCCCD,
+                soDienThoai: row.soDienThoai,
+                email: row.email,
+                diaChi: row.diaChi,
+                trangThai: row.trangThai,
+                trangThaiText: row.trangThaiText,
+                hinhAnh: row.hinhAnh,
+                hinhAnhData: row.hinhAnhData || null,
+                hinhAnhFileName: row.hinhAnhFileName || null
+            }));
+
+            $('#btnSaveImported').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Đang lưu...');
+            try {
+                const response = await $.ajax({
+                    url: '/DonVi/VanDongVien/SaveImported',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload)
+                });
+
+                if (response.success) {
+                    importPreviewModal.hide();
+                    pendingImportRows = [];
+                    loadData();
+                    Swal.fire({ icon: 'success', title: 'Lưu thành công', text: response.message, timer: 1800, showConfirmButton: false });
+                } else {
+                    const errors = response.data?.errors || [];
+                    applyImportSaveErrors(errors);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Chưa thể lưu danh sách',
+                        text: response.message || 'Vui lòng kiểm tra lại các dòng dữ liệu.',
+                        html: errors.length ? `${escapeHtml(response.message || '')}${renderImportErrors(errors)}` : undefined,
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            } catch (error) {
+                Swal.fire('Lỗi', error.responseJSON?.message || 'Không thể kết nối đến máy chủ.', 'error');
+            } finally {
+                $('#btnSaveImported').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i>Lưu danh sách');
+            }
+        }
+
+        function applyImportSaveErrors(errors) {
+            pendingImportRows.forEach((row, index) => {
+                const rowNumber = row.rowNumber > 0 ? row.rowNumber : index + 1;
+                row.errors = errors.filter(error => Number(error.rowNumber) === Number(rowNumber)).map(error => error.error);
+            });
+            renderImportPreview();
+        }
+
+        function renderImportErrors(errors) {
+            if (!errors || errors.length === 0) return '';
+
+            const visibleErrors = errors.slice(0, 10).map(error =>
+                `<li>Dòng ${error.rowNumber}: ${escapeHtml(error.error || 'Dữ liệu không hợp lệ.')}${error.hoTen ? ` <span class="text-muted">(${escapeHtml(error.hoTen)})</span>` : ''}</li>`
+            ).join('');
+            const remaining = errors.length > 10 ? `<div class="small text-muted mt-1">Và ${errors.length - 10} dòng lỗi khác.</div>` : '';
+            return `<div class="text-start small mt-3"><div class="fw-semibold mb-1">Chi tiết lỗi:</div><ul class="mb-0 ps-3">${visibleErrors}</ul>${remaining}</div>`;
         }
 
         function viewDetail(id) {
