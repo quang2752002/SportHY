@@ -521,7 +521,14 @@ namespace Dms.Application.DTOs
     public class AutoScheduleRequestDto
     {
         public int GiaiDauMonTheThaoId { get; set; }
+        /// <summary>Ngày bắt đầu thi đấu của môn này</summary>
         public DateTime NgayBatDau { get; set; } = DateTime.Today;
+        /// <summary>Ngày kết thúc thi đấu của môn này (mặc định lấy theo ngày bế mạc giải nếu null)</summary>
+        public DateTime? NgayKetThuc { get; set; }
+        /// <summary>Bật chế độ phân bổ đều các trận đấu xuyên suốt các ngày từ ngày bắt đầu đến ngày kết thúc</summary>
+        public bool PhanBoDeuXuyenSuot { get; set; } = true;
+        /// <summary>Số trận tối đa môn này diễn ra trong 1 ngày (nếu null hoặc 0 sẽ tự động tính đều theo số ngày)</summary>
+        public int? SoTranToiDaMoiNgayCuaMon { get; set; }
         public string GioBatDauMoiNgay { get; set; } = "08:00";
         public string GioKetThucMoiNgay { get; set; } = "17:30";
 
@@ -838,6 +845,10 @@ namespace Dms.Application.DTOs
         public int GiaiDauMonTheThaoId { get; set; }
         public string? TenMonTheThao { get; set; }
         public string? HinhThucThiDau { get; set; }
+        public bool IsKetHopVongBangKnockout { get; set; }
+        public int SoBangCauHinh { get; set; }
+        public int SoDoiMoiBang { get; set; }
+        public int SoDoiMoiBangVaoVongTrong { get; set; }
         public bool LaMonDongDoi { get; set; }
         public List<VongDauDto> VongDaus { get; set; } = new();
         public List<BangDauDto> BangDaus { get; set; } = new();
@@ -855,7 +866,17 @@ namespace Dms.Application.DTOs
         public int GiaiDauMonTheThaoId { get; set; }
         public int? VongDauId { get; set; }
         public int? BangDauId { get; set; }
+        public List<ManualTeamGroupAssignmentDto>? TeamGroups { get; set; }
         public List<ManualPairSaveItemDto> Pairs { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Thông tin phân chia đội vào bảng đấu thủ công
+    /// </summary>
+    public class ManualTeamGroupAssignmentDto
+    {
+        public int DangKyThiDauId { get; set; }
+        public int BangDauId { get; set; }
     }
 
     /// <summary>

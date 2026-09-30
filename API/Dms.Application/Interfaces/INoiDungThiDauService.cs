@@ -232,6 +232,15 @@ namespace Dms.Application.Interfaces
         /// <param name="username">Tài khoản người thực hiện thao tác</param>
         /// <returns>Đối tượng AdvanceGroupStageResultDto chứa kết quả, thông báo và danh sách bảng chưa hoàn thành</returns>
         Task<AdvanceGroupStageResultDto> AdvanceGroupStageWinnersAsync(int giaiDauMonTheThaoId, bool forceAdvance = false, string? username = null);
+
+        /// <summary>
+        /// Khởi tạo hoặc bổ sung danh sách các bảng đấu (Bảng A, B, C...) cho môn thi đấu theo số lượng chỉ định.
+        /// </summary>
+        /// <param name="giaiDauMonTheThaoId">Mã định danh môn thi đấu trong giải</param>
+        /// <param name="targetSoBang">Số lượng bảng đấu cần đảm bảo</param>
+        /// <param name="username">Tài khoản người thực hiện thao tác</param>
+        /// <returns>Danh sách các bảng đấu sau khi khởi tạo</returns>
+        Task<List<BangDauDto>> InitBangDausAsync(int giaiDauMonTheThaoId, int targetSoBang, string? username = null);
     }
 
     public interface IBangDauService

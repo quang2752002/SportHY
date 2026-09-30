@@ -160,7 +160,13 @@ namespace API.Areas.Manager.Controllers
         {
             var giaiDau = await _giaiDauService.GetByIdAsync(giaiDauId);
             if (giaiDau == null) return Json(new { success = false, data = new List<object>() });
-            return Json(new { success = true, data = giaiDau.MonTheThaos });
+            return Json(new { 
+                success = true, 
+                data = giaiDau.MonTheThaos,
+                ngayBatDau = giaiDau.NgayBatDau.ToString("yyyy-MM-dd"),
+                ngayKetThuc = giaiDau.NgayKetThuc.ToString("yyyy-MM-dd"),
+                tenGiaiDau = giaiDau.Ten
+            });
         }
 
         [HttpGet]
@@ -186,6 +192,22 @@ namespace API.Areas.Manager.Controllers
             {
                 var result = await _tranDauService.SaveManualPairingAsync(request, username);
                 return Json(new { success = true, message = "Đã lưu xếp cặp thi đấu thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> InitGroupsForMon(int giaiDauMonTheThaoId, int? soBang = null)
+        {
+            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Manager";
+
+            try
+            {
+                var bangDaus = await _tranDauService.InitBangDausAsync(giaiDauMonTheThaoId, soBang ?? 0, username);
+                return Json(new { success = true, message = $"Đã khởi tạo {bangDaus.Count} bảng đấu thành công!", data = bangDaus });
             }
             catch (Exception ex)
             {
