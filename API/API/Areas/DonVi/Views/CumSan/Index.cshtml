@@ -1,0 +1,172 @@
+@{
+    ViewData["Title"] = "Cụm Sân Thi Đấu";
+}
+
+<div class="container-fluid px-0">
+    <div class="card-custom p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom pb-3 mb-4">
+            <div>
+                <h4 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-map-location-dot text-success me-2"></i>Cụm Sân Thi Đấu</h4>
+                <p class="text-muted small mb-0">Nhấn vào một cụm sân để xem và quản lý các sân thuộc cụm.</p>
+            </div>
+            <button type="button" class="btn btn-donvi-primary rounded-3" onclick="openCreateModal()"><i class="fa-solid fa-plus me-1"></i> Thêm cụm sân</button>
+        </div>
+
+        <div class="p-3 bg-light rounded-3 border mb-4">
+            <div class="row g-2">
+                <div class="col-md-7"><input id="keyword" class="form-control bg-white" placeholder="Tìm theo tên, mã, địa chỉ..."></div>
+                <div class="col-md-3"><select id="trangThaiFilter" class="form-select bg-white"><option value="">-- Tất cả trạng thái --</option><option value="true">Đang hoạt động</option><option value="false">Tạm dừng</option></select></div>
+                <div class="col-md-2"><button class="btn btn-outline-secondary w-100" onclick="resetFilter()"><i class="fa-solid fa-arrows-rotate me-1"></i>Làm mới</button></div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead><tr><th>STT</th><th>Tên cụm sân</th><th>Mã</th><th>Địa chỉ</th><th>Số sân</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
+                <tbody id="tblBody"><tr><td colspan="7" class="text-center py-5 text-muted">Đang tải...</td></tr></tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center border-top pt-3">
+            <small id="paginationInfo" class="text-muted">Hiển thị 0 trên 0 cụm sân</small>
+            <ul id="paginationList" class="pagination pagination-sm mb-0"></ul>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCumSan" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow rounded-4">
+        <div class="modal-header"><h5 class="modal-title fw-bold" id="cumSanModalTitle">Thêm cụm sân</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form id="formCumSan"><input type="hidden" id="cumSanId">
+            <div class="modal-body">
+                <label class="form-label">Tên cụm sân <span class="text-danger">*</span></label><input id="cumSanTen" class="form-control mb-3" required>
+                <label class="form-label">Mã cụm sân</label><input id="cumSanMa" class="form-control mb-3" placeholder="Để trống sẽ tự sinh">
+                <label class="form-label">Địa chỉ</label><input id="cumSanDiaChi" class="form-control mb-3">
+                <label class="form-label">Mô tả</label><textarea id="cumSanMoTa" class="form-control mb-3" rows="3"></textarea>
+                <div class="form-check form-switch"><input id="cumSanTrangThai" class="form-check-input" type="checkbox" checked><label for="cumSanTrangThai" class="form-check-label">Đang hoạt động</label></div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button><button class="btn btn-donvi-primary" type="submit">Lưu thông tin</button></div>
+        </form>
+    </div></div>
+</div>
+
+<div class="modal fade" id="modalSanDau" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content border-0 shadow rounded-4">
+        <div class="modal-header"><h5 class="modal-title fw-bold" id="sanDauModalTitle">Thêm sân đấu</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form id="formSanDau"><input type="hidden" id="sanDauId"><div class="modal-body"><div class="row g-3">
+            <div class="col-md-8"><label class="form-label">Tên sân <span class="text-danger">*</span></label><input id="sanDauTen" class="form-control" required></div>
+            <div class="col-md-4"><label class="form-label">Mã sân</label><input id="sanDauMa" class="form-control" placeholder="Để trống sẽ tự sinh"></div>
+            <div class="col-md-6"><label class="form-label">Cụm sân <span class="text-danger">*</span></label><select id="sanDauCumSanId" class="form-select" required></select></div>
+            <div class="col-md-6"><label class="form-label">Môn thể thao</label><select id="sanDauMonTheThaoId" class="form-select"></select></div>
+            <div class="col-md-4"><label class="form-label">Loại mặt sân</label><input id="sanDauLoaiSan" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label">Số sân</label><input id="sanDauSoSan" type="number" min="0" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label">Sức chứa</label><input id="sanDauSucChua" type="number" min="0" class="form-control"></div>
+            <div class="col-12"><label class="form-label">Mô tả</label><textarea id="sanDauMoTa" class="form-control" rows="3"></textarea></div>
+            <div class="col-12"><div class="form-check form-switch"><input id="sanDauTrangThai" class="form-check-input" type="checkbox" checked><label for="sanDauTrangThai" class="form-check-label">Đang hoạt động</label></div></div>
+        </div></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button><button class="btn btn-donvi-primary" type="submit">Lưu thông tin</button></div></form>
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+    let currentPage = 1;
+    let activeCourtCumSanId = null;
+    const pageSize = 10;
+
+    $(function () {
+        loadData(1);
+        $('#keyword').on('keypress', e => { if (e.which === 13) loadData(1); });
+        $('#trangThaiFilter').on('change', () => loadData(1));
+        $('#formCumSan').on('submit', e => { e.preventDefault(); saveCumSan(); });
+        $('#formSanDau').on('submit', e => { e.preventDefault(); saveSanDau(); });
+        $('#tblBody').on('click', '[data-action="toggle-courts"]', function () { toggleCourts($(this).data('cum-san-id')); });
+        $('#tblBody').on('click', '[data-action="edit-cum-san"]', function () { openEditModal($(this).data('id')); });
+        $('#tblBody').on('click', '[data-action="delete-cum-san"]', function () { deleteCumSan($(this).data('id')); });
+    });
+
+    function loadData(page) {
+        currentPage = page;
+        $.get('/DonVi/CumSan/GetPagedData', { pageIndex: page, pageSize, keyword: $('#keyword').val().trim() || undefined, trangThai: $('#trangThaiFilter').val() === '' ? undefined : $('#trangThaiFilter').val() === 'true' }, function (res) {
+            if (res.success && res.data) renderTable(res.data); else showError(res.message);
+        });
+    }
+
+    function renderTable(data) {
+        const items = data.items || [];
+        if (!items.length) { $('#tblBody').html('<tr><td colspan="7" class="text-center py-5 text-muted">Chưa có cụm sân nào.</td></tr>'); $('#paginationInfo').text('Hiển thị 0 trên 0 cụm sân'); $('#paginationList').empty(); return; }
+        const start = (data.pageIndex - 1) * data.pageSize;
+        $('#tblBody').html(items.map((item, index) => `<tr class="cum-san-row">
+            <td>${start + index + 1}</td>
+            <td><button type="button" class="btn btn-link p-0 text-decoration-none text-start" data-action="toggle-courts" data-cum-san-id="${item.id}"><i class="fa-solid fa-chevron-right text-success me-2 court-toggle-icon"></i><span class="fw-bold text-dark">${escapeHtml(item.ten)}</span></button><small class="d-block text-muted ms-4">${escapeHtml(item.moTa || '-')}</small></td>
+            <td><span class="badge bg-light text-secondary border">${escapeHtml(item.ma)}</span></td>
+            <td>${escapeHtml(item.diaChi || '-')}</td>
+            <td><button type="button" class="btn btn-sm badge-soft-emerald border-0 p-2" data-action="toggle-courts" data-cum-san-id="${item.id}">${item.soSanHienCo || 0} sân</button></td>
+            <td><span class="badge ${item.trangThai ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} rounded-pill">${item.trangThai ? 'Hoạt động' : 'Tạm dừng'}</span></td>
+            <td class="text-end"><button class="btn btn-sm btn-outline-success me-1" data-action="edit-cum-san" data-id="${item.id}" title="Sửa"><i class="fa-solid fa-pen"></i></button><button class="btn btn-sm btn-outline-danger" data-action="delete-cum-san" data-id="${item.id}" title="Xóa"><i class="fa-solid fa-trash"></i></button></td>
+        </tr>`).join(''));
+        const total = data.totalCount || 0;
+        $('#paginationInfo').text(`Hiển thị ${start + 1} - ${Math.min(start + data.pageSize, total)} trên tổng số ${total} cụm sân`);
+        renderPagination(data.pageIndex, data.totalPages);
+    }
+
+    function toggleCourts(cumSanId) {
+        const detailId = `courts-${cumSanId}`;
+        if ($(`#${detailId}`).length) { $(`#${detailId}`).remove(); updateToggleIcon(cumSanId, false); return; }
+        const parentRow = $(`[data-cum-san-id="${cumSanId}"]`).first().closest('tr');
+        parentRow.after(`<tr id="${detailId}" class="court-detail-row"><td colspan="7" class="bg-light p-3"><div class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-2"></i>Đang tải danh sách sân...</div></td></tr>`);
+        updateToggleIcon(cumSanId, true);
+        $.get('/DonVi/CumSan/GetCourts', { cumSanId }, function (res) {
+            if (res.success && res.data) renderCourtDetails(cumSanId, res.data.items || []); else showCourtError(cumSanId, res.message);
+        }).fail(() => showCourtError(cumSanId, 'Không thể tải danh sách sân.'));
+    }
+
+    function renderCourtDetails(cumSanId, items) {
+        const detailCell = $(`#courts-${cumSanId} td`);
+        const rows = items.length ? items.map((item, index) => `<tr>
+            <td>${index + 1}</td><td><span class="fw-semibold">${escapeHtml(item.ten)}</span><small class="d-block text-muted">${escapeHtml(item.loaiSan || '-')}</small></td><td><span class="badge bg-white text-secondary border">${escapeHtml(item.ma)}</span></td><td>${escapeHtml(item.tenMonTheThao || 'Đa năng')}</td><td>${item.sucChua ? `${item.sucChua} người` : '-'}</td><td><span class="badge ${item.trangThai ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} rounded-pill">${item.trangThai ? 'Hoạt động' : 'Tạm dừng'}</span></td><td class="text-end"><button class="btn btn-sm btn-outline-success me-1" onclick="openCourtEditModal(${item.id})" title="Sửa"><i class="fa-solid fa-pen"></i></button><button class="btn btn-sm btn-outline-danger" onclick="deleteCourt(${item.id}, ${cumSanId})" title="Xóa"><i class="fa-solid fa-trash"></i></button></td>
+        </tr>`).join('') : '<tr><td colspan="7" class="text-center text-muted py-3">Cụm sân này chưa có sân đấu.</td></tr>';
+        detailCell.html(`<div class="bg-white border rounded-3 p-3"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-semibold text-success"><i class="fa-solid fa-futbol me-2"></i>Các sân thuộc cụm</span><button class="btn btn-sm btn-donvi-primary" onclick="openCreateCourtModal(${cumSanId})"><i class="fa-solid fa-plus me-1"></i>Thêm sân</button></div><div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0"><thead><tr><th>STT</th><th>Tên sân</th><th>Mã sân</th><th>Môn chuyên dụng</th><th>Sức chứa</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead><tbody>${rows}</tbody></table></div></div>`);
+    }
+
+    function showCourtError(cumSanId, message) { $(`#courts-${cumSanId} td`).html(`<div class="text-center text-danger py-3">${escapeHtml(message || 'Không thể tải danh sách sân.')}</div>`); }
+    function updateToggleIcon(cumSanId, expanded) { $(`[data-cum-san-id="${cumSanId}"]`).find('.court-toggle-icon').toggleClass('fa-chevron-right', !expanded).toggleClass('fa-chevron-down', expanded); }
+
+    function openCreateModal() { $('#cumSanModalTitle').text('Thêm cụm sân'); $('#cumSanId').val(''); $('#cumSanTen,#cumSanMa,#cumSanDiaChi,#cumSanMoTa').val(''); $('#cumSanTrangThai').prop('checked', true); $('#modalCumSan').modal('show'); }
+    function openEditModal(id) { $.get('/DonVi/CumSan/GetById', { id }, function (res) { if (!res.success) return showError(res.message); const item = res.data; $('#cumSanModalTitle').text('Sửa cụm sân'); $('#cumSanId').val(item.id); $('#cumSanTen').val(item.ten); $('#cumSanMa').val(item.ma || ''); $('#cumSanDiaChi').val(item.diaChi || ''); $('#cumSanMoTa').val(item.moTa || ''); $('#cumSanTrangThai').prop('checked', item.trangThai); $('#modalCumSan').modal('show'); }); }
+    function saveCumSan() {
+        const id = $('#cumSanId').val();
+        const payload = { ten: $('#cumSanTen').val().trim(), ma: $('#cumSanMa').val().trim() || null, diaChi: $('#cumSanDiaChi').val().trim() || null, moTa: $('#cumSanMoTa').val().trim() || null, trangThai: $('#cumSanTrangThai').is(':checked') };
+        if (!payload.ten) return showError('Vui lòng nhập tên cụm sân.');
+        $.ajax({ url: id ? `/DonVi/CumSan/Save?id=${id}` : '/DonVi/CumSan/Save', type: 'POST', contentType: 'application/json', data: JSON.stringify(payload), success: function (res) { if (!res.success) return showError(res.message); $('#modalCumSan').modal('hide'); toastSuccess(res.message); loadData(currentPage); } });
+    }
+    function deleteCumSan(id) { Swal.fire({ title: 'Xóa cụm sân?', text: 'Dữ liệu sẽ được xóa mềm.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa', cancelButtonText: 'Hủy' }).then(result => { if (!result.isConfirmed) return; $.post('/DonVi/CumSan/Delete', { id }, function (res) { if (res.success) { toastSuccess(res.message); loadData(currentPage); } else showError(res.message); }); }); }
+
+    function loadCourtLookups(selectedCumSanId, selectedMonTheThaoId) {
+        $.get('/DonVi/SanDau/GetLookupData', function (res) {
+            if (!res.success || !res.data) return showError(res.message);
+            $('#sanDauCumSanId').empty();
+            (res.data.cumSans || []).forEach(item => $('#sanDauCumSanId').append(`<option value="${item.id}">${escapeHtml(item.ten)}</option>`));
+            $('#sanDauMonTheThaoId').empty().append('<option value="">-- Dùng chung nhiều môn --</option>');
+            (res.data.monTheThaos || []).forEach(item => $('#sanDauMonTheThaoId').append(`<option value="${item.id}">${escapeHtml(item.ten)}</option>`));
+            if (selectedCumSanId) $('#sanDauCumSanId').val(selectedCumSanId);
+            $('#sanDauMonTheThaoId').val(selectedMonTheThaoId || '');
+        });
+    }
+    function openCreateCourtModal(cumSanId) { activeCourtCumSanId = cumSanId; loadCourtLookups(cumSanId); $('#sanDauModalTitle').text('Thêm sân đấu'); $('#sanDauId').val(''); $('#sanDauTen,#sanDauMa,#sanDauLoaiSan,#sanDauSoSan,#sanDauSucChua,#sanDauMoTa').val(''); $('#sanDauMonTheThaoId').val(''); $('#sanDauTrangThai').prop('checked', true); $('#modalSanDau').modal('show'); }
+    function openCourtEditModal(id) { $.get('/DonVi/SanDau/GetById', { id }, function (res) { if (!res.success) return showError(res.message); const item = res.data; activeCourtCumSanId = item.cumSanId; loadCourtLookups(item.cumSanId, item.monTheThaoId); $('#sanDauModalTitle').text('Sửa sân đấu'); $('#sanDauId').val(item.id); $('#sanDauTen').val(item.ten); $('#sanDauMa').val(item.ma || ''); $('#sanDauLoaiSan').val(item.loaiSan || ''); $('#sanDauSoSan').val(item.soSan || ''); $('#sanDauSucChua').val(item.sucChua || ''); $('#sanDauMoTa').val(item.moTa || ''); $('#sanDauTrangThai').prop('checked', item.trangThai); $('#modalSanDau').modal('show'); }); }
+    function saveSanDau() {
+        const id = $('#sanDauId').val();
+        const payload = { ten: $('#sanDauTen').val().trim(), ma: $('#sanDauMa').val().trim() || null, cumSanId: parseInt($('#sanDauCumSanId').val() || '0'), monTheThaoId: $('#sanDauMonTheThaoId').val() ? parseInt($('#sanDauMonTheThaoId').val()) : null, loaiSan: $('#sanDauLoaiSan').val().trim() || null, soSan: $('#sanDauSoSan').val() ? parseInt($('#sanDauSoSan').val()) : null, sucChua: $('#sanDauSucChua').val() ? parseInt($('#sanDauSucChua').val()) : null, moTa: $('#sanDauMoTa').val().trim() || null, trangThai: $('#sanDauTrangThai').is(':checked') };
+        if (!payload.ten || !payload.cumSanId) return showError('Vui lòng nhập tên sân và chọn cụm sân.');
+        const oldCumSanId = activeCourtCumSanId;
+        $.ajax({ url: id ? `/DonVi/SanDau/Save?id=${id}` : '/DonVi/SanDau/Save', type: 'POST', contentType: 'application/json', data: JSON.stringify(payload), success: function (res) { if (!res.success) return showError(res.message); $('#modalSanDau').modal('hide'); toastSuccess(res.message); loadData(currentPage); refreshCourtDetails(oldCumSanId); if (payload.cumSanId !== oldCumSanId) refreshCourtDetails(payload.cumSanId); } });
+    }
+    function deleteCourt(id, cumSanId) { Swal.fire({ title: 'Xóa sân đấu?', text: 'Dữ liệu sẽ được xóa mềm.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa', cancelButtonText: 'Hủy' }).then(result => { if (!result.isConfirmed) return; $.post('/DonVi/SanDau/Delete', { id }, function (res) { if (res.success) { toastSuccess(res.message); refreshCourtDetails(cumSanId); loadData(currentPage); } else showError(res.message); }); }); }
+    function refreshCourtDetails(cumSanId) { if (!cumSanId || !$(`#courts-${cumSanId}`).length) return; $.get('/DonVi/CumSan/GetCourts', { cumSanId }, function (res) { if (res.success && res.data) renderCourtDetails(cumSanId, res.data.items || []); }); }
+
+    function renderPagination(current, totalPages) { if (totalPages <= 1) { $('#paginationList').empty(); return; } let html = `<li class="page-item ${current === 1 ? 'disabled' : ''}"><a class="page-link" href="javascript:void(0)" onclick="loadData(${current - 1})">&laquo;</a></li>`; for (let i = 1; i <= totalPages; i++) if (i === 1 || i === totalPages || (i >= current - 2 && i <= current + 2)) html += `<li class="page-item ${i === current ? 'active' : ''}"><a class="page-link" href="javascript:void(0)" onclick="loadData(${i})">${i}</a></li>`; html += `<li class="page-item ${current === totalPages ? 'disabled' : ''}"><a class="page-link" href="javascript:void(0)" onclick="loadData(${current + 1})">&raquo;</a></li>`; $('#paginationList').html(html); }
+    function resetFilter() { $('#keyword').val(''); $('#trangThaiFilter').val(''); loadData(1); }
+    function escapeHtml(value) { return $('<div>').text(value ?? '').html(); }
+    function showError(message) { Swal.fire('Lỗi', message || 'Có lỗi xảy ra.', 'error'); }
+    function toastSuccess(message) { if (window.SportApp && SportApp.toast) SportApp.toast('success', message); else Swal.fire({ icon: 'success', title: message, timer: 1200, showConfirmButton: false }); }
+</script>
+}

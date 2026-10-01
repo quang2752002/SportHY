@@ -8,6 +8,10 @@ namespace Dms.Domain.Entities
     [Table("CumSan")]
     public class CumSan : BaseEntity
     {
+        public int DonViId { get; set; }
+        [ForeignKey(nameof(DonViId))]
+        public virtual DonVi DonVi { get; set; } = null!;
+
         [Required]
         [MaxLength(50)]
         public string Ma { get; set; } = string.Empty;

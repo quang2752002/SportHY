@@ -3,6 +3,8 @@ using Dms.Application.DTOs;
 using Dms.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Globalization;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -27,9 +29,10 @@ namespace API.Controllers
             [FromQuery] string? keyword = null,
             [FromQuery] int? cumSanId = null,
             [FromQuery] int? monTheThaoId = null,
-            [FromQuery] bool? trangThai = null)
+            [FromQuery] bool? trangThai = null,
+            [FromQuery] int? donViId = null)
         {
-            var result = await _sanDauService.GetPagedAsync(pageIndex, pageSize, keyword, cumSanId, monTheThaoId, trangThai);
+            var result = await _sanDauService.GetPagedAsync(pageIndex, pageSize, keyword, cumSanId, monTheThaoId, trangThai, donViId);
             return Ok(result);
         }
 
@@ -37,9 +40,10 @@ namespace API.Controllers
         [Authorize(Policy = Permissions.SanDau.View)]
         public async Task<IActionResult> GetAll(
             [FromQuery] int? cumSanId = null,
-            [FromQuery] int? monTheThaoId = null)
+            [FromQuery] int? monTheThaoId = null,
+            [FromQuery] int? donViId = null)
         {
-            var result = await _sanDauService.GetAllAsync(cumSanId, monTheThaoId);
+            var result = await _sanDauService.GetAllAsync(cumSanId, monTheThaoId, donViId);
             return Ok(result);
         }
 
@@ -53,31 +57,81 @@ namespace API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Policy = Permissions.SanDau.Create)]
+        [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Delegation)]
         public async Task<IActionResult> Create([FromBody] CreateUpdateSanDauDto dto)
         {
+            if (dto == null) return BadRequest(new { message = "Dữ liệu sân đấu không hợp lệ." });
+
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var result = await _sanDauService.CreateAsync(dto, username);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            try
+            {
+                SanDauDto result;
+                if (User.IsInRole(AppRoles.Delegation))
+                {
+                    var donViId = GetCurrentDonViId();
+                    if (!donViId.HasValue) return Forbid();
+                    result = await _sanDauService.CreateForDonViAsync(dto, donViId.Value, username);
+                }
+                else
+                {
+                    result = await _sanDauService.CreateAsync(dto, username);
+                }
+
+                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
-        [Authorize(Policy = Permissions.SanDau.Edit)]
+        [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Delegation)]
         public async Task<IActionResult> Update(int id, [FromBody] CreateUpdateSanDauDto dto)
         {
+            if (dto == null) return BadRequest(new { message = "Dữ liệu sân đấu không hợp lệ." });
+
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var result = await _sanDauService.UpdateAsync(id, dto, username);
-            if (result == null) return NotFound(new { message = "Không tìm thấy sân đấu để cập nhật." });
+            SanDauDto? result;
+            if (User.IsInRole(AppRoles.Delegation))
+            {
+                var donViId = GetCurrentDonViId();
+                if (!donViId.HasValue) return Forbid();
+                result = await _sanDauService.UpdateForDonViAsync(id, dto, donViId.Value, username);
+            }
+            else
+            {
+                result = await _sanDauService.UpdateAsync(id, dto, username);
+            }
+
+            if (result == null) return NotFound(new { message = "Không tìm thấy sân đấu trong phạm vi được phép." });
             return Ok(result);
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Policy = Permissions.SanDau.Delete)]
+        [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Delegation)]
         public async Task<IActionResult> Delete(int id)
         {
-            var success = await _sanDauService.DeleteAsync(id);
-            if (!success) return NotFound(new { message = "Không tìm thấy sân đấu để xóa." });
-            return Ok(new { message = "Đã xóa sân đấu thành công." });
+            bool success;
+            if (User.IsInRole(AppRoles.Delegation))
+            {
+                var donViId = GetCurrentDonViId();
+                if (!donViId.HasValue) return Forbid();
+                success = await _sanDauService.DeleteForDonViAsync(id, donViId.Value);
+            }
+            else
+            {
+                success = await _sanDauService.DeleteAsync(id);
+            }
+
+            if (!success) return NotFound(new { message = "Không tìm thấy sân đấu trong phạm vi được phép." });
+            return Ok(new { message = "Đã xóa mềm sân đấu thành công." });
+        }
+
+        private int? GetCurrentDonViId()
+        {
+            var value = User.FindFirst("donViId")?.Value;
+            return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var donViId) ? donViId : null;
         }
     }
 }

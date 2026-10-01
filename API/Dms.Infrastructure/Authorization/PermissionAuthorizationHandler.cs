@@ -13,6 +13,15 @@ namespace Dms.Infrastructure.Authorization
                 return Task.CompletedTask;
             }
 
+            // Manager chỉ được xem cụm sân và sân đấu; quyền ghi dữ liệu đã chuyển về tài khoản Đơn vị.
+            var isSanDauMutation = requirement.Permission == Dms.Application.Common.Permissions.SanDau.Create ||
+                                   requirement.Permission == Dms.Application.Common.Permissions.SanDau.Edit ||
+                                   requirement.Permission == Dms.Application.Common.Permissions.SanDau.Delete;
+            if (isSanDauMutation && context.User.IsInRole(Dms.Application.Common.AppRoles.Manager))
+            {
+                return Task.CompletedTask;
+            }
+
             // 1. Quản trị viên (Admin) và Quản lý (Manager) có toàn quyền trên mọi policy
             if (context.User.IsInRole(Dms.Application.Common.AppRoles.Admin) || 
                 context.User.IsInRole(Dms.Application.Common.AppRoles.Manager))
