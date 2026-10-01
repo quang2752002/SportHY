@@ -3,6 +3,8 @@ using Dms.Application.DTOs;
 using Dms.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Globalization;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -25,17 +27,18 @@ namespace API.Controllers
             [FromQuery] int pageIndex = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] string? keyword = null,
-            [FromQuery] bool? trangThai = null)
+            [FromQuery] bool? trangThai = null,
+            [FromQuery] int? donViId = null)
         {
-            var result = await _cumSanService.GetPagedAsync(pageIndex, pageSize, keyword, trangThai);
+            var result = await _cumSanService.GetPagedAsync(pageIndex, pageSize, keyword, trangThai, donViId);
             return Ok(result);
         }
 
         [HttpGet]
         [Authorize(Policy = Permissions.SanDau.View)]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int? donViId = null)
         {
-            var result = await _cumSanService.GetAllAsync();
+            var result = await _cumSanService.GetAllAsync(donViId);
             return Ok(result);
         }
 
@@ -49,31 +52,81 @@ namespace API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Policy = Permissions.SanDau.Create)]
+        [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Delegation)]
         public async Task<IActionResult> Create([FromBody] CreateUpdateCumSanDto dto)
         {
+            if (dto == null) return BadRequest(new { message = "Dữ liệu cụm sân không hợp lệ." });
+
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var result = await _cumSanService.CreateAsync(dto, username);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            try
+            {
+                CumSanDto result;
+                if (User.IsInRole(AppRoles.Delegation))
+                {
+                    var donViId = GetCurrentDonViId();
+                    if (!donViId.HasValue) return Forbid();
+                    result = await _cumSanService.CreateForDonViAsync(dto, donViId.Value, username);
+                }
+                else
+                {
+                    result = await _cumSanService.CreateAsync(dto, username);
+                }
+
+                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
-        [Authorize(Policy = Permissions.SanDau.Edit)]
+        [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Delegation)]
         public async Task<IActionResult> Update(int id, [FromBody] CreateUpdateCumSanDto dto)
         {
+            if (dto == null) return BadRequest(new { message = "Dữ liệu cụm sân không hợp lệ." });
+
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var result = await _cumSanService.UpdateAsync(id, dto, username);
-            if (result == null) return NotFound(new { message = "Không tìm thấy cụm sân để cập nhật." });
+            CumSanDto? result;
+            if (User.IsInRole(AppRoles.Delegation))
+            {
+                var donViId = GetCurrentDonViId();
+                if (!donViId.HasValue) return Forbid();
+                result = await _cumSanService.UpdateForDonViAsync(id, dto, donViId.Value, username);
+            }
+            else
+            {
+                result = await _cumSanService.UpdateAsync(id, dto, username);
+            }
+
+            if (result == null) return NotFound(new { message = "Không tìm thấy cụm sân trong phạm vi được phép." });
             return Ok(result);
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Policy = Permissions.SanDau.Delete)]
+        [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Delegation)]
         public async Task<IActionResult> Delete(int id)
         {
-            var success = await _cumSanService.DeleteAsync(id);
-            if (!success) return NotFound(new { message = "Không tìm thấy cụm sân để xóa." });
-            return Ok(new { message = "Đã xóa cụm sân thành công." });
+            bool success;
+            if (User.IsInRole(AppRoles.Delegation))
+            {
+                var donViId = GetCurrentDonViId();
+                if (!donViId.HasValue) return Forbid();
+                success = await _cumSanService.DeleteForDonViAsync(id, donViId.Value);
+            }
+            else
+            {
+                success = await _cumSanService.DeleteAsync(id);
+            }
+
+            if (!success) return NotFound(new { message = "Không tìm thấy cụm sân trong phạm vi được phép." });
+            return Ok(new { message = "Đã xóa mềm cụm sân thành công." });
+        }
+
+        private int? GetCurrentDonViId()
+        {
+            var value = User.FindFirst("donViId")?.Value;
+            return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var donViId) ? donViId : null;
         }
     }
 }

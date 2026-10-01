@@ -10,10 +10,20 @@ namespace API.Areas.Admin.Controllers
     public class CumSanController : BaseAdminController
     {
         private readonly ICumSanService _cumSanService;
+        private readonly IDonViService _donViService;
+        private readonly ISanDauService _sanDauService;
+        private readonly IMonTheThaoService _monTheThaoService;
 
-        public CumSanController(ICumSanService cumSanService)
+        public CumSanController(
+            ICumSanService cumSanService,
+            IDonViService donViService,
+            ISanDauService sanDauService,
+            IMonTheThaoService monTheThaoService)
         {
             _cumSanService = cumSanService;
+            _donViService = donViService;
+            _sanDauService = sanDauService;
+            _monTheThaoService = monTheThaoService;
         }
 
         [HttpGet]
@@ -37,6 +47,21 @@ namespace API.Areas.Admin.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> GetLookupData()
+        {
+            var donVis = await _donViService.GetAllAsync();
+            var monTheThaos = await _monTheThaoService.GetAllAsync();
+            return Json(new { success = true, data = new { donVis, monTheThaos } });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCourts(int cumSanId)
+        {
+            var result = await _sanDauService.GetPagedAsync(1, 1000, null, cumSanId);
+            return Json(new { success = true, data = result });
+        }
+
+        [HttpGet]
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _cumSanService.GetByIdAsync(id);
@@ -55,6 +80,11 @@ namespace API.Areas.Admin.Controllers
             if (string.IsNullOrWhiteSpace(dto.Ma))
             {
                 dto.Ma = "CS-" + DateTime.Now.ToString("yyMMddHHmmss");
+            }
+
+            if ((!id.HasValue || id.Value <= 0) && (!dto.DonViId.HasValue || dto.DonViId.Value <= 0))
+            {
+                return Json(new { success = false, message = "Vui lòng chọn đơn vị sở hữu cụm sân." });
             }
 
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Admin";

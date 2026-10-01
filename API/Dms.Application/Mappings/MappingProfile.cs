@@ -76,12 +76,18 @@ namespace Dms.Application.Mappings
 
             // CumSan
             CreateMap<CumSan, CumSanDto>()
+                .ForMember(dest => dest.DonViId, opt => opt.MapFrom(src => src.DonViId))
+                .ForMember(dest => dest.TenDonVi, opt => opt.MapFrom(src => src.DonVi != null ? src.DonVi.Ten : null))
                 .ForMember(dest => dest.SoSanHienCo, opt => opt.MapFrom(src => src.SanDaus != null ? src.SanDaus.Count(s => s.IsDeleted != true) : 0));
-            CreateMap<CreateUpdateCumSanDto, CumSan>();
+            CreateMap<CreateUpdateCumSanDto, CumSan>()
+                .ForMember(dest => dest.DonViId, opt => opt.Ignore())
+                .ForMember(dest => dest.DonVi, opt => opt.Ignore());
 
             // SanDau
             CreateMap<SanDau, SanDauDto>()
                 .ForMember(dest => dest.TenCumSan, opt => opt.MapFrom(src => src.CumSan != null ? src.CumSan.Ten : null))
+                .ForMember(dest => dest.DonViId, opt => opt.MapFrom(src => src.CumSan != null ? src.CumSan.DonViId : (int?)null))
+                .ForMember(dest => dest.TenDonVi, opt => opt.MapFrom(src => src.CumSan != null && src.CumSan.DonVi != null ? src.CumSan.DonVi.Ten : null))
                 .ForMember(dest => dest.TenMonTheThao, opt => opt.MapFrom(src => src.MonTheThao != null ? src.MonTheThao.Ten : null));
             CreateMap<CreateUpdateSanDauDto, SanDau>();
 

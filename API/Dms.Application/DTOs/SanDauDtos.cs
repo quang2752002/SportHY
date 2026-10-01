@@ -7,6 +7,8 @@ namespace Dms.Application.DTOs
     public class CumSanDto
     {
         public int Id { get; set; }
+        public int DonViId { get; set; }
+        public string? TenDonVi { get; set; }
         public string Ma { get; set; } = string.Empty;
         public string Ten { get; set; } = string.Empty;
         public string? DiaChi { get; set; }
@@ -20,6 +22,8 @@ namespace Dms.Application.DTOs
 
     public class CreateUpdateCumSanDto
     {
+        // Chỉ dùng khi Admin tạo mới; tài khoản Đơn vị phải được Service gán từ tài khoản hiện tại.
+        public int? DonViId { get; set; }
         public string Ma { get; set; } = string.Empty;
         public string Ten { get; set; } = string.Empty;
         public string? DiaChi { get; set; }
@@ -34,6 +38,8 @@ namespace Dms.Application.DTOs
         public int Id { get; set; }
         public int CumSanId { get; set; }
         public string? TenCumSan { get; set; }
+        public int? DonViId { get; set; }
+        public string? TenDonVi { get; set; }
         public int? MonTheThaoId { get; set; }
         public string? TenMonTheThao { get; set; }
         public string Ma { get; set; } = string.Empty;
