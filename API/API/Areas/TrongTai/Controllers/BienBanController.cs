@@ -39,8 +39,13 @@ namespace API.Areas.TrongTai.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null)
+        public async Task<IActionResult> Index(int? tranDauId = null, int? giaiDauId = null, bool embedded = false)
         {
+            if (!embedded)
+            {
+                return RedirectToAction("Index", "KetQua", new { tranDauId, giaiDauId });
+            }
+
             var currentRef = await GetCurrentRefereeAsync();
             var canBrowseAll = CanBrowseAllMatches();
             var allTournaments = (await _giaiDauService.GetAllAsync())?.ToList() ?? new();
@@ -57,6 +62,8 @@ namespace API.Areas.TrongTai.Controllers
             }
             if (tournaments.Count == 0) selectedGiaiDauId = null;
             ViewBag.SelectedGiaiDauId = selectedGiaiDauId;
+            ViewBag.SelectedTournamentName = tournaments
+                .FirstOrDefault(tournament => tournament.Id == selectedGiaiDauId)?.Ten;
 
             var matches = selectedGiaiDauId.HasValue
                 ? (await _tranDauService.GetAccessibleMatchesAsync(selectedGiaiDauId, currentRef?.Id, canBrowseAll))?.ToList() ?? new()
@@ -76,6 +83,12 @@ namespace API.Areas.TrongTai.Controllers
 
             ViewBag.CurrentMatch = currentMatch;
             ViewBag.CanCreateReport = await CanRecordMatchAsync(currentMatch);
+            ViewBag.EmbeddedReport = true;
+
+            if (currentMatch != null && !await _tranDauService.IsMatchCompletedAsync(currentMatch.Id))
+            {
+                return Conflict("Chỉ có thể tạo biên bản sau khi trận đấu đã kết thúc.");
+            }
 
             // Đọc thông tin đăng ký của 2 đội để lấy danh sách vận động viên
             DangKyThiDauDto? regTeam1 = null;
@@ -158,6 +171,17 @@ namespace API.Areas.TrongTai.Controllers
                 catch { }
             }
 
+            if (currentMatch != null)
+            {
+                var persistedPeriodScores = await _tranDauService.GetMatchPeriodScoresAsync(currentMatch.Id);
+                if (persistedPeriodScores.Count > 0)
+                {
+                    setScores = persistedPeriodScores;
+                }
+                score1 = currentMatch.TySoDoi1 ?? score1;
+                score2 = currentMatch.TySoDoi2 ?? score2;
+            }
+
             ViewBag.Score1 = score1;
             ViewBag.Score2 = score2;
             ViewBag.Winner = winner;
@@ -166,7 +190,7 @@ namespace API.Areas.TrongTai.Controllers
             ViewBag.Events = events;
             ViewBag.Signatures = signatures;
 
-            return View(currentMatch);
+            return PartialView("Index", currentMatch);
         }
 
         [HttpPost]
@@ -185,6 +209,10 @@ namespace API.Areas.TrongTai.Controllers
             }
 
             if (!await CanRecordMatchAsync(match)) return Forbid();
+            if (!await _tranDauService.IsMatchCompletedAsync(match.Id))
+            {
+                return Conflict(new { success = false, message = "Chỉ có thể ký biên bản sau khi trận đấu đã kết thúc." });
+            }
 
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
 
@@ -235,5 +263,6 @@ namespace API.Areas.TrongTai.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
     }
 }

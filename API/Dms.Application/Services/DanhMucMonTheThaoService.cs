@@ -88,6 +88,26 @@ namespace Dms.Application.Services
             return _mapper.Map<DanhMucMonTheThaoDto>(entity);
         }
 
+        /// <summary>Cập nhật trạng thái hoạt động của một danh mục môn mà không thay đổi thông tin khác.</summary>
+        /// <param name="id">Mã định danh danh mục cần cập nhật.</param>
+        /// <param name="trangThai">Trạng thái mới; true là hoạt động, false là tạm dừng.</param>
+        /// <param name="updatedBy">Tài khoản thực hiện thay đổi trạng thái.</param>
+        /// <returns>True nếu cập nhật thành công; false nếu danh mục không tồn tại hoặc đã bị xóa mềm.</returns>
+        public async Task<bool> SetStatusAsync(int id, bool trangThai, string? updatedBy = null)
+        {
+            var entity = await _unitOfWork.DanhMucMonTheThaos.GetByIdAsync(id);
+            if (entity == null || entity.IsDeleted == true)
+                return false;
+
+            entity.TrangThai = trangThai;
+            entity.LastModified = DateTime.UtcNow;
+            entity.LastModifiedBy = updatedBy;
+            _unitOfWork.DanhMucMonTheThaos.Update(entity);
+            await _unitOfWork.CompleteAsync();
+
+            return true;
+        }
+
         public async Task<bool> DeleteAsync(int id)
         {
             var entity = await _unitOfWork.DanhMucMonTheThaos.GetByIdAsync(id);

@@ -92,5 +92,18 @@ namespace API.Areas.Manager.Controllers
 
             return Json(new { success = true, message = "Đã xóa môn thể thao thành công!" });
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SetStatus(int id, bool trangThai)
+        {
+            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Manager";
+            var success = await _monTheThaoService.SetStatusAsync(id, trangThai, username);
+            if (!success)
+            {
+                return Json(new { success = false, message = "Không tìm thấy môn thể thao để cập nhật trạng thái." });
+            }
+
+            return Json(new { success = true, message = trangThai ? "Đã bật hoạt động cho môn thể thao." : "Đã tạm dừng môn thể thao." });
+        }
     }
 }

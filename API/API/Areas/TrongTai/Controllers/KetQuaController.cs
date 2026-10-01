@@ -24,6 +24,7 @@ namespace API.Areas.TrongTai.Controllers
         public string? Notes { get; set; }
         public List<SetScoreDto> SetScores { get; set; } = new();
         public List<MatchEventItemDto> Events { get; set; } = new();
+        public Dictionary<string, SignatureInfoDto>? Signatures { get; set; }
     }
 
     public class SaveMatchResultDto
@@ -51,6 +52,7 @@ namespace API.Areas.TrongTai.Controllers
     {
         private readonly IGiaiDauService _giaiDauService;
         private readonly ICauHinhTheThucService _cauHinhTheThucService;
+        private readonly IDangKyThiDauService _dangKyThiDauService;
 
         public KetQuaController(
             UserManager<ApplicationUser> userManager,
@@ -58,11 +60,13 @@ namespace API.Areas.TrongTai.Controllers
             ITranDauService tranDauService,
             IGiaiDauService giaiDauService,
             ICauHinhTheThucService cauHinhTheThucService,
+            IDangKyThiDauService dangKyThiDauService,
             ITruongBanTrongTaiService refereeAccessService)
             : base(userManager, trongTaiService, refereeAccessService, tranDauService)
         {
             _giaiDauService = giaiDauService;
             _cauHinhTheThucService = cauHinhTheThucService;
+            _dangKyThiDauService = dangKyThiDauService;
         }
 
         [HttpGet]
@@ -158,7 +162,8 @@ namespace API.Areas.TrongTai.Controllers
             }
 
             ViewBag.CurrentMatch = currentMatch;
-            ViewBag.CanRecordResult = await CanRecordMatchAsync(currentMatch);
+            var canRecordResult = await CanRecordMatchAsync(currentMatch);
+            ViewBag.CanRecordResult = canRecordResult;
 
             CauHinhTheThucDto? matchFormat = null;
             if (currentMatch != null)
@@ -176,6 +181,7 @@ namespace API.Areas.TrongTai.Controllers
             string notes = "";
             var setScores = new List<SetScoreDto>();
             var events = new List<MatchEventItemDto>();
+            var signatures = new Dictionary<string, SignatureInfoDto>(StringComparer.OrdinalIgnoreCase);
 
             if (currentMatch != null && !string.IsNullOrEmpty(currentMatch.GhiChu) && currentMatch.GhiChu.StartsWith("{"))
             {
@@ -192,6 +198,7 @@ namespace API.Areas.TrongTai.Controllers
                         notes = savedScore.Notes ?? "";
                         setScores = savedScore.SetScores ?? new List<SetScoreDto>();
                         events = savedScore.Events ?? new List<MatchEventItemDto>();
+                        signatures = savedScore.Signatures ?? signatures;
                         ViewBag.ExtraTimeScore1 = savedScore.ExtraTimeScore1;
                         ViewBag.ExtraTimeScore2 = savedScore.ExtraTimeScore2;
                     }
@@ -216,6 +223,21 @@ namespace API.Areas.TrongTai.Controllers
             ViewBag.Notes = notes;
             ViewBag.SetScores = setScores;
             ViewBag.Events = events;
+            ViewBag.Signatures = signatures;
+            ViewBag.CanCreateReport = canRecordResult;
+
+            DangKyThiDauDto? regTeam1 = null;
+            DangKyThiDauDto? regTeam2 = null;
+            if (currentMatch?.Doi1DangKyId is int team1RegistrationId)
+            {
+                regTeam1 = await _dangKyThiDauService.GetByIdAsync(team1RegistrationId);
+            }
+            if (currentMatch?.Doi2DangKyId is int team2RegistrationId)
+            {
+                regTeam2 = await _dangKyThiDauService.GetByIdAsync(team2RegistrationId);
+            }
+            ViewBag.RegTeam1 = regTeam1;
+            ViewBag.RegTeam2 = regTeam2;
 
             return View(currentMatch);
         }

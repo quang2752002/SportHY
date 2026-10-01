@@ -12,6 +12,28 @@
     string filterScope = ViewBag.FilterScope as string ?? "my_matches";
     bool canBrowseAllMatches = ViewBag.CanBrowseAllMatches == true;
     var canRecordMatchIds = ViewBag.CanRecordMatchIds as HashSet<int> ?? new HashSet<int>();
+    var taskMatches = Model ?? new List<TranDauDto>();
+    var inProgressStatuses = new HashSet<string>(new[] { "DangDau", "DangDienRa" }, StringComparer.OrdinalIgnoreCase);
+    var completedStatuses = new HashSet<string>(new[] { "KetThuc", "DaKetThuc", "DaDau" }, StringComparer.OrdinalIgnoreCase);
+    var notStartedMatches = taskMatches
+        .Where(match => !inProgressStatuses.Contains(match.TrangThai) && !completedStatuses.Contains(match.TrangThai))
+        .OrderBy(match => match.ThoiGianDuKien ?? DateTime.MaxValue)
+        .ThenBy(match => match.SoTran)
+        .ToList();
+    var inProgressMatches = taskMatches
+        .Where(match => inProgressStatuses.Contains(match.TrangThai))
+        .OrderBy(match => match.ThoiGianDuKien ?? DateTime.MaxValue)
+        .ThenBy(match => match.SoTran)
+        .ToList();
+    var completedMatches = taskMatches
+        .Where(match => completedStatuses.Contains(match.TrangThai))
+        .ToList();
+    var matchSections = new[]
+    {
+        new { Key = "upcoming", Title = "Chưa diễn ra", Icon = "fa-clock", BadgeClass = "bg-primary-subtle text-primary", Items = notStartedMatches },
+        new { Key = "live", Title = "Đang diễn ra", Icon = "fa-circle-play", BadgeClass = "bg-danger-subtle text-danger", Items = inProgressMatches },
+        new { Key = "completed", Title = "Đã kết thúc", Icon = "fa-flag-checkered", BadgeClass = "bg-success-subtle text-success", Items = completedMatches }
+    };
 }
 
 <div class="d-flex flex-column gap-4">
@@ -200,7 +222,7 @@
     }
 
     <!-- Match Cards Grid -->
-    @if (Model == null || Model.Count == 0)
+    @if (taskMatches.Count == 0)
     {
         <div class="card-custom p-5 text-center text-muted">
             <i class="fa-solid fa-whistle fs-1 mb-3 opacity-25"></i>
@@ -210,9 +232,23 @@
     }
     else
     {
-        <div class="row g-3" id="matchListContainer">
-            @foreach (var m in Model)
+        <div id="matchListContainer" class="d-flex flex-column gap-4">
+            @foreach (var statusGroup in matchSections)
             {
+                <section class="match-status-section" data-match-section="@statusGroup.Key">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 px-1">
+                        <h5 class="fw-bold text-dark mb-0"><i class="fa-solid @statusGroup.Icon me-2"></i>@statusGroup.Title</h5>
+                        <span class="badge @statusGroup.BadgeClass rounded-pill">@statusGroup.Items.Count trận</span>
+                    </div>
+                    @if (statusGroup.Items.Count == 0)
+                    {
+                        <div class="card-custom px-3 py-3 text-muted small match-status-empty">Không có trận đấu trong nhóm này.</div>
+                    }
+                    else
+                    {
+                        <div class="row g-3">
+                            @foreach (var m in statusGroup.Items)
+                            {
                 // Phân tích tỷ số từ GhiChu JSON nếu có
                 int s1 = 0, s2 = 0;
                 string customNotes = "";
@@ -318,11 +354,6 @@
                                 <i class="fa-solid fa-clipboard-list"></i>
                                 <span>@(canRecordMatchIds.Contains(m.Id) ? "Ghi Nhận Kết Quả" : "Xem Kết Quả")</span>
                             </a>
-                            <a href="/TrongTai/BienBan?tranDauId=@m.Id&giaiDauId=@selectedGiaiDauId"
-                               class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center gap-1.5 justify-content-center">
-                                <i class="fa-solid fa-file-signature"></i>
-                                <span>Biên Bản</span>
-                            </a>
                             @if (canRecordMatchIds.Contains(m.Id))
                             {
                                 <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5"
@@ -334,7 +365,14 @@
                         </div>
                     </div>
                 </div>
+                            }
+                        </div>
+                    }
+                </section>
             }
+        </div>
+        <div id="emptyMatchSearch" class="card-custom p-4 text-center text-muted d-none">
+            <i class="fa-solid fa-magnifying-glass d-block mb-2"></i>Không tìm thấy trận đấu phù hợp.
         </div>
     }
 </div>
@@ -409,14 +447,21 @@
 
         function filterMatchesClient() {
             const kw = $('#filterKeyword').val().toLowerCase().trim();
+            let visibleMatchCount = 0;
+            $('.match-status-section').show();
             $('.match-card-item').each(function () {
                 const text = $(this).data('text') || '';
-                if (!kw || text.includes(kw)) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
-                }
+                const isVisible = !kw || text.includes(kw);
+                $(this).toggle(isVisible);
+                if (isVisible) visibleMatchCount++;
             });
+
+            $('.match-status-section').each(function () {
+                const hasCards = $(this).find('.match-card-item').length > 0;
+                const hasVisibleCards = $(this).find('.match-card-item:visible').length > 0;
+                $(this).toggle(!kw || (hasCards && hasVisibleCards));
+            });
+            $('#emptyMatchSearch').toggleClass('d-none', !kw || visibleMatchCount > 0);
         }
 
         function openQuickScoreModal(id, team1, team2, s1, s2, status, notes) {

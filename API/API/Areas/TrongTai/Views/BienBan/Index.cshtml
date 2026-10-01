@@ -14,34 +14,225 @@
     var events = ViewBag.Events as List<MatchEventItemDto> ?? new();
     var signatures = ViewBag.Signatures as Dictionary<string, SignatureInfoDto> ?? new();
     bool canCreateReport = ViewBag.CanCreateReport == true;
+    var tournamentName = ViewBag.SelectedTournamentName as string;
+    if (string.IsNullOrWhiteSpace(tournamentName)) tournamentName = Model?.TenGiaiDau;
+    if (string.IsNullOrWhiteSpace(tournamentName)) tournamentName = "Chưa cập nhật tên giải";
 }
+
+<style>
+    .official-report {
+        --report-navy: #173b68;
+        --report-blue: #2563a8;
+        --report-line: #d9e5f2;
+        width: 100%;
+        max-width: 1120px;
+        margin-right: auto !important;
+        margin-left: auto !important;
+        border: 1px solid var(--report-line) !important;
+        border-radius: 16px;
+        box-shadow: 0 12px 32px rgba(23, 59, 104, .09) !important;
+        color: #24364b;
+    }
+
+    .official-report .report-masthead {
+        border-bottom: 2px solid var(--report-blue) !important;
+        padding-bottom: 1rem;
+    }
+
+    .official-report .report-title-block {
+        background: linear-gradient(135deg, #f1f7ff, #fff 75%);
+        border: 1px solid #dbe8f7;
+        border-left: 5px solid var(--report-blue);
+        border-radius: 12px;
+        padding: 1rem;
+    }
+
+    .official-report .report-document-title {
+        color: var(--report-navy) !important;
+        letter-spacing: .035em;
+    }
+
+    .official-report .report-tournament-name {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        margin-top: .65rem;
+        padding: .45rem .85rem;
+        color: var(--report-navy);
+        background: #e5f0ff;
+        border: 1px solid #c7dcf7;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+
+    .official-report .report-section-title {
+        color: var(--report-navy) !important;
+        border-bottom: 1px solid var(--report-line) !important;
+        padding-bottom: .55rem !important;
+        margin-bottom: .8rem;
+        letter-spacing: .025em;
+    }
+
+    .official-report .report-info-grid {
+        row-gap: .75rem !important;
+    }
+
+    .official-report .report-info-item {
+        height: 100%;
+        padding: .65rem .75rem;
+        background: #f7faff;
+        border: 1px solid #e4edf7;
+        border-radius: 9px;
+    }
+
+    .official-report .report-info-item strong {
+        display: block;
+        margin-top: .15rem;
+        color: #1e334e !important;
+    }
+
+    .official-report .report-team-card {
+        height: 100%;
+        background: #f8fbff !important;
+        border: 1px solid #dce7f3 !important;
+        border-radius: 12px !important;
+    }
+
+    .official-report .report-scoreboard {
+        background: linear-gradient(135deg, #f2f7ff, #fff) !important;
+        border: 1px solid #cfdef0 !important;
+        border-radius: 14px !important;
+    }
+
+    .official-report .report-score {
+        color: var(--report-navy) !important;
+        font-size: 2.4rem;
+        letter-spacing: .08em;
+    }
+
+    .official-report .report-signature-card {
+        min-height: 130px;
+        padding: .85rem .5rem;
+        border: 1px solid #e2eaf3;
+        border-radius: 10px;
+        background: #fbfdff;
+    }
+
+    .official-report .table thead th {
+        color: var(--report-navy);
+        background: #edf4fc;
+    }
+
+    .report-page-toolbar {
+        width: 100%;
+        max-width: 1120px;
+        margin-right: auto;
+        margin-left: auto;
+    }
+
+    .report-page-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .65rem;
+    }
+
+    .report-document-action {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        gap: .5rem;
+        padding: .65rem 1.1rem !important;
+        border-radius: 12px !important;
+        font-weight: 650;
+        text-decoration: none;
+        transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+    }
+
+    .report-document-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(23, 59, 104, .14);
+    }
+
+    .report-edit-action {
+        color: #244b78 !important;
+        border: 1px solid #c9d8e9 !important;
+        background: #fff !important;
+    }
+
+    .report-edit-action:hover {
+        color: #173b68 !important;
+        background: #f2f7fd !important;
+    }
+
+    .report-print-action {
+        color: #fff !important;
+        border: 1px solid #245a9d !important;
+        background: linear-gradient(135deg, #3978c2, #245a9d) !important;
+        box-shadow: 0 4px 10px rgba(37, 99, 168, .2);
+    }
+
+    .report-print-action:hover {
+        background: linear-gradient(135deg, #2f6caf, #1d4d89) !important;
+    }
+
+    @@media (max-width: 767.98px) {
+        .official-report { padding: 1rem !important; }
+        .official-report .report-score { font-size: 1.8rem; }
+        .report-page-toolbar { align-items: stretch !important; }
+        .report-page-actions { justify-content: center; }
+        .report-document-action { flex: 1 1 auto; }
+    }
+
+    @@media print {
+        .official-report {
+            max-width: none;
+            border: 0 !important;
+            border-radius: 0;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+        .official-report .report-title-block,
+        .official-report .report-info-item,
+        .official-report .report-team-card,
+        .official-report .report-scoreboard,
+        .official-report .report-signature-card {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
+    }
+</style>
 
 <div class="d-flex flex-column gap-4">
     @if (Model != null && !canCreateReport)
     {
         <div class="alert alert-info mb-0 d-print-none" role="status">
-            <i class="fa-solid fa-eye me-1"></i> Bạn được phân công với vai trò trọng tài phụ. Bạn có thể xem và in biên bản nhưng không thể ký hoặc chỉnh sửa.
+            <i class="fa-solid fa-eye me-1"></i> Bạn được phân công với vai trò trọng tài phụ. Bạn có thể xem và xuất PDF biên bản nhưng không thể ký hoặc chỉnh sửa.
         </div>
     }
+    @if (ViewBag.EmbeddedReport != true)
+    {
     <!-- Header & Print Actions (Hidden on Print) -->
-    <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3 d-print-none">
+    <div class="report-page-toolbar d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 d-print-none">
         <div>
             <h4 class="fw-bold text-dark mb-1">
                 <i class="fa-solid fa-file-signature text-primary me-2"></i> Biên Bản Trận Đấu Chính Thức
             </h4>
             <p class="text-muted small mb-0">Hồ sơ biên bản điện tử có chữ ký số xác nhận và định dạng chuẩn in ấn</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="report-page-actions">
             @if (Model != null)
             {
                 @if (canCreateReport)
                 {
-                    <a href="/TrongTai/KetQua?tranDauId=@Model.Id&giaiDauId=@selectedGiaiDauId" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                        <i class="fa-solid fa-pen-to-square me-1"></i> Điều chỉnh kết quả
+                    <a href="/TrongTai/KetQua?tranDauId=@Model.Id&giaiDauId=@selectedGiaiDauId" class="btn report-document-action report-edit-action">
+                        <i class="fa-solid fa-pen-to-square"></i><span>Điều chỉnh kết quả</span>
                     </a>
                 }
-                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3.5 shadow-sm" onclick="window.print()">
-                    <i class="fa-solid fa-print me-1"></i> In Biên Bản (A4)
+                <button type="button" class="btn report-document-action report-print-action" onclick="window.print()">
+                    <i class="fa-solid fa-print"></i><span>In biên bản A4</span>
                 </button>
             }
         </div>
@@ -97,6 +288,7 @@
             </div>
         </form>
     </div>
+    }
 
     @if (Model == null)
     {
@@ -112,9 +304,9 @@
     else
     {
         <!-- Khung Biên Bản Chuẩn Thể Thao (Official Match Sheet) -->
-        <div class="card-custom p-4 p-md-5 bg-white shadow-sm print-area" style="border: 1px solid #cbd5e1;">
+        <div class="card-custom official-report p-4 p-md-5 bg-white print-area" id="officialReportContent" data-match-number="@Model.SoTran" data-sport-name="@Model.TenMonTheThao" data-tournament-name="@tournamentName">
             <!-- Quốc hiệu & Ban tổ chức -->
-            <div class="row pb-3 border-bottom mb-4 text-center">
+            <div class="row report-masthead pb-3 mb-4 text-center">
                 <div class="col-5">
                     <div class="fw-bold text-uppercase" style="font-size: 13px;">BAN TỔ CHỨC GIẢI ĐẤU</div>
                     <div class="fw-semibold text-muted small text-uppercase">HỘI ĐỒNG TRỌNG TÀI & THƯ KÝ</div>
@@ -127,44 +319,47 @@
             </div>
 
             <!-- Tên Biên Bản -->
-            <div class="text-center my-4">
-                <h3 class="fw-bold text-dark text-uppercase mb-1">BIÊN BẢN THI ĐẤU CHÍNH THỨC</h3>
+            <div class="report-title-block text-center my-4">
+                <h3 class="report-document-title fw-bold text-uppercase mb-1">BIÊN BẢN THI ĐẤU CHÍNH THỨC</h3>
                 <div class="text-muted small">
                     Số biên bản: <span class="fw-bold font-monospace text-dark">BB-TD@(Model.Id)-@DateTime.Now.Year</span>
                 </div>
-                <div class="text-primary fw-semibold mt-1">@Model.TenGiaiDau</div>
+                <div class="report-tournament-name"><i class="fa-solid fa-trophy"></i> @tournamentName</div>
             </div>
 
             <!-- 1. Thông Tin Chung Trận Đấu -->
             <div class="mb-4">
-                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                <h6 class="report-section-title fw-bold text-uppercase" style="font-size: 13px;">
                     I. THÔNG TIN TRẬN ĐẤU
                 </h6>
-                <div class="row g-2 small mt-1">
-                    <div class="col-6 col-md-3">
-                        <span class="text-muted">Môn thi đấu:</span> <strong class="text-dark">@Model.TenMonTheThao</strong>
+                <div class="row g-2 small mt-1 report-info-grid">
+                    <div class="col-12">
+                        <div class="report-info-item"><span class="text-muted">Giải đấu:</span><strong>@tournamentName</strong></div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <span class="text-muted">Trận số:</span> <strong class="text-dark">Trận @Model.SoTran</strong>
+                        <div class="report-info-item"><span class="text-muted">Môn thi đấu:</span><strong>@Model.TenMonTheThao</strong></div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <span class="text-muted">Vòng / Bảng:</span> <strong class="text-dark">@(Model.TenVongDau ?? "--") @(Model.TenBangDau != null ? $"- {Model.TenBangDau}" : "")</strong>
+                        <div class="report-info-item"><span class="text-muted">Trận số:</span><strong>Trận @Model.SoTran</strong></div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <span class="text-muted">Địa điểm:</span> <strong class="text-dark">@(Model.TenSanDau ?? "Chưa xếp sân")</strong>
+                        <div class="report-info-item"><span class="text-muted">Vòng / Bảng:</span><strong>@(Model.TenVongDau ?? "--") @(Model.TenBangDau != null ? $"- {Model.TenBangDau}" : "")</strong></div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="report-info-item"><span class="text-muted">Địa điểm:</span><strong>@(Model.TenSanDau ?? "Chưa xếp sân")</strong></div>
                     </div>
                     <div class="col-6 col-md-6">
-                        <span class="text-muted">Thời gian bắt đầu:</span> <strong class="text-dark">@(Model.ThoiGianBatDau?.ToString("HH:mm - dd/MM/yyyy") ?? Model.ThoiGianDuKien?.ToString("HH:mm - dd/MM/yyyy") ?? "--")</strong>
+                        <div class="report-info-item"><span class="text-muted">Thời gian bắt đầu:</span><strong>@(Model.ThoiGianBatDau?.ToString("HH:mm - dd/MM/yyyy") ?? Model.ThoiGianDuKien?.ToString("HH:mm - dd/MM/yyyy") ?? "--")</strong></div>
                     </div>
                     <div class="col-6 col-md-6">
-                        <span class="text-muted">Thời gian kết thúc:</span> <strong class="text-dark">@(Model.ThoiGianKetThuc?.ToString("HH:mm - dd/MM/yyyy") ?? "--")</strong>
+                        <div class="report-info-item"><span class="text-muted">Thời gian kết thúc:</span><strong>@(Model.ThoiGianKetThuc?.ToString("HH:mm - dd/MM/yyyy") ?? "--")</strong></div>
                     </div>
                 </div>
             </div>
 
             <!-- 2. Tổ Trọng Tài Điều Hành -->
             <div class="mb-4">
-                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                <h6 class="report-section-title fw-bold text-uppercase" style="font-size: 13px;">
                     II. TỔ TRỌNG TÀI & ĐIỀU HÀNH THI ĐẤU
                 </h6>
                 <div class="row g-2 small mt-1">
@@ -186,13 +381,13 @@
 
             <!-- 3. Thành Phần Hai Đội & Đội Hình -->
             <div class="mb-4">
-                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                <h6 class="report-section-title fw-bold text-uppercase" style="font-size: 13px;">
                     III. THÀNH PHẦN HAI ĐỘI THI ĐẤU
                 </h6>
                 <div class="row g-3 mt-1">
                     <!-- Đội 1 -->
                     <div class="col-md-6">
-                        <div class="p-3 border rounded-2 bg-light">
+                        <div class="report-team-card p-3 border rounded-2 bg-light">
                             <div class="fw-bold text-dark">ĐỘI 1: @(Model.TenDoi1 ?? "Đội 1")</div>
                             <div class="small text-muted mb-2">Đơn vị: @(Model.DonViDoi1 ?? "--")</div>
                             <div class="small fw-semibold text-secondary">Danh sách vận động viên:</div>
@@ -214,7 +409,7 @@
 
                     <!-- Đội 2 -->
                     <div class="col-md-6">
-                        <div class="p-3 border rounded-2 bg-light">
+                        <div class="report-team-card p-3 border rounded-2 bg-light">
                             <div class="fw-bold text-dark">ĐỘI 2: @(Model.TenDoi2 ?? "Đội 2")</div>
                             <div class="small text-muted mb-2">Đơn vị: @(Model.DonViDoi2 ?? "--")</div>
                             <div class="small fw-semibold text-secondary">Danh sách vận động viên:</div>
@@ -238,17 +433,17 @@
 
             <!-- 4. Kết Quả Thi Đấu Chung Cuộc -->
             <div class="mb-4">
-                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                <h6 class="report-section-title fw-bold text-uppercase" style="font-size: 13px;">
                     IV. KẾT QUẢ THI ĐẤU
                 </h6>
-                <div class="text-center p-3 border rounded-2 bg-light my-2">
+                <div class="report-scoreboard text-center p-3 border rounded-2 bg-light my-2">
                     <div class="row align-items-center">
                         <div class="col-5">
                             <h5 class="fw-bold text-dark mb-0">@(Model.TenDoi1 ?? "Đội 1")</h5>
                             <small class="text-muted">@(Model.DonViDoi1 ?? "")</small>
                         </div>
                         <div class="col-2">
-                            <div class="fs-2 fw-bold font-monospace text-danger">
+                            <div class="report-score fw-bold font-monospace">
                                 @score1 - @score2
                             </div>
                             <small class="text-muted">Tỷ số chung cuộc</small>
@@ -292,7 +487,7 @@
             @if (events.Count > 0)
             {
                 <div class="mb-4">
-                    <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                    <h6 class="report-section-title fw-bold text-uppercase" style="font-size: 13px;">
                         V. DIỄN BIẾN & CÁC SỰ KIỆN PHÁT SINH
                     </h6>
                     <table class="table table-sm table-bordered small mt-2">
@@ -332,7 +527,7 @@
 
             <!-- 6. Nhận Xét Của Trọng Tài -->
             <div class="mb-4">
-                <h6 class="fw-bold text-dark text-uppercase border-bottom pb-1" style="font-size: 13px;">
+                <h6 class="report-section-title fw-bold text-uppercase" style="font-size: 13px;">
                     VI. NHẬN XÉT CỦA TỔ TRỌNG TÀI
                 </h6>
                 <p class="small text-dark mt-1" style="min-height: 40px; font-style: italic;">
@@ -344,7 +539,7 @@
             <div class="mt-5 pt-3">
                 <div class="row text-center g-3" style="font-size: 13px;">
                     <!-- Đội 1 -->
-                    <div class="col-3">
+                    <div class="col-3 report-signature-card">
                         <div class="fw-bold text-uppercase">ĐẠI DIỆN ĐỘI 1</div>
                         <small class="text-muted">(Ký & ghi rõ họ tên)</small>
                         <div class="mt-4 signature-box" id="sigBox_team1">
@@ -368,7 +563,7 @@
                     </div>
 
                     <!-- Đội 2 -->
-                    <div class="col-3">
+                    <div class="col-3 report-signature-card">
                         <div class="fw-bold text-uppercase">ĐẠI DIỆN ĐỘI 2</div>
                         <small class="text-muted">(Ký & ghi rõ họ tên)</small>
                         <div class="mt-4 signature-box" id="sigBox_team2">
@@ -392,7 +587,7 @@
                     </div>
 
                     <!-- Thư Ký -->
-                    <div class="col-3">
+                    <div class="col-3 report-signature-card">
                         <div class="fw-bold text-uppercase">THƯ KÝ TRẬN ĐẤU</div>
                         <small class="text-muted">(Ký & ghi rõ họ tên)</small>
                         <div class="mt-4 signature-box" id="sigBox_secretary">
@@ -416,7 +611,7 @@
                     </div>
 
                     <!-- Trọng Tài Chính -->
-                    <div class="col-3">
+                    <div class="col-3 report-signature-card">
                         <div class="fw-bold text-uppercase">TRỌNG TÀI CHÍNH</div>
                         <small class="text-muted">(Ký & ghi rõ họ tên)</small>
                         <div class="mt-4 signature-box" id="sigBox_referee">
@@ -456,6 +651,7 @@
             </div>
             <form id="signForm">
                 <input type="hidden" id="signRole" />
+                <input type="hidden" id="signTranDauId" value="@(Model?.Id ?? 0)" />
                 <div class="modal-body p-4">
                     <p class="small text-muted mb-3">
                         Nhập họ và tên của người ký đại diện để xác thực biên bản thi đấu chính thức.
@@ -475,90 +671,4 @@
         </div>
     </div>
 </div>
-}
-
-@section Styles {
-    <style>
-        @@media print {
-            body {
-                background: #ffffff !important;
-                color: #000000 !important;
-            }
-            .trongtai-sidebar, .trongtai-topbar, .donvi-backdrop {
-                display: none !important;
-            }
-            .trongtai-main {
-                margin-left: 0 !important;
-                padding: 0 !important;
-            }
-            .print-area {
-                border: none !important;
-                box-shadow: none !important;
-                padding: 0 !important;
-            }
-            .signature-box button {
-                display: none !important;
-            }
-        }
-    </style>
-}
-
-@section Scripts {
-    <script>
-        const matchId = @(Model?.Id ?? 0);
-        let signModal = null;
-
-        $(document).ready(function () {
-            const signModalElement = document.getElementById('signModal');
-            if (signModalElement) signModal = new bootstrap.Modal(signModalElement);
-
-            $('#signForm').on('submit', function (e) {
-                e.preventDefault();
-                submitSignature();
-            });
-        });
-
-        function openSignModal(role, roleTitle) {
-            $('#signRole').val(role);
-            $('#signModalTitle').text(`Ký Biên Bản: ${roleTitle}`);
-            $('#signerNameInput').val('');
-            signModal.show();
-        }
-
-        function submitSignature() {
-            const role = $('#signRole').val();
-            const name = $('#signerNameInput').val().trim();
-            if (!name) return;
-
-            const payload = {
-                tranDauId: matchId,
-                role: role,
-                signerName: name
-            };
-
-            $.ajax({
-                url: '/TrongTai/BienBan/SignReport',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
-                success: function (res) {
-                    if (res.success) {
-                        signModal.hide();
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Đã ký xác nhận',
-                            text: res.message,
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => location.reload());
-                    } else {
-                        Swal.fire('Lỗi', res.message || 'Không thể lưu chữ ký', 'error');
-                    }
-                },
-                error: function () {
-                    Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
-                }
-            });
-        }
-    </script>
 }

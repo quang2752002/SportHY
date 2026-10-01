@@ -766,6 +766,10 @@ namespace Dms.Application.Services
         {
             var entity = await _unitOfWork.TranDaus.GetByIdAsync(id);
             if (entity == null || entity.IsDeleted == true) return false;
+            if (!IsCompletedMatchStatus(entity.TrangThai))
+            {
+                throw new InvalidOperationException("Chỉ có thể cập nhật biên bản sau khi trận đấu đã kết thúc.");
+            }
 
             entity.GhiChu = ghiChu;
             entity.LastModified = DateTime.UtcNow;
@@ -773,6 +777,24 @@ namespace Dms.Application.Services
             _unitOfWork.TranDaus.Update(entity);
             await _unitOfWork.CompleteAsync();
             return true;
+        }
+
+        /// <summary>
+        /// Kiểm tra trạng thái hoàn tất của một trận đấu còn hiệu lực.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
+        /// <returns>True nếu trận đấu tồn tại, chưa bị xóa mềm và đã kết thúc; ngược lại false.</returns>
+        public async Task<bool> IsMatchCompletedAsync(int tranDauId)
+        {
+            var match = await _unitOfWork.TranDaus.GetByIdAsync(tranDauId);
+            return match != null && match.IsDeleted != true && IsCompletedMatchStatus(match.TrangThai);
+        }
+
+        private static bool IsCompletedMatchStatus(string? status)
+        {
+            return string.Equals(status, "KetThuc", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(status, "DaKetThuc", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(status, "DaDau", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

@@ -1,6 +1,6 @@
 @model TranDauDto?
 @{
-    ViewData["Title"] = "Ghi Nhận Kết Quả & Diễn Biến Trận Đấu";
+    ViewData["Title"] = "Điều Hành Trận Đấu & Biên Bản";
     var tournaments = ViewBag.Tournaments as List<GiaiDauDto> ?? new();
     var matches = ViewBag.Matches as List<TranDauDto> ?? new();
     var sports = ViewBag.Sports as List<KeyValuePair<int, string>> ?? new();
@@ -35,6 +35,7 @@
     int? initPen2 = Model?.DiemPenaltyDoi2;
     string matchStatus = Model?.TrangThai ?? "ChuaDau";
     bool isMatchInProgress = matchStatus == "DangDau";
+    bool isMatchCompleted = new[] { "KetThuc", "DaKetThuc", "DaDau" }.Contains(matchStatus, StringComparer.OrdinalIgnoreCase);
     DateTime? actualStartTime = Model?.ThoiGianBatDau;
     DateTime? actualEndTime = Model?.ThoiGianKetThuc;
     int elapsedSeconds = (matchStatus == "DangDau" || matchStatus == "KetThuc") && actualStartTime.HasValue
@@ -47,20 +48,10 @@
     <div class="d-flex flex-column flex-md-row md-align-items-center justify-content-between gap-3">
         <div>
             <h4 class="fw-bold text-dark mb-1">
-                <i class="fa-solid fa-clipboard-list text-warning me-2"></i> Bàn Ghi Nhận Điểm & Diễn Biến Trực Tiếp
+                <i class="fa-solid fa-clipboard-list text-warning me-2"></i> Điều Hành Trận Đấu & Biên Bản
             </h4>
-            <p class="text-muted small mb-0">Hệ thống điều hành thi đấu đa môn, tự động tính điểm, phân định thắng thua và chuyển tiếp vòng đấu</p>
+            <p class="text-muted small mb-0">Ghi nhận kết quả, thẻ và diễn biến; tạo biên bản, xuất PDF sau khi trận đấu kết thúc.</p>
         </div>
-        @if (Model != null)
-        {
-            <div class="d-flex gap-2">
-                <a href="/TrongTai/BienBan?tranDauId=@Model.Id&giaiDauId=@selectedGiaiDauId"
-                   class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1.5">
-                    <i class="fa-solid fa-file-signature"></i>
-                    <span>Xem Biên Bản</span>
-                </a>
-            </div>
-        }
     </div>
 
     <!-- Match Picker Card -->
@@ -787,6 +778,119 @@
             </div>
         </div>
         </fieldset>
+
+        @if (isMatchCompleted)
+        {
+            <style>
+                #officialReportContent.pdf-exporting .d-print-none { display: none !important; }
+                #officialReportContent.pdf-exporting { background: #ffffff !important; color: #111827 !important; }
+
+                #matchReportPanel .match-report-actions {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    justify-content: flex-end;
+                    gap: .6rem;
+                    padding: .45rem;
+                    border: 1px solid #e1eaf4;
+                    border-radius: 16px;
+                    background: linear-gradient(135deg, #f8fbff, #f2f7fd);
+                }
+
+                #matchReportPanel .match-report-status {
+                    display: inline-flex;
+                    min-height: 40px;
+                    align-items: center;
+                    gap: .45rem;
+                    padding: .55rem .85rem;
+                    border: 1px solid #d6e2ee;
+                    border-radius: 12px;
+                    font-size: .8rem;
+                    font-weight: 700;
+                }
+
+                #matchReportPanel .match-report-status.bg-secondary-subtle {
+                    color: #52657a !important;
+                    background: #fff !important;
+                }
+
+                #matchReportPanel .match-report-status.bg-success-subtle {
+                    color: #187347 !important;
+                    border-color: #b9e3cc;
+                    background: #eaf7ef !important;
+                }
+
+                #matchReportPanel .match-report-button {
+                    display: inline-flex;
+                    min-height: 42px;
+                    align-items: center;
+                    justify-content: center;
+                    gap: .5rem;
+                    padding: .6rem 1rem;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+                }
+
+                #matchReportPanel .match-report-button:hover:not(:disabled) {
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 14px rgba(31, 74, 124, .16);
+                }
+
+                #matchReportPanel .match-report-create {
+                    color: #245a9d;
+                    border: 1px solid #c5d9ef;
+                    background: #fff;
+                }
+
+                #matchReportPanel .match-report-create:hover:not(:disabled) {
+                    color: #173b68;
+                    background: #eef5fd;
+                }
+
+                #matchReportPanel .match-report-export {
+                    color: #fff;
+                    border: 1px solid #b72d3c;
+                    background: linear-gradient(135deg, #e34c5b, #c93445);
+                    box-shadow: 0 4px 10px rgba(201, 52, 69, .2);
+                }
+
+                #matchReportPanel .match-report-export:hover:not(:disabled) {
+                    color: #fff;
+                    background: linear-gradient(135deg, #d64050, #b8293a);
+                }
+
+                #matchReportPreview .official-report {
+                    width: 100%;
+                    max-width: 1120px;
+                    margin: 0 auto !important;
+                }
+
+                @@media (max-width: 767.98px) {
+                    #matchReportPanel .match-report-actions { justify-content: center; }
+                    #matchReportPanel .match-report-status { flex: 1 1 100%; justify-content: center; }
+                    #matchReportPanel .match-report-button { flex: 1 1 auto; }
+                }
+            </style>
+            <div id="matchReportPanel" class="card-custom p-3 p-md-4">
+                <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1"><i class="fa-solid fa-file-signature text-primary me-2"></i>Biên bản trận đấu</h5>
+                        <p class="text-muted small mb-0">Tạo biên bản từ kết quả, điểm từng hiệp/set, diễn biến và danh sách vận động viên đã ghi nhận.</p>
+                    </div>
+                    <div class="match-report-actions">
+                        <span id="matchReportStatus" class="match-report-status bg-secondary-subtle text-secondary"><i class="fa-solid fa-file-circle-question"></i><span>Chưa tạo bản xem trước</span></span>
+                        <button type="button" id="btnCreateMatchReport" class="btn match-report-button match-report-create" onclick="createMatchReport()">
+                            <i class="fa-solid fa-file-circle-plus"></i><span>Tạo biên bản</span>
+                        </button>
+                        <button type="button" id="btnExportMatchReport" class="btn match-report-button match-report-export d-none" onclick="exportMatchReportPdf()">
+                            <i class="fa-solid fa-file-pdf"></i><span>Xuất PDF</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="matchReportPreview" class="d-none mt-3"></div>
+            </div>
+        }
     }
 </div>
 
@@ -848,9 +952,12 @@
 }
 
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         const matchId = @(Model?.Id ?? 0);
+        const selectedTournamentId = @(selectedGiaiDauId ?? 0);
         const matchStatus = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(matchStatus));
+        const matchCanHaveReport = @(isMatchCompleted ? "true" : "false");
         let score1 = @initScore1;
         let score2 = @initScore2;
         let pen1 = @(initPen1.HasValue ? initPen1.Value.ToString() : "null");
@@ -922,6 +1029,106 @@
             $('#eventForm').on('submit', function (e) {
                 e.preventDefault();
                 addEvent();
+            });
+        });
+
+        function createMatchReport() {
+            if (!matchCanHaveReport) {
+                Swal.fire('Chưa thể tạo biên bản', 'Chỉ có thể tạo biên bản sau khi trận đấu đã kết thúc.', 'info');
+                return;
+            }
+
+            const button = $('#btnCreateMatchReport');
+            button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span><span>Đang tạo...</span>');
+            loadMatchReportPreview(true);
+        }
+
+        function loadMatchReportPreview(showError) {
+            $.get('/TrongTai/BienBan', {
+                tranDauId: matchId,
+                giaiDauId: selectedTournamentId,
+                embedded: true
+            }).done(function (html) {
+                $('#matchReportPreview').html(html).removeClass('d-none');
+                $('#matchReportStatus').removeClass('bg-secondary-subtle text-secondary bg-danger-subtle text-danger')
+                    .addClass('bg-success-subtle text-success')
+                    .html('<i class="fa-solid fa-circle-check"></i><span>Biên bản đã sẵn sàng</span>');
+                $('#btnCreateMatchReport').addClass('d-none').prop('disabled', false)
+                    .html('<i class="fa-solid fa-file-circle-plus"></i><span>Tạo biên bản</span>');
+                $('#btnExportMatchReport').removeClass('d-none');
+                if (showError) {
+                    document.getElementById('matchReportPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }).fail(function (xhr) {
+                $('#btnCreateMatchReport').prop('disabled', false)
+                    .html('<i class="fa-solid fa-file-circle-plus"></i><span>Tạo biên bản</span>');
+                const message = xhr.responseText || 'Không tải được dữ liệu biên bản. Vui lòng thử lại.';
+                if (showError) Swal.fire('Không thể tạo biên bản', message, 'error');
+                else Swal.fire('Không thể làm mới biên bản', message, 'error');
+            });
+        }
+
+        function exportMatchReportPdf() {
+            const report = document.getElementById('officialReportContent');
+            if (!report || typeof html2pdf === 'undefined') {
+                Swal.fire('Chưa thể xuất PDF', 'Không tải được công cụ xuất PDF. Vui lòng tải lại trang và thử lại.', 'error');
+                return;
+            }
+
+            const matchNumber = report.dataset.matchNumber || matchId;
+            const sportName = report.dataset.sportName || 'MonThiDau';
+            const safeSportName = sportName.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'MonThiDau';
+            report.classList.add('pdf-exporting');
+
+            html2pdf().set({
+                margin: [10, 10, 10, 10],
+                filename: `BienBan_Tran_${matchNumber}_${safeSportName}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'] }
+            }).from(report).save()
+                .then(function () { Swal.fire({ icon: 'success', title: 'Đã xuất biên bản PDF', timer: 1500, showConfirmButton: false }); })
+                .catch(function () { Swal.fire('Lỗi xuất PDF', 'Không thể tạo tệp PDF từ biên bản.', 'error'); })
+                .finally(function () { report.classList.remove('pdf-exporting'); });
+        }
+
+        function openSignModal(role, roleTitle) {
+            $('#signRole').val(role);
+            $('#signModalTitle').text(`Ký Biên Bản: ${roleTitle}`);
+            $('#signerNameInput').val('');
+            const modalElement = document.getElementById('signModal');
+            if (modalElement) bootstrap.Modal.getOrCreateInstance(modalElement).show();
+        }
+
+        $(document).on('submit', '#signForm', function (event) {
+            event.preventDefault();
+            const signerName = $('#signerNameInput').val().trim();
+            if (!signerName) return;
+
+            $.ajax({
+                url: '/TrongTai/BienBan/SignReport',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    tranDauId: Number($('#signTranDauId').val()),
+                    role: $('#signRole').val(),
+                    signerName: signerName
+                }),
+                success: function (response) {
+                    if (!response.success) {
+                        Swal.fire('Lỗi', response.message || 'Không thể lưu chữ ký.', 'error');
+                        return;
+                    }
+                    const modalElement = document.getElementById('signModal');
+                    if (modalElement) bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+                    Swal.fire({ icon: 'success', title: 'Đã ký xác nhận', text: response.message, timer: 1300, showConfirmButton: false })
+                        .then(function () { loadMatchReportPreview(false); });
+                },
+                error: function (xhr) {
+                    Swal.fire('Lỗi', xhr.responseJSON?.message || 'Không thể lưu chữ ký biên bản.', 'error');
+                }
             });
         });
 

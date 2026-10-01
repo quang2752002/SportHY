@@ -1417,7 +1417,9 @@
                 <div class="d-flex gap-1 ms-auto">
                     <button type="button" class="btn btn-sm btn-outline-primary" title="Thêm môn vào danh mục này" onclick="openCreateModal(${id})"><i class="fa-solid fa-plus me-1"></i>Thêm môn</button>
                     <button type="button" class="btn btn-sm btn-light border text-primary" title="Sửa danh mục" onclick="openEditCategoryModal(${id})"><i class="fa-solid fa-pen-to-square"></i></button>
-                    <button type="button" class="btn btn-sm btn-light border text-danger" title="Xóa danh mục" onclick="deleteCategory(${id}, '${encodeURIComponent(category.ten || '')}')"><i class="fa-solid fa-trash"></i></button>
+                    <label class="form-check form-switch m-0 d-flex align-items-center" title="${category.trangThai ? 'Tắt hoạt động danh mục' : 'Bật hoạt động danh mục'}">
+                        <input class="form-check-input m-0" type="checkbox" role="switch" aria-label="Trạng thái danh mục ${safeCategoryName}" ${category.trangThai ? 'checked' : ''} onchange="setCategoryStatus(${id}, this.checked, this)">
+                    </label>
                 </div>`;
 
             const childrenHtml = items.length
@@ -1510,7 +1512,9 @@
                         <div class="btn-group btn-group-sm ms-auto">
                             <button type="button" class="btn btn-light border text-primary" title="Cấu hình thể thức & luật thi đấu" onclick="openFormatModal(${item.id}, decodeURIComponent('${encodedName}'), '${format}')"><i class="fa-solid fa-sliders"></i></button>
                             <button type="button" class="btn btn-light border" title="Sửa môn" onclick="openEditModal(${item.id})"><i class="fa-solid fa-pen-to-square text-success"></i></button>
-                            <button type="button" class="btn btn-light border" title="Xóa môn" onclick="deleteItem(${item.id}, decodeURIComponent('${encodedName}'))"><i class="fa-solid fa-trash text-danger"></i></button>
+                            <label class="btn btn-light border mb-0 d-flex align-items-center" title="${item.trangThai ? 'Tắt hoạt động môn' : 'Bật hoạt động môn'}">
+                                <input class="form-check-input m-0" type="checkbox" role="switch" aria-label="Trạng thái môn ${escapeHtml(item.ten)}" ${item.trangThai ? 'checked' : ''} onchange="setSportStatus(${item.id}, this.checked, this)">
+                            </label>
                         </div>
                     </div>`;
         }
@@ -1588,20 +1592,42 @@
             });
         }
 
-        function deleteCategory(id, encodedName) {
-            const name = decodeURIComponent(encodedName || '');
-            SportApp.confirm('Xóa danh mục môn?', `Bạn có chắc muốn xóa danh mục “${name}” không?`, function () {
-                $.post('/Manager/DanhMucMonTheThao/Delete', { id: id }, function (res) {
+        function setCategoryStatus(id, trangThai, toggle) {
+            toggle.disabled = true;
+            $.post('/Manager/DanhMucMonTheThao/SetStatus', { id: id, trangThai: trangThai })
+                .done(function (res) {
                     if (res.success) {
-                        SportApp.toast('success', res.message || 'Đã xóa danh mục môn.');
+                        SportApp.toast('success', res.message || 'Đã cập nhật trạng thái danh mục.');
                         reloadTreeData();
                     } else {
-                        Swal.fire('Lỗi', res.message || 'Không thể xóa danh mục môn.', 'error');
+                        toggle.checked = !trangThai;
+                        Swal.fire('Lỗi', res.message || 'Không thể cập nhật trạng thái danh mục.', 'error');
                     }
-                }).fail(function () {
-                    Swal.fire('Lỗi', 'Không thể kết nối máy chủ để xóa danh mục môn.', 'error');
-                });
-            });
+                })
+                .fail(function () {
+                    toggle.checked = !trangThai;
+                    Swal.fire('Lỗi', 'Không thể kết nối máy chủ để cập nhật danh mục.', 'error');
+                })
+                .always(function () { toggle.disabled = false; });
+        }
+
+        function setSportStatus(id, trangThai, toggle) {
+            toggle.disabled = true;
+            $.post('/Manager/MonTheThao/SetStatus', { id: id, trangThai: trangThai })
+                .done(function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã cập nhật trạng thái môn.');
+                        reloadTreeData();
+                    } else {
+                        toggle.checked = !trangThai;
+                        Swal.fire('Lỗi', res.message || 'Không thể cập nhật trạng thái môn.', 'error');
+                    }
+                })
+                .fail(function () {
+                    toggle.checked = !trangThai;
+                    Swal.fire('Lỗi', 'Không thể kết nối máy chủ để cập nhật môn.', 'error');
+                })
+                .always(function () { toggle.disabled = false; });
         }
 
         function reloadTreeData() {
@@ -1749,19 +1775,6 @@
                     }
                 },
                 error: function () { Swal.fire('Lỗi', 'Không thể kết nối máy chủ để lưu môn và cấu hình.', 'error'); }
-            });
-        }
-
-        function deleteItem(id, name) {
-            SportApp.confirm('Xóa Môn Thể Thao?', `Bạn có chắc muốn xóa môn "${name}" không?`, function () {
-                $.post('/Manager/MonTheThao/Delete', { id: id }, function (res) {
-                    if (res.success) {
-                        SportApp.toast('success', res.message || 'Đã xóa môn!');
-                        reloadTreeData();
-                    } else {
-                        Swal.fire('Lỗi', res.message || 'Không thể xóa.', 'error');
-                    }
-                });
             });
         }
 

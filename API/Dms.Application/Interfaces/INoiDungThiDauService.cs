@@ -226,8 +226,15 @@ namespace Dms.Application.Interfaces
         /// <param name="id">ID trận đấu có biên bản cần cập nhật.</param>
         /// <param name="ghiChu">Nội dung biên bản đã tuần tự hóa.</param>
         /// <param name="updatedBy">Tài khoản thực hiện cập nhật.</param>
-        /// <returns>True nếu biên bản được cập nhật; false nếu không tìm thấy trận.</returns>
+        /// <returns>True nếu biên bản được cập nhật; false nếu không tìm thấy trận; ném ngoại lệ nếu trận chưa kết thúc.</returns>
         Task<bool> UpdateMatchReportAsync(int id, string ghiChu, string? updatedBy = null);
+
+        /// <summary>
+        /// Kiểm tra trận đấu đã kết thúc để kiểm soát việc tạo và ký biên bản.
+        /// </summary>
+        /// <param name="tranDauId">ID trận đấu cần kiểm tra.</param>
+        /// <returns>True nếu trận tồn tại và đã kết thúc; nếu không thì false.</returns>
+        Task<bool> IsMatchCompletedAsync(int tranDauId);
 
         Task<TranDauDto?> GetByIdAsync(int id);
         Task<TranDauDto> CreateAsync(CreateUpdateTranDauDto dto, string? createdBy = null);
