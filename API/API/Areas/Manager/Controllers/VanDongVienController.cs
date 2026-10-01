@@ -10,21 +10,16 @@ namespace API.Areas.Manager.Controllers
     public class VanDongVienController : BaseManagerController
     {
         private readonly IVanDongVienService _vanDongVienService;
-        private readonly IDonViService _donViService;
 
-        public VanDongVienController(
-            IVanDongVienService vanDongVienService,
-            IDonViService donViService)
+        public VanDongVienController(IVanDongVienService vanDongVienService)
         {
             _vanDongVienService = vanDongVienService;
-            _donViService = donViService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public IActionResult Index(int? donViId = null)
         {
-            ViewBag.DonVis = await _donViService.GetAllAsync();
-            return View();
+            return RedirectToAction("Index", "DonVi", new { area = "Manager", tab = "athletes", donViId });
         }
 
         [HttpGet]

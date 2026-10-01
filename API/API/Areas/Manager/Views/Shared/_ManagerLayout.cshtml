@@ -324,13 +324,9 @@
                 <i class="fa-solid fa-layer-group"></i>
                 <span>Khối Tham Gia</span>
             </a>
-            <a href="/Manager/DonVi" class="manager-nav-link @(currentPath.StartsWith("/manager/donvi") ? "active" : "")">
+            <a href="/Manager/DonVi" class="manager-nav-link @(currentPath.StartsWith("/manager/donvi") || currentPath.StartsWith("/manager/vandongvien") ? "active" : "")">
                 <i class="fa-solid fa-building-columns"></i>
-                <span>Đơn Vị / Đoàn</span>
-            </a>
-            <a href="/Manager/VanDongVien" class="manager-nav-link @(currentPath.StartsWith("/manager/vandongvien") ? "active" : "")">
-                <i class="fa-solid fa-person-running"></i>
-                <span>Vận Động Viên</span>
+                <span>Đơn Vị / Đoàn &amp; VĐV</span>
             </a>
             <a href="/Manager/MonTheThao" class="manager-nav-link @(currentPath.StartsWith("/manager/danhmucmonthethao") || currentPath.StartsWith("/manager/monthethao") ? "active" : "")">
                 <i class="fa-solid fa-folder-tree"></i>

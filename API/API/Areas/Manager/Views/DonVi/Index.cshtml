@@ -1,6 +1,6 @@
 @using Dms.Application.DTOs
 @{
-    ViewData["Title"] = "Quản lý Đơn Vị / Đoàn Thể Thao";
+    ViewData["Title"] = "Quản lý Đơn vị & Vận động viên";
     Layout = "~/Areas/Manager/Views/Shared/_ManagerLayout.cshtml";
     var khois = ViewBag.Khois as IEnumerable<KhoiDto> ?? Enumerable.Empty<KhoiDto>();
 }
@@ -15,17 +15,30 @@
                         <i class="fa-solid fa-building-columns fs-4"></i>
                     </div>
                     <div>
-                        <h4 class="fw-bold mb-1 text-dark">Quản Lý Đơn Vị & Đoàn Thể Thao</h4>
-                        <p class="text-muted small mb-0">Quản lý các cơ quan, đoàn vận động viên, trường học và câu lạc bộ trực thuộc các khối.</p>
+                        <h4 class="fw-bold mb-1 text-dark">Quản Lý Đơn Vị &amp; Vận Động Viên</h4>
+                        <p class="text-muted small mb-0">Quản lý đoàn, đơn vị và hồ sơ VĐV tập trung trong cùng một phân hệ.</p>
                     </div>
                 </div>
-                <div>
+                <div class="d-flex flex-wrap gap-2">
                     <button type="button" class="btn btn-primary px-3 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2 shadow-sm" onclick="openCreateModal()">
                         <i class="fa-solid fa-plus"></i> Thêm Đơn Vị Mới
+                    </button>
+                    <button type="button" class="btn btn-outline-primary px-3 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2" onclick="openCreateAthleteModal()">
+                        <i class="fa-solid fa-user-plus"></i> Thêm VĐV
                     </button>
                 </div>
             </div>
 
+            <ul class="nav nav-pills mb-4" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link active" id="unitsTabButton" onclick="showManagementTab('units')"><i class="fa-solid fa-building-columns me-2"></i>Đơn vị / Đoàn</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link" id="athletesTabButton" onclick="showManagementTab('athletes')"><i class="fa-solid fa-person-running me-2"></i>Vận động viên</button>
+                </li>
+            </ul>
+
+            <div id="unitsPanel">
             <!-- Bộ lọc tìm kiếm -->
             <div class="p-3 bg-light rounded-3 mb-4 border">
                 <div class="row g-2 align-items-center">
@@ -81,6 +94,54 @@
             <div class="d-flex justify-content-between align-items-center py-3 mt-3 border-top">
                 <div class="text-muted small" id="paginationInfo">Hiển thị 0 trên 0 đơn vị</div>
                 <ul class="pagination pagination-sm mb-0" id="paginationList"></ul>
+            </div>
+            </div>
+
+            <div id="athletesPanel" class="d-none">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-1">Danh sách vận động viên</h5>
+                        <div id="athleteContext" class="small text-muted">Đang xem VĐV của tất cả đơn vị.</div>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="backToUnitsButton" onclick="showManagementTab('units')"><i class="fa-solid fa-arrow-left me-1"></i>Quay lại đơn vị</button>
+                </div>
+                <div class="p-3 bg-light rounded-3 mb-4 border">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-lg-4 col-md-6">
+                            <div class="input-group bg-white rounded-3 border overflow-hidden">
+                                <span class="input-group-text bg-white border-0 text-muted ps-3"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                <input type="text" id="athleteKeyword" class="form-control border-0 shadow-none ps-2" placeholder="Tìm tên, mã VĐV, CCCD, số điện thoại...">
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <select id="athleteDonViFilter" class="form-select bg-white border rounded-3 shadow-none"><option value="">-- Tất cả đơn vị --</option></select>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <select id="athleteStatusFilter" class="form-select bg-white border rounded-3 shadow-none">
+                                <option value="">-- Mọi trạng thái --</option><option value="true">Đủ điều kiện</option><option value="false">Tạm dừng</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-1 col-md-3">
+                            <select id="athletePageSize" class="form-select bg-white border rounded-3 shadow-none" title="Số VĐV mỗi trang"><option value="20">20</option><option value="50">50</option></select>
+                        </div>
+                        <div class="col-lg-2 col-md-5 d-flex gap-1">
+                            <button type="button" class="btn btn-dark flex-grow-1 rounded-3" onclick="loadAthletes(1)"><i class="fa-solid fa-filter me-1"></i>Lọc</button>
+                            <button type="button" class="btn btn-outline-secondary rounded-3" onclick="resetAthleteFilter()" title="Làm mới"><i class="fa-solid fa-arrows-rotate"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="tblAthletes">
+                        <thead class="table-light text-uppercase fs-7 text-muted">
+                            <tr><th class="ps-3" style="width:50px">STT</th><th>Họ và tên VĐV</th><th>Đơn vị chủ quản</th><th>Ngày sinh</th><th>Giới tính</th><th>CCCD &amp; Liên hệ</th><th>Trạng thái</th><th class="text-end pe-3" style="width:120px">Thao tác</th></tr>
+                        </thead>
+                        <tbody id="athleteTableBody"><tr><td colspan="8" class="text-center py-5 text-muted">Đang tải danh sách VĐV...</td></tr></tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-3 mt-3 border-top">
+                    <div class="text-muted small" id="athletePaginationInfo">Hiển thị 0 trên 0 vận động viên</div>
+                    <ul class="pagination pagination-sm mb-0" id="athletePaginationList"></ul>
+                </div>
             </div>
         </div>
     </div>
@@ -167,13 +228,83 @@
     </div>
 </div>
 
+<!-- Modal thêm/sửa VĐV dùng chung cho toàn phân hệ -->
+<div class="modal fade" id="modalAthlete" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="athleteModalTitle">
+                    <i class="fa-solid fa-person-running text-primary"></i><span>Thêm Vận Động Viên Mới</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <form id="formAthlete">
+                <input type="hidden" id="athleteId" />
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-8"><label class="form-label fw-semibold small">Họ và tên VĐV <span class="text-danger">*</span></label><input type="text" class="form-control" id="athleteName" required placeholder="Nguyễn Văn A"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold small">Mã VĐV</label><input type="text" class="form-control text-uppercase" id="athleteCode" placeholder="Tự sinh nếu để trống"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold small">Đơn vị chủ quản / Đoàn <span class="text-danger">*</span></label><select id="athleteDonViId" class="form-select" required><option value="">-- Chọn đơn vị --</option></select></div>
+                        <div class="col-md-3"><label class="form-label fw-semibold small">Giới tính</label><select id="athleteGender" class="form-select"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select></div>
+                        <div class="col-md-3"><label class="form-label fw-semibold small">Ngày sinh</label><input type="date" class="form-control" id="athleteDob"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold small">Số CCCD / Định danh</label><input type="text" class="form-control" id="athleteCccd" placeholder="012345678901"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold small">Số điện thoại</label><input type="text" class="form-control" id="athletePhone" placeholder="0912..."></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold small">Email</label><input type="email" class="form-control" id="athleteEmail" placeholder="vdv@sport.vn"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold small">Địa chỉ</label><input type="text" class="form-control" id="athleteAddress" placeholder="Quận/Huyện, Tỉnh/TP..."></div>
+                        <div class="col-12"><div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" id="athleteActive" checked><label class="form-check-label fw-semibold small" for="athleteActive">Hoạt động (Đủ điều kiện thi đấu)</label></div></div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3 bg-light">
+                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4" id="btnSaveAthlete"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu thông tin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         let currentPage = 1;
         const pageSize = 10;
+        let athleteCurrentPage = 1;
+        let athleteTotalCount = 0;
+        let athleteActiveUnitId = null;
+        let athletePinnedUnitId = null;
+        let athleteContextUnitId = null;
+        let athleteContextUnitName = '';
+        let athleteUnitOptions = [];
 
         $(document).ready(function () {
             loadData(1);
+            loadAthleteUnitOptions().done(function () {
+                const query = new URLSearchParams(window.location.search);
+                const initialTab = query.get('tab');
+                const unitId = parseInt(query.get('donViId') || '', 10);
+                if (initialTab === 'athletes') {
+                    if (Number.isInteger(unitId) && unitId > 0) {
+                        athleteActiveUnitId = unitId;
+                        athletePinnedUnitId = unitId;
+                        const knownUnit = athleteUnitOptions.find(function (item) { return item.id === unitId; });
+                        ensureAthleteUnitOption(unitId, knownUnit ? knownUnit.ten : `Đơn vị #${unitId}`);
+                        $('#athleteDonViFilter').val(String(unitId));
+                        $('#athleteDonViId').val(String(unitId));
+                        athleteContextUnitId = unitId;
+                        athleteContextUnitName = knownUnit ? knownUnit.ten : `Đơn vị #${unitId}`;
+                        updateAthleteContext();
+                        if (!knownUnit) {
+                            $.get('/Manager/DonVi/GetById', { id: unitId }, function (unitRes) {
+                                if (unitRes.success && unitRes.data) {
+                                    ensureAthleteUnitOption(unitId, unitRes.data.ten);
+                                    athleteContextUnitName = unitRes.data.ten;
+                                    updateAthleteContext();
+                                }
+                            });
+                        }
+                    }
+                    showManagementTab('athletes', false);
+                }
+            });
 
             $('#keyword').on('keypress', function (e) {
                 if (e.which === 13) loadData(1);
@@ -186,6 +317,27 @@
             $('#formDonVi').on('submit', function (e) {
                 e.preventDefault();
                 saveData();
+            });
+
+            $('#formAthlete').on('submit', function (e) {
+                e.preventDefault();
+                saveAthlete();
+            });
+
+            $('#athleteKeyword').on('keypress', function (e) {
+                if (e.which === 13) loadAthletes(1);
+            });
+
+            $('#athleteDonViFilter, #athleteStatusFilter, #athletePageSize').on('change', function () {
+                if (this.id === 'athleteDonViFilter') {
+                    athleteActiveUnitId = this.value ? parseInt(this.value, 10) : null;
+                    if (athleteActiveUnitId !== athletePinnedUnitId) athletePinnedUnitId = null;
+                    athleteContextUnitId = null;
+                    athleteContextUnitName = '';
+                    updateAthleteContext();
+                    updateManagementUrl();
+                }
+                loadAthletes(1);
             });
         });
 
@@ -257,10 +409,13 @@
                         </td>
                         <td class="text-end pe-3">
                             <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-light border text-primary" title="Quản lý vận động viên" onclick="openAthletesForUnit(${item.id}, decodeURIComponent('${encodeURIComponent(item.ten || '').replace(/'/g, '%27')}'))">
+                                    <i class="fa-solid fa-users"></i>
+                                </button>
                                 <button type="button" class="btn btn-light border" title="Sửa" onclick="openEditModal(${item.id})">
                                     <i class="fa-solid fa-pen-to-square text-success"></i>
                                 </button>
-                                <button type="button" class="btn btn-light border" title="Xóa" onclick="deleteItem(${item.id}, '${escapeHtml(item.ten)}')">
+                                <button type="button" class="btn btn-light border" title="Xóa" onclick="deleteItem(${item.id}, decodeURIComponent('${encodeURIComponent(item.ten || '').replace(/'/g, '%27')}'))">
                                     <i class="fa-solid fa-trash text-danger"></i>
                                 </button>
                             </div>
@@ -377,6 +532,7 @@
                         $('#modalDonVi').modal('hide');
                         SportApp.toast('success', res.message || 'Lưu đơn vị thành công!');
                         loadData(currentPage);
+                        loadAthleteUnitOptions();
                     } else {
                         Swal.fire('Lỗi', res.message || 'Không thể lưu đơn vị.', 'error');
                     }
@@ -401,6 +557,286 @@
             $('#keyword').val('');
             $('#khoiFilter').val('');
             loadData(1);
+        }
+
+        function loadAthleteUnitOptions() {
+            return $.get('/Manager/DonVi/GetAll', function (res) {
+                if (!res.success) return;
+
+                athleteUnitOptions = res.data || [];
+                const selectedFilter = $('#athleteDonViFilter').val();
+                const selectedFormUnit = $('#athleteDonViId').val();
+                const filterOptions = ['<option value="">-- Tất cả đơn vị --</option>'];
+                const formOptions = ['<option value="">-- Chọn đơn vị --</option>'];
+
+                athleteUnitOptions.forEach(function (unit) {
+                    const option = `<option value="${unit.id}">${escapeHtml(unit.ten)}</option>`;
+                    filterOptions.push(option);
+                    formOptions.push(option);
+                });
+
+                $('#athleteDonViFilter').html(filterOptions.join(''));
+                $('#athleteDonViId').html(formOptions.join(''));
+                if (selectedFilter) $('#athleteDonViFilter').val(selectedFilter);
+                if (selectedFormUnit) $('#athleteDonViId').val(selectedFormUnit);
+            });
+        }
+
+        function ensureAthleteUnitOption(unitId, unitName) {
+            const value = String(unitId);
+            const label = unitName || `Đơn vị #${unitId}`;
+            ['#athleteDonViFilter', '#athleteDonViId'].forEach(function (selector) {
+                const select = $(selector);
+                let option = select.find(`option[value="${value}"]`);
+                if (!option.length) {
+                    option = $('<option>').val(value);
+                    select.append(option);
+                }
+                option.text(label);
+            });
+        }
+
+        function showManagementTab(tab, updateUrl = true) {
+            const showAthletes = tab === 'athletes';
+            $('#unitsPanel').toggleClass('d-none', showAthletes);
+            $('#athletesPanel').toggleClass('d-none', !showAthletes);
+            $('#unitsTabButton').toggleClass('active', !showAthletes);
+            $('#athletesTabButton').toggleClass('active', showAthletes);
+
+            if (updateUrl) updateManagementUrl();
+            if (showAthletes) {
+                updateAthleteContext();
+                loadAthletes(1);
+            }
+        }
+
+        function updateManagementUrl() {
+            const url = new URL(window.location.href);
+            if ($('#athletesPanel').hasClass('d-none')) {
+                url.searchParams.delete('tab');
+                url.searchParams.delete('donViId');
+            } else {
+                url.searchParams.set('tab', 'athletes');
+                if (athleteActiveUnitId) url.searchParams.set('donViId', athleteActiveUnitId);
+                else url.searchParams.delete('donViId');
+            }
+            window.history.replaceState({}, '', url);
+        }
+
+        function openAthletesForUnit(unitId, unitName) {
+            athleteActiveUnitId = unitId;
+            athletePinnedUnitId = unitId;
+            athleteContextUnitId = unitId;
+            athleteContextUnitName = unitName || '';
+            ensureAthleteUnitOption(unitId, unitName);
+            $('#athleteDonViFilter').val(String(unitId));
+            $('#athleteDonViId').val(String(unitId));
+            showManagementTab('athletes');
+        }
+
+        function updateAthleteContext() {
+            const unitId = athleteActiveUnitId || ($('#athleteDonViFilter').val() ? parseInt($('#athleteDonViFilter').val(), 10) : null);
+            athleteActiveUnitId = unitId;
+            if (!unitId) {
+                $('#athleteContext').text('Đang xem VĐV của tất cả đơn vị.');
+                $('#backToUnitsButton').addClass('d-none');
+                return;
+            }
+
+            const unit = athleteUnitOptions.find(function (item) { return item.id === unitId; });
+            const unitName = athleteContextUnitId === unitId && athleteContextUnitName ? athleteContextUnitName : (unit && unit.ten) || 'đơn vị đã chọn';
+            $('#athleteContext').text(`Đang xem danh sách VĐV của: ${unitName}`);
+            $('#backToUnitsButton').removeClass('d-none');
+        }
+
+        function loadAthletes(page) {
+            athleteCurrentPage = page;
+            const unitId = $('#athleteDonViFilter').val();
+            const statusValue = $('#athleteStatusFilter').val();
+            const status = statusValue === '' ? undefined : statusValue === 'true';
+
+            $('#athleteTableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Đang tải danh sách VĐV...</td></tr>');
+            $.ajax({
+                url: '/Manager/VanDongVien/GetPagedData',
+                type: 'GET',
+                data: {
+                    pageIndex: page,
+                    pageSize: parseInt($('#athletePageSize').val(), 10) || 20,
+                    keyword: $('#athleteKeyword').val().trim() || undefined,
+                    donViId: unitId ? parseInt(unitId, 10) : undefined,
+                    trangThai: status
+                },
+                success: function (res) {
+                    if (res.success && res.data) renderAthleteTable(res.data);
+                    else showAthleteLoadError(res.message);
+                },
+                error: function () { showAthleteLoadError(); }
+            });
+        }
+
+        function showAthleteLoadError(message) {
+            $('#athleteTableBody').html(`<tr><td colspan="8" class="text-center py-5 text-danger">${escapeHtml(message || 'Không tải được danh sách vận động viên.')}</td></tr>`);
+            $('#athletePaginationInfo').text('');
+            $('#athletePaginationList').empty();
+        }
+
+        function renderAthleteTable(data) {
+            const items = data.items || [];
+            const start = (data.pageIndex - 1) * data.pageSize;
+            athleteTotalCount = data.totalCount || 0;
+            if (items.length === 0) {
+                $('#athleteTableBody').html('<tr><td colspan="8" class="text-center py-5 text-muted">Không tìm thấy vận động viên phù hợp.</td></tr>');
+                $('#athletePaginationInfo').text('Hiển thị 0 trên 0 vận động viên');
+                $('#athletePaginationList').empty();
+                return;
+            }
+
+            let html = '';
+            items.forEach(function (item, index) {
+                const dob = item.ngaySinh ? new Date(item.ngaySinh).toLocaleDateString('vi-VN') : '-';
+                const safeName = `decodeURIComponent('${encodeURIComponent(item.hoTen || '').replace(/'/g, '%27')}')`;
+                html += `<tr>
+                    <td class="ps-3 fw-bold text-muted">${start + index + 1}</td>
+                    <td><div class="fw-bold text-dark">${escapeHtml(item.hoTen)}</div><small class="text-muted"><span class="badge bg-light text-secondary border font-monospace">Mã: ${escapeHtml(item.ma)}</span></small></td>
+                    <td><span class="badge bg-primary-subtle text-primary border"><i class="fa-solid fa-building-columns me-1"></i>${escapeHtml(item.tenDonVi || 'Chưa gán đơn vị')}</span></td>
+                    <td>${dob}</td>
+                    <td><span class="badge ${item.gioiTinh === 'Nữ' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'} border">${escapeHtml(item.gioiTinh || 'Nam')}</span></td>
+                    <td><div class="small">CCCD: <strong>${escapeHtml(item.soCccd || '-')}</strong></div><small class="text-muted"><i class="fa-solid fa-phone me-1"></i>${escapeHtml(item.soDienThoai || '-')}</small></td>
+                    <td><span class="badge ${item.trangThai ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'} px-2.5 py-1 rounded-pill">${item.trangThai ? 'Đủ điều kiện' : 'Tạm dừng'}</span></td>
+                    <td class="text-end pe-3"><div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-light border" title="Sửa" onclick="openEditAthleteModal(${item.id})"><i class="fa-solid fa-pen-to-square text-success"></i></button>
+                        <button type="button" class="btn btn-light border" title="Xóa" onclick="deleteAthlete(${item.id}, ${safeName})"><i class="fa-solid fa-trash text-danger"></i></button>
+                    </div></td>
+                </tr>`;
+            });
+
+            $('#athleteTableBody').html(html);
+            const total = athleteTotalCount;
+            const from = total === 0 ? 0 : start + 1;
+            const to = Math.min(start + data.pageSize, total);
+            $('#athletePaginationInfo').text(`Hiển thị ${from} - ${to} trên tổng số ${total} vận động viên`);
+            renderAthletePagination(data.pageIndex, data.totalPages);
+        }
+
+        function renderAthletePagination(current, totalPages) {
+            if (totalPages <= 1) {
+                $('#athletePaginationList').empty();
+                return;
+            }
+            let html = `<li class="page-item ${current === 1 ? 'disabled' : ''}"><a class="page-link" href="javascript:void(0)" onclick="loadAthletes(${current - 1})">&laquo;</a></li>`;
+            for (let page = 1; page <= totalPages; page++) {
+                if (page === 1 || page === totalPages || (page >= current - 2 && page <= current + 2)) {
+                    html += `<li class="page-item ${page === current ? 'active' : ''}"><a class="page-link" href="javascript:void(0)" onclick="loadAthletes(${page})">${page}</a></li>`;
+                }
+            }
+            html += `<li class="page-item ${current === totalPages ? 'disabled' : ''}"><a class="page-link" href="javascript:void(0)" onclick="loadAthletes(${current + 1})">&raquo;</a></li>`;
+            $('#athletePaginationList').html(html);
+        }
+
+        function openCreateAthleteModal() {
+            $('#athleteModalTitle span').text('Thêm Vận Động Viên Mới');
+            $('#athleteId, #athleteName, #athleteCode, #athleteDob, #athleteCccd, #athletePhone, #athleteEmail, #athleteAddress').val('');
+            $('#athleteGender').val('Nam');
+            $('#athleteActive').prop('checked', true);
+            const unitId = athleteActiveUnitId || $('#athleteDonViFilter').val();
+            $('#athleteDonViId').val(unitId ? String(unitId) : '');
+            $('#modalAthlete').modal('show');
+        }
+
+        function openEditAthleteModal(id) {
+            $.get('/Manager/VanDongVien/GetById', { id: id }, function (res) {
+                if (!res.success || !res.data) {
+                    Swal.fire('Lỗi', res.message || 'Không tìm thấy vận động viên.', 'error');
+                    return;
+                }
+                const item = res.data;
+                if (item.donViId) ensureAthleteUnitOption(item.donViId, item.tenDonVi || `Đơn vị #${item.donViId}`);
+                $('#athleteModalTitle span').text('Chỉnh Sửa Vận Động Viên');
+                $('#athleteId').val(item.id);
+                $('#athleteName').val(item.hoTen || '');
+                $('#athleteCode').val(item.ma || '');
+                $('#athleteDonViId').val(item.donViId || '');
+                $('#athleteGender').val(item.gioiTinh || 'Nam');
+                $('#athleteDob').val(item.ngaySinh ? item.ngaySinh.split('T')[0] : '');
+                $('#athleteCccd').val(item.soCccd || '');
+                $('#athletePhone').val(item.soDienThoai || '');
+                $('#athleteEmail').val(item.email || '');
+                $('#athleteAddress').val(item.diaChi || '');
+                $('#athleteActive').prop('checked', item.trangThai);
+                $('#modalAthlete').modal('show');
+            }).fail(function () { Swal.fire('Lỗi', 'Không tải được hồ sơ vận động viên.', 'error'); });
+        }
+
+        function saveAthlete() {
+            const id = $('#athleteId').val();
+            const hoTen = $('#athleteName').val().trim();
+            const donViId = $('#athleteDonViId').val();
+            if (!hoTen || !donViId) {
+                Swal.fire('Thiếu thông tin', 'Vui lòng nhập họ tên và chọn đơn vị chủ quản.', 'warning');
+                return;
+            }
+
+            const payload = {
+                hoTen: hoTen,
+                ma: $('#athleteCode').val().trim() || 'VDV-' + Date.now().toString().slice(-6),
+                donViId: parseInt(donViId, 10),
+                gioiTinh: $('#athleteGender').val(),
+                ngaySinh: $('#athleteDob').val() || null,
+                soCccd: $('#athleteCccd').val().trim() || null,
+                soDienThoai: $('#athletePhone').val().trim() || null,
+                email: $('#athleteEmail').val().trim() || null,
+                diaChi: $('#athleteAddress').val().trim() || null,
+                trangThai: $('#athleteActive').is(':checked')
+            };
+
+            $('#btnSaveAthlete').prop('disabled', true);
+            $.ajax({
+                url: id ? `/Manager/VanDongVien/Save?id=${id}` : '/Manager/VanDongVien/Save',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    if (res.success) {
+                        $('#modalAthlete').modal('hide');
+                        SportApp.toast('success', res.message || 'Lưu vận động viên thành công!');
+                        loadAthletes(athleteCurrentPage);
+                        loadData(currentPage);
+                    } else Swal.fire('Lỗi', res.message || 'Không thể lưu vận động viên.', 'error');
+                },
+                error: function (xhr) {
+                    const message = xhr.responseJSON && xhr.responseJSON.message;
+                    Swal.fire('Lỗi', message || 'Không thể lưu vận động viên.', 'error');
+                },
+                complete: function () { $('#btnSaveAthlete').prop('disabled', false); }
+            });
+        }
+
+        function deleteAthlete(id, name) {
+            SportApp.confirm('Xóa vận động viên?', `Bạn có chắc muốn xóa VĐV "${name}" không?`, function () {
+                $.post('/Manager/VanDongVien/Delete', { id: id }, function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã xóa vận động viên!');
+                        const pageSize = parseInt($('#athletePageSize').val(), 10) || 20;
+                        const lastPageAfterDelete = Math.max(1, Math.ceil(Math.max(0, athleteTotalCount - 1) / pageSize));
+                        loadAthletes(Math.min(athleteCurrentPage, lastPageAfterDelete));
+                        loadData(currentPage);
+                    } else Swal.fire('Lỗi', res.message || 'Không thể xóa vận động viên.', 'error');
+                });
+            });
+        }
+
+        function resetAthleteFilter() {
+            $('#athleteKeyword').val('');
+            $('#athleteStatusFilter').val('');
+            if (athletePinnedUnitId) {
+                athleteActiveUnitId = athletePinnedUnitId;
+                $('#athleteDonViFilter').val(String(athletePinnedUnitId));
+            }
+            else $('#athleteDonViFilter').val('');
+            if (!athletePinnedUnitId) athleteActiveUnitId = null;
+            updateAthleteContext();
+            updateManagementUrl();
+            loadAthletes(1);
         }
 
         function escapeHtml(text) {
