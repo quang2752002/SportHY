@@ -1,6 +1,6 @@
 @using Dms.Application.DTOs
 @{
-    ViewData["Title"] = "Quản lý Môn Thể Thao";
+    ViewData["Title"] = "Danh mục & Môn Thi Đấu";
     Layout = "~/Areas/Manager/Views/Shared/_ManagerLayout.cshtml";
     var danhMucs = ViewBag.DanhMucs as IEnumerable<DanhMucMonTheThaoDto> ?? Enumerable.Empty<DanhMucMonTheThaoDto>();
 }
@@ -12,14 +12,17 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 pb-3 mb-4 border-bottom">
                 <div class="d-flex align-items-center gap-3">
                     <div class="p-3 bg-primary-subtle text-primary rounded-4">
-                        <i class="fa-solid fa-volleyball fs-4"></i>
+                        <i class="fa-solid fa-folder-tree fs-4"></i>
                     </div>
                     <div>
-                        <h4 class="fw-bold mb-1 text-dark">Quản Lý Môn Thể Thao Thi Đấu</h4>
-                        <p class="text-muted small mb-0">Cấu hình danh mục môn, thể thức thi đấu, giới tính và quy định số lượng VĐV.</p>
+                        <h4 class="fw-bold mb-1 text-dark">Danh Mục &amp; Môn Thi Đấu</h4>
+                        <p class="text-muted small mb-0">Quản lý danh mục theo dạng cây; mở từng danh mục để xem và quản lý các môn trực thuộc.</p>
                     </div>
                 </div>
-                <div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-primary px-3 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2" onclick="openCreateCategoryModal()">
+                        <i class="fa-solid fa-folder-plus"></i> Thêm Danh Mục
+                    </button>
                     <button type="button" class="btn btn-primary px-3 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2 shadow-sm" onclick="openCreateModal()">
                         <i class="fa-solid fa-plus"></i> Thêm Môn Thể Thao Mới
                     </button>
@@ -29,7 +32,7 @@
             <!-- Bộ lọc tìm kiếm -->
             <div class="p-3 bg-light rounded-3 mb-4 border">
                 <div class="row g-2 align-items-center">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="input-group bg-white rounded-3 border overflow-hidden">
                             <span class="input-group-text bg-white border-0 text-muted ps-3">
                                 <i class="fa-solid fa-magnifying-glass"></i>
@@ -71,7 +74,21 @@
                             <option value="HonHop">Hỗn hợp</option>
                         </select>
                     </div>
-                    <div class="col-md-2 d-flex gap-1">
+                    <div class="col-md-1">
+                        <select id="trangThaiFilter" class="form-select bg-white border rounded-3 shadow-none" title="Trạng thái môn">
+                            <option value="">Môn: tất cả</option>
+                            <option value="true">Hoạt động</option>
+                            <option value="false">Tạm dừng</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <select id="categoryStatusFilter" class="form-select bg-white border rounded-3 shadow-none" title="Trạng thái danh mục">
+                            <option value="">DM: tất cả</option>
+                            <option value="true">DM hoạt động</option>
+                            <option value="false">DM tạm dừng</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1 d-flex gap-1">
                         <button type="button" class="btn btn-dark flex-grow-1 rounded-3" onclick="loadData(1)">
                             <i class="fa-solid fa-filter me-1"></i> Lọc
                         </button>
@@ -82,26 +99,9 @@
                 </div>
             </div>
 
-            <!-- Bảng danh sách Môn thể thao -->
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="tblMonTheThao">
-                    <thead class="table-light text-uppercase fs-7 text-muted">
-                        <tr>
-                            <th class="ps-3" style="width: 50px;">STT</th>
-                            <th>Tên Môn Thể Thao</th>
-                            <th>Nhóm Danh Mục</th>
-                            <th>Quy Mô</th>
-                            <th>Sơ Đồ Thi Đấu</th>
-                            <th>Giới Tính</th>
-                            <th>Số VĐV / Đội</th>
-                            <th>Trạng Thái</th>
-                            <th class="text-end pe-3" style="width: 130px;">Thao Tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tblBody">
-                        <tr><td colspan="9" class="text-center py-5 text-muted">Đang tải danh sách môn thể thao...</td></tr>
-                    </tbody>
-                </table>
+            <!-- Cây danh mục -> môn thi đấu -->
+            <div id="sportTree" class="sport-tree" aria-live="polite">
+                <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Đang tải danh mục và môn thi đấu...</div>
             </div>
 
             <div class="d-flex justify-content-between align-items-center py-3 mt-3 border-top">
@@ -112,9 +112,48 @@
     </div>
 </div>
 
+<!-- Modal Thêm / Sửa Danh Mục -->
+<div class="modal fade" id="modalCategory" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="categoryModalTitle">
+                    <i class="fa-solid fa-tags text-primary"></i><span>Thêm Danh Mục Môn</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <form id="formCategory">
+                <input type="hidden" id="categoryId" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Mã danh mục <span class="text-danger">*</span></label>
+                        <input type="text" id="categoryCode" class="form-control text-uppercase" required maxlength="50" placeholder="VD: DM_BONG" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Tên danh mục <span class="text-danger">*</span></label>
+                        <input type="text" id="categoryName" class="form-control" required maxlength="200" placeholder="VD: Các môn bóng" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Mô tả</label>
+                        <textarea id="categoryDescription" class="form-control" rows="3" placeholder="Mô tả nhóm môn thể thao..."></textarea>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="categoryActive" checked />
+                        <label class="form-check-label fw-semibold small" for="categoryActive">Kích hoạt danh mục</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3 bg-light">
+                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4" id="btnSaveCategory"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu danh mục</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Thêm / Sửa Môn Thể Thao -->
 <div class="modal fade" id="modalMon" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow rounded-4">
             <div class="modal-header border-bottom px-4 py-3">
                 <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalTitle">
@@ -126,6 +165,16 @@
             <form id="formMon">
                 <input type="hidden" id="monId" value="">
                 <div class="modal-body p-4">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-semibold" id="basicSportTabButton" data-bs-toggle="tab" data-bs-target="#basicSportTab" type="button" role="tab">Thông tin môn</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-semibold" id="formatSportTabButton" data-bs-toggle="tab" data-bs-target="#formatSportTab" type="button" role="tab">Cấu hình môn thi đấu <span class="text-danger">*</span></button>
+                        </li>
+                    </ul>
+                    <div class="tab-content pt-3">
+                    <div class="tab-pane fade show active" id="basicSportTab" role="tabpanel" aria-labelledby="basicSportTabButton">
                     <div class="row g-3">
                         <div class="col-md-8">
                             <label class="form-label fw-semibold small">Tên môn thể thao <span class="text-danger">*</span></label>
@@ -192,11 +241,20 @@
                             </div>
                         </div>
                     </div>
+                    </div>
+                    <div class="tab-pane fade" id="formatSportTab" role="tabpanel" aria-labelledby="formatSportTabButton">
+                        <div class="alert alert-warning py-2 mb-3" id="formatRequiredNotice">
+                            <i class="fa-solid fa-circle-exclamation me-1"></i>
+                            Hãy kiểm tra và xác nhận cấu hình thể thức trước khi lưu môn thi đấu.
+                        </div>
+                        <div id="formatEditorMount"></div>
+                    </div>
+                    </div>
                 </div>
                 <div class="modal-footer border-top px-4 py-3 bg-light">
                     <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Đóng</button>
                     <button type="submit" class="btn btn-primary rounded-3 px-4" id="btnSave">
-                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu thông tin
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu môn &amp; cấu hình
                     </button>
                 </div>
             </form>
@@ -206,6 +264,9 @@
 
 <!-- ========== STYLES: FORMAT MODAL ========== -->
 <style>
+#modalMon #formMon { display:flex; flex-direction:column; min-height:0; max-height:calc(100vh - 140px); overflow-y:auto; }
+#modalMon .format-editor-dialog { width:100%; max-width:none; margin:0; }
+#modalMon #modalTheThuc .modal-content { box-shadow:none!important; }
 #modalTheThuc .fmt-tab-card {
     background:#fff; border:2px solid #e5e7eb; border-radius:12px;
     padding:16px; cursor:pointer; transition:all .2s ease;
@@ -346,12 +407,32 @@
     border:none; outline:none; background:transparent;
     font-weight:700; font-size:16px; text-align:center; width:56px;
 }
+.sport-tree { display:flex; flex-direction:column; gap:12px; }
+.sport-tree-category { overflow:hidden; border:1px solid #dbe3ef; border-radius:12px; background:#fff; }
+.sport-tree-category-header { display:flex; align-items:center; gap:10px; padding:13px 16px; background:#f8fafc; }
+.sport-tree-category-header:hover { background:#f1f5f9; }
+.sport-tree-toggle { width:26px; height:26px; flex:none; border:0; background:transparent; color:#64748b; transition:transform .18s ease; }
+.sport-tree-toggle[aria-expanded="false"] { transform:rotate(-90deg); }
+.sport-tree-category-icon { color:#2563eb; font-size:17px; }
+.sport-tree-category-content { padding:8px 14px 12px 50px; }
+.sport-tree-category-content.is-collapsed { display:none; }
+.sport-tree-leaf { display:flex; align-items:center; gap:12px; padding:11px 12px; border-bottom:1px solid #edf1f7; }
+.sport-tree-leaf:last-child { border-bottom:0; }
+.sport-tree-leaf:hover { background:#f8fbff; border-radius:8px; }
+.sport-tree-leaf-main { min-width:220px; flex:1; }
+.sport-tree-leaf-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.sport-tree-empty { padding:10px 12px; color:#94a3b8; font-size:.875rem; }
+@@media (max-width: 767.98px) {
+    .sport-tree-category-content { padding-left:18px; }
+    .sport-tree-leaf { align-items:flex-start; flex-wrap:wrap; }
+    .sport-tree-leaf-main { min-width:100%; }
+}
 </style>
 
 <!-- ========== MODAL CẤU HÌNH THỂ THỨC (THIẾT KẾ MỚI) ========== -->
-<div class="modal fade" id="modalTheThuc" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-height:92vh">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="max-height:92vh;display:flex;flex-direction:column">
+<div id="modalTheThuc" class="w-100">
+    <div class="w-100 m-0">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="display:flex;flex-direction:column">
 
             <!-- ── HEADER ── -->
             <div class="d-flex align-items-center px-4 py-3 bg-white gap-3" style="border-bottom:1px solid #e5e7eb;flex-shrink:0">
@@ -384,11 +465,10 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFormatForm()" title="Đặt lại mặc định" style="width:32px;height:32px;padding:0">
                         <i class="fa-solid fa-rotate fa-xs"></i>
                     </button>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
             </div>
 
-            <form id="formTheThuc" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
+            <div id="formTheThuc" style="display:flex;flex-direction:column;min-height:0">
                 <input type="hidden" id="fmtMonId" value="">
                 <input type="hidden" id="fmtHinhThucThiDau" value="LoaiTrucTiep">
 
@@ -1099,21 +1179,7 @@
 
                 </div><!-- end scrollable area -->
 
-                <!-- ── FOOTER (sticky) ── -->
-                <div class="d-flex align-items-center justify-content-between px-4 py-3 bg-white" style="border-top:1px solid #e5e7eb;flex-shrink:0">
-                    <div class="small" style="color:#4f46e5">
-                        <i class="fa-solid fa-circle-info me-1"></i>
-                        Cấu hình sẽ được lưu và cập nhật trực tiếp vào bản điều lệ của giải.
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn rounded-3 px-4 fw-bold" id="btnSaveTheThuc" style="background:#4f46e5;color:#fff;border:none">
-                            <i class="fa-solid fa-check me-1"></i> Lưu Cấu Hình
-                        </button>
-                    </div>
-                </div>
-
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -1122,16 +1188,51 @@
     <script>
         let currentPage = 1;
         const pageSize = 10;
+        let formatConfigured = false;
+        let categoriesData = [];
+        let categoryModalInstance = null;
 
         $(document).ready(function () {
-            loadData(1);
+            categoryModalInstance = new bootstrap.Modal(document.getElementById('modalCategory'));
+            loadCategories().then(function () {
+                populateCategorySelects();
+                loadData(1);
+            }).catch(function () {
+                loadData(1);
+            });
+
+            // Chuyển bộ cấu hình thể thức vào tab của form môn; form chỉ còn một nút lưu chung.
+            const $formatRoot = $('#modalTheThuc');
+            $formatRoot.children('.w-100').removeClass('w-100 m-0').addClass('format-editor-dialog');
+            $formatRoot.appendTo('#formatEditorMount');
+            $formatRoot.find('.modal-content').css('max-height', 'none');
+            $('#formTheThuc').css({ overflow: 'visible', minHeight: '0' });
+            $('#modalTheThuc button:not([type])').attr('type', 'button');
+            $('#formatRequiredNotice').after('<div class="alert alert-info py-2 mb-3 small"><i class="fa-solid fa-circle-info me-1"></i>Cấu hình này được lưu cùng môn và dùng làm cấu hình mặc định cho các giải sử dụng môn.</div>');
+
+            $('#formatSportTabButton').on('shown.bs.tab', function () {
+                formatConfigured = true;
+                const format = $('#hinhThucThiDau').val() || 'LoaiTrucTiep';
+                $('#fmtHinhThucThiDau').val(format);
+                switchFormat(format);
+                setFormatConfirmation(true);
+            });
+
+            $('#hinhThucThiDau').on('change', function () {
+                switchFormat(this.value);
+                $('#fmtHinhThucThiDau').val(this.value);
+            });
 
             $('#keyword').on('keypress', function (e) {
                 if (e.which === 13) loadData(1);
             });
 
-            $('#danhMucFilter, #gioiTinhFilter, #hinhThucFilter, #quyMoFilter').on('change', function () {
+            $('#danhMucFilter, #gioiTinhFilter, #hinhThucFilter, #quyMoFilter, #trangThaiFilter, #categoryStatusFilter').on('change', function () {
                 loadData(1);
+            });
+
+            $('#formCategory').on('submit', function (e) {
+                saveCategory(e);
             });
 
             $('#formMon').on('submit', function (e) {
@@ -1189,6 +1290,45 @@
             });
         });
 
+        function loadCategories() {
+            return $.ajax({
+                url: '/Manager/DanhMucMonTheThao/GetPagedData',
+                type: 'GET',
+                data: { pageIndex: 1, pageSize: 500 }
+            }).then(function (res) {
+                if (!res.success || !res.data) throw new Error('Không thể tải danh mục môn.');
+                categoriesData = res.data.items || [];
+                const totalPages = res.data.totalPages || 1;
+                if (totalPages <= 1) return categoriesData;
+
+                const requests = [];
+                for (let page = 2; page <= totalPages; page++) {
+                    requests.push($.get('/Manager/DanhMucMonTheThao/GetPagedData', { pageIndex: page, pageSize: 500 }));
+                }
+                return $.when.apply($, requests).then(function () {
+                    const results = requests.length === 1 ? [arguments[0]] : Array.from(arguments, result => result[0]);
+                    results.forEach(result => {
+                        if (result && result.success && result.data) categoriesData = categoriesData.concat(result.data.items || []);
+                    });
+                    return categoriesData;
+                });
+            });
+        }
+
+        function populateCategorySelects() {
+            const options = '<option value="">-- Danh mục --</option>' + categoriesData.map(category =>
+                `<option value="${category.id}">${escapeHtml(category.ten)}${category.trangThai ? '' : ' (Tạm dừng)'}</option>`
+            ).join('');
+            const selectedFilter = $('#danhMucFilter').val();
+            $('#danhMucFilter').html(options).val(selectedFilter || '');
+
+            const sportOptions = '<option value="">-- Chọn nhóm môn --</option>' + categoriesData.map(category =>
+                `<option value="${category.id}">${escapeHtml(category.ten)}${category.trangThai ? '' : ' (Tạm dừng)'}</option>`
+            ).join('');
+            const selectedSportCategory = $('#danhMucId').val();
+            $('#danhMucId').html(sportOptions).val(selectedSportCategory || '');
+        }
+
         function loadData(page) {
             currentPage = page;
             const keyword = $('#keyword').val().trim();
@@ -1205,9 +1345,11 @@
                     pageSize: pageSize,
                     keyword: keyword || undefined,
                     danhMucId: danhMucId ? parseInt(danhMucId) : undefined,
+                    trangThai: $('#trangThaiFilter').val() === '' ? undefined : $('#trangThaiFilter').val() === 'true',
                     gioiTinh: gioiTinh || undefined,
                     hinhThucThiDau: hinhThucThiDau || undefined,
-                    loaiThiDau: loaiThiDau || undefined
+                    loaiThiDau: loaiThiDau || undefined,
+                    danhMucTrangThai: $('#categoryStatusFilter').val() === '' ? undefined : $('#categoryStatusFilter').val() === 'true'
                 },
                 success: function (res) {
                     if (res.success && res.data) {
@@ -1219,18 +1361,91 @@
 
         function renderTable(data) {
             const items = data.items || [];
-            if (items.length === 0) {
-                $('#tblBody').html('<tr><td colspan="9" class="text-center py-5 text-muted">Chưa có môn thể thao nào.</td></tr>');
-                $('#paginationInfo').text('Hiển thị 0 trên 0 môn thể thao');
-                $('#paginationList').empty();
-                return;
-            }
+            const start = (data.pageIndex - 1) * data.pageSize;
+            const grouped = new Map();
+            items.forEach(item => {
+                const categoryId = item.danhMucId || 0;
+                if (!grouped.has(categoryId)) grouped.set(categoryId, []);
+                grouped.get(categoryId).push(item);
+            });
 
             let html = '';
-            const start = (data.pageIndex - 1) * data.pageSize;
+            const itemNumbers = new Map(items.map((item, index) => [item.id, start + index + 1]));
+            const categoryKeyword = ($('#keyword').val() || '').trim().toLocaleLowerCase();
+            const categoryStatus = $('#categoryStatusFilter').val();
+            const selectedCategory = $('#danhMucFilter').val();
+            const visibleCategories = categoriesData.filter(category => {
+                const matchesStatus = categoryStatus === '' || String(category.trangThai) === categoryStatus;
+                const matchesKeyword = !categoryKeyword || `${category.ten || ''} ${category.ma || ''}`.toLocaleLowerCase().includes(categoryKeyword);
+                return matchesStatus && (grouped.has(category.id) || selectedCategory === String(category.id) || (matchesKeyword && categoryKeyword) || (!categoryKeyword && category.soMonTheThao === 0));
+            });
 
-            $.each(items, function (i, item) {
-                const stt = start + i + 1;
+            visibleCategories.forEach(category => {
+                const children = grouped.get(category.id) || [];
+                html += renderCategoryNode(category, children, itemNumbers);
+            });
+
+            const knownCategoryIds = new Set(categoriesData.map(category => Number(category.id)));
+            const unknownCategoryItems = items.filter(item => !knownCategoryIds.has(Number(item.danhMucId || 0)));
+            if (unknownCategoryItems.length) {
+                html += renderCategoryNode({ id: 0, ma: '', ten: 'Chưa phân loại', moTa: '', trangThai: true, soMonTheThao: unknownCategoryItems.length }, unknownCategoryItems, itemNumbers);
+            }
+
+            if (items.length === 0 && visibleCategories.length === 0) {
+                html = '<div class="text-center py-5 text-muted"><i class="fa-regular fa-folder-open fs-2 d-block mb-2"></i>Chưa có danh mục hoặc môn thi đấu phù hợp.</div>';
+            } else if (items.length === 0) {
+                html = visibleCategories.map(category => renderCategoryNode(category, [], itemNumbers)).join('');
+            }
+
+            $('#sportTree').html(html);
+            const total = data.totalCount || 0;
+            const from = total === 0 ? 0 : start + 1;
+            const to = Math.min(start + data.pageSize, total);
+            $('#paginationInfo').text(`Hiển thị ${from} - ${to} trên tổng số ${total} môn thi đấu · ${categoriesData.length} danh mục`);
+            renderPagination(data.pageIndex, data.totalPages);
+        }
+
+        function renderCategoryNode(category, items, itemNumbers) {
+            const id = Number(category.id || 0);
+            const isUnclassified = id === 0;
+            const safeCategoryName = escapeHtml(category.ten || 'Chưa phân loại');
+            const statusBadge = category.trangThai
+                ? '<span class="badge bg-success-subtle text-success border border-success-subtle">Hoạt động</span>'
+                : '<span class="badge bg-secondary-subtle text-secondary border">Tạm dừng</span>';
+            const count = Number(category.soMonTheThao ?? items.length);
+            const categoryActions = isUnclassified ? '' : `
+                <div class="d-flex gap-1 ms-auto">
+                    <button type="button" class="btn btn-sm btn-outline-primary" title="Thêm môn vào danh mục này" onclick="openCreateModal(${id})"><i class="fa-solid fa-plus me-1"></i>Thêm môn</button>
+                    <button type="button" class="btn btn-sm btn-light border text-primary" title="Sửa danh mục" onclick="openEditCategoryModal(${id})"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button type="button" class="btn btn-sm btn-light border text-danger" title="Xóa danh mục" onclick="deleteCategory(${id}, '${encodeURIComponent(category.ten || '')}')"><i class="fa-solid fa-trash"></i></button>
+                </div>`;
+
+            const childrenHtml = items.length
+                ? items.map(item => renderSportLeaf(item, itemNumbers.get(item.id) || '')).join('')
+                : `<div class="sport-tree-empty"><i class="fa-regular fa-circle-dot me-2"></i>${count === 0 ? 'Danh mục này chưa có môn thi đấu.' : 'Không có môn phù hợp trong trang/lọc hiện tại.'}</div>`;
+
+            return `
+                <section class="sport-tree-category" data-category-node="${id}">
+                    <div class="sport-tree-category-header">
+                        <button type="button" class="sport-tree-toggle" aria-expanded="true" aria-label="Thu gọn danh mục" onclick="toggleCategoryNode(${id})"><i class="fa-solid fa-chevron-down"></i></button>
+                        <i class="fa-solid fa-folder-open sport-tree-category-icon"></i>
+                        <div class="min-w-0">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <strong class="text-dark">${safeCategoryName}</strong>
+                                ${category.ma ? `<span class="badge bg-light text-secondary border font-monospace">${escapeHtml(category.ma)}</span>` : ''}
+                                ${statusBadge}
+                                <span class="badge bg-primary-subtle text-primary">${count} môn</span>
+                                ${items.length && items.length < count ? `<span class="small text-muted">Hiển thị ${items.length} môn theo bộ lọc/trang hiện tại</span>` : ''}
+                            </div>
+                            ${category.moTa ? `<small class="text-muted">${escapeHtml(category.moTa)}</small>` : ''}
+                        </div>
+                        ${categoryActions}
+                    </div>
+                    <div class="sport-tree-category-content" id="categoryChildren-${id}">${childrenHtml}</div>
+                </section>`;
+        }
+
+        function renderSportLeaf(item, number) {
                 const loaiVal = item.loaiThiDau || (item.laMonDongDoi ? 'DongDoi' : 'CaNhan');
                 let loaiBadge = '<span class="badge bg-primary-subtle text-primary border fw-semibold"><i class="fa-solid fa-users me-1"></i>Đồng đội</span>';
                 if (loaiVal === 'CaNhan') {
@@ -1275,56 +1490,127 @@
                     vdvDisplay = `<span class="badge bg-light text-dark border px-2 py-1">Tối đa ${vdvMax} người</span>`;
                 }
 
-                html += `
-                    <tr>
-                        <td class="ps-3 fw-bold text-muted">${stt}</td>
-                        <td>
+                const statusBadge = item.trangThai
+                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle">Hoạt động</span>'
+                    : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Tạm dừng</span>';
+                const encodedName = encodeURIComponent(item.ten || '');
+                const format = item.hinhThucThiDau || 'LoaiTrucTiep';
+                return `
+                    <div class="sport-tree-leaf">
+                        <span class="text-muted small" style="width:28px">${number ? `${number}.` : ''}</span>
+                        <div class="sport-tree-leaf-main">
                             <div class="fw-bold text-dark">${escapeHtml(item.ten)}</div>
-                            <small class="text-muted"><span class="badge bg-light text-secondary border font-monospace">Mã: ${escapeHtml(item.ma)}</span></small>
-                        </td>
-                        <td>
-                            <span class="badge bg-primary-subtle text-primary border">
-                                <i class="fa-solid fa-tags me-1"></i>${escapeHtml(item.tenDanhMuc || 'Khác')}
-                            </span>
-                        </td>
-                        <td>${loaiBadge}</td>
-                        <td>${hinhThucBadge}</td>
-                        <td>
-                            <span class="badge ${item.gioiTinh === 'Nu' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'} border">
-                                ${gt}
-                            </span>
-                        </td>
-                        <td>${vdvDisplay}</td>
-                        <td>
-                            <span class="badge ${item.trangThai ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'} px-2.5 py-1 rounded-pill">
-                                ${item.trangThai ? 'Hoạt động' : 'Tạm dừng'}
-                            </span>
-                        </td>
-                        <td class="text-end pe-3">
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-light border text-primary" title="Cấu hình thể thức & luật thi đấu" onclick="openFormatModal(${item.id}, '${escapeHtml(item.ten)}', '${escapeHtml(item.hinhThucThiDau || 'LoaiTrucTiep')}')">
-                                    <i class="fa-solid fa-sliders"></i>
-                                </button>
-                                <button type="button" class="btn btn-light border" title="Sửa" onclick="openEditModal(${item.id})">
-                                    <i class="fa-solid fa-pen-to-square text-success"></i>
-                                </button>
-                                <button type="button" class="btn btn-light border" title="Xóa" onclick="deleteItem(${item.id}, '${escapeHtml(item.ten)}')">
-                                    <i class="fa-solid fa-trash text-danger"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                            <small class="text-muted font-monospace">Mã: ${escapeHtml(item.ma || '---')}</small>
+                        </div>
+                        <div class="sport-tree-leaf-meta">
+                            ${loaiBadge}${hinhThucBadge}
+                            <span class="badge ${item.gioiTinh === 'Nu' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'} border">${gt}</span>
+                            ${vdvDisplay}${statusBadge}
+                        </div>
+                        <div class="btn-group btn-group-sm ms-auto">
+                            <button type="button" class="btn btn-light border text-primary" title="Cấu hình thể thức & luật thi đấu" onclick="openFormatModal(${item.id}, decodeURIComponent('${encodedName}'), '${format}')"><i class="fa-solid fa-sliders"></i></button>
+                            <button type="button" class="btn btn-light border" title="Sửa môn" onclick="openEditModal(${item.id})"><i class="fa-solid fa-pen-to-square text-success"></i></button>
+                            <button type="button" class="btn btn-light border" title="Xóa môn" onclick="deleteItem(${item.id}, decodeURIComponent('${encodedName}'))"><i class="fa-solid fa-trash text-danger"></i></button>
+                        </div>
+                    </div>`;
+        }
+
+        function toggleCategoryNode(id) {
+            const $content = $(`#categoryChildren-${id}`);
+            const $toggle = $(`[data-category-node="${id}"] .sport-tree-toggle`);
+            const expanded = $toggle.attr('aria-expanded') === 'true';
+            $toggle.attr('aria-expanded', String(!expanded)).attr('aria-label', expanded ? 'Mở danh mục' : 'Thu gọn danh mục');
+            $content.toggleClass('is-collapsed', expanded);
+            $toggle.find('i').toggleClass('fa-chevron-down', !expanded).toggleClass('fa-chevron-right', expanded);
+        }
+
+        function openCreateCategoryModal() {
+            $('#categoryId').val('');
+            $('#categoryModalTitle span').text('Thêm Danh Mục Môn');
+            $('#categoryCode').val('').prop('readonly', false);
+            $('#categoryName').val('');
+            $('#categoryDescription').val('');
+            $('#categoryActive').prop('checked', true);
+            categoryModalInstance.show();
+        }
+
+        function openEditCategoryModal(id) {
+            $.get('/Manager/DanhMucMonTheThao/GetById', { id: id }, function (res) {
+                if (!res.success || !res.data) {
+                    Swal.fire('Lỗi', res.message || 'Không tìm thấy danh mục môn.', 'error');
+                    return;
+                }
+                const category = res.data;
+                $('#categoryId').val(category.id);
+                $('#categoryModalTitle span').text('Chỉnh Sửa Danh Mục Môn');
+                $('#categoryCode').val(category.ma || '').prop('readonly', false);
+                $('#categoryName').val(category.ten || '');
+                $('#categoryDescription').val(category.moTa || '');
+                $('#categoryActive').prop('checked', !!category.trangThai);
+                categoryModalInstance.show();
+            }).fail(function () {
+                Swal.fire('Lỗi', 'Không thể tải thông tin danh mục môn.', 'error');
             });
+        }
 
-            $('#tblBody').html(html);
+        function saveCategory(event) {
+            event.preventDefault();
+            const id = $('#categoryId').val();
+            const payload = {
+                ma: $('#categoryCode').val().trim().toUpperCase(),
+                ten: $('#categoryName').val().trim(),
+                moTa: $('#categoryDescription').val().trim() || null,
+                trangThai: $('#categoryActive').is(':checked')
+            };
+            if (!payload.ma || !payload.ten) {
+                Swal.fire('Thiếu thông tin', 'Vui lòng nhập mã và tên danh mục.', 'warning');
+                return;
+            }
 
-            const total = data.totalCount || 0;
-            const from = total === 0 ? 0 : start + 1;
-            const to = Math.min(start + data.pageSize, total);
-            $('#paginationInfo').text(`Hiển thị ${from} - ${to} trên tổng số ${total} môn thể thao`);
+            const $button = $('#btnSaveCategory').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Đang lưu...');
+            $.ajax({
+                url: id ? `/Manager/DanhMucMonTheThao/Save?id=${id}` : '/Manager/DanhMucMonTheThao/Save',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload)
+            }).done(function (res) {
+                if (res.success) {
+                    categoryModalInstance.hide();
+                    SportApp.toast('success', res.message || 'Đã lưu danh mục môn.');
+                    reloadTreeData();
+                } else {
+                    Swal.fire('Lỗi', res.message || 'Không thể lưu danh mục môn.', 'error');
+                }
+            }).fail(function () {
+                Swal.fire('Lỗi', 'Không thể kết nối máy chủ để lưu danh mục môn.', 'error');
+            }).always(function () {
+                $button.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i>Lưu danh mục');
+            });
+        }
 
-            renderPagination(data.pageIndex, data.totalPages);
+        function deleteCategory(id, encodedName) {
+            const name = decodeURIComponent(encodedName || '');
+            SportApp.confirm('Xóa danh mục môn?', `Bạn có chắc muốn xóa danh mục “${name}” không?`, function () {
+                $.post('/Manager/DanhMucMonTheThao/Delete', { id: id }, function (res) {
+                    if (res.success) {
+                        SportApp.toast('success', res.message || 'Đã xóa danh mục môn.');
+                        reloadTreeData();
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể xóa danh mục môn.', 'error');
+                    }
+                }).fail(function () {
+                    Swal.fire('Lỗi', 'Không thể kết nối máy chủ để xóa danh mục môn.', 'error');
+                });
+            });
+        }
+
+        function reloadTreeData() {
+            loadCategories().then(function () {
+                populateCategorySelects();
+                loadData(currentPage);
+            }).catch(function () {
+                loadData(currentPage);
+            });
         }
 
         function renderPagination(current, totalPages) {
@@ -1353,12 +1639,12 @@
             $('#paginationList').html(pagHtml);
         }
 
-        function openCreateModal() {
+        function openCreateModal(categoryId = null) {
             $('#modalTitle span').text('Thêm Môn Thể Thao Mới');
             $('#monId').val('');
             $('#ten').val('');
             $('#ma').val('');
-            $('#danhMucId').val('');
+            $('#danhMucId').val(categoryId || '');
             $('#loaiThiDau').val('DongDoi');
             $('#hinhThucThiDau').val('LoaiTrucTiep');
             $('#gioiTinh').val('Nam');
@@ -1366,10 +1652,17 @@
             $('#soLuongVdvToiDa').val('1');
             $('#moTa').val('');
             $('#trangThai').prop('checked', true);
+            formatConfigured = false;
+            resetFormatForm();
+            $('#fmtMonId').val('');
+            $('#fmtHinhThucThiDau').val('LoaiTrucTiep');
+            $('#badgeModalSportName').addClass('d-none').text('');
+            setFormatConfirmation(false);
+            new bootstrap.Tab(document.getElementById('basicSportTabButton')).show();
             $('#modalMon').modal('show');
         }
 
-        function openEditModal(id) {
+        function openEditModal(id, openConfigTab = false) {
             $.get('/Manager/MonTheThao/GetById', { id: id }, function (res) {
                 if (res.success && res.data) {
                     const item = res.data;
@@ -1388,7 +1681,11 @@
                     $('#soLuongVdvToiDa').val(vMax);
                     $('#moTa').val(item.moTa || '');
                     $('#trangThai').prop('checked', item.trangThai);
+                    new bootstrap.Tab(document.getElementById('basicSportTabButton')).show();
                     $('#modalMon').modal('show');
+                    loadFormatConfiguration(item.id, item.ten, item.hinhThucThiDau || 'LoaiTrucTiep', function () {
+                        if (openConfigTab) new bootstrap.Tab(document.getElementById('formatSportTabButton')).show();
+                    });
                 }
             });
         }
@@ -1400,9 +1697,21 @@
                 Swal.fire('Lỗi', 'Vui lòng nhập tên môn thể thao.', 'warning');
                 return;
             }
+            if (!formatConfigured) {
+                setFormatConfirmation(false);
+                new bootstrap.Tab(document.getElementById('formatSportTabButton')).show();
+                Swal.fire('Thiếu cấu hình', 'Hãy kiểm tra cấu hình trong tab vừa mở, sau đó nhấn lưu lại.', 'warning');
+                return;
+            }
+
+            const configPayload = buildFormatPayload();
+            if (!configPayload) return;
 
             const loaiVal = $('#loaiThiDau').val();
-            const hinhThucVal = $('#hinhThucThiDau').val() || 'LoaiTrucTiep';
+            const hinhThucVal = $('#hinhThucThiDau').val() || currentFormat || 'LoaiTrucTiep';
+            configPayload.monTheThaoId = id ? parseInt(id, 10) : 0;
+            configPayload.giaiDauMonTheThaoId = null;
+            configPayload.hinhThucThiDau = hinhThucVal;
             const minVdv = parseInt($('#soLuongVdvToiThieu').val()) || 1;
             const maxVdv = parseInt($('#soLuongVdvToiDa').val()) || 1;
 
@@ -1419,7 +1728,8 @@
                 soLuongVdvToiThieu: minVdv,
                 soLuongVdvToiDa: maxVdv,
                 moTa: $('#moTa').val().trim() || null,
-                trangThai: $('#trangThai').is(':checked')
+                trangThai: $('#trangThai').is(':checked'),
+                cauHinhTheThuc: configPayload
             };
 
             const url = id ? `/Manager/MonTheThao/Save?id=${id}` : '/Manager/MonTheThao/Save';
@@ -1432,12 +1742,13 @@
                 success: function (res) {
                     if (res.success) {
                         $('#modalMon').modal('hide');
-                        SportApp.toast('success', res.message || 'Lưu môn thành công!');
-                        loadData(currentPage);
+                        SportApp.toast('success', res.message || 'Lưu môn và cấu hình thành công!');
+                        reloadTreeData();
                     } else {
                         Swal.fire('Lỗi', res.message || 'Không thể lưu môn.', 'error');
                     }
-                }
+                },
+                error: function () { Swal.fire('Lỗi', 'Không thể kết nối máy chủ để lưu môn và cấu hình.', 'error'); }
             });
         }
 
@@ -1446,7 +1757,7 @@
                 $.post('/Manager/MonTheThao/Delete', { id: id }, function (res) {
                     if (res.success) {
                         SportApp.toast('success', res.message || 'Đã xóa môn!');
-                        loadData(currentPage);
+                        reloadTreeData();
                     } else {
                         Swal.fire('Lỗi', res.message || 'Không thể xóa.', 'error');
                     }
@@ -1460,6 +1771,8 @@
             $('#gioiTinhFilter').val('');
             $('#hinhThucFilter').val('');
             $('#quyMoFilter').val('');
+            $('#trangThaiFilter').val('');
+            $('#categoryStatusFilter').val('');
             loadData(1);
         }
 
@@ -1660,27 +1973,51 @@
             });
         }
 
-        // ---- Open modal ----
+        // ---- Nạp cấu hình môn vào tab trong form thêm/sửa ----
         function openFormatModal(monId, monTen, hinhThucThiDau) {
-            $('#fmtMonId').val(monId);
-            $('#badgeModalSportName').text(monTen || `#${monId}`).removeClass('d-none');
-            $('#formatModalSubtitle').html(`Môn: <strong>${escapeHtml(monTen)}</strong> &nbsp;·&nbsp; Tùy biến sơ đồ thi đấu và tự động xếp lịch`);
+            openEditModal(monId, true);
+        }
 
+        function loadFormatConfiguration(monId, monTen, hinhThucThiDau, onLoaded) {
+            formatConfigured = false;
             resetFormatForm();
+            $('#fmtMonId').val(monId || '');
+            $('#fmtHinhThucThiDau').val(hinhThucThiDau || 'LoaiTrucTiep');
+            $('#badgeModalSportName').text(monTen || (monId ? `#${monId}` : '')).toggleClass('d-none', !monId);
+            $('#formatModalSubtitle').html(`Môn: <strong>${escapeHtml(monTen || 'Môn mới')}</strong> &nbsp;·&nbsp; Cấu hình thể thức và cách tính điểm`);
+            if (hinhThucThiDau) switchFormat(hinhThucThiDau);
 
-            $.get('/Manager/CauHinhTheThuc/GetConfig', { monTheThaoId: monId }, function(res) {
+            if (!monId) {
+                setFormatConfirmation(false);
+                if (typeof onLoaded === 'function') onLoaded();
+                return;
+            }
+
+            $.get('/Manager/CauHinhTheThuc/GetConfig', { monTheThaoId: monId }, function (res) {
                 if (res && res.success && res.data) {
                     populateFormatForm(res.data);
-                } else {
-                    if (hinhThucThiDau) switchFormat(hinhThucThiDau);
-                    guessPreset(monTen);
+                    formatConfigured = Number(res.data.id || 0) > 0;
+                } else if (hinhThucThiDau) {
+                    switchFormat(hinhThucThiDau);
                 }
-                $('#modalTheThuc').modal('show');
-            }).fail(function() {
+                setFormatConfirmation(formatConfigured);
+                if (typeof onLoaded === 'function') onLoaded();
+            }).fail(function () {
                 if (hinhThucThiDau) switchFormat(hinhThucThiDau);
-                guessPreset(monTen);
-                $('#modalTheThuc').modal('show');
+                setFormatConfirmation(false);
+                if (typeof onLoaded === 'function') onLoaded();
             });
+        }
+
+        function setFormatConfirmation(isConfigured) {
+            const $notice = $('#formatRequiredNotice');
+            if (isConfigured) {
+                $notice.removeClass('alert-warning d-none').addClass('alert-success')
+                    .html('<i class="fa-solid fa-circle-check me-1"></i>Đã xác nhận cấu hình môn thi đấu. Cấu hình sẽ được lưu cùng thông tin môn.');
+            } else {
+                $notice.removeClass('alert-success d-none').addClass('alert-warning')
+                    .html('<i class="fa-solid fa-circle-exclamation me-1"></i>Hãy mở và xác nhận cấu hình thể thức trước khi lưu môn thi đấu.');
+            }
         }
 
         // ---- Reset form ----
@@ -1869,17 +2206,8 @@
             if (window.SportApp && SportApp.toast) SportApp.toast('info', `Đã áp dụng mẫu: ${preset.toUpperCase()}`);
         }
 
-        // ---- Form submit handler ----
-        $('#formTheThuc').on('submit', function(e) {
-            e.preventDefault();
-            saveFormatData();
-        });
-
-        // ---- Save data ----
-        function saveFormatData() {
-            const monId = parseInt($('#fmtMonId').val());
-            if (!monId) { Swal.fire('Lỗi', 'Không tìm thấy ID môn thể thao.', 'error'); return; }
-
+        // ---- Thu thập và kiểm tra cấu hình để lưu cùng thông tin môn ----
+        function buildFormatPayload() {
             const hinhThuc = currentFormat;
             const scoringMode = hinhThuc === 'TinhDiemXepHang' ? 'TinhDiemXepHang' : $('#fmtLoaiTheThuc').val();
             const periodSelector = hinhThuc === 'VongBang' ? '#rr_soHiep'
@@ -1887,7 +2215,7 @@
             const periodCount = parseInt($(periodSelector).val(), 10);
             if (scoringMode !== 'TinhDiemXepHang' && (!Number.isInteger(periodCount) || periodCount < 1 || periodCount > 15)) {
                 Swal.fire('Cấu hình chưa hợp lệ', 'Số hiệp/set tối đa phải từ 1 đến 15.', 'warning');
-                return;
+                return null;
             }
             if (scoringMode === 'SetDiem') {
                 const setsToWin = parseInt($('#scoreSetsToWin').val(), 10);
@@ -1901,10 +2229,10 @@
                     !Number.isInteger(minimumLead) || minimumLead < 1 ||
                     !Number.isInteger(pointCap) || pointCap < 0) {
                     Swal.fire('Cấu hình set chưa hợp lệ', 'Kiểm tra số set thắng, điểm đích, cách biệt và điểm trần; số set thắng phải không vượt quá số set tối đa.', 'warning');
-                    return;
+                    return null;
                 }
             }
-            let payload = { monTheThaoId: monId, hinhThucThiDau: hinhThuc };
+            let payload = { hinhThucThiDau: hinhThuc };
 
             if (hinhThuc === 'LoaiTrucTiep') {
                 payload.soHiepToiDa            = parseInt($('#ko_soHiep').val()) || 2;
@@ -1979,28 +2307,7 @@
                 payload.cachTinhDiemTheoSet = false;
             }
 
-            const $btn = $('#btnSaveTheThuc');
-            $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu...');
-
-            $.ajax({
-                url: '/Manager/CauHinhTheThuc/SaveConfig',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
-                success: function(res) {
-                    $btn.prop('disabled', false).html('<i class="fa-solid fa-check me-1"></i> Lưu Cấu Hình');
-                    if (res && res.success) {
-                        $('#modalTheThuc').modal('hide');
-                        if (window.SportApp && SportApp.toast) SportApp.toast('success', res.message || 'Đã lưu cấu hình thể thức!');
-                        else Swal.fire('Thành công', res.message || 'Đã lưu thành công!', 'success');
-                        loadData(currentPage);
-                    } else { Swal.fire('Lỗi', res.message || 'Không thể lưu cấu hình.', 'error'); }
-                },
-                error: function() {
-                    $btn.prop('disabled', false).html('<i class="fa-solid fa-check me-1"></i> Lưu Cấu Hình');
-                    Swal.fire('Lỗi', 'Không thể kết nối máy chủ.', 'error');
-                }
-            });
+            return payload;
         }
 
         // Init on page load

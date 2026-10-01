@@ -19,7 +19,7 @@ namespace API.Areas.Manager.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction("Index", "MonTheThao");
         }
 
         [HttpGet]

@@ -21,6 +21,7 @@ namespace Dms.Application.Interfaces
         /// <param name="gioiTinh">Lọc theo giới tính thi đấu (Nam, Nu, HonHop)</param>
         /// <param name="hinhThucThiDau">Lọc theo sơ đồ thi đấu (LoaiTrucTiep, VongBang...)</param>
         /// <param name="loaiThiDau">Lọc theo quy mô thi đấu (DongDoi, CaNhan)</param>
+        /// <param name="danhMucTrangThai">Lọc theo trạng thái hoạt động của danh mục chứa môn</param>
         /// <returns>Danh sách môn thể thao phân trang kèm tổng số bản ghi</returns>
         Task<PagedResult<MonTheThaoDto>> GetPagedAsync(
             int pageIndex,
@@ -30,7 +31,8 @@ namespace Dms.Application.Interfaces
             bool? trangThai = null,
             string? gioiTinh = null,
             string? hinhThucThiDau = null,
-            string? loaiThiDau = null);
+            string? loaiThiDau = null,
+            bool? danhMucTrangThai = null);
 
         /// <summary>
         /// Lấy tất cả các môn thể thao đang hoạt động theo bộ lọc
@@ -52,8 +54,9 @@ namespace Dms.Application.Interfaces
         /// </summary>
         /// <param name="dto">Dữ liệu tạo mới môn thể thao</param>
         /// <param name="createdBy">Tên tài khoản người tạo</param>
+        /// <param name="requireConfig">Yêu cầu request phải kèm cấu hình thể thức hợp lệ hay không</param>
         /// <returns>Thông tin môn thể thao sau khi được tạo</returns>
-        Task<MonTheThaoDto> CreateAsync(CreateUpdateMonTheThaoDto dto, string? createdBy = null);
+        Task<MonTheThaoDto> CreateAsync(CreateUpdateMonTheThaoDto dto, string? createdBy = null, bool requireConfig = false);
 
         /// <summary>
         /// Cập nhật thông tin môn thể thao theo Id
@@ -61,8 +64,9 @@ namespace Dms.Application.Interfaces
         /// <param name="id">Mã định danh môn thể thao cần cập nhật</param>
         /// <param name="dto">Dữ liệu cập nhật mới</param>
         /// <param name="updatedBy">Tên tài khoản người cập nhật</param>
+        /// <param name="requireConfig">Yêu cầu request phải kèm cấu hình thể thức hợp lệ hay không</param>
         /// <returns>Thông tin môn thể thao sau khi cập nhật hoặc null nếu không tìm thấy</returns>
-        Task<MonTheThaoDto?> UpdateAsync(int id, CreateUpdateMonTheThaoDto dto, string? updatedBy = null);
+        Task<MonTheThaoDto?> UpdateAsync(int id, CreateUpdateMonTheThaoDto dto, string? updatedBy = null, bool requireConfig = false);
 
         /// <summary>
         /// Xóa mềm một môn thể thao khỏi hệ thống

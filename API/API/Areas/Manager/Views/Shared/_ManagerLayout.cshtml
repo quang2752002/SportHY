@@ -332,13 +332,9 @@
                 <i class="fa-solid fa-person-running"></i>
                 <span>Vận Động Viên</span>
             </a>
-            <a href="/Manager/DanhMucMonTheThao" class="manager-nav-link @(currentPath.StartsWith("/manager/danhmucmonthethao") ? "active" : "")">
-                <i class="fa-solid fa-tags"></i>
-                <span>Danh Mục Môn</span>
-            </a>
-            <a href="/Manager/MonTheThao" class="manager-nav-link @(currentPath.StartsWith("/manager/monthethao") ? "active" : "")">
-                <i class="fa-solid fa-volleyball"></i>
-                <span>Môn Thi Đấu</span>
+            <a href="/Manager/MonTheThao" class="manager-nav-link @(currentPath.StartsWith("/manager/danhmucmonthethao") || currentPath.StartsWith("/manager/monthethao") ? "active" : "")">
+                <i class="fa-solid fa-folder-tree"></i>
+                <span>Danh Mục &amp; Môn Thi Đấu</span>
             </a>
             <a href="/Manager/TrongTai" class="manager-nav-link @(currentPath.StartsWith("/manager/trongtai") ? "active" : "")">
                 <i class="fa-solid fa-user-shield"></i>
