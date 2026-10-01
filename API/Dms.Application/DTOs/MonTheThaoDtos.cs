@@ -40,5 +40,6 @@ namespace Dms.Application.DTOs
         public int? SoLuongVdvToiDa { get; set; }
         public int? SoDoiToiDa { get; set; }
         public bool TrangThai { get; set; } = true;
+        public CreateUpdateCauHinhTheThucDto? CauHinhTheThuc { get; set; }
     }
 }

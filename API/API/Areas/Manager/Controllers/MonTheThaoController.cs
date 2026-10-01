@@ -36,9 +36,10 @@ namespace API.Areas.Manager.Controllers
             bool? trangThai = null,
             string? gioiTinh = null,
             string? hinhThucThiDau = null,
-            string? loaiThiDau = null)
+            string? loaiThiDau = null,
+            bool? danhMucTrangThai = null)
         {
-            var result = await _monTheThaoService.GetPagedAsync(pageIndex, pageSize, keyword, danhMucId, trangThai, gioiTinh, hinhThucThiDau, loaiThiDau);
+            var result = await _monTheThaoService.GetPagedAsync(pageIndex, pageSize, keyword, danhMucId, trangThai, gioiTinh, hinhThucThiDau, loaiThiDau, danhMucTrangThai);
             return Json(new { success = true, data = result });
         }
 
@@ -64,13 +65,13 @@ namespace API.Areas.Manager.Controllers
             {
                 if (id.HasValue && id.Value > 0)
                 {
-                    var updated = await _monTheThaoService.UpdateAsync(id.Value, dto, username);
+                    var updated = await _monTheThaoService.UpdateAsync(id.Value, dto, username, requireConfig: true);
                     if (updated == null) return Json(new { success = false, message = "Không tìm thấy môn thể thao để cập nhật." });
                     return Json(new { success = true, message = "Cập nhật môn thể thao thành công!", data = updated });
                 }
                 else
                 {
-                    var created = await _monTheThaoService.CreateAsync(dto, username);
+                    var created = await _monTheThaoService.CreateAsync(dto, username, requireConfig: true);
                     return Json(new { success = true, message = "Thêm mới môn thể thao thành công!", data = created });
                 }
             }

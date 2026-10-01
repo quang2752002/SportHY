@@ -119,20 +119,7 @@ namespace Dms.Application.Services
         /// <returns>Cấu hình đã lưu sau khi cập nhật</returns>
         public async Task<CauHinhTheThucDto> UpsertConfigAsync(CreateUpdateCauHinhTheThucDto dto, string? username = null)
         {
-            if (!new[] { "SetDiem", "ThoiGianHiep", "TinhDiemXepHang" }
-                .Contains(dto.LoaiTheThuc, StringComparer.OrdinalIgnoreCase))
-            {
-                throw new ArgumentException("Cơ chế tính điểm của môn không hợp lệ.");
-            }
-            if (dto.SoHiepToiDa < 1 || dto.SoHiepToiDa > 15)
-            {
-                throw new ArgumentException("Số hiệp chính hoặc set tối đa phải từ 1 đến 15.");
-            }
-            if (string.Equals(dto.LoaiTheThuc, "SetDiem", StringComparison.OrdinalIgnoreCase) &&
-                (!dto.SoHiepThangDeThangTran.HasValue || dto.SoHiepThangDeThangTran.Value < 1 || dto.SoHiepThangDeThangTran.Value > dto.SoHiepToiDa))
-            {
-                throw new ArgumentException("Số set thắng để thắng trận phải nằm trong giới hạn số set tối đa.");
-            }
+            ValidateConfig(dto);
 
             var configs = await _unitOfWork.CauHinhTheThucThiDaus.FindAsync(c =>
                 c.MonTheThaoId == dto.MonTheThaoId &&
@@ -180,12 +167,39 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
+        /// Kiểm tra cấu hình thể thức có đầy đủ và hợp lệ trước khi lưu cùng môn thi đấu.
+        /// </summary>
+        /// <param name="dto">Cấu hình thể thức do người quản lý gửi lên.</param>
+        /// <returns>Không trả dữ liệu; ném ArgumentException nếu cấu hình không hợp lệ.</returns>
+        public static void ValidateConfig(CreateUpdateCauHinhTheThucDto dto)
+        {
+            if (dto == null)
+            {
+                throw new ArgumentNullException(nameof(dto), "Vui lòng cấu hình thể thức thi đấu.");
+            }
+            if (!new[] { "SetDiem", "ThoiGianHiep", "TinhDiemXepHang" }
+                .Contains(dto.LoaiTheThuc, StringComparer.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Cơ chế tính điểm của môn không hợp lệ.");
+            }
+            if (dto.SoHiepToiDa < 1 || dto.SoHiepToiDa > 15)
+            {
+                throw new ArgumentException("Số hiệp chính hoặc set tối đa phải từ 1 đến 15.");
+            }
+            if (string.Equals(dto.LoaiTheThuc, "SetDiem", StringComparison.OrdinalIgnoreCase) &&
+                (!dto.SoHiepThangDeThangTran.HasValue || dto.SoHiepThangDeThangTran.Value < 1 || dto.SoHiepThangDeThangTran.Value > dto.SoHiepToiDa))
+            {
+                throw new ArgumentException("Số set thắng để thắng trận phải nằm trong giới hạn số set tối đa.");
+            }
+        }
+
+        /// <summary>
         /// Copies the submitted sport-format settings to the persisted configuration entity.
         /// </summary>
         /// <param name="source">The configuration values submitted by the manager.</param>
         /// <param name="target">The entity that will receive the submitted values.</param>
         /// <returns>This method does not return a value.</returns>
-        private static void CopyProperties(CreateUpdateCauHinhTheThucDto source, CauHinhTheThucThiDau target)
+        public static void CopyProperties(CreateUpdateCauHinhTheThucDto source, CauHinhTheThucThiDau target)
         {
             target.LoaiTheThuc = source.LoaiTheThuc;
             target.SoHiepToiDa = source.SoHiepToiDa;
