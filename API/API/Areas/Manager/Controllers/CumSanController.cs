@@ -54,5 +54,13 @@ namespace API.Areas.Manager.Controllers
             var result = await _sanDauService.GetPagedAsync(1, 1000, null, cumSanId);
             return Json(new { success = true, data = result });
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCourtById(int id)
+        {
+            var result = await _sanDauService.GetByIdAsync(id);
+            if (result == null) return Json(new { success = false, message = "Không tìm thấy sân đấu." });
+            return Json(new { success = true, data = result });
+        }
     }
 }

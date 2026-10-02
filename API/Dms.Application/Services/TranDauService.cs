@@ -3778,11 +3778,24 @@ namespace Dms.Application.Services
                 t => t.VongDau,
                 t => t.BangDau!,
                 t => t.SanDau!,
-                t => t.ThanhPhanTranDaus
+                t => t.ThanhPhanTranDaus,
+                t => t.PhanCongTrongTais
             );
 
             var assignedTeamIds = new HashSet<int>();
             var existingPairs = new List<ManualMatchPairDto>();
+
+            var matchIds = pagedTranDau.Items.Select(t => t.Id).ToList();
+            var allPhanCongs = matchIds.Any()
+                ? (await _unitOfWork.PhanCongTrongTais.FindAsync(pc => matchIds.Contains(pc.TranDauId) && pc.IsDeleted != true)).ToList()
+                : new List<PhanCongTrongTai>();
+
+            var allTtIds = allPhanCongs.Select(pc => pc.TrongTaiId).Distinct().ToList();
+            var trongTaiMap = allTtIds.Any()
+                ? (await _unitOfWork.TrongTais.FindAsync(tt => allTtIds.Contains(tt.Id))).ToDictionary(tt => tt.Id)
+                : new Dictionary<int, TrongTai>();
+
+            var phanCongByMatch = allPhanCongs.GroupBy(pc => pc.TranDauId).ToDictionary(g => g.Key, g => g.ToList());
 
             foreach (var t in pagedTranDau.Items)
             {
@@ -3830,6 +3843,23 @@ namespace Dms.Application.Services
                     }
                 }
 
+                var matchPcs = phanCongByMatch.GetValueOrDefault(t.Id) ?? new List<PhanCongTrongTai>();
+                var trongTaiDtos = matchPcs.Select(pc =>
+                {
+                    trongTaiMap.TryGetValue(pc.TrongTaiId, out var tt);
+                    return new PhanCongTrongTaiItemDto
+                    {
+                        Id = pc.Id,
+                        TranDauId = pc.TranDauId,
+                        TrongTaiId = pc.TrongTaiId,
+                        TenTrongTai = tt?.HoTen ?? $"Trọng tài #{pc.TrongTaiId}",
+                        SoDienThoai = tt?.SoDienThoai,
+                        CapBac = tt?.CapBac,
+                        VaiTro = pc.VaiTro,
+                        GhiChu = pc.GhiChu
+                    };
+                }).ToList();
+
                 existingPairs.Add(new ManualMatchPairDto
                 {
                     TranDauId = t.Id,
@@ -3858,7 +3888,8 @@ namespace Dms.Application.Services
                     IsHeat = isHeatMatch,
                     Doi1 = doi1,
                     Doi2 = doi2,
-                    DanhSachVdv = danhSachVdv
+                    DanhSachVdv = danhSachVdv,
+                    DanhSachTrongTai = trongTaiDtos
                 });
             }
 

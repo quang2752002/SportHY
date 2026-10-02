@@ -836,6 +836,7 @@ namespace Dms.Application.DTOs
         public ManualPairingTeamDto? Doi1 { get; set; }
         public ManualPairingTeamDto? Doi2 { get; set; }
         public List<ManualPairingParticipantDto> DanhSachVdv { get; set; } = new();
+        public List<PhanCongTrongTaiItemDto> DanhSachTrongTai { get; set; } = new();
     }
 
     /// <summary>
