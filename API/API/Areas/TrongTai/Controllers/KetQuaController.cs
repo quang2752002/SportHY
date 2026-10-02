@@ -124,7 +124,9 @@ namespace API.Areas.TrongTai.Controllers
             };
             ViewBag.SelectedAssignmentRole = selectedAssignmentRole;
 
-            var availableSports = roleFilteredMatches
+            // Danh sách môn dựa trên toàn bộ trận được phép truy cập, không phụ thuộc vai trò đang lọc.
+            // Nhờ vậy đổi vai trò không làm mất môn đã chọn; kết quả trận vẫn giao giữa hai bộ lọc.
+            var availableSports = accessibleMatches
                 .GroupBy(match => match.GiaiDauMonTheThaoId)
                 .Select(group => new KeyValuePair<int, string>(
                     group.Key,
