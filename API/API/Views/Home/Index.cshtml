@@ -581,6 +581,9 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-1.5 justify-content-end">
+                            <a href="/DieuLe?giaiDauId=${t.id}&giaiDauMonTheThaoId=${mon.id}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1" style="font-size: 0.78rem;">
+                                <i class="bi bi-file-earmark-text me-1"></i>Điều lệ
+                            </a>
                             <a href="/LichThiDau?giaiDauId=${t.id}&gmtId=${mon.id}" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1" style="font-size: 0.78rem;">
                                 <i class="bi bi-calendar3 me-1"></i>Lịch
                             </a>
@@ -679,6 +682,7 @@
             const bannerUrl = t.hinhAnh || '/banner/120de374d96946f6875e8faa54034fc8.png';
             const registerUrl = `/DonVi/DangKy/DangKyGiai/${t.id}`;
             const scheduleUrl = `/LichThiDau?giaiDauId=${t.id}`;
+            const regulationsUrl = `/DieuLe?giaiDauId=${t.id}`;
             const linkUrl = `/Home/Details/${t.id}`;
             const statusText = getStatusText(t.trangThai);
             const sports = t.monTheThaos || [];
@@ -747,6 +751,10 @@
                                     <a href="${scheduleUrl}" class="btn-schedule-main">
                                         <i class="bi bi-calendar3"></i>
                                         <span>Lịch & Bảng Đấu</span>
+                                    </a>
+                                    <a href="${regulationsUrl}" class="btn btn-outline-primary border rounded-3 px-3 py-1.5 fw-semibold small d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                        <span>Điều lệ</span>
                                     </a>
                                     <a href="/BangXepHang?giaiDauId=${t.id}" class="btn btn-outline-warning border rounded-3 px-3 py-1.5 fw-semibold text-dark small d-inline-flex align-items-center gap-1">
                                         <i class="fa-solid fa-medal text-warning"></i>

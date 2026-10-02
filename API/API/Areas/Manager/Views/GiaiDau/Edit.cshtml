@@ -10,6 +10,8 @@
     var selectedMonIds = Model.MonTheThaoIds ?? new List<int>();
     var selectedKhoiIds = Model.KhoiIds ?? new List<int>();
     var dieuLes = Model.DieuLeGiaiDaus ?? new List<DieuLeGiaiDauDto>();
+    var unitRegistrationUrl = Url.Action("ChiTiet", "DangKy", new { area = "DonVi", id = Model.Id }, Context.Request.Scheme)
+        ?? $"{Context.Request.Scheme}://{Context.Request.Host}/DonVi/DangKy/ChiTiet/{Model.Id}";
 }
 
 @section Styles {
@@ -43,7 +45,13 @@
         </h4>
         <p class="text-muted small mb-0">Cập nhật thông tin chi tiết giải, điều chỉnh các môn thi đấu, điều lệ và phân công nhân sự.</p>
     </div>
-    <div>
+    <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+        <button type="button"
+                class="btn btn-outline-primary"
+                data-registration-url="@unitRegistrationUrl"
+                onclick="copyUnitRegistrationLink(this)">
+            <i class="fa-solid fa-link me-1"></i> Sao chép link đăng ký
+        </button>
         <a href="/Manager/GiaiDau" class="btn btn-outline-secondary">
             <i class="fa-solid fa-arrow-left me-1"></i> Quay lại danh sách
         </a>
@@ -304,32 +312,49 @@
                             }
                             else
                             {
-                                <div class="row g-2" id="listMonTheThao">
-                                    @foreach (var mon in monTheThaos)
+                                <div class="d-flex flex-column gap-3" id="listMonTheThao">
+                                    @foreach (var categoryGroup in monTheThaos
+                                        .GroupBy(mon => new
+                                        {
+                                            mon.DanhMucId,
+                                            TenDanhMuc = string.IsNullOrWhiteSpace(mon.TenDanhMuc) ? "Chưa phân danh mục" : mon.TenDanhMuc.Trim()
+                                        })
+                                        .OrderBy(group => group.Key.TenDanhMuc))
                                     {
-                                        var isChecked = selectedMonIds.Contains(mon.Id);
-                                        <div class="col-md-4 col-sm-6">
-                                            <div class="form-check p-2 border rounded hover-shadow h-100 d-flex align-items-center bg-white @(isChecked ? "border-primary bg-primary-subtle" : "")">
-                                                <input class="form-check-input chk-mon me-2 ms-1" type="checkbox" value="@mon.Id" id="mon_@mon.Id" @(isChecked ? "checked" : "")>
-                                                <label class="form-check-label fw-semibold text-dark small w-100 cursor-pointer" for="mon_@mon.Id">
-                                                    <div>@mon.Ten</div>
-                                                    <div class="mt-1">
-                                                        @if (mon.LaMonDongDoi)
-                                                        {
-                                                            <span class="badge bg-info-subtle text-info border" style="font-size: 0.68rem;">Đồng đội</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-secondary-subtle text-secondary border" style="font-size: 0.68rem;">Cá nhân</span>
-                                                        }
-                                                        @if (!string.IsNullOrEmpty(mon.TenDanhMuc))
-                                                        {
-                                                            <span class="text-muted" style="font-size: 0.68rem;">• @mon.TenDanhMuc</span>
-                                                        }
-                                                    </div>
-                                                </label>
+                                        <section class="border rounded-3 overflow-hidden">
+                                            <div class="d-flex align-items-center justify-content-between gap-2 px-3 py-2 bg-light border-bottom">
+                                                <div class="fw-bold text-dark small">
+                                                    <i class="fa-solid fa-layer-group text-primary me-2"></i>@categoryGroup.Key.TenDanhMuc
+                                                </div>
+                                                <span class="badge bg-white text-secondary border">@categoryGroup.Count() môn</span>
                                             </div>
-                                        </div>
+                                            <div class="p-2">
+                                                <div class="row g-2">
+                                                    @foreach (var mon in categoryGroup.OrderBy(item => item.Ten))
+                                                    {
+                                                        var isChecked = selectedMonIds.Contains(mon.Id);
+                                                        <div class="col-md-4 col-sm-6">
+                                                            <div class="form-check p-2 border rounded hover-shadow h-100 d-flex align-items-center bg-white @(isChecked ? "border-primary bg-primary-subtle" : "")">
+                                                                <input class="form-check-input chk-mon me-2 ms-1" type="checkbox" value="@mon.Id" id="mon_@mon.Id" @(isChecked ? "checked" : "")>
+                                                                <label class="form-check-label fw-semibold text-dark small w-100 cursor-pointer" for="mon_@mon.Id">
+                                                                    <div>@mon.Ten</div>
+                                                                    <div class="mt-1">
+                                                                        @if (mon.LaMonDongDoi)
+                                                                        {
+                                                                            <span class="badge bg-info-subtle text-info border" style="font-size: 0.68rem;">Đồng đội</span>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span class="badge bg-secondary-subtle text-secondary border" style="font-size: 0.68rem;">Cá nhân</span>
+                                                                        }
+                                                                    </div>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </section>
                                     }
                                 </div>
                             }
@@ -1032,6 +1057,47 @@
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
     <script>
+        async function copyUnitRegistrationLink(button) {
+            const registrationUrl = button?.dataset.registrationUrl;
+            if (!registrationUrl) {
+                Swal.fire('Không thể sao chép', 'Chưa tạo được link đăng ký cho giải đấu này.', 'error');
+                return;
+            }
+
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(registrationUrl);
+                } else {
+                    const temporaryInput = document.createElement('textarea');
+                    temporaryInput.value = registrationUrl;
+                    temporaryInput.setAttribute('readonly', '');
+                    temporaryInput.style.position = 'fixed';
+                    temporaryInput.style.opacity = '0';
+                    document.body.appendChild(temporaryInput);
+                    temporaryInput.select();
+                    const copied = document.execCommand('copy');
+                    temporaryInput.remove();
+                    if (!copied) throw new Error('Clipboard is unavailable');
+                }
+
+                const hostName = window.location.hostname.toLowerCase();
+                const isLocalAddress = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostName);
+                SportApp.toast('success', isLocalAddress
+                    ? 'Đã sao chép link. Lưu ý: địa chỉ localhost chỉ mở được trên máy này.'
+                    : 'Đã sao chép link đăng ký giải đấu.');
+            } catch {
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'Link đăng ký giải đấu',
+                    text: 'Trình duyệt không cho phép sao chép tự động. Bạn hãy sao chép link bên dưới:',
+                    input: 'text',
+                    inputValue: registrationUrl,
+                    inputAttributes: { readonly: true, 'aria-label': 'Link đăng ký giải đấu' },
+                    confirmButtonText: 'Đóng'
+                });
+            }
+        }
+
         let dieuLeIndex = @dieuLes.Count + 10;
         let moTaEditor = null;
 

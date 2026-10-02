@@ -228,9 +228,10 @@
     @{
         var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
         var currentPath = Context.Request.Path.Value ?? "";
+        bool isDieuLe = currentAction.Equals("DieuLe", StringComparison.OrdinalIgnoreCase) || currentPath.Contains("DieuLe", StringComparison.OrdinalIgnoreCase);
         bool isLichThiDau = currentAction.Equals("LichThiDau", StringComparison.OrdinalIgnoreCase) || currentPath.Contains("LichThiDau");
         bool isBangXepHang = currentAction.Equals("BangXepHang", StringComparison.OrdinalIgnoreCase) || currentPath.Contains("BangXepHang");
-        bool isHomeIndex = currentAction.Equals("Index", StringComparison.OrdinalIgnoreCase) && !isLichThiDau && !isBangXepHang;
+        bool isHomeIndex = currentAction.Equals("Index", StringComparison.OrdinalIgnoreCase) && !isLichThiDau && !isBangXepHang && !isDieuLe;
     }
 
     <!-- Top Navbar -->
@@ -263,6 +264,10 @@
                     <a href="/LichThiDau" class="nav-link-custom @(isLichThiDau ? "active" : "")">
                         <i class="bi bi-calendar3"></i>
                         <span>Lịch & Bảng đấu</span>
+                    </a>
+                    <a href="/DieuLe" class="nav-link-custom @(isDieuLe ? "active" : "")">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>Điều lệ</span>
                     </a>
                     @* <a href="/Home#diem-trinh" class="nav-link-custom">
                         <i class="bi bi-people"></i>
@@ -424,6 +429,14 @@
                             <i class="bi bi-calendar3 fs-5"></i>
                         </div>
                         <span class="small fw-semibold">Lịch & Bảng đấu</span>
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="/DieuLe" class="d-flex flex-column align-items-center p-2.5 rounded-3 text-decoration-none text-dark bg-light border @(isDieuLe ? "border-primary bg-primary-subtle" : "")">
+                        <div class="rounded-circle bg-success bg-opacity-10 text-success p-2 mb-1" style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-file-earmark-text fs-5"></i>
+                        </div>
+                        <span class="small fw-semibold">Điều lệ</span>
                     </a>
                 </div>
                 <div class="col-4">

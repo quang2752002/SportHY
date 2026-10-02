@@ -1,0 +1,299 @@
+@{
+    ViewData["Title"] = "Điều lệ thi đấu";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        .regulations-page { max-width: 1120px; margin: 0 auto; }
+        .regulations-header, .regulations-filter, .regulations-section, .regulation-sport-card {
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, .035);
+        }
+        .regulations-header { padding: 1.35rem 1.5rem; }
+        .regulations-filter { padding: 1rem 1.25rem; }
+        .regulations-section { padding: 1.25rem; }
+        .regulation-sport-card { overflow: hidden; }
+        .regulation-sport-heading { background: #f8fafc; padding: 1rem 1.15rem; border-bottom: 1px solid #e2e8f0; }
+        .regulation-content { color: #334155; line-height: 1.75; overflow-wrap: anywhere; }
+        .regulation-content > :last-child { margin-bottom: 0; }
+        .regulation-file { overflow-wrap: anywhere; }
+        .regulation-mark { width: 46px; height: 46px; flex: 0 0 46px; display: grid; place-items: center;
+            border-radius: 14px; color: #0284c7; background: #e0f2fe; font-size: 1.15rem; }
+        @@media (max-width: 575.98px) {
+            .regulations-header, .regulations-section { padding: 1rem; }
+        }
+    </style>
+}
+
+<div class="regulations-page d-flex flex-column gap-3">
+    <section class="regulations-header d-flex align-items-center gap-3">
+        <div class="regulation-mark"><i class="bi bi-file-earmark-text"></i></div>
+        <div>
+            <h1 class="h4 fw-bold text-dark mb-1">Điều lệ thi đấu</h1>
+            <p class="text-muted small mb-0">Tra cứu điều lệ chung của giải và quy định riêng theo từng môn thi đấu.</p>
+        </div>
+    </section>
+
+    <section class="regulations-filter">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="regulationTournament" class="form-label small fw-semibold">Giải đấu</label>
+                <select id="regulationTournament" class="form-select">
+                    <option value="">Đang tải danh sách giải...</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label for="regulationSport" class="form-label small fw-semibold">Môn thi đấu</label>
+                <select id="regulationSport" class="form-select" disabled>
+                    <option value="">Tất cả môn trong giải</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-grid">
+                <button id="reloadRegulations" type="button" class="btn btn-outline-secondary" title="Tải lại điều lệ" aria-label="Tải lại điều lệ">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <div id="regulationsLoading" class="text-center py-5 d-none">
+        <span class="spinner-border spinner-border-sm text-primary me-2" role="status"></span>
+        <span class="text-muted small">Đang tải điều lệ...</span>
+    </div>
+    <div id="regulationsMessage" class="alert alert-info d-none mb-0" role="status"></div>
+    <div id="regulationsResult" class="d-flex flex-column gap-3"></div>
+</div>
+
+@section Scripts {
+    <script>
+        let regulationTournaments = [];
+        let regulationSports = [];
+        const regulationQuery = new URLSearchParams(window.location.search);
+
+        $(document).ready(function () {
+            $('#regulationTournament').on('change', function () {
+                fillRegulationSportOptions();
+                loadSelectedRegulations();
+            });
+            $('#regulationSport').on('change', loadSelectedRegulations);
+            $('#reloadRegulations').on('click', loadPublicTournamentOptions);
+            loadPublicTournamentOptions();
+        });
+
+        function loadPublicTournamentOptions() {
+            let hasSelectedTournament = false;
+            $('#regulationsLoading').removeClass('d-none');
+            $('#regulationsMessage').addClass('d-none').empty();
+            $('#regulationsResult').empty();
+            $('#regulationTournament').html('<option value="">Đang tải danh sách giải...</option>');
+
+            $.get('/Home/GetTournaments')
+                .done(function (response) {
+                    const items = response?.data || [];
+                    regulationTournaments = items.filter(isPublicRegulationTournament);
+                    const $select = $('#regulationTournament').empty();
+                    if (!regulationTournaments.length) {
+                        $select.append('<option value="">Chưa có giải đấu được công bố</option>').prop('disabled', true);
+                        $('#regulationSport').prop('disabled', true).html('<option value="">Tất cả môn trong giải</option>');
+                        showRegulationsMessage('Hiện chưa có giải đấu nào được công bố điều lệ.', 'info');
+                        return;
+                    }
+
+                    $select.prop('disabled', false).append('<option value="">-- Chọn giải đấu --</option>');
+                    regulationTournaments.forEach(function (item) {
+                        $select.append(`<option value="${item.id}">${escapeRegulationText(item.ten)}</option>`);
+                    });
+
+                    const requestedId = Number(regulationQuery.get('giaiDauId'));
+                    const initialTournament = regulationTournaments.find(item => item.id === requestedId) || regulationTournaments[0];
+                    $select.val(String(initialTournament.id));
+                    fillRegulationSportOptions();
+
+                    const requestedSportId = Number(regulationQuery.get('giaiDauMonTheThaoId'));
+                    if (requestedSportId && regulationSports.some(item => item.id === requestedSportId)) {
+                        $('#regulationSport').val(String(requestedSportId));
+                    }
+                    hasSelectedTournament = true;
+                    loadSelectedRegulations();
+                })
+                .fail(function () {
+                    showRegulationsMessage('Không tải được danh sách giải đấu. Vui lòng thử tải lại.', 'danger');
+                })
+                .always(function () {
+                    if (!hasSelectedTournament) $('#regulationsLoading').addClass('d-none');
+                });
+        }
+
+        function isPublicRegulationTournament(item) {
+            const status = String(item.trangThai ?? '');
+            return status !== 'Nhap' && status !== '1' && status !== 'Huy' && status !== '5';
+        }
+
+        function fillRegulationSportOptions() {
+            const tournamentId = Number($('#regulationTournament').val());
+            const tournament = regulationTournaments.find(item => item.id === tournamentId);
+            regulationSports = tournament?.monTheThaos || [];
+            const $sport = $('#regulationSport').empty().append('<option value="">Tất cả môn trong giải</option>');
+            regulationSports.forEach(function (sport) {
+                $sport.append(`<option value="${sport.id}">${escapeRegulationText(sport.ten)}</option>`);
+            });
+            $sport.prop('disabled', !tournament || regulationSports.length === 0);
+        }
+
+        function loadSelectedRegulations() {
+            const tournamentId = Number($('#regulationTournament').val());
+            if (!tournamentId) {
+                $('#regulationsResult').empty();
+                showRegulationsMessage('Chọn một giải đấu để xem điều lệ.', 'info');
+                return;
+            }
+
+            $('#regulationsLoading').removeClass('d-none');
+            $('#regulationsMessage').addClass('d-none').empty();
+            $('#regulationsResult').empty();
+            const sportId = Number($('#regulationSport').val()) || null;
+            $.get('/Home/GetPublicRegulations', {
+                giaiDauId: tournamentId,
+                giaiDauMonTheThaoId: sportId
+            })
+                .done(function (response) {
+                    if (!response?.success || !response.data) {
+                        showRegulationsMessage(response?.message || 'Chưa lấy được điều lệ của giải này.', 'info');
+                        return;
+                    }
+                    renderPublicRegulations(response.data);
+                })
+                .fail(function () {
+                    showRegulationsMessage('Có lỗi khi tải điều lệ. Vui lòng thử lại.', 'danger');
+                })
+                .always(function () {
+                    $('#regulationsLoading').addClass('d-none');
+                });
+        }
+
+        function renderPublicRegulations(data) {
+            const rules = data.dieuLeGiaiDaus || [];
+            const sports = data.mons || [];
+            let html = `<section class="regulations-section">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div><div class="small text-muted">Giải đấu</div><h2 class="h5 fw-bold text-dark mb-0">${escapeRegulationText(data.tenGiaiDau)}</h2></div>
+                    <span class="badge rounded-pill text-bg-light border px-3 py-2">${formatRegulationDate(data.ngayBatDau)} – ${formatRegulationDate(data.ngayKetThuc)}</span>
+                </div>
+                <h3 class="h6 fw-bold text-dark mb-3"><i class="bi bi-journal-text text-primary me-2"></i>Điều lệ chung của giải</h3>
+                ${renderRegulationItems(rules, 'Giải đấu chưa có điều lệ chung được công bố.')}
+            </section>`;
+
+            if (!sports.length) {
+                html += '<div class="alert alert-light border mb-0">Giải đấu chưa có môn thi đấu nào được công bố.</div>';
+            } else {
+                sports.forEach(function (sport) {
+                    html += `<section class="regulation-sport-card">
+                        <div class="regulation-sport-heading d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div><div class="small text-muted">${escapeRegulationText(sport.tenDanhMuc || 'Môn thi đấu')}</div><h3 class="h6 fw-bold text-dark mb-0">${escapeRegulationText(sport.tenMon)}</h3></div>
+                            <span class="badge rounded-pill text-bg-primary-subtle border border-primary-subtle text-primary">Điều lệ môn</span>
+                        </div>
+                        <div class="p-3 p-md-4">${renderRegulationItems(sport.dieuLes || [], 'Môn này chưa có điều lệ riêng được công bố.')}</div>
+                    </section>`;
+                });
+            }
+
+            $('#regulationsMessage').addClass('d-none').empty();
+            $('#regulationsResult').html(html);
+        }
+
+        function renderRegulationItems(items, emptyMessage) {
+            if (!items.length) return `<p class="text-muted small mb-0">${escapeRegulationText(emptyMessage)}</p>`;
+            return `<div class="d-flex flex-column gap-3">${items.map(function (item) {
+                const content = item.noiDung ? `<div class="regulation-content mt-2">${sanitizeRegulationHtml(item.noiDung)}</div>` : '';
+                const fileUrl = safeRegulationFileUrl(item.tepDinhKem);
+                const downloadName = fileUrl ? regulationDownloadFileName(fileUrl, item.tieuDe) : '';
+                const fileLink = fileUrl ? `<a href="${escapeRegulationText(fileUrl)}" download="${escapeRegulationText(downloadName)}" class="regulation-file btn btn-sm btn-outline-primary rounded-pill px-3"><i class="bi bi-download me-1"></i>Tải tài liệu</a>` : '';
+                return `<article class="p-3 border rounded-3 bg-white">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                        <h4 class="h6 fw-bold text-dark mb-0"><i class="bi bi-file-earmark-text text-primary me-2"></i>${escapeRegulationText(item.tieuDe || 'Điều lệ')}</h4>
+                        ${fileLink}
+                    </div>
+                    ${content}
+                </article>`;
+            }).join('')}</div>`;
+        }
+
+        function sanitizeRegulationHtml(value) {
+            const template = document.createElement('template');
+            template.innerHTML = value;
+            const allowedTags = new Set(['P', 'BR', 'H1', 'H2', 'H3', 'H4', 'STRONG', 'B', 'EM', 'I', 'U', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'A', 'HR', 'SUP', 'SUB']);
+            Array.from(template.content.querySelectorAll('*')).forEach(function (element) {
+                if (['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED'].includes(element.tagName)) {
+                    element.remove();
+                    return;
+                }
+                if (!allowedTags.has(element.tagName)) {
+                    const parent = element.parentNode;
+                    if (!parent) return;
+                    while (element.firstChild) parent.insertBefore(element.firstChild, element);
+                    element.remove();
+                    return;
+                }
+                const href = element.tagName === 'A' ? safeRegulationLink(element.getAttribute('href')) : null;
+                Array.from(element.attributes).forEach(attribute => element.removeAttribute(attribute.name));
+                if (element.tagName === 'A' && href) {
+                    element.setAttribute('href', href);
+                    element.setAttribute('target', '_blank');
+                    element.setAttribute('rel', 'noopener noreferrer');
+                }
+            });
+            return template.innerHTML;
+        }
+
+        function safeRegulationLink(value) {
+            if (!value) return null;
+            try {
+                const url = new URL(value, window.location.origin);
+                return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url.href : null;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function safeRegulationFileUrl(value) {
+            if (!value) return null;
+            try {
+                const url = new URL(value, window.location.origin);
+                return ['http:', 'https:'].includes(url.protocol) && url.origin === window.location.origin ? url.href : null;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function regulationDownloadFileName(fileUrl, title) {
+            const url = new URL(fileUrl, window.location.origin);
+            const extension = url.pathname.match(/\.[a-z0-9]{1,10}$/i)?.[0] || '';
+            let fileName = String(title || 'Điều lệ')
+                .trim()
+                .replace(/[\\/:*?"<>|]/g, '-')
+                .replace(/\s+/g, ' ');
+            if (!fileName) fileName = 'Dieu-le';
+            if (extension && !fileName.toLowerCase().endsWith(extension.toLowerCase())) {
+                fileName += extension;
+            }
+            return fileName;
+        }
+
+        function escapeRegulationText(value) {
+            return $('<div>').text(value ?? '').html();
+        }
+
+        function formatRegulationDate(value) {
+            if (!value) return '—';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('vi-VN');
+        }
+
+        function showRegulationsMessage(message, type) {
+            $('#regulationsLoading').addClass('d-none');
+            $('#regulationsResult').empty();
+            $('#regulationsMessage').removeClass('d-none alert-info alert-danger').addClass(`alert-${type}`).text(message);
+        }
+    </script>
+}

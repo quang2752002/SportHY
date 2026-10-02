@@ -53,6 +53,15 @@ namespace API.Controllers
             return View();
         }
 
+        /// <summary>Hiển thị trang tra cứu điều lệ giải đấu và các môn thi đấu công khai.</summary>
+        [HttpGet]
+        [Route("DieuLe")]
+        [Route("Home/DieuLe")]
+        public IActionResult DieuLe()
+        {
+            return View();
+        }
+
         /// <summary>
         /// API trả về danh sách toàn bộ giải đấu công khai và các môn thi đấu tổ chức
         /// </summary>
@@ -61,6 +70,20 @@ namespace API.Controllers
         {
             var list = await _giaiDauService.GetAllAsync();
             return Json(new { success = true, data = list });
+        }
+
+        /// <summary>Lấy nội dung điều lệ đang công bố của giải và các môn thi đấu trong giải.</summary>
+        [HttpGet]
+        public async Task<IActionResult> GetPublicRegulations(int giaiDauId, int? giaiDauMonTheThaoId = null)
+        {
+            if (giaiDauId <= 0)
+                return Json(new { success = false, message = "Vui lòng chọn giải đấu." });
+
+            var result = await _giaiDauService.GetPublicRegulationsAsync(giaiDauId, giaiDauMonTheThaoId);
+            if (result == null)
+                return Json(new { success = false, message = "Không tìm thấy giải đấu hoặc giải chưa được công bố." });
+
+            return Json(new { success = true, data = result });
         }
 
         /// <summary>

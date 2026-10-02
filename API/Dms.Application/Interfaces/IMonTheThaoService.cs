@@ -1,6 +1,7 @@
 using Dms.Application.DTOs;
 using Dms.Domain.Common;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Dms.Application.Interfaces
@@ -74,6 +75,20 @@ namespace Dms.Application.Interfaces
         /// <param name="updatedBy">Tài khoản thực hiện thay đổi trạng thái.</param>
         /// <returns>True nếu cập nhật thành công; false nếu môn không tồn tại hoặc đã bị xóa mềm.</returns>
         Task<bool> SetStatusAsync(int id, bool trangThai, string? updatedBy = null);
+
+        /// <summary>
+        /// Kiểm tra và lưu tệp điều lệ môn vào thư mục tĩnh của ứng dụng.
+        /// </summary>
+        /// <param name="content">Luồng dữ liệu của tệp do người quản lý tải lên.</param>
+        /// <param name="originalFileName">Tên tệp gốc để xác định phần mở rộng và tên hiển thị.</param>
+        /// <param name="fileLength">Kích thước tệp theo byte.</param>
+        /// <param name="webRootPath">Đường dẫn thư mục wwwroot của ứng dụng.</param>
+        /// <returns>Đường dẫn công khai và tên hiển thị của tệp đã lưu.</returns>
+        Task<UploadedDieuLeMonTheThaoFileDto> UploadRegulationFileAsync(
+            Stream content,
+            string originalFileName,
+            long fileLength,
+            string webRootPath);
 
         /// <summary>
         /// Sinh mã môn thể thao tự động duy nhất dựa trên tên môn, danh mục hoặc số thứ tự tiếp theo

@@ -83,6 +83,25 @@ namespace Dms.Application.DTOs
         public string? GioiTinh { get; set; }
     }
 
+    public class GiaiDauDieuLeCongKhaiDto
+    {
+        public int GiaiDauId { get; set; }
+        public string TenGiaiDau { get; set; } = string.Empty;
+        public DateTime NgayBatDau { get; set; }
+        public DateTime NgayKetThuc { get; set; }
+        public List<DieuLeGiaiDauDto> DieuLeGiaiDaus { get; set; } = new();
+        public List<MonTheThaoDieuLeCongKhaiDto> Mons { get; set; } = new();
+    }
+
+    public class MonTheThaoDieuLeCongKhaiDto
+    {
+        public int GiaiDauMonTheThaoId { get; set; }
+        public int MonTheThaoId { get; set; }
+        public string TenMon { get; set; } = string.Empty;
+        public string? TenDanhMuc { get; set; }
+        public List<DieuLeMonTheThaoDto> DieuLes { get; set; } = new();
+    }
+
     public class CategoryCoordinatorAssignmentDto
     {
         public int DanhMucId { get; set; }

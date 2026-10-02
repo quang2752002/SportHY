@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Dms.Application.DTOs
 {
@@ -22,6 +23,7 @@ namespace Dms.Application.DTOs
         public bool TrangThai { get; set; } = true;
         public DateTime? Created { get; set; }
         public DateTime? LastModified { get; set; }
+        public List<DieuLeMonTheThaoDto> DieuLeMonTheThaos { get; set; } = new();
     }
 
     public class CreateUpdateMonTheThaoDto
@@ -41,5 +43,22 @@ namespace Dms.Application.DTOs
         public int? SoDoiToiDa { get; set; }
         public bool TrangThai { get; set; } = true;
         public CreateUpdateCauHinhTheThucDto? CauHinhTheThuc { get; set; }
+        public List<DieuLeMonTheThaoDto>? DieuLeMonTheThaos { get; set; }
+    }
+
+    public class DieuLeMonTheThaoDto
+    {
+        public int Id { get; set; }
+        public string TieuDe { get; set; } = string.Empty;
+        public string NoiDung { get; set; } = string.Empty;
+        public string? TepDinhKem { get; set; }
+        public int ThuTu { get; set; }
+        public bool TrangThai { get; set; } = true;
+    }
+
+    public class UploadedDieuLeMonTheThaoFileDto
+    {
+        public string Url { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
     }
 }

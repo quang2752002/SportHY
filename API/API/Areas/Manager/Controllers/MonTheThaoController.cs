@@ -1,7 +1,10 @@
 using Dms.Application.DTOs;
 using Dms.Application.Interfaces;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.IO;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -11,13 +14,16 @@ namespace API.Areas.Manager.Controllers
     {
         private readonly IMonTheThaoService _monTheThaoService;
         private readonly IDanhMucMonTheThaoService _danhMucMonService;
+        private readonly IWebHostEnvironment _environment;
 
         public MonTheThaoController(
             IMonTheThaoService monTheThaoService,
-            IDanhMucMonTheThaoService danhMucMonService)
+            IDanhMucMonTheThaoService danhMucMonService,
+            IWebHostEnvironment environment)
         {
             _monTheThaoService = monTheThaoService;
             _danhMucMonService = danhMucMonService;
+            _environment = environment;
         }
 
         [HttpGet]
@@ -111,6 +117,30 @@ namespace API.Areas.Manager.Controllers
             }
 
             return Json(new { success = true, message = trangThai ? "Đã bật hoạt động cho môn thể thao." : "Đã tạm dừng môn thể thao." });
+        }
+
+        [HttpPost]
+        [RequestSizeLimit(21 * 1024 * 1024)]
+        public async Task<IActionResult> UploadRegulationFile([FromForm] IFormFile? file)
+        {
+            if (file == null || file.Length == 0)
+                return Json(new { success = false, message = "Vui lòng chọn tệp điều lệ cần tải lên." });
+
+            var webRoot = _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            try
+            {
+                await using var content = file.OpenReadStream();
+                var uploaded = await _monTheThaoService.UploadRegulationFileAsync(
+                    content,
+                    file.FileName,
+                    file.Length,
+                    webRoot);
+                return Json(new { success = true, url = uploaded.Url, fileName = uploaded.FileName });
+            }
+            catch (ArgumentException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 }

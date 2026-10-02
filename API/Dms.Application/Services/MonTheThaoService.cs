@@ -8,6 +8,7 @@ using Dms.Domain.Enums;
 using Dms.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -103,7 +104,12 @@ namespace Dms.Application.Services
             if (entity == null || entity.IsDeleted == true)
                 return null;
 
-            return _mapper.Map<MonTheThaoDto>(entity);
+            var dto = _mapper.Map<MonTheThaoDto>(entity);
+            var regulations = await _unitOfWork.DieuLeMonTheThaos.FindAsync(
+                item => item.MonTheThaoId == id && item.IsDeleted != true);
+            dto.DieuLeMonTheThaos = _mapper.Map<List<DieuLeMonTheThaoDto>>(
+                regulations.OrderBy(item => item.ThuTu).ThenBy(item => item.Id));
+            return dto;
         }
 
         /// <summary>
@@ -167,6 +173,7 @@ namespace Dms.Application.Services
             entity.IsDeleted = false;
 
             await _unitOfWork.MonTheThaos.AddAsync(entity);
+            await SyncRegulationsAsync(entity, dto.DieuLeMonTheThaos, createdBy);
             if (dto.CauHinhTheThuc != null)
             {
                 var configEntity = new CauHinhTheThucThiDau
@@ -274,6 +281,7 @@ namespace Dms.Application.Services
             entity.LastModifiedBy = updatedBy;
 
             _unitOfWork.MonTheThaos.Update(entity);
+            await SyncRegulationsAsync(entity, dto.DieuLeMonTheThaos, updatedBy);
             if (dto.CauHinhTheThuc != null)
             {
                 var configs = await _unitOfWork.CauHinhTheThucThiDaus.FindAsync(c =>
@@ -304,6 +312,134 @@ namespace Dms.Application.Services
             await _unitOfWork.CompleteAsync();
 
             return _mapper.Map<MonTheThaoDto>(entity);
+        }
+
+        /// <summary>
+        /// Đồng bộ nội dung điều lệ và các tệp đính kèm của môn; bản ghi bị bỏ khỏi yêu cầu được xóa mềm.
+        /// </summary>
+        /// <param name="sport">Môn thể thao sở hữu các điều lệ cần đồng bộ.</param>
+        /// <param name="requestedItems">Danh sách điều lệ và tệp còn được giữ lại sau khi người quản lý chỉnh sửa.</param>
+        /// <param name="actor">Tài khoản thực hiện thao tác để ghi lịch sử tạo/cập nhật.</param>
+        /// <returns>Tác vụ đồng bộ hoàn tất trước khi lưu Unit of Work.</returns>
+        private async Task SyncRegulationsAsync(
+            MonTheThao sport,
+            List<DieuLeMonTheThaoDto>? requestedItems,
+            string? actor)
+        {
+            if (requestedItems == null)
+                return;
+
+            var existingItems = sport.Id > 0
+                ? (await _unitOfWork.DieuLeMonTheThaos.FindAsync(item =>
+                    item.MonTheThaoId == sport.Id && item.IsDeleted != true)).ToList()
+                : new List<DieuLeMonTheThao>();
+
+            var requestedIds = requestedItems.Where(item => item.Id > 0).Select(item => item.Id).ToHashSet();
+            foreach (var removed in existingItems.Where(item => !requestedIds.Contains(item.Id)))
+            {
+                removed.IsDeleted = true;
+                removed.LastModified = DateTime.UtcNow;
+                removed.LastModifiedBy = actor;
+                _unitOfWork.DieuLeMonTheThaos.Update(removed);
+            }
+
+            foreach (var requested in requestedItems)
+            {
+                var title = (requested.TieuDe ?? string.Empty).Trim();
+                if (title.Length == 0 || title.Length > 200)
+                    throw new ArgumentException("Tên điều lệ hoặc tên tệp phải có từ 1 đến 200 ký tự.");
+
+                var attachment = string.IsNullOrWhiteSpace(requested.TepDinhKem)
+                    ? null
+                    : requested.TepDinhKem.Trim();
+                if (attachment != null &&
+                    (!attachment.StartsWith("/DieuLeMonTheThao/", StringComparison.OrdinalIgnoreCase) ||
+                     attachment.Contains("..", StringComparison.Ordinal)))
+                {
+                    throw new ArgumentException("Đường dẫn tệp điều lệ không hợp lệ.");
+                }
+
+                var target = requested.Id > 0
+                    ? existingItems.FirstOrDefault(item => item.Id == requested.Id)
+                    : null;
+                if (requested.Id > 0 && target == null)
+                    throw new ArgumentException("Không tìm thấy điều lệ cần cập nhật trong môn thể thao này.");
+
+                if (target == null)
+                {
+                    target = new DieuLeMonTheThao
+                    {
+                        MonTheThao = sport,
+                        Created = DateTime.UtcNow,
+                        CreatedBy = actor,
+                        IsDeleted = false
+                    };
+                    await _unitOfWork.DieuLeMonTheThaos.AddAsync(target);
+                }
+                else
+                {
+                    target.LastModified = DateTime.UtcNow;
+                    target.LastModifiedBy = actor;
+                    _unitOfWork.DieuLeMonTheThaos.Update(target);
+                }
+
+                target.TieuDe = title;
+                target.NoiDung = requested.NoiDung ?? string.Empty;
+                target.TepDinhKem = attachment;
+                target.ThuTu = requested.ThuTu;
+                target.TrangThai = requested.TrangThai;
+            }
+        }
+
+        /// <summary>
+        /// Xác thực phần mở rộng/kích thước tệp điều lệ rồi lưu tệp với tên ngẫu nhiên trong wwwroot.
+        /// </summary>
+        /// <param name="content">Luồng dữ liệu tệp nguồn.</param>
+        /// <param name="originalFileName">Tên tệp gốc do trình duyệt gửi lên.</param>
+        /// <param name="fileLength">Kích thước tệp theo byte.</param>
+        /// <param name="webRootPath">Thư mục wwwroot nơi lưu tệp đã tải.</param>
+        /// <returns>Thông tin đường dẫn công khai và tên gốc an toàn của tệp.</returns>
+        public async Task<UploadedDieuLeMonTheThaoFileDto> UploadRegulationFileAsync(
+            Stream content,
+            string originalFileName,
+            long fileLength,
+            string webRootPath)
+        {
+            const long maxFileSize = 20 * 1024 * 1024;
+            if (content == null || !content.CanRead || fileLength <= 0)
+                throw new ArgumentException("Vui lòng chọn tệp điều lệ cần tải lên.");
+            if (fileLength > maxFileSize)
+                throw new ArgumentException("Dung lượng tệp không được vượt quá 20 MB.");
+
+            var safeOriginalFileName = Path.GetFileName(originalFileName ?? string.Empty);
+            var extension = Path.GetExtension(safeOriginalFileName).ToLowerInvariant();
+            var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".webp"
+            };
+            if (!allowedExtensions.Contains(extension))
+                throw new ArgumentException("Chỉ chấp nhận PDF, Word, Excel hoặc ảnh JPG, PNG, WEBP.");
+
+            if (safeOriginalFileName.Length > 200)
+            {
+                var baseName = Path.GetFileNameWithoutExtension(safeOriginalFileName);
+                safeOriginalFileName = baseName[..Math.Min(baseName.Length, 200 - extension.Length)] + extension;
+            }
+
+            var targetFolder = Path.Combine(webRootPath, "DieuLeMonTheThao");
+            Directory.CreateDirectory(targetFolder);
+            var storedFileName = $"{Guid.NewGuid():N}{extension}";
+            var fullPath = Path.Combine(targetFolder, storedFileName);
+            await using (var output = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                await content.CopyToAsync(output);
+            }
+
+            return new UploadedDieuLeMonTheThaoFileDto
+            {
+                Url = $"/DieuLeMonTheThao/{storedFileName}",
+                FileName = safeOriginalFileName
+            };
         }
 
         /// <summary>Cập nhật trạng thái hoạt động của một môn thể thao mà không yêu cầu gửi lại cấu hình thi đấu.</summary>

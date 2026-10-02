@@ -261,6 +261,74 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
+        /// Lấy các điều lệ đang được công bố của một giải và các môn thi đấu thuộc giải đó.
+        /// </summary>
+        /// <param name="giaiDauId">Mã định danh giải đấu cần tra cứu.</param>
+        /// <param name="giaiDauMonTheThaoId">Mã liên kết môn trong giải để lọc riêng một môn; null nghĩa là lấy mọi môn.</param>
+        /// <returns>Điều lệ giải cùng điều lệ từng môn đang hoạt động; null nếu giải không công khai hoặc không tồn tại.</returns>
+        public async Task<GiaiDauDieuLeCongKhaiDto?> GetPublicRegulationsAsync(
+            int giaiDauId,
+            int? giaiDauMonTheThaoId = null)
+        {
+            var tournament = await GetByIdAsync(giaiDauId);
+            if (tournament == null ||
+                tournament.TrangThai == TrangThaiGiaiDau.Nhap ||
+                tournament.TrangThai == TrangThaiGiaiDau.Huy)
+            {
+                return null;
+            }
+
+            var activeTournamentSports = await _unitOfWork.GiaiDauMonTheThaos.FindAsync(item =>
+                item.GiaiDauId == giaiDauId && item.IsDeleted != true && item.TrangThai);
+            var activeTournamentSportIds = activeTournamentSports
+                .Select(item => item.Id)
+                .ToHashSet();
+            var sports = (tournament.MonTheThaos ?? new List<GiaiDauMonTheThaoDto>())
+                .Where(sport => activeTournamentSportIds.Contains(sport.Id))
+                .ToList();
+            if (giaiDauMonTheThaoId.HasValue && giaiDauMonTheThaoId.Value > 0)
+            {
+                sports = sports.Where(sport => sport.Id == giaiDauMonTheThaoId.Value).ToList();
+            }
+
+            var monIds = sports.Select(sport => sport.MonTheThaoId).Distinct().ToList();
+            var regulations = monIds.Count == 0
+                ? new List<DieuLeMonTheThao>()
+                : (await _unitOfWork.DieuLeMonTheThaos.FindAsync(item =>
+                    monIds.Contains(item.MonTheThaoId) && item.IsDeleted != true && item.TrangThai))
+                    .OrderBy(item => item.ThuTu)
+                    .ThenBy(item => item.Id)
+                    .ToList();
+            var regulationsBySport = regulations
+                .GroupBy(item => item.MonTheThaoId)
+                .ToDictionary(group => group.Key, group => _mapper.Map<List<DieuLeMonTheThaoDto>>(group));
+
+            var tournamentRules = tournament.DieuLeGiaiDaus
+                .Where(item => item.TrangThai)
+                .OrderBy(item => item.ThuTu)
+                .ToList();
+
+            return new GiaiDauDieuLeCongKhaiDto
+            {
+                GiaiDauId = tournament.Id,
+                TenGiaiDau = tournament.Ten,
+                NgayBatDau = tournament.NgayBatDau,
+                NgayKetThuc = tournament.NgayKetThuc,
+                DieuLeGiaiDaus = tournamentRules,
+                Mons = sports.Select(sport => new MonTheThaoDieuLeCongKhaiDto
+                {
+                    GiaiDauMonTheThaoId = sport.Id,
+                    MonTheThaoId = sport.MonTheThaoId,
+                    TenMon = sport.Ten,
+                    TenDanhMuc = sport.TenDanhMuc,
+                    DieuLes = regulationsBySport.TryGetValue(sport.MonTheThaoId, out var sportRules)
+                        ? sportRules
+                        : new List<DieuLeMonTheThaoDto>()
+                }).ToList()
+            };
+        }
+
+        /// <summary>
         /// Lấy chi tiết giải đấu theo Slug URL
         /// </summary>
         public async Task<GiaiDauDto?> GetBySlugAsync(string slug)

@@ -782,8 +782,8 @@
         @if (isMatchCompleted)
         {
             <style>
-                #officialReportContent.pdf-exporting .d-print-none { display: none !important; }
-                #officialReportContent.pdf-exporting { background: #ffffff !important; color: #111827 !important; }
+                .official-report.pdf-exporting .d-print-none { display: none !important; }
+                .official-report.pdf-exporting { background: #ffffff !important; color: #111827 !important; }
 
                 #matchReportPanel .match-report-actions {
                     display: flex;
@@ -1079,19 +1079,31 @@
             const sportName = report.dataset.sportName || 'MonThiDau';
             const safeSportName = sportName.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'MonThiDau';
-            report.classList.add('pdf-exporting');
+            const exportStage = document.createElement('div');
+            exportStage.setAttribute('aria-hidden', 'true');
+            exportStage.style.cssText = 'position:fixed;inset:0;width:100vw;min-height:100vh;overflow:visible;display:flex;justify-content:center;align-items:flex-start;background:#fff;z-index:2147483647;';
+            const exportReport = report.cloneNode(true);
+            exportReport.removeAttribute('id');
+            exportReport.classList.add('pdf-exporting');
+            exportReport.style.setProperty('width', '190mm', 'important');
+            exportReport.style.setProperty('max-width', 'none', 'important');
+            exportReport.style.setProperty('margin', '0 auto', 'important');
+            exportReport.style.setProperty('box-sizing', 'border-box', 'important');
+            exportReport.style.setProperty('box-shadow', 'none', 'important');
+            exportStage.appendChild(exportReport);
+            document.body.appendChild(exportStage);
 
             html2pdf().set({
                 margin: [10, 10, 10, 10],
                 filename: `BienBan_Tran_${matchNumber}_${safeSportName}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'] }
-            }).from(report).save()
+                pagebreak: { mode: [] }
+            }).from(exportReport).save()
                 .then(function () { Swal.fire({ icon: 'success', title: 'Đã xuất biên bản PDF', timer: 1500, showConfirmButton: false }); })
                 .catch(function () { Swal.fire('Lỗi xuất PDF', 'Không thể tạo tệp PDF từ biên bản.', 'error'); })
-                .finally(function () { report.classList.remove('pdf-exporting'); });
+                .finally(function () { exportStage.remove(); });
         }
 
         function openSignModal(role, roleTitle) {

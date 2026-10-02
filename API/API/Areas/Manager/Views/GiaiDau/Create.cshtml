@@ -298,31 +298,48 @@
                             }
                             else
                             {
-                                <div class="row g-2" id="listMonTheThao">
-                                    @foreach (var mon in monTheThaos)
+                                <div class="d-flex flex-column gap-3" id="listMonTheThao">
+                                    @foreach (var categoryGroup in monTheThaos
+                                        .GroupBy(mon => new
+                                        {
+                                            mon.DanhMucId,
+                                            TenDanhMuc = string.IsNullOrWhiteSpace(mon.TenDanhMuc) ? "Chưa phân danh mục" : mon.TenDanhMuc.Trim()
+                                        })
+                                        .OrderBy(group => group.Key.TenDanhMuc))
                                     {
-                                        <div class="col-md-4 col-sm-6">
-                                            <div class="form-check p-2 border rounded hover-shadow h-100 d-flex align-items-center bg-white">
-                                                <input class="form-check-input chk-mon me-2 ms-1" type="checkbox" value="@mon.Id" id="mon_@mon.Id">
-                                                <label class="form-check-label fw-semibold text-dark small w-100 cursor-pointer" for="mon_@mon.Id">
-                                                    <div>@mon.Ten</div>
-                                                    <div class="mt-1">
-                                                        @if (mon.LaMonDongDoi)
-                                                        {
-                                                            <span class="badge bg-info-subtle text-info border" style="font-size: 0.68rem;">Đồng đội</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-secondary-subtle text-secondary border" style="font-size: 0.68rem;">Cá nhân</span>
-                                                        }
-                                                        @if (!string.IsNullOrEmpty(mon.TenDanhMuc))
-                                                        {
-                                                            <span class="text-muted" style="font-size: 0.68rem;">• @mon.TenDanhMuc</span>
-                                                        }
-                                                    </div>
-                                                </label>
+                                        <section class="border rounded-3 overflow-hidden">
+                                            <div class="d-flex align-items-center justify-content-between gap-2 px-3 py-2 bg-light border-bottom">
+                                                <div class="fw-bold text-dark small">
+                                                    <i class="fa-solid fa-layer-group text-primary me-2"></i>@categoryGroup.Key.TenDanhMuc
+                                                </div>
+                                                <span class="badge bg-white text-secondary border">@categoryGroup.Count() môn</span>
                                             </div>
-                                        </div>
+                                            <div class="p-2">
+                                                <div class="row g-2">
+                                                    @foreach (var mon in categoryGroup.OrderBy(item => item.Ten))
+                                                    {
+                                                        <div class="col-md-4 col-sm-6">
+                                                            <div class="form-check p-2 border rounded hover-shadow h-100 d-flex align-items-center bg-white">
+                                                                <input class="form-check-input chk-mon me-2 ms-1" type="checkbox" value="@mon.Id" id="mon_@mon.Id">
+                                                                <label class="form-check-label fw-semibold text-dark small w-100 cursor-pointer" for="mon_@mon.Id">
+                                                                    <div>@mon.Ten</div>
+                                                                    <div class="mt-1">
+                                                                        @if (mon.LaMonDongDoi)
+                                                                        {
+                                                                            <span class="badge bg-info-subtle text-info border" style="font-size: 0.68rem;">Đồng đội</span>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span class="badge bg-secondary-subtle text-secondary border" style="font-size: 0.68rem;">Cá nhân</span>
+                                                                        }
+                                                                    </div>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </section>
                                     }
                                 </div>
                             }

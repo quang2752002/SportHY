@@ -175,6 +175,9 @@
                             <button class="nav-link active fw-semibold" id="basicSportTabButton" data-bs-toggle="tab" data-bs-target="#basicSportTab" type="button" role="tab">Thông tin môn</button>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-semibold" id="regulationSportTabButton" data-bs-toggle="tab" data-bs-target="#regulationSportTab" type="button" role="tab">Điều lệ môn thi đấu</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link fw-semibold" id="formatSportTabButton" data-bs-toggle="tab" data-bs-target="#formatSportTab" type="button" role="tab">Cấu hình môn thi đấu <span class="text-danger">*</span></button>
                         </li>
                     </ul>
@@ -252,6 +255,22 @@
                         </div>
                     </div>
                     </div>
+                    <div class="tab-pane fade" id="regulationSportTab" role="tabpanel" aria-labelledby="regulationSportTabButton">
+                        <div class="alert alert-info py-2 small mb-3">
+                            <i class="fa-solid fa-circle-info me-1"></i>Soạn điều lệ bằng trình biên tập hoặc tải lên các tệp quy định của môn. Nội dung và tệp sẽ được lưu cùng môn thể thao.
+                        </div>
+                        <div class="mb-4">
+                            <label for="sportRegulationContent" class="form-label fw-semibold">Nội dung điều lệ</label>
+                            <textarea id="sportRegulationContent" class="form-control" rows="8" placeholder="Nhập điều lệ, quy định và hướng dẫn thi đấu..."></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label for="sportRegulationFiles" class="form-label fw-semibold">Tệp điều lệ đính kèm</label>
+                            <input type="file" id="sportRegulationFiles" class="form-control" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp">
+                            <div class="form-text">PDF, Word, Excel hoặc ảnh JPG/PNG/WEBP; tối đa 20 MB mỗi tệp.</div>
+                        </div>
+                        <div id="sportRegulationUploadStatus" class="small text-primary mt-2" aria-live="polite"></div>
+                        <div id="sportRegulationFileList" class="list-group mt-3"></div>
+                    </div>
                     <div class="tab-pane fade" id="formatSportTab" role="tabpanel" aria-labelledby="formatSportTabButton">
                         <div class="alert alert-warning py-2 mb-3" id="formatRequiredNotice">
                             <i class="fa-solid fa-circle-exclamation me-1"></i>
@@ -275,6 +294,8 @@
 <!-- ========== STYLES: FORMAT MODAL ========== -->
 <style>
 #modalMon #formMon { display:flex; flex-direction:column; min-height:0; max-height:calc(100vh - 140px); overflow-y:auto; }
+#modalMon #sportRegulationContent + .ck-editor .ck-editor__editable_inline { min-height:260px; }
+#modalMon .regulation-file-link { overflow-wrap:anywhere; }
 #modalMon .format-editor-dialog { width:100%; max-width:none; margin:0; }
 #modalMon #modalTheThuc .modal-content { box-shadow:none!important; }
 #modalTheThuc .fmt-tab-card {
@@ -1195,12 +1216,19 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
     <script>
         let currentPage = 1;
         const pageSize = 10;
         let formatConfigured = false;
         let categoriesData = [];
         let categoryModalInstance = null;
+        let sportRegulationEditor = null;
+        let sportRegulationFiles = [];
+        let sportRegulationContentId = 0;
+        let sportRegulationContentTitle = 'Điều lệ môn thi đấu';
+        let sportRegulationContentStatus = true;
+        let regulationUploadsInProgress = 0;
 
         $(document).ready(function () {
             categoryModalInstance = new bootstrap.Modal(document.getElementById('modalCategory'));
@@ -1226,6 +1254,11 @@
                 $('#fmtHinhThucThiDau').val(format);
                 switchFormat(format);
                 setFormatConfirmation(true);
+            });
+
+            $('#regulationSportTabButton').on('shown.bs.tab', initializeSportRegulationEditor);
+            $('#sportRegulationFiles').on('change', function () {
+                uploadSportRegulationFiles(Array.from(this.files || []));
             });
 
             $('#hinhThucThiDau').on('change', function () {
@@ -1771,6 +1804,7 @@
             $('#soLuongVdvToiDa').val('1');
             $('#moTa').val('');
             $('#trangThai').prop('checked', true);
+            resetSportRegulations();
             formatConfigured = false;
             resetFormatForm();
             $('#fmtMonId').val('');
@@ -1802,6 +1836,7 @@
                     $('#soLuongVdvToiDa').val(vMax);
                     $('#moTa').val(item.moTa || '');
                     $('#trangThai').prop('checked', item.trangThai);
+                    loadSportRegulations(item.dieuLeMonTheThaos || []);
                     new bootstrap.Tab(document.getElementById('basicSportTabButton')).show();
                     $('#modalMon').modal('show');
                     loadFormatConfiguration(item.id, item.ten, item.hinhThucThiDau || 'LoaiTrucTiep', function () {
@@ -1822,6 +1857,10 @@
                 setFormatConfirmation(false);
                 new bootstrap.Tab(document.getElementById('formatSportTabButton')).show();
                 Swal.fire('Thiếu cấu hình', 'Hãy kiểm tra cấu hình trong tab vừa mở, sau đó nhấn lưu lại.', 'warning');
+                return;
+            }
+            if (regulationUploadsInProgress > 0) {
+                Swal.fire('Đang tải tệp', 'Vui lòng đợi tải xong các tệp điều lệ trước khi lưu.', 'info');
                 return;
             }
 
@@ -1856,6 +1895,7 @@
                 soLuongVdvToiDa: maxVdv,
                 moTa: $('#moTa').val().trim() || null,
                 trangThai: $('#trangThai').is(':checked'),
+                dieuLeMonTheThaos: collectSportRegulations(),
                 cauHinhTheThuc: configPayload
             };
 
@@ -1877,6 +1917,139 @@
                 },
                 error: function () { Swal.fire('Lỗi', 'Không thể kết nối máy chủ để lưu môn và cấu hình.', 'error'); }
             });
+        }
+
+        function initializeSportRegulationEditor() {
+            if (sportRegulationEditor) return;
+            if (!window.ClassicEditor) {
+                $('#sportRegulationUploadStatus').removeClass('text-primary').addClass('text-danger')
+                    .text('Không tải được CKEditor. Hãy kiểm tra kết nối rồi tải lại trang.');
+                return;
+            }
+            ClassicEditor.create(document.querySelector('#sportRegulationContent'), {
+                toolbar: ['heading', '|', 'bold', 'italic', 'bulletedList', 'numberedList', '|', 'link', 'blockQuote', 'undo', 'redo']
+            }).then(function (editor) {
+                sportRegulationEditor = editor;
+            }).catch(function (error) {
+                console.error('Không thể khởi tạo CKEditor cho điều lệ môn:', error);
+                $('#sportRegulationUploadStatus').removeClass('text-primary').addClass('text-danger')
+                    .text('Không tải được trình soạn thảo. Bạn vẫn có thể thử tải lại trang.');
+            });
+        }
+
+        function setSportRegulationContent(content) {
+            const value = content || '';
+            $('#sportRegulationContent').val(value);
+            if (sportRegulationEditor) sportRegulationEditor.setData(value);
+        }
+
+        function resetSportRegulations() {
+            sportRegulationContentId = 0;
+            sportRegulationContentTitle = 'Điều lệ môn thi đấu';
+            sportRegulationContentStatus = true;
+            sportRegulationFiles = [];
+            setSportRegulationContent('');
+            $('#sportRegulationFiles').val('');
+            $('#sportRegulationUploadStatus').removeClass('text-danger').addClass('text-primary').empty();
+            renderSportRegulationFiles();
+        }
+
+        function loadSportRegulations(items) {
+            const regulations = Array.isArray(items) ? items : [];
+            const contentItem = regulations.find(item => !item.tepDinhKem) || null;
+            sportRegulationContentId = contentItem ? (contentItem.id || 0) : 0;
+            sportRegulationContentTitle = contentItem ? (contentItem.tieuDe || 'Điều lệ môn thi đấu') : 'Điều lệ môn thi đấu';
+            sportRegulationContentStatus = contentItem ? contentItem.trangThai !== false : true;
+            setSportRegulationContent(contentItem ? contentItem.noiDung : '');
+            sportRegulationFiles = regulations.filter(item => item.tepDinhKem).map(item => ({
+                id: item.id || 0,
+                fileName: item.tieuDe || 'Tệp điều lệ',
+                url: item.tepDinhKem,
+                trangThai: item.trangThai !== false
+            }));
+            $('#sportRegulationFiles').val('');
+            $('#sportRegulationUploadStatus').removeClass('text-danger').addClass('text-primary').empty();
+            renderSportRegulationFiles();
+        }
+
+        function collectSportRegulations() {
+            const content = sportRegulationEditor ? sportRegulationEditor.getData() : $('#sportRegulationContent').val();
+            const plainText = (content || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim();
+            const regulations = [];
+            if (plainText) {
+                regulations.push({
+                    id: sportRegulationContentId,
+                    tieuDe: sportRegulationContentTitle,
+                    noiDung: content,
+                    tepDinhKem: null,
+                    thuTu: 0,
+                    trangThai: sportRegulationContentStatus
+                });
+            }
+            sportRegulationFiles.forEach((file, index) => regulations.push({
+                id: file.id || 0,
+                tieuDe: file.fileName,
+                noiDung: '',
+                tepDinhKem: file.url,
+                thuTu: index + 1,
+                trangThai: file.trangThai !== false
+            }));
+            return regulations;
+        }
+
+        async function uploadSportRegulationFiles(files) {
+            if (!files.length) return;
+            regulationUploadsInProgress++;
+            $('#sportRegulationUploadStatus').removeClass('text-danger').addClass('text-primary')
+                .text(`Đang tải ${files.length} tệp điều lệ...`);
+            try {
+                for (const file of files) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const response = await $.ajax({
+                        url: '/Manager/MonTheThao/UploadRegulationFile',
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false
+                    });
+                    if (!response.success) throw new Error(response.message || `Không thể tải tệp ${file.name}.`);
+                    sportRegulationFiles.push({ id: 0, fileName: response.fileName || file.name, url: response.url });
+                }
+                $('#sportRegulationUploadStatus').removeClass('text-danger').addClass('text-success')
+                    .text('Đã tải xong các tệp. Nhấn nút lưu môn để hoàn tất.');
+                renderSportRegulationFiles();
+            } catch (error) {
+                const message = error.responseJSON?.message ||
+                    (error.status ? `Máy chủ trả về lỗi HTTP ${error.status} khi tải tệp.` : '') ||
+                    error.message || 'Tải tệp điều lệ thất bại.';
+                $('#sportRegulationUploadStatus').removeClass('text-primary text-success').addClass('text-danger').text(message);
+                Swal.fire('Không tải được tệp', message, 'error');
+            } finally {
+                regulationUploadsInProgress--;
+                $('#sportRegulationFiles').val('');
+            }
+        }
+
+        function renderSportRegulationFiles() {
+            const $list = $('#sportRegulationFileList').empty();
+            if (!sportRegulationFiles.length) {
+                $list.html('<div class="text-muted small py-2">Chưa có tệp điều lệ nào được tải lên.</div>');
+                return;
+            }
+            sportRegulationFiles.forEach((file, index) => {
+                const safeUrl = escapeHtml(file.url || '#');
+                const safeName = escapeHtml(file.fileName || 'Tệp điều lệ');
+                $list.append(`<div class="list-group-item d-flex justify-content-between align-items-center gap-3">
+                    <a class="regulation-file-link text-decoration-none" href="${safeUrl}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-file-lines text-primary me-2"></i>${safeName}</a>
+                    <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0" onclick="removeSportRegulationFile(${index})" aria-label="Gỡ tệp"><i class="fa-solid fa-xmark"></i></button>
+                </div>`);
+            });
+        }
+
+        function removeSportRegulationFile(index) {
+            sportRegulationFiles.splice(index, 1);
+            renderSportRegulationFiles();
         }
 
         function resetFilter() {
