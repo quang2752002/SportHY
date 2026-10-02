@@ -33,7 +33,13 @@ namespace Dms.Application.Interfaces
         Task<DonViDto?> GetByIdAsync(int id);
 
         /// <summary>
-        /// Thêm mới một đơn vị / đoàn thể thao vào hệ thống (có kiểm tra trùng lặp mã và tên)
+        /// Sinh mã đơn vị / đoàn thể thao ngẫu nhiên duy nhất có cả chữ và số
+        /// </summary>
+        /// <returns>Mã đơn vị ngẫu nhiên không trùng lặp</returns>
+        Task<string> GenerateCodeAsync();
+
+        /// <summary>
+        /// Thêm mới một đơn vị / đoàn thể thao vào hệ thống (có kiểm tra trùng lặp mã và tên, tự động sinh mã nếu để trống)
         /// </summary>
         /// <param name="dto">Dữ liệu thông tin đơn vị cần tạo</param>
         /// <param name="createdBy">Tài khoản người thực hiện tạo</param>

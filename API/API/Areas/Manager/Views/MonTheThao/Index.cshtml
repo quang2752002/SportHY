@@ -127,7 +127,12 @@
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label fw-semibold small">Mã danh mục <span class="text-danger">*</span></label>
-                        <input type="text" id="categoryCode" class="form-control text-uppercase" required maxlength="50" placeholder="VD: DM_BONG" />
+                        <div class="input-group">
+                            <input type="text" id="categoryCode" class="form-control text-uppercase" required maxlength="50" placeholder="VD: DM_BONG" />
+                            <button type="button" class="btn btn-outline-secondary" onclick="isCategoryCodeManual = false; autoGenerateCategoryCode();" title="Tự động sinh mã danh mục">
+                                <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold small">Tên danh mục <span class="text-danger">*</span></label>
@@ -182,7 +187,12 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold small">Mã môn</label>
-                            <input type="text" class="form-control text-uppercase" id="ma" placeholder="BD-07">
+                            <div class="input-group">
+                                <input type="text" class="form-control text-uppercase" id="ma" placeholder="BD-07">
+                                <button type="button" class="btn btn-outline-secondary" onclick="isSportCodeManual = false; autoGenerateSportCode();" title="Tự động sinh mã môn">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="col-md-6">
@@ -1240,10 +1250,26 @@
                 saveData();
             });
 
+            // Theo dõi nhập mã thủ công
+            $('#categoryCode').on('input', function () {
+                isCategoryCodeManual = true;
+            });
+
+            $('#ma').on('input', function () {
+                isSportCodeManual = true;
+            });
+
+            $('#danhMucId').on('change', function () {
+                if (!$('#monId').val() && !isSportCodeManual) {
+                    autoGenerateSportCode($(this).val());
+                }
+            });
+
             // Gợi ý thông minh khi gõ tên môn thể thao mới
             $('#ten').on('input', function () {
                 if ($('#monId').val()) return; // Chỉ áp dụng khi thêm mới
-                const val = $(this).val().toLowerCase().trim();
+                const rawVal = $(this).val().trim();
+                const val = rawVal.toLowerCase();
                 if (!val) return;
 
                 if (val.includes('bóng đá') || val.includes('futsal')) {
@@ -1528,17 +1554,57 @@
             $toggle.find('i').toggleClass('fa-chevron-down', !expanded).toggleClass('fa-chevron-right', expanded);
         }
 
+        // Reusable Helper sinh mã ngẫu nhiên có cả số và chữ phía Client
+        const CodeHelper = {
+            generateRandomCode: function (prefix = '', len = 6) {
+                if (len < 2) len = 2;
+                const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+                const digits = '23456789';
+                const allChars = letters + digits;
+                let res = [
+                    letters[Math.floor(Math.random() * letters.length)],
+                    digits[Math.floor(Math.random() * digits.length)]
+                ];
+                for (let i = 2; i < len; i++) {
+                    res.push(allChars[Math.floor(Math.random() * allChars.length)]);
+                }
+                for (let i = res.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    const temp = res[i]; res[i] = res[j]; res[j] = temp;
+                }
+                const randomStr = res.join('');
+                return prefix ? `${prefix.trim().toUpperCase()}${randomStr}` : randomStr;
+            }
+        };
+
+        let isCategoryCodeManual = false;
+
+        function autoGenerateCategoryCode() {
+            $.get('/Manager/DanhMucMonTheThao/GenerateCode', function (res) {
+                if (res.success && res.data) {
+                    $('#categoryCode').val(res.data);
+                } else {
+                    $('#categoryCode').val(CodeHelper.generateRandomCode('DM', 6));
+                }
+            }).fail(function () {
+                $('#categoryCode').val(CodeHelper.generateRandomCode('DM', 6));
+            });
+        }
+
         function openCreateCategoryModal() {
             $('#categoryId').val('');
             $('#categoryModalTitle span').text('Thêm Danh Mục Môn');
+            isCategoryCodeManual = false;
             $('#categoryCode').val('').prop('readonly', false);
             $('#categoryName').val('');
             $('#categoryDescription').val('');
             $('#categoryActive').prop('checked', true);
+            autoGenerateCategoryCode();
             categoryModalInstance.show();
         }
 
         function openEditCategoryModal(id) {
+            isCategoryCodeManual = true;
             $.get('/Manager/DanhMucMonTheThao/GetById', { id: id }, function (res) {
                 if (!res.success || !res.data) {
                     Swal.fire('Lỗi', res.message || 'Không tìm thấy danh mục môn.', 'error');
@@ -1560,9 +1626,20 @@
         function saveCategory(event) {
             event.preventDefault();
             const id = $('#categoryId').val();
+            let ma = $('#categoryCode').val().trim().toUpperCase();
+            const ten = $('#categoryName').val().trim();
+            if (!ten) {
+                Swal.fire('Thiếu thông tin', 'Vui lòng nhập tên danh mục.', 'warning');
+                return;
+            }
+            if (!ma) {
+                ma = CodeHelper.generateRandomCode('DM', 6);
+                $('#categoryCode').val(ma);
+            }
+
             const payload = {
-                ma: $('#categoryCode').val().trim().toUpperCase(),
-                ten: $('#categoryName').val().trim(),
+                ma: ma,
+                ten: ten,
                 moTa: $('#categoryDescription').val().trim() || null,
                 trangThai: $('#categoryActive').is(':checked')
             };
@@ -1665,10 +1742,26 @@
             $('#paginationList').html(pagHtml);
         }
 
+        let isSportCodeManual = false;
+
+        function autoGenerateSportCode(danhMucId = null) {
+            danhMucId = danhMucId !== undefined && danhMucId !== null ? danhMucId : $('#danhMucId').val();
+            $.get('/Manager/MonTheThao/GenerateCode', { danhMucId: danhMucId || undefined }, function (res) {
+                if (res.success && res.data) {
+                    $('#ma').val(res.data);
+                } else {
+                    $('#ma').val(CodeHelper.generateRandomCode('MON', 6));
+                }
+            }).fail(function () {
+                $('#ma').val(CodeHelper.generateRandomCode('MON', 6));
+            });
+        }
+
         function openCreateModal(categoryId = null) {
             $('#modalTitle span').text('Thêm Môn Thể Thao Mới');
             $('#monId').val('');
             $('#ten').val('');
+            isSportCodeManual = false;
             $('#ma').val('');
             $('#danhMucId').val(categoryId || '');
             $('#loaiThiDau').val('DongDoi');
@@ -1684,11 +1777,13 @@
             $('#fmtHinhThucThiDau').val('LoaiTrucTiep');
             $('#badgeModalSportName').addClass('d-none').text('');
             setFormatConfirmation(false);
+            autoGenerateSportCode(categoryId);
             new bootstrap.Tab(document.getElementById('basicSportTabButton')).show();
             $('#modalMon').modal('show');
         }
 
         function openEditModal(id, openConfigTab = false) {
+            isSportCodeManual = true;
             $.get('/Manager/MonTheThao/GetById', { id: id }, function (res) {
                 if (res.success && res.data) {
                     const item = res.data;
@@ -1741,9 +1836,15 @@
             const minVdv = parseInt($('#soLuongVdvToiThieu').val()) || 1;
             const maxVdv = parseInt($('#soLuongVdvToiDa').val()) || 1;
 
+            let ma = $('#ma').val().trim().toUpperCase();
+            if (!ma) {
+                ma = CodeHelper.generateRandomCode('MON', 6);
+                $('#ma').val(ma);
+            }
+
             const payload = {
                 ten: ten,
-                ma: $('#ma').val().trim() || 'MON-' + Date.now().toString().slice(-5),
+                ma: ma,
                 danhMucId: $('#danhMucId').val() ? parseInt($('#danhMucId').val()) : null,
                 loaiThiDau: loaiVal,
                 laMonDongDoi: (loaiVal === 'DongDoi'),

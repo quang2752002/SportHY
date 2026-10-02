@@ -76,6 +76,14 @@ namespace Dms.Application.Interfaces
         Task<bool> SetStatusAsync(int id, bool trangThai, string? updatedBy = null);
 
         /// <summary>
+        /// Sinh mã môn thể thao tự động duy nhất dựa trên tên môn, danh mục hoặc số thứ tự tiếp theo
+        /// </summary>
+        /// <param name="name">Tên môn thể thao (tùy chọn)</param>
+        /// <param name="danhMucId">Mã định danh danh mục môn trực thuộc (tùy chọn)</param>
+        /// <returns>Mã môn thể thao duy nhất không bị trùng lặp</returns>
+        Task<string> GenerateCodeAsync(string? name = null, int? danhMucId = null);
+
+        /// <summary>
         /// Xóa mềm một môn thể thao khỏi hệ thống
         /// </summary>
         /// <param name="id">Mã định danh môn thể thao cần xóa</param>

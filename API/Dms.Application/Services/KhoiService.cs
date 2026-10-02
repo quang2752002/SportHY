@@ -59,8 +59,38 @@ namespace Dms.Application.Services
             return _mapper.Map<KhoiDto>(entity);
         }
 
+        /// <summary>
+        /// Sinh mã khối tham gia ngẫu nhiên duy nhất có cả chữ và số
+        /// </summary>
+        /// <returns>Mã khối ngẫu nhiên không trùng lặp</returns>
+        public async Task<string> GenerateCodeAsync()
+        {
+            string code;
+            do
+            {
+                code = Dms.Application.Common.CodeGeneratorHelper.GenerateRandomCode("KHOI", 6);
+            } while ((await _unitOfWork.Khois.FindAsync(k => k.Ma == code && k.IsDeleted != true)).Any());
+
+            return code;
+        }
+
+        /// <summary>
+        /// Thêm mới một khối tham gia (tự động sinh mã nếu để trống)
+        /// </summary>
+        /// <param name="dto">Dữ liệu tạo khối mới</param>
+        /// <param name="createdBy">Tài khoản người thực hiện tạo</param>
+        /// <returns>Thông tin khối vừa được tạo</returns>
         public async Task<KhoiDto> CreateAsync(CreateUpdateKhoiDto dto, string? createdBy = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Ma))
+            {
+                dto.Ma = await GenerateCodeAsync();
+            }
+            else
+            {
+                dto.Ma = dto.Ma.Trim().ToUpperInvariant();
+            }
+
             var entity = _mapper.Map<Khoi>(dto);
             entity.Created = DateTime.UtcNow;
             entity.CreatedBy = createdBy;

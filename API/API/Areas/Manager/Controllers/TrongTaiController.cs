@@ -41,6 +41,13 @@ namespace API.Areas.Manager.Controllers
             return Json(new { success = true, data = result });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GenerateCode()
+        {
+            var code = await _trongTaiService.GenerateCodeAsync();
+            return Json(new { success = true, data = code });
+        }
+
         [HttpPost]
         public async Task<IActionResult> Save([FromBody] CreateUpdateTrongTaiDto dto, [FromQuery] int? id = null)
         {

@@ -68,10 +68,37 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
-        /// Thêm mới thư ký
+        /// Sinh mã thư ký ngẫu nhiên duy nhất có cả chữ và số
         /// </summary>
+        /// <returns>Mã thư ký ngẫu nhiên không trùng lặp</returns>
+        public async Task<string> GenerateCodeAsync()
+        {
+            string code;
+            do
+            {
+                code = Dms.Application.Common.CodeGeneratorHelper.GenerateRandomCode("TK", 6);
+            } while ((await _unitOfWork.ThuKys.FindAsync(t => t.Ma == code && t.IsDeleted != true)).Any());
+
+            return code;
+        }
+
+        /// <summary>
+        /// Thêm mới hồ sơ thư ký (tự động sinh mã nếu để trống)
+        /// </summary>
+        /// <param name="dto">Dữ liệu tạo thư ký mới</param>
+        /// <param name="createdBy">Tài khoản người thực hiện tạo</param>
+        /// <returns>Thông tin thư ký vừa được tạo</returns>
         public async Task<ThuKyDto> CreateAsync(CreateUpdateThuKyDto dto, string? createdBy = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Ma))
+            {
+                dto.Ma = await GenerateCodeAsync();
+            }
+            else
+            {
+                dto.Ma = dto.Ma.Trim().ToUpperInvariant();
+            }
+
             var entity = _mapper.Map<ThuKy>(dto);
             entity.Created = DateTime.UtcNow;
             entity.CreatedBy = createdBy;

@@ -104,15 +104,39 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
-        /// Thêm mới một đơn vị / đoàn thể thao vào hệ thống (có kiểm tra trùng lặp mã và tên)
+        /// Sinh mã đơn vị / đoàn thể thao ngẫu nhiên duy nhất có cả chữ và số
+        /// </summary>
+        /// <returns>Mã đơn vị ngẫu nhiên không trùng lặp</returns>
+        public async Task<string> GenerateCodeAsync()
+        {
+            string code;
+            do
+            {
+                code = Dms.Application.Common.CodeGeneratorHelper.GenerateRandomCode("DV", 6);
+            } while ((await _unitOfWork.DonVis.FindAsync(d => d.Ma == code && d.IsDeleted != true)).Any());
+
+            return code;
+        }
+
+        /// <summary>
+        /// Thêm mới một đơn vị / đoàn thể thao vào hệ thống (có kiểm tra trùng lặp mã và tên, tự động sinh mã nếu để trống)
         /// </summary>
         /// <param name="dto">Dữ liệu thông tin đơn vị cần tạo</param>
         /// <param name="createdBy">Tài khoản người thực hiện tạo</param>
         /// <returns>Thông tin đơn vị vừa được tạo</returns>
         public async Task<DonViDto> CreateAsync(CreateUpdateDonViDto dto, string? createdBy = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Ma))
+            {
+                dto.Ma = await GenerateCodeAsync();
+            }
+            else
+            {
+                dto.Ma = dto.Ma.Trim().ToUpperInvariant();
+            }
+
             var tenTrim = dto.Ten.Trim();
-            var maTrim = dto.Ma?.Trim();
+            var maTrim = dto.Ma.Trim();
 
             var existingUnits = await _unitOfWork.DonVis.FindAsync(d => d.IsDeleted != true &&
                 (d.Ten.ToLower() == tenTrim.ToLower() || (!string.IsNullOrEmpty(maTrim) && d.Ma.ToLower() == maTrim.ToLower())));

@@ -54,6 +54,13 @@ namespace API.Areas.Manager.Controllers
             return Json(new { success = true, data = result });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GenerateCode()
+        {
+            var code = await _donViService.GenerateCodeAsync();
+            return Json(new { success = true, data = code });
+        }
+
         [HttpPost]
         public async Task<IActionResult> Save([FromBody] CreateUpdateDonViDto dto, [FromQuery] int? id = null)
         {

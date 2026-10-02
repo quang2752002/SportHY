@@ -946,7 +946,7 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small fw-semibold text-muted mb-1"><i class="fa-solid fa-volleyball text-primary me-1"></i>Môn thi đấu <span class="text-danger">*</span></label>
-                        <select class="form-select form-select-sm" id="modalGiaiDauMonId" onchange="loadModalPairingData()">
+                        <select class="form-select form-select-sm" id="modalGiaiDauMonId" onchange="onModalMonChanged(this.value)">
                             <option value="">-- Chọn môn thể thao --</option>
                         </select>
                     </div>
@@ -1064,18 +1064,18 @@
                                         <span id="modalGroupConfigBadge" class="badge bg-primary-subtle text-primary border border-primary-subtle small">Cấu hình</span>
                                     </div>
                                     <div class="d-flex flex-wrap align-items-center gap-1">
-                                        <button type="button" class="btn btn-xs btn-outline-secondary" onclick="initModalGroups()" title="Khởi tạo hoặc thêm bảng đấu theo cấu hình môn">
+                                        <!--<button type="button" class="btn btn-xs btn-outline-secondary" onclick="initModalGroups()" title="Khởi tạo hoặc thêm bảng đấu theo cấu hình môn">
                                             <i class="fa-solid fa-plus me-1"></i>Thêm Bảng
-                                        </button>
-                                        <button type="button" class="btn btn-xs btn-outline-primary" onclick="autoDistributeTeamsToGroups()" title="Bốc thăm ngẫu nhiên chia đều vào các bảng">
+                                        </button>-->
+                                        <!-- <button type="button" class="btn btn-xs btn-outline-primary" onclick="autoDistributeTeamsToGroups()" title="Bốc thăm ngẫu nhiên chia đều vào các bảng">
                                             <i class="fa-solid fa-dice me-1"></i>Bốc Thăm Chia Bảng
-                                        </button>
+                                        </button> -->
                                         <button type="button" class="btn btn-xs btn-outline-danger" onclick="resetAllGroupAssignments()" title="Đưa toàn bộ đội về danh sách chưa phân bảng">
                                             <i class="fa-solid fa-arrow-rotate-left me-1"></i>Xóa Phân Bảng
                                         </button>
-                                        <button type="button" class="btn btn-xs btn-outline-success" onclick="generateRoundRobinAllGroups()" title="Tự động sinh các cặp đấu vòng tròn cho tất cả bảng">
+                                        <!-- <button type="button" class="btn btn-xs btn-outline-success" onclick="generateRoundRobinAllGroups()" title="Tự động sinh các cặp đấu vòng tròn cho tất cả bảng">
                                             <i class="fa-solid fa-bolt me-1"></i>Sinh Cặp Vòng Tròn
-                                        </button>
+                                        </button>  -->
                                         <button type="button" class="btn btn-xs btn-outline-info" onclick="generateKnockoutOnly()" title="Sinh nhanh các cặp đấu Tứ kết, Bán kết, Chung kết với placeholder">
                                             <i class="fa-solid fa-sitemap me-1"></i>Sinh Nhánh Knockout
                                         </button>
@@ -3220,18 +3220,25 @@
         // ==================== KHÔNG GIAN 2: MODAL XẾP CẶP THỦ CÔNG (KÉO THẢ & CHỈNH SỬA) ====================
         function openManualPairingModal() {
             const currentGiaiDau = $('#mainGiaiDauSelect').val();
+            const currentMon = $('#mainMonSelect').val();
+            const currentDm = $('#mainDanhMucSelect').val();
             if (currentGiaiDau) {
                 $('#modalGiaiDauId').val(currentGiaiDau);
-                onModalGiaiDauChanged(currentGiaiDau);
+                onModalGiaiDauChanged(currentGiaiDau, currentMon, currentDm);
+            } else {
+                $('#modalGiaiDauId').val('');
+                onModalGiaiDauChanged('');
             }
             $('#modalManualPairing').modal('show');
         }
 
-        function onModalGiaiDauChanged(giaiDauId) {
+        function onModalGiaiDauChanged(giaiDauId, preferredMonId, preferredDmId) {
             if (!giaiDauId) {
                 allModalSports = [];
                 $('#modalDanhMucId').html('<option value="">-- Tất cả danh mục --</option>');
                 $('#modalGiaiDauMonId').html('<option value="">-- Chọn môn thể thao --</option>');
+                $('#modalVongDauId').html('<option value="">-- Tất cả vòng --</option>');
+                $('#modalBangDauId').html('<option value="">-- Tất cả --</option>');
                 $('#modalPairingPlaceholder').removeClass('d-none');
                 $('#modalPairingContent').addClass('d-none');
                 return;
@@ -3254,16 +3261,27 @@
                     });
                     $('#modalDanhMucId').html(dmOpts);
 
-                    const currentMainDm = $('#mainDanhMucSelect').val();
-                    if (currentMainDm && dmMap.has(parseInt(currentMainDm))) {
-                        $('#modalDanhMucId').val(currentMainDm);
+                    // Xác định môn và danh mục môn ưu tiên:
+                    // 1. Theo preferredMonId (nếu mở từ ngoài màn hình chính)
+                    // 2. Hoặc theo preferredDmId nếu có
+                    // 3. Nếu không, tự động chọn môn và danh mục môn đầu tiên của giải đấu
+                    let selectedSport = null;
+                    if (preferredMonId && allModalSports.some(m => m.id == preferredMonId)) {
+                        selectedSport = allModalSports.find(m => m.id == preferredMonId);
+                    } else if (preferredDmId && dmMap.has(parseInt(preferredDmId))) {
+                        selectedSport = allModalSports.find(m => m.danhMucId == parseInt(preferredDmId));
                     }
 
-                    renderModalMonSelect();
+                    if (!selectedSport && allModalSports.length > 0) {
+                        selectedSport = allModalSports[0];
+                    }
 
-                    const currentMon = $('#mainMonSelect').val();
-                    if (currentMon && allModalSports.some(m => m.id == currentMon)) {
-                        $('#modalGiaiDauMonId').val(currentMon);
+                    if (selectedSport && selectedSport.danhMucId && dmMap.has(selectedSport.danhMucId)) {
+                        $('#modalDanhMucId').val(selectedSport.danhMucId);
+                        renderModalMonSelect(selectedSport.danhMucId, selectedSport.id);
+                    } else {
+                        $('#modalDanhMucId').val('');
+                        renderModalMonSelect('', selectedSport ? selectedSport.id : null);
                     }
 
                     loadModalPairingData();
@@ -3271,6 +3289,8 @@
                     allModalSports = [];
                     $('#modalDanhMucId').html('<option value="">-- Tất cả danh mục --</option>');
                     $('#modalGiaiDauMonId').html('<option value="">-- Chọn môn thể thao --</option>');
+                    $('#modalVongDauId').html('<option value="">-- Tất cả vòng --</option>');
+                    $('#modalBangDauId').html('<option value="">-- Tất cả --</option>');
                     $('#modalPairingPlaceholder').removeClass('d-none');
                     $('#modalPairingContent').addClass('d-none');
                 }
@@ -3282,7 +3302,21 @@
             loadModalPairingData();
         }
 
-        function renderModalMonSelect(danhMucId) {
+        function onModalMonChanged(monId) {
+            if (monId) {
+                const sport = allModalSports.find(m => m.id == parseInt(monId));
+                if (sport && sport.danhMucId) {
+                    const currentDm = $('#modalDanhMucId').val();
+                    if (!currentDm || currentDm != sport.danhMucId) {
+                        $('#modalDanhMucId').val(sport.danhMucId);
+                        renderModalMonSelect(sport.danhMucId, sport.id);
+                    }
+                }
+            }
+            loadModalPairingData();
+        }
+
+        function renderModalMonSelect(danhMucId, selectedMonId) {
             danhMucId = danhMucId !== undefined ? danhMucId : $('#modalDanhMucId').val();
             let filtered = allModalSports;
             if (danhMucId) {
@@ -3295,8 +3329,18 @@
                 opts += `<option value="${m.id}">${escapeHtml(m.ten)}${categoryBadge}</option>`;
             });
             $('#modalGiaiDauMonId').html(opts);
-            if (filtered.length > 0) {
-                $('#modalGiaiDauMonId').val(filtered[0].id);
+
+            if (selectedMonId && filtered.some(m => m.id == selectedMonId)) {
+                $('#modalGiaiDauMonId').val(selectedMonId);
+            } else {
+                const currentVal = $('#modalGiaiDauMonId').val();
+                if (currentVal && filtered.some(m => m.id == currentVal)) {
+                    $('#modalGiaiDauMonId').val(currentVal);
+                } else if (filtered.length > 0) {
+                    $('#modalGiaiDauMonId').val(filtered[0].id);
+                } else {
+                    $('#modalGiaiDauMonId').val('');
+                }
             }
         }
 

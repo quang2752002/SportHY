@@ -68,10 +68,37 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
-        /// Thêm mới trọng tài
+        /// Sinh mã trọng tài ngẫu nhiên duy nhất có cả chữ và số
         /// </summary>
+        /// <returns>Mã trọng tài ngẫu nhiên không trùng lặp</returns>
+        public async Task<string> GenerateCodeAsync()
+        {
+            string code;
+            do
+            {
+                code = Dms.Application.Common.CodeGeneratorHelper.GenerateRandomCode("TT", 6);
+            } while ((await _unitOfWork.TrongTais.FindAsync(t => t.Ma == code && t.IsDeleted != true)).Any());
+
+            return code;
+        }
+
+        /// <summary>
+        /// Thêm mới trọng tài (tự động sinh mã nếu để trống)
+        /// </summary>
+        /// <param name="dto">Dữ liệu tạo trọng tài mới</param>
+        /// <param name="createdBy">Tài khoản người thực hiện tạo</param>
+        /// <returns>Thông tin trọng tài vừa được tạo</returns>
         public async Task<TrongTaiDto> CreateAsync(CreateUpdateTrongTaiDto dto, string? createdBy = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Ma))
+            {
+                dto.Ma = await GenerateCodeAsync();
+            }
+            else
+            {
+                dto.Ma = dto.Ma.Trim().ToUpperInvariant();
+            }
+
             var entity = _mapper.Map<TrongTai>(dto);
             entity.Created = DateTime.UtcNow;
             entity.CreatedBy = createdBy;

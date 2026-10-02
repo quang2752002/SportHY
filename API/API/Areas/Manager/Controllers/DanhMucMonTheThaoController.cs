@@ -37,6 +37,13 @@ namespace API.Areas.Manager.Controllers
             return Json(new { success = true, data = result });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GenerateCode([FromQuery] string? name = null)
+        {
+            var code = await _danhMucService.GenerateCodeAsync(name);
+            return Json(new { success = true, data = code });
+        }
+
         [HttpPost]
         public async Task<IActionResult> Save([FromBody] CreateUpdateDanhMucMonTheThaoDto dto, [FromQuery] int? id = null)
         {

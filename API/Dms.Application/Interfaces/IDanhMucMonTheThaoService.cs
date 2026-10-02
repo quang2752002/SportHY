@@ -18,6 +18,13 @@ namespace Dms.Application.Interfaces
         /// <param name="updatedBy">Tài khoản thực hiện thay đổi trạng thái.</param>
         /// <returns>True nếu cập nhật thành công; false nếu danh mục không tồn tại hoặc đã bị xóa mềm.</returns>
         Task<bool> SetStatusAsync(int id, bool trangThai, string? updatedBy = null);
+        /// <summary>
+        /// Sinh mã danh mục môn thể thao tự động duy nhất dựa trên tên danh mục hoặc số thứ tự tiếp theo
+        /// </summary>
+        /// <param name="name">Tên danh mục môn thể thao (tùy chọn)</param>
+        /// <returns>Mã danh mục duy nhất không bị trùng lặp</returns>
+        Task<string> GenerateCodeAsync(string? name = null);
+
         Task<bool> DeleteAsync(int id);
     }
 }

@@ -162,13 +162,18 @@
                 <input type="hidden" id="donViId" value="">
                 <div class="modal-body p-4">
                     <div class="row g-3">
-                        <div class="col-md-8">
+                        <div class="col-md-7">
                             <label class="form-label fw-semibold small">Tên đơn vị / đoàn <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="ten" required placeholder="Ví dụ: Trường THPT Lê Hồng Phong">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-5">
                             <label class="form-label fw-semibold small">Mã đơn vị</label>
-                            <input type="text" class="form-control" id="ma" placeholder="LHP-01">
+                            <div class="input-group">
+                                <input type="text" class="form-control text-uppercase" id="ma" placeholder="DVA8B3C9">
+                                <button type="button" class="btn btn-outline-secondary" onclick="autoGenerateCode()" title="Tự động sinh mã ngẫu nhiên">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="col-md-6">
@@ -460,6 +465,41 @@
             $('#paginationList').html(pagHtml);
         }
 
+        // Reusable Helper sinh mã ngẫu nhiên có cả số và chữ phía Client
+        const CodeHelper = {
+            generateRandomCode: function (prefix = '', len = 6) {
+                if (len < 2) len = 2;
+                const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+                const digits = '23456789';
+                const allChars = letters + digits;
+                let res = [
+                    letters[Math.floor(Math.random() * letters.length)],
+                    digits[Math.floor(Math.random() * digits.length)]
+                ];
+                for (let i = 2; i < len; i++) {
+                    res.push(allChars[Math.floor(Math.random() * allChars.length)]);
+                }
+                for (let i = res.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    const temp = res[i]; res[i] = res[j]; res[j] = temp;
+                }
+                const randomStr = res.join('');
+                return prefix ? `${prefix.trim().toUpperCase()}${randomStr}` : randomStr;
+            }
+        };
+
+        function autoGenerateCode() {
+            $.get('/Manager/DonVi/GenerateCode', function (res) {
+                if (res.success && res.data) {
+                    $('#ma').val(res.data);
+                } else {
+                    $('#ma').val(CodeHelper.generateRandomCode('DV', 6));
+                }
+            }).fail(function () {
+                $('#ma').val(CodeHelper.generateRandomCode('DV', 6));
+            });
+        }
+
         function openCreateModal() {
             $('#modalTitle span').text('Thêm Đơn Vị / Đoàn Mới');
             $('#donViId').val('');
@@ -473,6 +513,7 @@
             $('#diaChi').val('');
             $('#moTa').val('');
             $('#trangThai').prop('checked', true);
+            autoGenerateCode();
             $('#modalDonVi').modal('show');
         }
 
@@ -507,9 +548,15 @@
                 return;
             }
 
+            let ma = $('#ma').val().trim().toUpperCase();
+            if (!ma) {
+                ma = CodeHelper.generateRandomCode('DV', 6);
+                $('#ma').val(ma);
+            }
+
             const payload = {
                 ten: ten,
-                ma: $('#ma').val().trim() || 'DV-' + Date.now().toString().slice(-6),
+                ma: ma,
                 khoiId: parseInt(khoiId),
                 loaiDonVi: $('#loaiDonVi').val().trim() || null,
                 nguoiDaiDien: $('#nguoiDaiDien').val().trim() || null,

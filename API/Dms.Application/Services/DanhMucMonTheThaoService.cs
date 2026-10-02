@@ -59,8 +59,23 @@ namespace Dms.Application.Services
             return _mapper.Map<DanhMucMonTheThaoDto>(entity);
         }
 
+        /// <summary>
+        /// Tạo mới một danh mục môn thể thao vào hệ thống (tự động sinh mã nếu để trống)
+        /// </summary>
+        /// <param name="dto">Dữ liệu tạo mới danh mục</param>
+        /// <param name="createdBy">Tài khoản người tạo</param>
+        /// <returns>Thông tin danh mục sau khi tạo</returns>
         public async Task<DanhMucMonTheThaoDto> CreateAsync(CreateUpdateDanhMucMonTheThaoDto dto, string? createdBy = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Ma))
+            {
+                dto.Ma = await GenerateCodeAsync(dto.Ten);
+            }
+            else
+            {
+                dto.Ma = dto.Ma.Trim().ToUpperInvariant();
+            }
+
             var entity = _mapper.Map<DanhMucMonTheThao>(dto);
             entity.Created = DateTime.UtcNow;
             entity.CreatedBy = createdBy;
@@ -70,6 +85,22 @@ namespace Dms.Application.Services
             await _unitOfWork.CompleteAsync();
 
             return _mapper.Map<DanhMucMonTheThaoDto>(entity);
+        }
+
+        /// <summary>
+        /// Sinh mã danh mục môn thể thao tự động duy nhất (ngẫu nhiên có cả chữ và số)
+        /// </summary>
+        /// <param name="name">Tên danh mục môn thể thao (tùy chọn)</param>
+        /// <returns>Mã danh mục ngẫu nhiên có cả số và chữ không bị trùng lặp</returns>
+        public async Task<string> GenerateCodeAsync(string? name = null)
+        {
+            string code;
+            do
+            {
+                code = Dms.Application.Common.CodeGeneratorHelper.GenerateRandomCode("DM", 6);
+            } while ((await _unitOfWork.DanhMucMonTheThaos.FindAsync(d => d.Ma == code && d.IsDeleted != true)).Any());
+
+            return code;
         }
 
         public async Task<DanhMucMonTheThaoDto?> UpdateAsync(int id, CreateUpdateDanhMucMonTheThaoDto dto, string? updatedBy = null)

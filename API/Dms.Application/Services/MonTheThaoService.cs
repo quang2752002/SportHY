@@ -1,4 +1,5 @@
 using AutoMapper;
+using Dms.Application.Common;
 using Dms.Application.DTOs;
 using Dms.Application.Interfaces;
 using Dms.Domain.Common;
@@ -140,6 +141,15 @@ namespace Dms.Application.Services
                 dto.SoLuongVanDongVienToiDa = dto.SoLuongVdvToiDa;
             }
 
+            if (string.IsNullOrWhiteSpace(dto.Ma))
+            {
+                dto.Ma = await GenerateCodeAsync(dto.Ten, dto.DanhMucId);
+            }
+            else
+            {
+                dto.Ma = dto.Ma.Trim().ToUpperInvariant();
+            }
+
             var entity = _mapper.Map<MonTheThao>(dto);
 
             // Xử lý hình thức / sơ đồ thi đấu an toàn từ enum
@@ -175,6 +185,41 @@ namespace Dms.Application.Services
             await _unitOfWork.CompleteAsync();
 
             return _mapper.Map<MonTheThaoDto>(entity);
+        }
+
+        /// <summary>
+        /// Sinh mã môn thể thao tự động duy nhất (ngẫu nhiên có cả chữ và số)
+        /// </summary>
+        /// <param name="name">Tên môn thể thao (tùy chọn)</param>
+        /// <param name="danhMucId">Mã định danh danh mục môn trực thuộc (tùy chọn)</param>
+        /// <returns>Mã môn thể thao ngẫu nhiên có cả số và chữ không bị trùng lặp</returns>
+        public async Task<string> GenerateCodeAsync(string? name = null, int? danhMucId = null)
+        {
+            string prefix = "MON";
+            if (danhMucId.HasValue && danhMucId.Value > 0)
+            {
+                var dm = await _unitOfWork.DanhMucMonTheThaos.GetByIdAsync(danhMucId.Value);
+                if (dm != null && !string.IsNullOrWhiteSpace(dm.Ma))
+                {
+                    var dmCode = dm.Ma.Trim();
+                    if (dmCode.StartsWith("DM_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        dmCode = dmCode.Substring(3);
+                    }
+                    if (!string.IsNullOrWhiteSpace(dmCode))
+                    {
+                        prefix = dmCode.Length > 6 ? dmCode.Substring(0, 6) : dmCode;
+                    }
+                }
+            }
+
+            string code;
+            do
+            {
+                code = CodeGeneratorHelper.GenerateRandomCode(prefix, 6);
+            } while ((await _unitOfWork.MonTheThaos.FindAsync(m => m.Ma == code && m.IsDeleted != true)).Any());
+
+            return code;
         }
 
         /// <summary>

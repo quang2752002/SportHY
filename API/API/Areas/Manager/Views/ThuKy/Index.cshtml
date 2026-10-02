@@ -103,7 +103,12 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small">Mã Thư Ký <span class="text-danger">*</span></label>
-                            <input type="text" id="txtMa" class="form-control text-uppercase" placeholder="VD: TK001, TKBAN..." required />
+                            <div class="input-group">
+                                <input type="text" id="txtMa" class="form-control text-uppercase" placeholder="TKA8B3C9" required />
+                                <button type="button" class="btn btn-outline-secondary" onclick="autoGenerateCode()" title="Tự động sinh mã ngẫu nhiên">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small">Họ và Tên <span class="text-danger">*</span></label>
@@ -301,6 +306,41 @@
             $('#paginationNav').html(html);
         }
 
+        // Reusable Helper sinh mã ngẫu nhiên có cả số và chữ phía Client
+        const CodeHelper = {
+            generateRandomCode: function (prefix = '', len = 6) {
+                if (len < 2) len = 2;
+                const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+                const digits = '23456789';
+                const allChars = letters + digits;
+                let res = [
+                    letters[Math.floor(Math.random() * letters.length)],
+                    digits[Math.floor(Math.random() * digits.length)]
+                ];
+                for (let i = 2; i < len; i++) {
+                    res.push(allChars[Math.floor(Math.random() * allChars.length)]);
+                }
+                for (let i = res.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    const temp = res[i]; res[i] = res[j]; res[j] = temp;
+                }
+                const randomStr = res.join('');
+                return prefix ? `${prefix.trim().toUpperCase()}${randomStr}` : randomStr;
+            }
+        };
+
+        function autoGenerateCode() {
+            $.get('/Manager/ThuKy/GenerateCode', function (res) {
+                if (res.success && res.data) {
+                    $('#txtMa').val(res.data);
+                } else {
+                    $('#txtMa').val(CodeHelper.generateRandomCode('TK', 6));
+                }
+            }).fail(function () {
+                $('#txtMa').val(CodeHelper.generateRandomCode('TK', 6));
+            });
+        }
+
         function openCreateModal() {
             $('#thuKyId').val('');
             $('#modalTitle span').text('Thêm Thư Ký Mới');
@@ -312,6 +352,7 @@
             $('#txtSoDienThoai').val('');
             $('#txtEmail').val('');
             $('#chkTrangThai').prop('checked', true);
+            autoGenerateCode();
             modalObj.show();
         }
 
@@ -343,8 +384,15 @@
         function handleSave(e) {
             e.preventDefault();
             const id = $('#thuKyId').val();
+
+            let ma = $('#txtMa').val().trim().toUpperCase();
+            if (!ma) {
+                ma = CodeHelper.generateRandomCode('TK', 6);
+                $('#txtMa').val(ma);
+            }
+
             const dto = {
-                ma: $('#txtMa').val().trim().toUpperCase(),
+                ma: ma,
                 hoTen: $('#txtHoTen').val().trim(),
                 gioiTinh: $('#txtGioiTinh').val(),
                 chucVu: $('#txtChucVu').val().trim(),
