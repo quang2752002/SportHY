@@ -1357,15 +1357,12 @@ namespace Dms.Application.Services
                         .ThenBy(candidate => candidate.Referee.HoTen)
                         .ToList();
 
-                    // Cân bằng tải là điều kiện bắt buộc: chỉ chọn trọng tài đang có ít
-                    // trận nhất trong toàn bộ nhóm đã chọn. Nếu nhóm này đều xung đột lịch,
-                    // để trống vị trí thay vì giao thêm cho người đang có nhiều trận hơn.
-                    var minimumTotalMatches = activeReferees
-                        .Select(referee => refereeIntervals[referee.Id]
-                            .Select(interval => interval.TranDauId)
-                            .Distinct()
-                            .Count())
-                        .DefaultIfEmpty(0)
+                    // Chỉ cân bằng tải trong nhóm trọng tài thực sự đủ điều kiện nhận vị trí.
+                    // Không để trống vị trí trọng tài chính chỉ vì nhóm ít trận nhất đang vướng lịch,
+                    // khi vẫn còn trọng tài khác có thể nhận trận.
+                    var minimumTotalMatches = candidates
+                        .Select(candidate => candidate.TotalMatches)
+                        .DefaultIfEmpty(int.MaxValue)
                         .Min();
                     var balancedCandidates = candidates
                         .Where(candidate => candidate.TotalMatches == minimumTotalMatches)
@@ -1403,9 +1400,7 @@ namespace Dms.Application.Services
                             SoTran = match.SoTran,
                             TenTran = match.TenTran ?? $"Trận {match.SoTran}",
                             VaiTro = role,
-                            LyDo = balancedCandidates.Count == 0
-                                ? "Không thể giữ cân bằng số trận: các trọng tài đang ít trận nhất đều trùng lịch, thiếu thời gian nghỉ hoặc đã đạt giới hạn trong ngày."
-                                : "Không còn trọng tài phù hợp do trùng lịch, thiếu thời gian nghỉ hoặc vượt giới hạn số trận trong ngày."
+                            LyDo = "Không còn trọng tài đủ điều kiện do đã có vị trí khác trong trận, trùng đơn vị với đội thi đấu, trùng lịch, thiếu thời gian nghỉ hoặc vượt giới hạn số trận trong ngày."
                         });
                         continue;
                     }
