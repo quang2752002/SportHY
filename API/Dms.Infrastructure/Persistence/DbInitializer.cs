@@ -457,6 +457,7 @@ namespace Dms.Infrastructure.Persistence
             {
                 cumSan = new CumSan
                 {
+                    DonViId = dvBk.Id,
                     Ma = "CS_MYDINH",
                     Ten = "Khu liên hợp thể thao Quốc gia Mỹ Đình",
                     DiaChi = "Đường Lê Đức Thọ, Nam Từ Liêm, Hà Nội",
