@@ -1470,6 +1470,29 @@ namespace Dms.Application.Services
         {
             var result = new AutoScheduleResultDto();
 
+            // 0. Nếu người dùng chọn chế độ chỉ phân bổ lại khung giờ linh hoạt cho các trận hiện có (không bốc thăm lại)
+            if (request.ChiChiaLaiKhungGio)
+            {
+                var distReq = new DistributeMatchTimesRequestDto
+                {
+                    GiaiDauMonTheThaoId = request.GiaiDauMonTheThaoId,
+                    ApDungCaSang = request.ApDungCaSang,
+                    GioBatDauCaSang = request.GioBatDauCaSang,
+                    GioKetThucCaSang = request.GioKetThucCaSang,
+                    ApDungCaChieu = request.ApDungCaChieu,
+                    GioBatDauCaChieu = request.GioBatDauCaChieu,
+                    GioKetThucCaChieu = request.GioKetThucCaChieu,
+                    ApDungCaToi = request.ApDungCaToi,
+                    GioBatDauCaToi = request.GioBatDauCaToi,
+                    GioKetThucCaToi = request.GioKetThucCaToi,
+                    ThoiLuongTranPhut = request.ThoiLuongTranPhut,
+                    NghiGiuaTranPhut = request.NghiGiuaTranPhut,
+                    CheDoPhanBo = !string.IsNullOrWhiteSpace(request.CheDoPhanBoKhungGio) ? request.CheDoPhanBoKhungGio : "LuanPhienCa",
+                    ChiTranChuaDau = true
+                };
+                return await DistributeMatchTimesAsync(distReq, createdBy);
+            }
+
             // 1. Lấy thông tin GiaiDauMonTheThao
             var noiDung = (await _unitOfWork.GiaiDauMonTheThaos.GetPagedAsync(
                 1, 1,
@@ -2523,7 +2546,8 @@ namespace Dms.Application.Services
                 }
                 else if (totalDaysAvailable > 1 && fixtures.Count > 0)
                 {
-                    maxMatchesPerDayForSport = Math.Max(1, (int)Math.Ceiling((double)fixtures.Count / totalDaysAvailable));
+                    int minRecommendedPerDay = Math.Max(activeShifts.Count, Math.Min(fixtures.Count, activeShifts.Count * (sanDauList.Count > 0 ? sanDauList.Count : 1)));
+                    maxMatchesPerDayForSport = Math.Max(minRecommendedPerDay, (int)Math.Ceiling((double)fixtures.Count / totalDaysAvailable));
                 }
             }
 
@@ -2644,6 +2668,7 @@ namespace Dms.Application.Services
 
             var roundMaxEndTime = new Dictionary<int, DateTime>();
             var vdvLastEndTime = new Dictionary<string, DateTime>();
+            var shiftMatchCountPerDay = new Dictionary<(DateTime date, int shiftIdx), int>();
 
             foreach (var f in fixtures)
             {
@@ -2654,10 +2679,31 @@ namespace Dms.Application.Services
                 if (f.Doi1DangKyId > 0) fVdvKeys.Add($"team_{f.Doi1DangKyId}");
                 if (f.Doi2DangKyId > 0) fVdvKeys.Add($"team_{f.Doi2DangKyId}");
 
-                // --- Xác định earliestAllowed dựa trên Macro Target Date ---
-                DateTime earliestAllowed = roundTargetDate.TryGetValue(f.VongThuTu, out var targetDate) 
-                    ? targetDate.Date.Add(firstShiftStart)
-                    : tournamentStart.Add(firstShiftStart);
+                // --- Xác định earliestAllowed dựa trên Macro Target Date & Luân phiên ca thi đấu ---
+                DateTime targetDay = roundTargetDate.TryGetValue(f.VongThuTu, out var targetDate) 
+                    ? targetDate.Date 
+                    : tournamentStart.Date;
+
+                TimeSpan chosenShiftStart = firstShiftStart;
+
+                // Luân phiên các ca thi đấu trong ngày (Sáng, Chiều, Tối) để các trận không bị dồn tất cả vào 8h sáng
+                if (request.CheDoPhanBoKhungGio != "LienTiepTheoSan" && activeShifts.Count > 1)
+                {
+                    int bestShiftIdx = 0;
+                    int minShiftMatches = int.MaxValue;
+                    for (int sIdx = 0; sIdx < activeShifts.Count; sIdx++)
+                    {
+                        int cnt = shiftMatchCountPerDay.GetValueOrDefault((targetDay, sIdx), 0);
+                        if (cnt < minShiftMatches)
+                        {
+                            minShiftMatches = cnt;
+                            bestShiftIdx = sIdx;
+                        }
+                    }
+                    chosenShiftStart = activeShifts[bestShiftIdx].Start;
+                }
+
+                DateTime earliestAllowed = targetDay.Add(chosenShiftStart);
 
                 // Ràng buộc thứ tự vòng đấu (Round Precedence)
                 if (f.VongThuTu > 0)
@@ -3057,6 +3103,15 @@ namespace Dms.Application.Services
 
                     createdTranList.Add(tran);
                     monMatchCountPerDay[matchStart.Date] = monMatchCountPerDay.GetValueOrDefault(matchStart.Date, 0) + 1;
+                    for (int sIdx = 0; sIdx < activeShifts.Count; sIdx++)
+                    {
+                        var sh = activeShifts[sIdx];
+                        if (matchStart.TimeOfDay >= sh.Start && matchStart.TimeOfDay < sh.End)
+                        {
+                            shiftMatchCountPerDay[(matchStart.Date, sIdx)] = shiftMatchCountPerDay.GetValueOrDefault((matchStart.Date, sIdx), 0) + 1;
+                            break;
+                        }
+                    }
                     if (f.FixtureId > 0) fixtureToTranDau[f.FixtureId] = tran;
                     matchCounter++;
                     scheduled = true;
@@ -3126,6 +3181,212 @@ namespace Dms.Application.Services
             result.Message = $"Đã tự động xếp thành công {createdTranList.Count} trận đấu qua thuật toán phân bổ thông minh!";
             result.Matches = allMatches;
 
+            return result;
+        }
+
+        /// <summary>
+        /// Phân bổ lại khung giờ thi đấu linh hoạt cho các trận hiện có (Sáng, Chiều, Tối: 08:00, 09:30, 14:00, 15:30...)
+        /// mà không làm mất hoặc thay đổi các cặp đấu đã bốc thăm.
+        /// </summary>
+        /// <param name="request">Thông tin cấu hình ca, thời lượng trận, thời gian nghỉ và chế độ phân bổ</param>
+        /// <param name="updatedBy">Tài khoản quản lý thực hiện thao tác</param>
+        /// <returns>Kết quả phân bổ lại thời gian các trận đấu</returns>
+        public async Task<AutoScheduleResultDto> DistributeMatchTimesAsync(DistributeMatchTimesRequestDto request, string? updatedBy = null)
+        {
+            var result = new AutoScheduleResultDto();
+
+            // 1. Lấy thông tin GiaiDauMonTheThao
+            var noiDung = (await _unitOfWork.GiaiDauMonTheThaos.GetPagedAsync(
+                1, 1,
+                predicate: n => n.Id == request.GiaiDauMonTheThaoId && n.IsDeleted != true,
+                orderBy: null,
+                n => n.MonTheThao,
+                n => n.GiaiDau
+            )).Items.FirstOrDefault();
+
+            if (noiDung == null)
+            {
+                result.Success = false;
+                result.Message = "Không tìm thấy thông tin môn thi đấu trong giải.";
+                return result;
+            }
+
+            // 2. Lấy danh sách trận đấu hiện có
+            var matches = (await _unitOfWork.TranDaus.GetPagedAsync(
+                1, 2000,
+                predicate: t => t.GiaiDauMonTheThaoId == request.GiaiDauMonTheThaoId && t.IsDeleted != true &&
+                                (!request.ChiTranChuaDau || t.TrangThai == "ChuaDau"),
+                orderBy: q => q.OrderBy(t => t.VongDau.ThuTu).ThenBy(t => t.BangDauId).ThenBy(t => t.SoTran),
+                t => t.VongDau,
+                t => t.BangDau,
+                t => t.SanDau,
+                t => t.ThanhPhanTranDaus
+            )).Items.ToList();
+
+            if (!matches.Any())
+            {
+                result.Success = false;
+                result.Message = "Không có trận đấu nào cần phân bổ lại khung giờ.";
+                return result;
+            }
+
+            // 3. Lấy danh sách sân đấu khả dụng cho môn
+            int? monId = noiDung.MonTheThaoId;
+            var sanDauList = (await _unitOfWork.SanDaus.FindAsync(s => (!monId.HasValue || s.MonTheThaoId == monId.Value) && s.TrangThai && s.IsDeleted != true)).ToList();
+            if (!sanDauList.Any())
+            {
+                sanDauList = (await _unitOfWork.SanDaus.FindAsync(s => s.TrangThai && s.IsDeleted != true)).Take(4).ToList();
+            }
+
+            // 4. Cấu hình các ca thi đấu (activeShifts)
+            static TimeSpan ParseTime(string? str, string defaultVal)
+            {
+                if (string.IsNullOrWhiteSpace(str)) str = defaultVal;
+                if (TimeSpan.TryParseExact(str, new[] { "h\\:mm", "hh\\:mm", "H\\:mm", "HH\\:mm" }, CultureInfo.InvariantCulture, out var ts))
+                    return ts;
+                if (TimeSpan.TryParse(str, out var ts2))
+                    return ts2;
+                return TimeSpan.Parse(defaultVal, CultureInfo.InvariantCulture);
+            }
+
+            var activeShifts = new List<(string Name, TimeSpan Start, TimeSpan End)>();
+            if (request.ApDungCaSang)
+            {
+                var sStart = ParseTime(request.GioBatDauCaSang, "08:00");
+                var sEnd = ParseTime(request.GioKetThucCaSang, "11:30");
+                if (sEnd > sStart) activeShifts.Add(("Ca Sáng", sStart, sEnd));
+            }
+            if (request.ApDungCaChieu)
+            {
+                var cStart = ParseTime(request.GioBatDauCaChieu, "14:00");
+                var cEnd = ParseTime(request.GioKetThucCaChieu, "17:30");
+                if (cEnd > cStart) activeShifts.Add(("Ca Chiều", cStart, cEnd));
+            }
+            if (request.ApDungCaToi)
+            {
+                var tStart = ParseTime(request.GioBatDauCaToi, "18:00");
+                var tEnd = ParseTime(request.GioKetThucCaToi, "21:30");
+                if (tEnd > tStart) activeShifts.Add(("Ca Tối", tStart, tEnd));
+            }
+
+            if (!activeShifts.Any())
+            {
+                activeShifts.Add(("Ca Sáng", TimeSpan.FromHours(8), TimeSpan.FromHours(11.5)));
+                activeShifts.Add(("Ca Chiều", TimeSpan.FromHours(14), TimeSpan.FromHours(17.5)));
+            }
+            activeShifts = activeShifts.OrderBy(s => s.Start).ToList();
+
+            int matchMinutes = request.ThoiLuongTranPhut > 0 ? request.ThoiLuongTranPhut : 60;
+            int breakMinutes = request.NghiGiuaTranPhut >= 0 ? request.NghiGiuaTranPhut : 15;
+            TimeSpan slotStep = TimeSpan.FromMinutes(matchMinutes + breakMinutes);
+
+            // 5. Xác định khoảng ngày thi đấu
+            var distinctDates = matches.Where(m => m.ThoiGianBatDau.HasValue)
+                .Select(m => m.ThoiGianBatDau!.Value.Date)
+                .Distinct()
+                .OrderBy(d => d)
+                .ToList();
+
+            DateTime baseStartDate = distinctDates.Any() ? distinctDates.First() : (noiDung.GiaiDau?.NgayBatDau.Date ?? DateTime.Today);
+            DateTime baseEndDate = distinctDates.Any() ? distinctDates.Last() : (noiDung.GiaiDau?.NgayKetThuc.Date ?? baseStartDate);
+            if (baseEndDate < baseStartDate) baseEndDate = baseStartDate;
+
+            int totalDays = (int)(baseEndDate - baseStartDate).TotalDays + 1;
+            var availableDates = Enumerable.Range(0, totalDays).Select(i => baseStartDate.AddDays(i)).ToList();
+
+            // Sinh danh sách các khung giờ hợp lệ trong 1 ngày theo các ca
+            var dailySlots = new List<TimeSpan>();
+            foreach (var shift in activeShifts)
+            {
+                var cur = shift.Start;
+                while (cur.Add(TimeSpan.FromMinutes(matchMinutes)) <= shift.End)
+                {
+                    dailySlots.Add(cur);
+                    cur = cur.Add(slotStep);
+                }
+            }
+            if (!dailySlots.Any())
+            {
+                dailySlots.Add(activeShifts.First().Start);
+            }
+
+            // 6. Phân bổ các trận vào khung giờ và sân đấu
+            int updatedCount = 0;
+            int slotIdx = 0;
+            int courtIdx = 0;
+
+            // Nhóm trận theo vòng để giữ tính tuần tự thể thao
+            var matchesByRound = matches.GroupBy(m => m.VongDau?.ThuTu ?? 1).OrderBy(g => g.Key).ToList();
+            int daysPerRound = Math.Max(1, availableDates.Count / Math.Max(1, matchesByRound.Count));
+
+            int currentRoundDayBase = 0;
+
+            foreach (var roundGroup in matchesByRound)
+            {
+                var roundMatches = roundGroup.ToList();
+                int dayOffset = 0;
+
+                for (int mIdx = 0; mIdx < roundMatches.Count; mIdx++)
+                {
+                    var m = roundMatches[mIdx];
+                    int dayIndex = Math.Min(availableDates.Count - 1, currentRoundDayBase + dayOffset);
+                    var curDate = availableDates[dayIndex];
+
+                    // Chọn sân đấu
+                    SanDau? assignedCourt = sanDauList.Any() ? sanDauList[courtIdx % sanDauList.Count] : null;
+
+                    // Chọn khung giờ trong ngày
+                    var chosenTod = dailySlots[slotIdx % dailySlots.Count];
+                    var newStart = curDate.Add(chosenTod);
+                    var newEnd = newStart.AddMinutes(matchMinutes);
+
+                    m.ThoiGianDuKien = newStart;
+                    m.ThoiGianBatDau = newStart;
+                    m.ThoiGianKetThuc = newEnd;
+                    if (assignedCourt != null)
+                    {
+                        m.SanDauId = assignedCourt.Id;
+                    }
+                    m.LastModified = DateTime.UtcNow;
+                    m.LastModifiedBy = updatedBy;
+
+                    updatedCount++;
+
+                    // Luân chuyển slot và sân
+                    courtIdx++;
+                    if (request.CheDoPhanBo == "LuanPhienCa")
+                    {
+                        // Luân chuyển khung giờ liên tục: 8h, 9h30, 14h, 15h30...
+                        slotIdx++;
+                        if (slotIdx >= dailySlots.Count)
+                        {
+                            slotIdx = 0;
+                            dayOffset = (dayOffset + 1) % Math.Max(1, daysPerRound);
+                        }
+                    }
+                    else
+                    {
+                        // Xếp nối tiếp theo từng sân
+                        if (courtIdx % Math.Max(1, sanDauList.Count) == 0)
+                        {
+                            slotIdx++;
+                            if (slotIdx >= dailySlots.Count)
+                            {
+                                slotIdx = 0;
+                                dayOffset = (dayOffset + 1) % Math.Max(1, daysPerRound);
+                            }
+                        }
+                    }
+                }
+
+                currentRoundDayBase = Math.Min(availableDates.Count - 1, currentRoundDayBase + daysPerRound);
+            }
+
+            await _unitOfWork.CompleteAsync();
+
+            result.Success = true;
+            result.TotalMatchesCreated = updatedCount;
+            result.Message = $"Đã phân bổ lại khung giờ thành công cho {updatedCount} trận đấu theo các ca Sáng, Chiều, Tối linh hoạt ({string.Join(", ", dailySlots.Select(ts => ts.ToString(@"hh\:mm")))}).";
             return result;
         }
 

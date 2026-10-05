@@ -578,6 +578,18 @@ namespace Dms.Application.DTOs
         /// <summary>Bật chế độ chia đều mật độ thi đấu trên các sân</summary>
         public bool CanBangTaiSanDau { get; set; } = true;
 
+        /// <summary>
+        /// Chế độ phân bổ khung giờ thi đấu trong ngày:
+        /// "LuanPhienCa" (Luân phiên đều các ca Sáng - Chiều - Tối: 8h, 9h30, 14h, 15h30...) |
+        /// "LienTiepTheoSan" (Gom nối tiếp theo từng sân)
+        /// </summary>
+        public string CheDoPhanBoKhungGio { get; set; } = "LuanPhienCa";
+
+        /// <summary>
+        /// Nếu true: Chỉ phân bổ lại khung giờ và sân đấu cho các trận hiện có trong giải môn này, không xóa hoặc bốc thăm lại các cặp đấu
+        /// </summary>
+        public bool ChiChiaLaiKhungGio { get; set; } = false;
+
         // --- CSP Smart Engine Parameters (Nếu null sẽ tự động ưu tiên lấy từ CauHinhLichThiDau theo Môn Thể Thao) ---
         /// <summary>Số trận tối đa mỗi đội/VĐV thi đấu trong 1 ngày</summary>
         public int? SoTranToiDaMoiDoiMoiNgay { get; set; }
@@ -658,6 +670,27 @@ namespace Dms.Application.DTOs
         public Dictionary<string, int>? ThongKeSanDau { get; set; }
         public Dictionary<string, int>? ThongKeTrongTai { get; set; }
         public int SoNgayThiDau { get; set; } = 1;
+    }
+
+    /// <summary>
+    /// DTO yêu cầu phân bổ lại khung giờ thi đấu linh hoạt cho các trận hiện có
+    /// </summary>
+    public class DistributeMatchTimesRequestDto
+    {
+        public int GiaiDauMonTheThaoId { get; set; }
+        public bool ApDungCaSang { get; set; } = true;
+        public string GioBatDauCaSang { get; set; } = "08:00";
+        public string GioKetThucCaSang { get; set; } = "11:30";
+        public bool ApDungCaChieu { get; set; } = true;
+        public string GioBatDauCaChieu { get; set; } = "14:00";
+        public string GioKetThucCaChieu { get; set; } = "17:30";
+        public bool ApDungCaToi { get; set; } = false;
+        public string GioBatDauCaToi { get; set; } = "18:00";
+        public string GioKetThucCaToi { get; set; } = "21:30";
+        public int ThoiLuongTranPhut { get; set; } = 60;
+        public int NghiGiuaTranPhut { get; set; } = 15;
+        public string CheDoPhanBo { get; set; } = "LuanPhienCa";
+        public bool ChiTranChuaDau { get; set; } = true;
     }
 
     public class AdvanceGroupStageRequestDto

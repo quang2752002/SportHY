@@ -263,6 +263,16 @@ namespace Dms.Application.Interfaces
         Task<bool> SaveManualPairingAsync(SaveManualPairingRequestDto request, string? username = null);
 
         /// <summary>
+        /// Phân bổ lại khung giờ thi đấu linh hoạt cho các trận hiện có (Sáng, Chiều, Tối: 08:00, 09:30, 14:00, 15:30...)
+        /// mà không làm mất hoặc thay đổi các cặp đấu đã bốc thăm.
+        /// </summary>
+        /// <param name="request">Thông tin cấu hình ca, thời lượng trận, thời gian nghỉ và chế độ phân bổ</param>
+        /// <param name="updatedBy">Tài khoản quản lý thực hiện thao tác</param>
+        /// <returns>Kết quả phân bổ lại thời gian các trận đấu</returns>
+        Task<AutoScheduleResultDto> DistributeMatchTimesAsync(DistributeMatchTimesRequestDto request, string? updatedBy = null);
+
+
+        /// <summary>
         /// Ghi nhận kết quả trận đấu từ trọng tài: thẩm định tỷ số theo luật môn thể thao,
         /// tự động cập nhật bảng xếp hạng nếu là vòng bảng, tự động đưa đội thắng/thua vào vòng Knockout tiếp theo,
         /// hoặc tự động trao huy chương nếu là trận chung kết/tranh hạng 3.

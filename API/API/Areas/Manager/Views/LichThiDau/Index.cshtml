@@ -924,7 +924,7 @@
             <!-- Toolbar bộ lọc và thao tác nhanh trong modal -->
             <div class="bg-light border-bottom p-3">
                 <div class="row g-2 align-items-center">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label small fw-semibold text-muted mb-1"><i class="fa-solid fa-trophy text-primary me-1"></i>Giải đấu <span class="text-danger">*</span></label>
                         <select class="form-select form-select-sm" id="modalGiaiDauId" onchange="onModalGiaiDauChanged(this.value)">
                             <option value="">-- Chọn giải đấu --</option>
@@ -934,7 +934,7 @@
                             }
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label class="form-label small fw-semibold text-muted mb-1"><i class="fa-solid fa-layer-group text-primary me-1"></i>Danh mục môn</label>
                         <select class="form-select form-select-sm" id="modalDanhMucId" onchange="onModalDanhMucChanged(this.value)">
                             <option value="">-- Tất cả danh mục --</option>
@@ -944,22 +944,10 @@
                             }
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label small fw-semibold text-muted mb-1"><i class="fa-solid fa-volleyball text-primary me-1"></i>Môn thi đấu <span class="text-danger">*</span></label>
                         <select class="form-select form-select-sm" id="modalGiaiDauMonId" onchange="onModalMonChanged(this.value)">
                             <option value="">-- Chọn môn thể thao --</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small fw-semibold text-muted mb-1"><i class="fa-solid fa-code-branch text-primary me-1"></i>Vòng đấu</label>
-                        <select class="form-select form-select-sm" id="modalVongDauId" onchange="loadModalPairingData()">
-                            <option value="">-- Tất cả vòng --</option>
-                        </select>
-                    </div>
-                    <div class="col-md-1" id="modalBangDauCol">
-                        <label class="form-label small fw-semibold text-muted mb-1">Bảng</label>
-                        <select class="form-select form-select-sm" id="modalBangDauId" onchange="loadModalPairingData()">
-                            <option value="">-- Tất cả --</option>
                         </select>
                     </div>
                     <div class="col-md-1 d-flex align-items-end gap-1 pt-3">
@@ -3375,8 +3363,6 @@
                     allModalSports = [];
                     $('#modalDanhMucId').html('<option value="">-- Tất cả danh mục --</option>');
                     $('#modalGiaiDauMonId').html('<option value="">-- Chọn môn thể thao --</option>');
-                    $('#modalVongDauId').html('<option value="">-- Tất cả vòng --</option>');
-                    $('#modalBangDauId').html('<option value="">-- Tất cả --</option>');
                     $('#modalPairingPlaceholder').removeClass('d-none');
                     $('#modalPairingContent').addClass('d-none');
                 }
@@ -3456,9 +3442,6 @@
                 return;
             }
 
-            const vongDauId = $('#modalVongDauId').val();
-            const bangDauId = $('#modalBangDauId').val();
-
             $('#modalPairingPlaceholder').addClass('d-none');
             $('#modalPairingContent').addClass('d-none');
             $('#modalPairingLoading').removeClass('d-none');
@@ -3467,9 +3450,7 @@
                 url: '/Manager/LichThiDau/GetManualPairingData',
                 type: 'GET',
                 data: {
-                    giaiDauMonTheThaoId: parseInt(giaiDauMonTheThaoId),
-                    vongDauId: vongDauId ? parseInt(vongDauId) : undefined,
-                    bangDauId: bangDauId ? parseInt(bangDauId) : undefined
+                    giaiDauMonTheThaoId: parseInt(giaiDauMonTheThaoId)
                 },
                 success: function (res) {
                     $('#modalPairingLoading').addClass('d-none');
@@ -3494,11 +3475,6 @@
                             unpairedTeams: res.data.unpairedTeams || [],
                             pairs: res.data.existingPairs || []
                         };
-
-                        // Cập nhật Vòng đấu dropdown trong modal
-                        updateModalVongDauSelect(modalData.vongDaus, vongDauId);
-                        // Cập nhật Bảng đấu dropdown trong modal
-                        updateModalBangDauSelect(modalData.bangDaus, bangDauId);
 
                         // Xử lý hiển thị theo thể thức môn
                         if (modalData.isKetHopVongBangKnockout) {
@@ -3530,7 +3506,7 @@
                                         soTran: i,
                                         tenTran: `Trận ${i}`,
                                         vongDauId: modalData.vongDaus[0]?.id || null,
-                                        bangDauId: bangDauId ? parseInt(bangDauId) : (modalData.bangDaus[0]?.id || null),
+                                        bangDauId: modalData.bangDaus[0]?.id || null,
                                         sanDauId: null,
                                         thoiGianDuKien: null,
                                         trangThai: 'ChuaDau',
@@ -3556,28 +3532,9 @@
             });
         }
 
-        function updateModalVongDauSelect(vongDaus, selectedId) {
-            let opts = '<option value="">-- Tất cả vòng --</option>';
-            vongDaus.forEach(v => {
-                const sel = (selectedId && parseInt(selectedId) === v.id) ? 'selected' : '';
-                opts += `<option value="${v.id}" ${sel}>${escapeHtml(v.ten)}</option>`;
-            });
-            $('#modalVongDauId').html(opts);
-        }
+        function updateModalVongDauSelect(vongDaus, selectedId) {}
 
-        function updateModalBangDauSelect(bangDaus, selectedId) {
-            if (!bangDaus || bangDaus.length === 0) {
-                $('#modalBangDauCol').addClass('d-none');
-                return;
-            }
-            $('#modalBangDauCol').removeClass('d-none');
-            let opts = '<option value="">-- Tất cả bảng --</option>';
-            bangDaus.forEach(b => {
-                const sel = (selectedId && parseInt(selectedId) === b.id) ? 'selected' : '';
-                opts += `<option value="${b.id}" ${sel}>${escapeHtml(b.ten)}</option>`;
-            });
-            $('#modalBangDauId').html(opts);
-        }
+        function updateModalBangDauSelect(bangDaus, selectedId) {}
 
         // ==================== CÁC HÀM XỬ LÝ CHIA BẢNG ĐẤU THỦ CÔNG (TAB 1) ====================
         function renderModalGroupingUI() {
@@ -4724,7 +4681,7 @@
                 tranDauId: null,
                 soTran: newIdx,
                 tenTran: bangName ? `${bangName} - Trận ${newIdx}` : `Trận ${newIdx}`,
-                vongDauId: $('#modalVongDauId').val() ? parseInt($('#modalVongDauId').val()) : (modalData.vongDaus[0]?.id || null),
+                vongDauId: modalData.vongDaus[0]?.id || null,
                 bangDauId: bangId,
                 tenBangDau: bangName,
                 sanDauId: null,
@@ -4909,8 +4866,8 @@
                 tranDauId: null,
                 soTran: newIdx,
                 tenTran: `Trận ${newIdx}`,
-                vongDauId: $('#modalVongDauId').val() ? parseInt($('#modalVongDauId').val()) : (modalData.vongDaus[0]?.id || null),
-                bangDauId: $('#modalBangDauId').val() ? parseInt($('#modalBangDauId').val()) : null,
+                vongDauId: modalData.vongDaus[0]?.id || null,
+                bangDauId: null,
                 sanDauId: null,
                 thoiGianDuKien: null,
                 trangThai: 'ChuaDau',
@@ -4973,8 +4930,8 @@
                     tranDauId: null,
                     soTran: newIdx,
                     tenTran: `Trận ${newIdx}`,
-                    vongDauId: $('#modalVongDauId').val() ? parseInt($('#modalVongDauId').val()) : (modalData.vongDaus[0]?.id || null),
-                    bangDauId: $('#modalBangDauId').val() ? parseInt($('#modalBangDauId').val()) : null,
+                    vongDauId: modalData.vongDaus[0]?.id || null,
+                    bangDauId: null,
                     sanDauId: null,
                     thoiGianDuKien: null,
                     trangThai: 'ChuaDau',
@@ -5012,8 +4969,8 @@
                     tranDauId: null,
                     soTran: newIdx,
                     tenTran: `Trận ${newIdx}`,
-                    vongDauId: $('#modalVongDauId').val() ? parseInt($('#modalVongDauId').val()) : (modalData.vongDaus[0]?.id || null),
-                    bangDauId: $('#modalBangDauId').val() ? parseInt($('#modalBangDauId').val()) : null,
+                    vongDauId: modalData.vongDaus[0]?.id || null,
+                    bangDauId: null,
                     sanDauId: null,
                     thoiGianDuKien: null,
                     trangThai: 'ChuaDau',
@@ -5056,8 +5013,8 @@
 
             const payload = {
                 giaiDauMonTheThaoId: parseInt(monId),
-                vongDauId: $('#modalVongDauId').val() ? parseInt($('#modalVongDauId').val()) : null,
-                bangDauId: $('#modalBangDauId').val() ? parseInt($('#modalBangDauId').val()) : null,
+                vongDauId: null,
+                bangDauId: null,
                 teamGroups: teamGroups,
                 pairs: modalData.pairs.map((p, idx) => ({
                     tranDauId: p.tranDauId,

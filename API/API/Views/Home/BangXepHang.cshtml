@@ -337,6 +337,29 @@
             opacity: 1;
             margin-right: 7px;
         }
+        .sub-ranking-card.active-category-card {
+            border: 2px solid #0284c7 !important;
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.16) !important;
+        }
+        .sub-ranking-card.active-category-card .sub-card-header {
+            background: #f0f9ff !important;
+            border-bottom-color: #bae6fd !important;
+        }
+        .ranking-footer-action.active {
+            width: auto !important;
+            min-width: 140px !important;
+            padding: 0 12px !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            background-color: #0284c7 !important;
+            color: #ffffff !important;
+            border-color: #0284c7 !important;
+        }
+        .ranking-footer-action.active .ranking-footer-action-label {
+            max-width: 140px !important;
+            opacity: 1 !important;
+            margin-right: 4px !important;
+        }
 
         /* Filter Toolbar Card (Bộ lọc đưa xuống dưới) */
         .filter-toolbar-card {
@@ -749,8 +772,12 @@
         function onCategoryChange(val) {
             currentDanhMucId = val ? parseInt(val) : 0;
             currentMonTheThaoId = 0; // Đặt lại môn khi đổi danh mục
-            detailSectionVisible = false;
-            $('#sportDetailSection').addClass('d-none');
+            detailSectionVisible = currentDanhMucId > 0;
+            $('#sportDetailSection').toggleClass('d-none', !detailSectionVisible);
+            if (detailSectionVisible) {
+                const categoryName = $('#selectCategory option:selected').text().replace('--', '').trim();
+                $('#sportDetailTitle').text(categoryName ? `Chi tiết các môn · ${categoryName}` : 'Chi tiết các môn thi đấu');
+            }
             updateFilterBadge();
             refreshActiveTabData();
         }
@@ -1121,9 +1148,8 @@
             $.get(url, function (res) {
                 if (res && res.success) {
                     categoryRankingsData = Array.isArray(res.data) ? res.data : [];
-                    const visibleCategories = getVisibleCategoryRankings();
-                    $('#categoryCountText').text(`${visibleCategories.length} danh mục có phát sinh huy chương`);
-                    renderCategoryRankings(visibleCategories);
+                    updateCategoryHeaderCount();
+                    renderCategoryRankings(categoryRankingsData);
                 } else {
                     $('#categoryRankingsContainer').html(`
                         <div class="col-12 text-center py-5 text-danger">
@@ -1140,17 +1166,24 @@
             });
         }
 
+        function updateCategoryHeaderCount() {
+            if (currentDanhMucId > 0) {
+                const selCat = categoryRankingsData.find(c => Number(c.danhMucId) === currentDanhMucId);
+                const selName = selCat ? selCat.tenDanhMuc : '';
+                $('#categoryCountText').html(`Hiển thị <strong>${categoryRankingsData.length}</strong> danh mục · Đang xem môn: <span class="badge bg-primary text-white">${escapeHtml(selName)}</span> <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-danger text-decoration-none" onclick="clearCategoryFilter()" title="Bỏ lọc danh mục (xem tất cả)"><i class="fa-solid fa-circle-xmark"></i></button>`);
+            } else {
+                $('#categoryCountText').text(`${categoryRankingsData.length} danh mục có phát sinh huy chương`);
+            }
+        }
+
         function getVisibleCategoryRankings() {
-            if (currentDanhMucId <= 0) return categoryRankingsData;
-
-            const selectedCategory = categoryRankingsData.filter(item => Number(item.danhMucId) === currentDanhMucId);
-            if (selectedCategory.length > 0) return selectedCategory;
-
-            return [];
+            // Không ẩn danh mục môn khác, luôn trả về đầy đủ tất cả danh mục
+            return categoryRankingsData;
         }
 
         function renderCategoryRankings(list) {
-            if (!list || list.length === 0) {
+            const dataToRender = list || categoryRankingsData;
+            if (!dataToRender || dataToRender.length === 0) {
                 $('#categoryRankingsContainer').html(`
                     <div class="col-12 text-center py-5 text-muted">
                         <i class="fa-solid fa-folder-open fa-3x mb-3 text-secondary opacity-50"></i>
@@ -1161,7 +1194,9 @@
             }
 
             let html = '';
-            list.forEach(item => {
+            dataToRender.forEach(item => {
+                const isSelected = currentDanhMucId > 0 && Number(item.danhMucId) === currentDanhMucId;
+                const cardActiveCls = isSelected ? 'active-category-card' : '';
                 const rankingList = item.bangXepHang || [];
                 let rowsHtml = '';
 
@@ -1195,14 +1230,17 @@
 
                 html += `
                     <div class="col-lg-6">
-                        <div class="sub-ranking-card">
+                        <div class="sub-ranking-card ${cardActiveCls}">
                             <div class="sub-card-header d-flex justify-content-between align-items-center">
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="portal-logo-badge" style="width: 36px; height: 36px; font-size: 0.85rem; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                                    <div class="portal-logo-badge" style="width: 36px; height: 36px; font-size: 0.85rem; background: ${isSelected ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'linear-gradient(135deg, #475569 0%, #334155 100%)'};">
                                         <i class="fa-solid fa-folder-tree text-white"></i>
                                     </div>
                                     <div>
-                                        <h6 class="fw-bold mb-0 text-dark">${escapeHtml(item.tenDanhMuc)}</h6>
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <h6 class="fw-bold mb-0 text-dark">${escapeHtml(item.tenDanhMuc)}</h6>
+                                            ${isSelected ? '<span class="badge bg-primary text-white" style="font-size:0.68rem;"><i class="fa-solid fa-check me-0.5"></i>Đang xem môn</span>' : ''}
+                                        </div>
                                         <div class="text-muted small" style="font-size: 0.75rem;">${item.tongSoMon} môn thi đấu • Mã: ${escapeHtml(item.maDanhMuc)}</div>
                                     </div>
                                 </div>
@@ -1231,10 +1269,23 @@
                             </div>
                             <div class="category-ranking-footer bg-light border-top d-flex justify-content-between align-items-center">
                                 <span class="small text-muted" style="font-size:0.75rem;">Tổng số: ${item.tongHuyChuong} huy chương</span>
-                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill ranking-footer-action" aria-label="Xem các môn thi đấu trong danh mục" title="Xem các môn thi đấu trong danh mục" onclick="filterDirectToCategory(${item.danhMucId})">
-                                    <span class="ranking-footer-action-label">Xem các môn</span>
-                                    <i class="fa-solid fa-arrow-right"></i>
-                                </button>
+                                <div class="d-flex align-items-center gap-1">
+                                    ${isSelected ? `
+                                        <button type="button" class="btn btn-primary btn-sm rounded-pill ranking-footer-action active" aria-label="Đang xem môn thuộc danh mục này" title="Đang xem môn thuộc danh mục này. Nhấn để cuộn tới chi tiết môn" onclick="filterDirectToCategory(${item.danhMucId})">
+                                            <i class="fa-solid fa-check"></i>
+                                            <span class="ranking-footer-action-label">Đang xem môn</span>
+                                            <i class="fa-solid fa-arrow-down"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Bỏ lọc danh mục (xem tất cả môn)" onclick="clearCategoryFilter()">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    ` : `
+                                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill ranking-footer-action" aria-label="Xem các môn thi đấu trong danh mục" title="Xem các môn thi đấu trong danh mục" onclick="filterDirectToCategory(${item.danhMucId})">
+                                            <span class="ranking-footer-action-label">Xem các môn</span>
+                                            <i class="fa-solid fa-arrow-right"></i>
+                                        </button>
+                                    `}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1253,8 +1304,17 @@
             const categoryName = $('#selectCategory option:selected').text().replace('--', '').trim();
             $('#sportDetailTitle').text(categoryName ? `Chi tiết các môn · ${categoryName}` : 'Chi tiết các môn thi đấu');
             $('#sportDetailSection').removeClass('d-none');
+            updateCategoryHeaderCount();
+            renderCategoryRankings(categoryRankingsData);
             loadSportRankings();
-            document.getElementById('sportDetailSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => {
+                document.getElementById('sportDetailSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 60);
+        }
+
+        function clearCategoryFilter() {
+            $('#selectCategory').val('');
+            onCategoryChange('');
         }
 
         // ==================== TAB 2: THEO MÔN THỂ THAO ====================
