@@ -1,0 +1,245 @@
+@{
+    ViewData["Title"] = "Quản Lý Tài Liệu";
+    Layout = "~/Areas/Manager/Views/Shared/_ManagerLayout.cshtml";
+}
+
+@section Styles {
+    <style>
+        .documents-shell { max-width: 1500px; margin: 0 auto; }
+        .documents-card { border: 1px solid #e2eaf4; border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .045); }
+        .documents-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; color: #0284c7; background: #e0f2fe; font-size: 1.2rem; }
+        .document-title { max-width: 360px; overflow-wrap: anywhere; }
+        .document-description { max-width: 360px; color: #64748b; font-size: .82rem; overflow-wrap: anywhere; }
+        .document-status { min-width: 92px; }
+        @@media (max-width: 767.98px) { .document-title, .document-description { max-width: 220px; } }
+    </style>
+}
+
+<div class="documents-shell d-flex flex-column gap-4">
+    <section class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="documents-icon"><i class="fa-solid fa-folder-open"></i></div>
+            <div>
+                <h1 class="h4 fw-bold text-dark mb-1">Thư viện tài liệu</h1>
+                <p class="text-muted small mb-0">Tải lên, lưu trữ và quản lý các tài liệu dùng chung trên cổng thông tin.</p>
+            </div>
+        </div>
+        <a href="/TaiLieu" target="_blank" rel="noopener" class="btn btn-outline-primary rounded-pill px-3">
+            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Xem trang công khai
+        </a>
+    </section>
+
+    <section class="documents-card p-3 p-lg-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="fa-solid fa-cloud-arrow-up text-primary"></i>
+            <h2 class="h6 fw-bold mb-0">Thêm tài liệu mới</h2>
+        </div>
+        <form id="documentUploadForm" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div class="row g-3">
+                <div class="col-lg-4 col-md-6">
+                    <label for="documentTitle" class="form-label small fw-semibold">Tên tài liệu <span class="text-danger">*</span></label>
+                    <input id="documentTitle" name="tieuDe" class="form-control" maxlength="200" required placeholder="Ví dụ: Kế hoạch tổ chức giải năm 2026" />
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label for="documentCategory" class="form-label small fw-semibold">Loại tài liệu <span class="text-danger">*</span></label>
+                    <input id="documentCategory" name="loaiTaiLieu" class="form-control" list="documentCategoryOptions" maxlength="100" required placeholder="Chọn hoặc nhập loại tài liệu" />
+                    <datalist id="documentCategoryOptions">
+                        <option value="Thông báo"></option>
+                        <option value="Điều lệ / Quy chế"></option>
+                        <option value="Kế hoạch"></option>
+                        <option value="Biểu mẫu"></option>
+                        <option value="Quyết định"></option>
+                        <option value="Hướng dẫn"></option>
+                        <option value="Báo cáo"></option>
+                        <option value="Khác"></option>
+                    </datalist>
+                </div>
+                <div class="col-lg-5">
+                    <label for="documentFile" class="form-label small fw-semibold">Tệp tài liệu <span class="text-danger">*</span></label>
+                    <input id="documentFile" name="tep" type="file" class="form-control" required accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.rtf,.txt,.csv,.jpg,.jpeg,.png,.webp" />
+                    <div class="form-text">PDF, Office, OpenDocument, văn bản, CSV hoặc ảnh; tối đa 30 MB.</div>
+                </div>
+                <div class="col-lg-9">
+                    <label for="documentDescription" class="form-label small fw-semibold">Mô tả</label>
+                    <input id="documentDescription" name="moTa" class="form-control" maxlength="1000" placeholder="Thông tin ngắn giúp người xem nhận biết tài liệu" />
+                </div>
+                <div class="col-lg-3 d-flex align-items-end">
+                    <button id="uploadDocumentButton" type="submit" class="btn btn-primary w-100">
+                        <i class="fa-solid fa-upload me-1"></i> Tải lên &amp; lưu
+                    </button>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <section class="documents-card overflow-hidden">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 p-lg-4 border-bottom">
+            <div>
+                <h2 class="h6 fw-bold mb-1"><i class="fa-solid fa-list-check text-primary me-2"></i>Danh sách tài liệu</h2>
+                <div id="documentCount" class="small text-muted">Đang tải...</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <div class="input-group" style="min-width:240px;max-width:320px">
+                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input id="documentSearch" class="form-control" placeholder="Tìm tên, mô tả hoặc tệp..." />
+                </div>
+                <select id="documentCategoryFilter" class="form-select" style="min-width:180px;max-width:240px">
+                    <option value="">Tất cả loại tài liệu</option>
+                </select>
+                <button id="reloadDocuments" type="button" class="btn btn-outline-secondary" title="Tải lại danh sách"><i class="fa-solid fa-rotate"></i></button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Tài liệu</th><th>Loại</th><th>Tệp</th><th>Ngày tải</th><th>Hiển thị</th><th class="text-end">Thao tác</th></tr></thead>
+                <tbody id="documentRows"><tr><td colspan="6" class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Đang tải danh sách...</td></tr></tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        let managerDocuments = [];
+        const documentToken = $('#documentUploadForm input[name="__RequestVerificationToken"]').val();
+
+        $(function () {
+            loadManagerDocuments();
+            $('#reloadDocuments').on('click', loadManagerDocuments);
+            $('#documentSearch, #documentCategoryFilter').on('input change', renderManagerDocuments);
+            $('#documentTitle, #documentCategory, #documentFile').on('input change', updateVietnameseDocumentValidation);
+            $('#documentUploadForm').on('submit', uploadManagerDocument);
+            updateVietnameseDocumentValidation();
+        });
+
+        function updateVietnameseDocumentValidation() {
+            const title = document.getElementById('documentTitle');
+            const category = document.getElementById('documentCategory');
+            const file = document.getElementById('documentFile');
+            title.setCustomValidity(title.value.trim() ? '' : 'Vui lòng nhập tên tài liệu.');
+            category.setCustomValidity(category.value.trim() ? '' : 'Vui lòng chọn hoặc nhập loại tài liệu.');
+            file.setCustomValidity(file.files?.length ? '' : 'Vui lòng chọn tệp tài liệu cần tải lên.');
+        }
+
+        function loadManagerDocuments() {
+            $('#documentRows').html('<tr><td colspan="6" class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Đang tải danh sách...</td></tr>');
+            $.get('/Manager/TaiLieu/GetAll')
+                .done(function (response) {
+                    if (!response?.success) throw new Error(response?.message || 'Không tải được danh sách tài liệu.');
+                    managerDocuments = response.data || [];
+                    fillManagerDocumentCategories();
+                    renderManagerDocuments();
+                })
+                .fail(function () {
+                    $('#documentRows').html('<tr><td colspan="6" class="text-center py-5 text-danger">Không tải được danh sách. Vui lòng thử lại.</td></tr>');
+                    $('#documentCount').text('');
+                });
+        }
+
+        function fillManagerDocumentCategories() {
+            const selected = $('#documentCategoryFilter').val();
+            const categories = [...new Set(managerDocuments.map(item => item.loaiTaiLieu).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
+            const $filter = $('#documentCategoryFilter').empty().append('<option value="">Tất cả loại tài liệu</option>');
+            categories.forEach(category => $filter.append(`<option value="${escapeDocumentHtml(category)}">${escapeDocumentHtml(category)}</option>`));
+            if (categories.includes(selected)) $filter.val(selected);
+        }
+
+        function renderManagerDocuments() {
+            const keyword = ($('#documentSearch').val() || '').trim().toLocaleLowerCase('vi');
+            const category = $('#documentCategoryFilter').val();
+            const filtered = managerDocuments.filter(item => {
+                const text = `${item.tieuDe || ''} ${item.moTa || ''} ${item.tenTepGoc || ''} ${item.loaiTaiLieu || ''}`.toLocaleLowerCase('vi');
+                return (!keyword || text.includes(keyword)) && (!category || item.loaiTaiLieu === category);
+            });
+            $('#documentCount').text(`Hiển thị ${filtered.length} / ${managerDocuments.length} tài liệu`);
+            if (!filtered.length) {
+                $('#documentRows').html(`<tr><td colspan="6" class="text-center py-5 text-muted"><i class="fa-regular fa-folder-open fs-3 d-block mb-2"></i>${managerDocuments.length ? 'Không có tài liệu khớp bộ lọc.' : 'Chưa có tài liệu nào. Hãy tải tài liệu đầu tiên ở phía trên.'}</td></tr>`);
+                return;
+            }
+
+            $('#documentRows').html(filtered.map(item => {
+                const id = Number(item.id);
+                const size = formatDocumentSize(item.kichThuocTep);
+                const isDocx = String(item.duoiTep || '').replace(/^\./, '').toUpperCase() === 'DOCX';
+                const openUrl = isDocx
+                    ? `/Manager/TaiLieu/PreviewFile?id=${id}`
+                    : `/Manager/TaiLieu/OpenFile?id=${id}`;
+                const downloadUrl = `/Manager/TaiLieu/OpenFile?id=${id}&download=true`;
+                const uploadedAt = item.created ? new Date(item.created).toLocaleDateString('vi-VN') : '—';
+                const visibilityButton = item.congKhai
+                    ? `<button type="button" class="btn btn-sm btn-outline-success" onclick="setDocumentVisibility(${id}, false)" title="Ẩn khỏi trang chủ"><i class="fa-solid fa-eye me-1"></i>Đang công khai</button>`
+                    : `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="setDocumentVisibility(${id}, true)" title="Hiển thị trên trang chủ"><i class="fa-solid fa-eye-slash me-1"></i>Đang ẩn</button>`;
+                return `<tr>
+                    <td><div class="document-title fw-semibold text-dark">${escapeDocumentHtml(item.tieuDe)}</div><div class="document-description">${escapeDocumentHtml(item.moTa || '')}</div></td>
+                    <td><span class="badge rounded-pill text-bg-light border">${escapeDocumentHtml(item.loaiTaiLieu)}</span></td>
+                    <td><div class="small fw-semibold">${escapeDocumentHtml(item.duoiTep || 'TỆP')}</div><div class="small text-muted">${escapeDocumentHtml(item.tenTepGoc)} · ${size}</div></td>
+                    <td class="small text-muted">${uploadedAt}</td>
+                    <td class="document-status">${visibilityButton}</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-primary" href="${openUrl}" target="_blank" rel="noopener" title="Xem tài liệu"><i class="fa-solid fa-eye"></i></a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${downloadUrl}" title="Tải xuống"><i class="fa-solid fa-download"></i></a>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteManagerDocument(${id})" title="Xóa mềm"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>`;
+            }).join(''));
+        }
+
+        function uploadManagerDocument(event) {
+            event.preventDefault();
+            const form = document.getElementById('documentUploadForm');
+            updateVietnameseDocumentValidation();
+            if (!form.reportValidity()) return;
+            const button = $('#uploadDocumentButton').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Đang tải...');
+            $.ajax({
+                url: '/Manager/TaiLieu/Upload',
+                method: 'POST',
+                data: new FormData(form),
+                processData: false,
+                contentType: false
+            }).done(function (response) {
+                if (!response?.success) {
+                    SportApp.toast('error', response?.message || 'Không lưu được tài liệu.');
+                    return;
+                }
+                form.reset();
+                SportApp.toast('success', response.message || 'Đã lưu tài liệu.');
+                loadManagerDocuments();
+            }).fail(function (xhr) {
+                SportApp.toast('error', xhr.responseJSON?.message || 'Tải tệp thất bại. Vui lòng kiểm tra dung lượng và định dạng.');
+            }).always(function () {
+                button.prop('disabled', false).html('<i class="fa-solid fa-upload me-1"></i> Tải lên &amp; lưu');
+            });
+        }
+
+        function setDocumentVisibility(id, visible) {
+            $.ajax({
+                url: '/Manager/TaiLieu/SetPublic', method: 'POST',
+                data: { id, congKhai: visible, __RequestVerificationToken: documentToken }
+            }).done(function (response) {
+                SportApp.toast(response?.success ? 'success' : 'error', response?.message || 'Không cập nhật được trạng thái.');
+                if (response?.success) loadManagerDocuments();
+            }).fail(() => SportApp.toast('error', 'Không cập nhật được trạng thái tài liệu.'));
+        }
+
+        function deleteManagerDocument(id) {
+            SportApp.confirm('Ẩn tài liệu khỏi hệ thống?', 'Thông tin tài liệu sẽ được xóa mềm và không còn xuất hiện trên trang công khai.', function () {
+                $.ajax({
+                    url: '/Manager/TaiLieu/Delete', method: 'POST',
+                    data: { id, __RequestVerificationToken: documentToken }
+                }).done(function (response) {
+                    SportApp.toast(response?.success ? 'success' : 'error', response?.message || 'Không xóa được tài liệu.');
+                    if (response?.success) loadManagerDocuments();
+                }).fail(() => SportApp.toast('error', 'Không xóa được tài liệu.'));
+            });
+        }
+
+        function escapeDocumentHtml(value) { return $('<div>').text(value ?? '').html(); }
+        function formatDocumentSize(bytes) {
+            const size = Number(bytes) || 0;
+            if (size < 1024) return `${size} B`;
+            if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+            return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+        }
+    </script>
+}

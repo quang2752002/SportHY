@@ -1,0 +1,150 @@
+@{
+    ViewData["Title"] = "Thư Viện Tài Liệu";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        .public-documents-page { max-width: 1220px; margin: 0 auto; }
+        .public-documents-hero, .public-documents-toolbar, .public-document-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; box-shadow: 0 5px 20px rgba(15, 23, 42, .045); }
+        .public-documents-hero { padding: 1.5rem; background: linear-gradient(125deg, #fff 0%, #eff8ff 100%); }
+        .public-documents-mark { width: 54px; height: 54px; flex: 0 0 54px; display: grid; place-items: center; border-radius: 17px; color: #0284c7; background: #dff3ff; font-size: 1.4rem; }
+        .public-documents-toolbar { padding: 1rem; }
+        .public-document-card { height: 100%; padding: 1.15rem; transition: transform .18s ease, box-shadow .18s ease; }
+        .public-document-card:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(15, 23, 42, .08); }
+        .public-document-file-icon { width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 44px; border-radius: 14px; color: #0284c7; background: #eff6ff; font-size: 1.1rem; }
+        .public-document-description { min-height: 2.8rem; color: #64748b; font-size: .88rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+        @@media (max-width: 575.98px) { .public-documents-hero { padding: 1.1rem; } }
+    </style>
+}
+
+<main class="public-documents-page d-flex flex-column gap-3">
+    <section class="public-documents-hero d-flex align-items-center gap-3">
+        <div class="public-documents-mark"><i class="bi bi-folder2-open"></i></div>
+        <div>
+            <h1 class="h4 fw-bold text-dark mb-1">Thư viện tài liệu</h1>
+            <p class="text-muted mb-0">Tài liệu, thông báo, biểu mẫu và hướng dẫn do Ban Tổ chức công bố.</p>
+        </div>
+    </section>
+
+    <section class="public-documents-toolbar">
+        <div class="row g-2 align-items-center">
+            <div class="col-lg-7">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input id="publicDocumentSearch" class="form-control" placeholder="Tìm tên hoặc nội dung tài liệu..." aria-label="Tìm tài liệu" />
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <select id="publicDocumentCategory" class="form-select" aria-label="Lọc theo loại tài liệu">
+                    <option value="">Tất cả loại tài liệu</option>
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <div id="publicDocumentsMessage" class="alert alert-info d-none mb-0" role="status"></div>
+    <div id="publicDocumentsLoading" class="text-center py-5 text-muted">
+        <span class="spinner-border spinner-border-sm text-primary me-2"></span>Đang tải tài liệu...
+    </div>
+    <section id="publicDocumentsGrid" class="row g-3"></section>
+</main>
+
+@section Scripts {
+    <script>
+        let publicDocuments = [];
+        $(function () {
+            $('#publicDocumentSearch, #publicDocumentCategory').on('input change', renderPublicDocuments);
+            loadPublicDocuments();
+        });
+
+        function loadPublicDocuments() {
+            $('#publicDocumentsLoading').removeClass('d-none');
+            $('#publicDocumentsMessage').addClass('d-none').empty();
+            $.get('/Home/GetPublicDocuments')
+                .done(function (response) {
+                    if (!response?.success) throw new Error('Không tải được tài liệu.');
+                    publicDocuments = response.data || [];
+                    fillPublicDocumentCategories();
+                    renderPublicDocuments();
+                })
+                .fail(function () {
+                    $('#publicDocumentsMessage').removeClass('d-none').removeClass('alert-info').addClass('alert-danger').text('Không tải được danh sách tài liệu. Vui lòng tải lại trang.');
+                })
+                .always(function () { $('#publicDocumentsLoading').addClass('d-none'); });
+        }
+
+        function fillPublicDocumentCategories() {
+            const categories = [...new Set(publicDocuments.map(item => item.loaiTaiLieu).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
+            const $select = $('#publicDocumentCategory').empty().append('<option value="">Tất cả loại tài liệu</option>');
+            categories.forEach(category => $select.append(`<option value="${escapePublicDocument(category)}">${escapePublicDocument(category)}</option>`));
+        }
+
+        function renderPublicDocuments() {
+            const search = ($('#publicDocumentSearch').val() || '').trim().toLocaleLowerCase('vi');
+            const category = $('#publicDocumentCategory').val();
+            const items = publicDocuments.filter(item => {
+                const haystack = `${item.tieuDe || ''} ${item.moTa || ''} ${item.tenTepGoc || ''} ${item.loaiTaiLieu || ''}`.toLocaleLowerCase('vi');
+                return (!search || haystack.includes(search)) && (!category || item.loaiTaiLieu === category);
+            });
+
+            if (!publicDocuments.length) {
+                $('#publicDocumentsGrid').empty();
+                $('#publicDocumentsMessage').removeClass('d-none alert-danger').addClass('alert-info').text('Hiện chưa có tài liệu nào được công bố.');
+                return;
+            }
+            $('#publicDocumentsMessage').addClass('d-none').empty();
+            if (!items.length) {
+                $('#publicDocumentsGrid').html('<div class="col-12"><div class="alert alert-light border text-center mb-0">Không tìm thấy tài liệu phù hợp với bộ lọc.</div></div>');
+                return;
+            }
+
+            $('#publicDocumentsGrid').html(items.map(item => {
+                const id = Number(item.id);
+                const extension = String(item.duoiTep || '').replace('.', '').toUpperCase() || 'FILE';
+                const icon = documentIcon(extension);
+                const openUrl = extension === 'DOCX'
+                    ? `/Home/PreviewPublicDocument?id=${id}`
+                    : `/Home/OpenPublicDocument?id=${id}`;
+                const downloadUrl = `/Home/DownloadPublicDocument?id=${id}`;
+                const uploadedAt = item.created ? new Date(item.created).toLocaleDateString('vi-VN') : '';
+                return `<div class="col-md-6 col-xl-4">
+                    <article class="public-document-card d-flex flex-column">
+                        <div class="d-flex align-items-start gap-3 mb-3">
+                            <div class="public-document-file-icon"><i class="bi ${icon}"></i></div>
+                            <div class="min-w-0 flex-grow-1">
+                                <span class="badge rounded-pill text-bg-primary-subtle border border-primary-subtle text-primary mb-2">${escapePublicDocument(item.loaiTaiLieu)}</span>
+                                <h2 class="h6 fw-bold text-dark mb-0" style="overflow-wrap:anywhere">${escapePublicDocument(item.tieuDe)}</h2>
+                            </div>
+                        </div>
+                        <p class="public-document-description mb-3">${escapePublicDocument(item.moTa || 'Tài liệu do Ban Tổ chức công bố.')}</p>
+                        <div class="small text-muted border-top pt-3 mt-auto mb-3">
+                            <div><i class="bi bi-file-earmark me-1"></i>${escapePublicDocument(item.tenTepGoc)} <span class="badge text-bg-light border ms-1">${escapePublicDocument(extension)}</span></div>
+                            <div class="mt-1"><i class="bi bi-hdd me-1"></i>${formatPublicDocumentSize(item.kichThuocTep)}${uploadedAt ? ` <span class="mx-1">·</span><i class="bi bi-calendar3 me-1"></i>${uploadedAt}` : ''}</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-outline-primary flex-grow-1" href="${openUrl}" target="_blank" rel="noopener"><i class="bi bi-eye me-1"></i>Xem tài liệu</a>
+                            <a class="btn btn-primary" href="${downloadUrl}" title="Tải xuống" aria-label="Tải ${escapePublicDocument(item.tieuDe)}"><i class="bi bi-download"></i></a>
+                        </div>
+                    </article>
+                </div>`;
+            }).join(''));
+        }
+
+        function documentIcon(extension) {
+            if (extension === 'PDF') return 'bi-file-earmark-pdf';
+            if (['DOC', 'DOCX', 'ODT', 'RTF'].includes(extension)) return 'bi-file-earmark-word';
+            if (['XLS', 'XLSX', 'ODS', 'CSV'].includes(extension)) return 'bi-file-earmark-spreadsheet';
+            if (['PPT', 'PPTX', 'ODP'].includes(extension)) return 'bi-file-earmark-slides';
+            if (['JPG', 'JPEG', 'PNG', 'WEBP'].includes(extension)) return 'bi-file-earmark-image';
+            return 'bi-file-earmark-text';
+        }
+        function escapePublicDocument(value) { return $('<div>').text(value ?? '').html(); }
+        function formatPublicDocumentSize(bytes) {
+            const size = Number(bytes) || 0;
+            if (size < 1024) return `${size} B`;
+            if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+            return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+        }
+    </script>
+}

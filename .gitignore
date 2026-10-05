@@ -21,3 +21,8 @@ node_modules/
 .env
 .env.*
 *.env
+
+# Runtime document uploads are stored under wwwroot but served only through permission-checked endpoints.
+API/API/wwwroot/TaiLieuCongKhai/
+# Retain ignored legacy uploads until they are migrated from the former storage location.
+API/API/App_Data/TaiLieuCongKhai/

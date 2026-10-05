@@ -2,7 +2,9 @@ using Dms.Application.Common;
 using Dms.Application.DTOs;
 using Dms.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using System.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +23,8 @@ namespace API.Controllers
         private readonly IBangDauService _bangDauService;
         private readonly IThuKyGiaiService _thuKyGiaiService;
         private readonly IDonViService _donViService;
+        private readonly ITaiLieuCongKhaiService _taiLieuCongKhaiService;
+        private readonly IWebHostEnvironment _environment;
 
         public HomeController(
             IGiaiDauService giaiDauService,
@@ -30,7 +34,9 @@ namespace API.Controllers
             ITranDauService tranDauService,
             IBangDauService bangDauService,
             IThuKyGiaiService thuKyGiaiService,
-            IDonViService donViService)
+            IDonViService donViService,
+            ITaiLieuCongKhaiService taiLieuCongKhaiService,
+            IWebHostEnvironment environment)
         {
             _giaiDauService = giaiDauService;
             _monTheThaoService = monTheThaoService;
@@ -40,6 +46,8 @@ namespace API.Controllers
             _bangDauService = bangDauService;
             _thuKyGiaiService = thuKyGiaiService;
             _donViService = donViService;
+            _taiLieuCongKhaiService = taiLieuCongKhaiService;
+            _environment = environment;
         }
 
         /// <summary>
@@ -61,6 +69,74 @@ namespace API.Controllers
         {
             return View();
         }
+
+        /// <summary>Hiển thị thư viện tài liệu công khai của Ban Tổ chức.</summary>
+        [HttpGet]
+        [Route("TaiLieu")]
+        [Route("Home/TaiLieu")]
+        public IActionResult TaiLieu()
+        {
+            return View();
+        }
+
+        /// <summary>Lấy metadata các tài liệu đang được Ban Tổ chức công khai.</summary>
+        [HttpGet]
+        public async Task<IActionResult> GetPublicDocuments()
+        {
+            var documents = await _taiLieuCongKhaiService.GetPublicAsync();
+            return Json(new { success = true, data = documents });
+        }
+
+        /// <summary>Trả nội dung tài liệu đang công khai để xem trực tiếp trên trình duyệt.</summary>
+        /// <param name="id">Mã tài liệu được yêu cầu.</param>
+        /// <returns>Tệp nếu tài liệu đang công khai; nếu không thì trả về HTTP 404.</returns>
+        [HttpGet]
+        public async Task<IActionResult> OpenPublicDocument(int id)
+        {
+            var storageDirectory = GetDocumentStorageDirectory();
+            var legacyStorageDirectory = GetLegacyDocumentStorageDirectory();
+            var file = await _taiLieuCongKhaiService.GetPublicFileAsync(id, storageDirectory, legacyStorageDirectory);
+            if (file == null) return NotFound();
+
+            Response.Headers["Content-Disposition"] = $"inline; filename*=UTF-8''{Uri.EscapeDataString(file.TenTaiXuong)}";
+            var stream = new FileStream(file.DuongDanTuyetDoi, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return File(stream, file.LoaiNoiDung);
+        }
+
+        /// <summary>Mở trang xem trước DOCX công khai dưới dạng HTML thay vì để trình duyệt tải tệp Word xuống.</summary>
+        /// <param name="id">Mã tài liệu công khai cần xem.</param>
+        /// <returns>Trang xem trước tài liệu; trả về 404 nếu tài liệu không tồn tại hoặc không còn công khai.</returns>
+        [HttpGet]
+        public async Task<IActionResult> PreviewPublicDocument(int id)
+        {
+            var storageDirectory = GetDocumentStorageDirectory();
+            var legacyStorageDirectory = GetLegacyDocumentStorageDirectory();
+            var html = await _taiLieuCongKhaiService.GetDocxPreviewHtmlAsync(id, storageDirectory, requirePublic: true, legacyStorageDirectory: legacyStorageDirectory);
+            return html == null ? NotFound() : Content(html, "text/html; charset=utf-8");
+        }
+
+        /// <summary>Tải xuống tài liệu đang công khai với tên tệp được tạo từ tiêu đề tài liệu.</summary>
+        /// <param name="id">Mã tài liệu được yêu cầu tải.</param>
+        /// <returns>Tệp đính kèm nếu tài liệu đang công khai; nếu không thì trả về HTTP 404.</returns>
+        [HttpGet]
+        public async Task<IActionResult> DownloadPublicDocument(int id)
+        {
+            var storageDirectory = GetDocumentStorageDirectory();
+            var legacyStorageDirectory = GetLegacyDocumentStorageDirectory();
+            var file = await _taiLieuCongKhaiService.GetPublicFileAsync(id, storageDirectory, legacyStorageDirectory);
+            if (file == null) return NotFound();
+
+            var stream = new FileStream(file.DuongDanTuyetDoi, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return File(stream, file.LoaiNoiDung, file.TenTaiXuong);
+        }
+
+        private string GetDocumentStorageDirectory()
+        {
+            var webRoot = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+            return Path.Combine(webRoot, "TaiLieuCongKhai");
+        }
+
+        private string GetLegacyDocumentStorageDirectory() => Path.Combine(_environment.ContentRootPath, "App_Data", "TaiLieuCongKhai");
 
         /// <summary>
         /// API trả về danh sách toàn bộ giải đấu công khai và các môn thi đấu tổ chức

@@ -44,6 +44,7 @@ namespace Dms.Infrastructure.Repositories
         private IGenericRepository<LichSuChuyenDoi>? _lichSuChuyenDois;
         private IGenericRepository<DieuLeGiaiDau>? _dieuLeGiaiDaus;
         private IGenericRepository<DieuLeMonTheThao>? _dieuLeMonTheThaos;
+        private IGenericRepository<TaiLieuCongKhai>? _taiLieuCongKhais;
         private IGenericRepository<CauHinhLichThiDau>? _cauHinhLichThiDaus;
         private IGenericRepository<CauHinhTheThucThiDau>? _cauHinhTheThucThiDaus;
         private IGenericRepository<SuCoDieuHanhMon>? _suCoDieuHanhMons;
@@ -161,6 +162,9 @@ namespace Dms.Infrastructure.Repositories
 
         public IGenericRepository<DieuLeMonTheThao> DieuLeMonTheThaos => 
             _dieuLeMonTheThaos ??= new GenericRepository<DieuLeMonTheThao>(_context);
+
+        public IGenericRepository<TaiLieuCongKhai> TaiLieuCongKhais =>
+            _taiLieuCongKhais ??= new GenericRepository<TaiLieuCongKhai>(_context);
 
         public IGenericRepository<CauHinhLichThiDau> CauHinhLichThiDaus => 
             _cauHinhLichThiDaus ??= new GenericRepository<CauHinhLichThiDau>(_context);
