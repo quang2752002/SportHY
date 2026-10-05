@@ -1093,6 +1093,21 @@
             exportStage.appendChild(exportReport);
             document.body.appendChild(exportStage);
 
+            // Đưa nguyên mục kết quả xuống đầu trang PDF thứ hai bằng khoảng đệm thật,
+            // tránh pagebreak plugin đẩy phần tử nhưng để sót nét chữ ở cuối canvas trang trước.
+            const scoreSection = exportReport.querySelector('.report-score-section');
+            if (scoreSection) {
+                const pdfPageContentHeight = (297 - 10 - 10) * 96 / 25.4;
+                const reportTop = exportReport.getBoundingClientRect().top;
+                const scoreSectionTop = scoreSection.getBoundingClientRect().top - reportTop;
+                if (scoreSectionTop < pdfPageContentHeight) {
+                    const pageSpacer = document.createElement('div');
+                    pageSpacer.setAttribute('aria-hidden', 'true');
+                    pageSpacer.style.cssText = `display:block;height:${Math.ceil(pdfPageContentHeight - scoreSectionTop + 24)}px;min-height:${Math.ceil(pdfPageContentHeight - scoreSectionTop + 24)}px;`;
+                    scoreSection.before(pageSpacer);
+                }
+            }
+
             html2pdf().set({
                 margin: [10, 10, 10, 10],
                 filename: `BienBan_Tran_${matchNumber}_${safeSportName}.pdf`,

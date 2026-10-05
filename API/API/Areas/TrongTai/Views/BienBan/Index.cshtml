@@ -104,10 +104,33 @@
         border-radius: 14px !important;
     }
 
+    .official-report .report-scoreboard {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    .official-report .report-scoreboard-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 140px minmax(0, 1fr);
+        align-items: center;
+        gap: .75rem;
+    }
+
+    .official-report .report-score-team {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .official-report .report-score-summary {
+        min-width: 0;
+    }
+
     .official-report .report-score {
         color: var(--report-navy) !important;
-        font-size: 2.4rem;
-        letter-spacing: .08em;
+        display: block;
+        font-size: 2.15rem;
+        letter-spacing: .04em;
+        white-space: nowrap;
     }
 
     .official-report .report-signature-card {
@@ -181,6 +204,7 @@
     @@media (max-width: 767.98px) {
         .official-report { padding: 1rem !important; }
         .official-report .report-score { font-size: 1.8rem; }
+        .official-report .report-scoreboard-grid { grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr); gap: .35rem; }
         .report-page-toolbar { align-items: stretch !important; }
         .report-page-actions { justify-content: center; }
         .report-document-action { flex: 1 1 auto; }
@@ -432,23 +456,23 @@
             </div>
 
             <!-- 4. Kết Quả Thi Đấu Chung Cuộc -->
-            <div class="mb-4">
+            <div class="mb-4 report-score-section">
                 <h6 class="report-section-title fw-bold text-uppercase" style="font-size: 13px;">
                     IV. KẾT QUẢ THI ĐẤU
                 </h6>
                 <div class="report-scoreboard text-center p-3 border rounded-2 bg-light my-2">
-                    <div class="row align-items-center">
-                        <div class="col-5">
+                    <div class="report-scoreboard-grid">
+                        <div class="report-score-team">
                             <h5 class="fw-bold text-dark mb-0">@(Model.TenDoi1 ?? "Đội 1")</h5>
                             <small class="text-muted">@(Model.DonViDoi1 ?? "")</small>
                         </div>
-                        <div class="col-2">
-                            <div class="report-score fw-bold font-monospace">
+                        <div class="report-score-summary">
+                            <div class="report-score report-score-value fw-bold font-monospace">
                                 @score1 - @score2
                             </div>
                             <small class="text-muted">Tỷ số chung cuộc</small>
                         </div>
-                        <div class="col-5">
+                        <div class="report-score-team">
                             <h5 class="fw-bold text-dark mb-0">@(Model.TenDoi2 ?? "Đội 2")</h5>
                             <small class="text-muted">@(Model.DonViDoi2 ?? "")</small>
                         </div>
