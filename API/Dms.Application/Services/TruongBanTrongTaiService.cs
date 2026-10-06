@@ -1008,8 +1008,9 @@ namespace Dms.Application.Services
         /// <summary>
         /// Lập bản nháp tự động phân công các vị trí trọng tài cho những trận đấu đã được xếp lịch.
         /// Chức năng độc lập với thuật toán tự động chia lịch đấu: chỉ đọc các trận hiện có,
-        /// ưu tiên phân công trọng tài chính cho toàn bộ trận trước các vị trí phụ, kiểm tra lịch
-        /// toàn giải, cân bằng số trận giữa các trọng tài và trả về đề xuất mà không ghi dữ liệu.
+        /// thực hiện hai bước: phân công trọng tài chính trước, sau đó chỉ phân công vị trí phụ
+        /// cho từng môn đã có trọng tài chính ở toàn bộ trận thuộc phạm vi của môn đó.
+        /// Hàm kiểm tra lịch toàn giải, cân bằng số trận và trả về đề xuất mà không ghi dữ liệu.
         /// </summary>
         /// <param name="request">Phạm vi, trọng tài được chọn và các thay đổi nháp hiện có.</param>
         /// <returns>Kết quả nháp kèm danh sách vị trí đề xuất và vị trí chưa thể gán.</returns>
@@ -1273,25 +1274,15 @@ namespace Dms.Application.Services
                 plannedRefsByMatch[tranDauId] = refs;
             }
 
-            var targetMatchesByStartTime = targetMatchList
-                .GroupBy(match => match.ThoiGianDuKien!.Value)
-                .ToDictionary(group => group.Key, group => group.ToList());
-
-            bool HasMissingMainRefereeAtSameTime(TranDau match)
+            bool HasMainRefereeAssigned(TranDau match)
             {
-                if (!targetMatchesByStartTime.TryGetValue(match.ThoiGianDuKien!.Value, out var simultaneousMatches))
-                {
-                    return false;
-                }
-
-                return simultaneousMatches.Any(simultaneousMatch =>
-                    !existingAssignments.Any(assignment =>
-                        assignment.TranDauId == simultaneousMatch.Id &&
-                        !releasedAssignmentIds.Contains(assignment.Id) &&
-                        NormalizeRefereeRole(assignment.VaiTro).Equals(canonicalRoles[0], StringComparison.OrdinalIgnoreCase)) &&
-                    !plans.Any(plan =>
-                        plan.Match.Id == simultaneousMatch.Id &&
-                        plan.VaiTro.Equals(canonicalRoles[0], StringComparison.OrdinalIgnoreCase)));
+                return existingAssignments.Any(assignment =>
+                           assignment.TranDauId == match.Id &&
+                           !releasedAssignmentIds.Contains(assignment.Id) &&
+                           NormalizeRefereeRole(assignment.VaiTro).Equals(canonicalRoles[0], StringComparison.OrdinalIgnoreCase)) ||
+                       plans.Any(plan =>
+                           plan.Match.Id == match.Id &&
+                           plan.VaiTro.Equals(canonicalRoles[0], StringComparison.OrdinalIgnoreCase));
             }
 
             // Bản đồ kiểm tra tính trung lập: đơn vị của đội tham gia trận đấu
@@ -1370,8 +1361,7 @@ namespace Dms.Application.Services
                 return null;
             }
 
-            // Phân bổ theo vai trò trên toàn bộ lịch: vị trí trọng tài chính được xử lý
-            // trước để không bị các vị trí phụ của những trận trước chiếm mất nguồn lực.
+            // Bước 1: phân công trọng tài chính cho toàn bộ trận trong phạm vi trước.
             // Trong cùng giờ, xét trận có ít ứng viên hơn trước để tránh cách chọn tham lam
             // lấy mất trọng tài duy nhất có thể điều hành một trận khác.
             foreach (var role in requestedRoles)
@@ -1396,7 +1386,31 @@ namespace Dms.Application.Services
                             .OrderBy(candidate => candidate.HasExistingMainReferee ? int.MaxValue : candidate.EligibleCount)
                             .ThenBy(candidate => candidate.Match.SoTran)
                             .Select(candidate => candidate.Match))
-                        .ToList();
+                    .ToList();
+                }
+
+                var sportsMissingMainReferees = new Dictionary<int, string>();
+                if (!isMainRefereeRole && requestedRoles.Contains(canonicalRoles[0], StringComparer.OrdinalIgnoreCase))
+                {
+                    foreach (var sportMatches in targetMatchList.GroupBy(GetSportId))
+                    {
+                        var matchesMissingMainReferee = sportMatches
+                            .Where(match => !HasMainRefereeAssigned(match))
+                            .ToList();
+                        if (matchesMissingMainReferee.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        var missingMatchNumbers = string.Join(", ", matchesMissingMainReferee
+                            .Take(5)
+                            .Select(match => $"#{match.SoTran}"));
+                        var remainingMissingMatches = matchesMissingMainReferee.Count - 5;
+                        var missingMatchSummary = remainingMissingMatches > 0
+                            ? $"{missingMatchNumbers} và {remainingMissingMatches} trận khác"
+                            : missingMatchNumbers;
+                        sportsMissingMainReferees[sportMatches.Key] = missingMatchSummary;
+                    }
                 }
 
                 foreach (var match in matchesForRole)
@@ -1407,13 +1421,7 @@ namespace Dms.Application.Services
                                              NormalizeRefereeRole(assignment.VaiTro).Equals(role, StringComparison.OrdinalIgnoreCase))
                         .ToList();
 
-                    if (currentAssignments.Count > 0 && request.ChiLapViTriTrong)
-                    {
-                        continue;
-                    }
-
-                    if (!isMainRefereeRole && requestedRoles.Contains(canonicalRoles[0], StringComparer.OrdinalIgnoreCase) &&
-                        HasMissingMainRefereeAtSameTime(match))
+                    if (!isMainRefereeRole && sportsMissingMainReferees.TryGetValue(GetSportId(match), out var missingMatchSummary))
                     {
                         if (currentAssignments.Count == 0)
                         {
@@ -1423,10 +1431,15 @@ namespace Dms.Application.Services
                                 SoTran = match.SoTran,
                                 TenTran = match.TenTran ?? $"Trận {match.SoTran}",
                                 VaiTro = role,
-                                LyDo = "Ưu tiên phân công một trọng tài chính cho mỗi trận cùng giờ; tạm hoãn vị trí này vì vẫn còn trận chưa có trọng tài chính."
+                                LyDo = $"Bước phân công vị trí phụ của môn này đang chờ vì còn thiếu trọng tài chính ở {missingMatchSummary}."
                             });
                         }
 
+                        continue;
+                    }
+
+                    if (currentAssignments.Count > 0 && request.ChiLapViTriTrong)
+                    {
                         continue;
                     }
 
