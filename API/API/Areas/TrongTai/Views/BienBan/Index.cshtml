@@ -8,6 +8,8 @@
     var regTeam2 = ViewBag.RegTeam2 as DangKyThiDauDto;
     int score1 = ViewBag.Score1 is int s1 ? s1 : 0;
     int score2 = ViewBag.Score2 is int s2 ? s2 : 0;
+    int? extraTimeScore1 = ViewBag.ExtraTimeScore1 as int?;
+    int? extraTimeScore2 = ViewBag.ExtraTimeScore2 as int?;
     string winner = ViewBag.Winner as string ?? "";
     string notes = ViewBag.Notes as string ?? "";
     var setScores = ViewBag.SetScores as List<SetScoreDto> ?? new();
@@ -487,6 +489,15 @@
                                     Hiệp @s.SetNumber: <strong>@s.Score1 - @s.Score2</strong>
                                 </span>
                             }
+                        </div>
+                    }
+
+                    @if (extraTimeScore1.HasValue && extraTimeScore2.HasValue)
+                    {
+                        <div class="d-flex justify-content-center mt-2 small">
+                            <span class="badge bg-warning-subtle text-dark border">
+                                Tổng điểm hiệp phụ: <strong>@extraTimeScore1.Value - @extraTimeScore2.Value</strong>
+                            </span>
                         </div>
                     }
 

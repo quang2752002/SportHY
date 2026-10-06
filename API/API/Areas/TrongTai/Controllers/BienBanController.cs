@@ -109,6 +109,7 @@ namespace API.Areas.TrongTai.Controllers
 
             // Đọc dữ liệu tỷ số, hiệp và sự kiện từ GhiChu
             int score1 = 0, score2 = 0;
+            int? extraTimeScore1 = null, extraTimeScore2 = null;
             string winner = "";
             string notes = "";
             var setScores = new List<SetScoreDto>();
@@ -123,6 +124,16 @@ namespace API.Areas.TrongTai.Controllers
                     var root = doc.RootElement;
                     if (root.TryGetProperty("score1", out var p1)) score1 = p1.GetInt32();
                     if (root.TryGetProperty("score2", out var p2)) score2 = p2.GetInt32();
+                    if (root.TryGetProperty("extraTimeScore1", out var overtime1) &&
+                        overtime1.ValueKind == JsonValueKind.Number && overtime1.TryGetInt32(out var parsedOvertime1))
+                    {
+                        extraTimeScore1 = parsedOvertime1;
+                    }
+                    if (root.TryGetProperty("extraTimeScore2", out var overtime2) &&
+                        overtime2.ValueKind == JsonValueKind.Number && overtime2.TryGetInt32(out var parsedOvertime2))
+                    {
+                        extraTimeScore2 = parsedOvertime2;
+                    }
                     if (root.TryGetProperty("winner", out var pw)) winner = pw.GetString() ?? "";
                     if (root.TryGetProperty("notes", out var pn)) notes = pn.GetString() ?? "";
 
@@ -184,6 +195,8 @@ namespace API.Areas.TrongTai.Controllers
 
             ViewBag.Score1 = score1;
             ViewBag.Score2 = score2;
+            ViewBag.ExtraTimeScore1 = extraTimeScore1;
+            ViewBag.ExtraTimeScore2 = extraTimeScore2;
             ViewBag.Winner = winner;
             ViewBag.Notes = notes;
             ViewBag.SetScores = setScores;
