@@ -866,6 +866,9 @@ namespace Dms.Application.DTOs
         public int? LoserNextTranDauViTri { get; set; }
         public int VongThuTu { get; set; } = 1;
         public bool IsHeat { get; set; }
+        public string? GhiChu { get; set; }
+        public string? TenDoi1Placeholder { get; set; }
+        public string? TenDoi2Placeholder { get; set; }
         public ManualPairingTeamDto? Doi1 { get; set; }
         public ManualPairingTeamDto? Doi2 { get; set; }
         public List<ManualPairingParticipantDto> DanhSachVdv { get; set; } = new();

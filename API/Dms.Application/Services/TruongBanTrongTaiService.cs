@@ -649,13 +649,17 @@ namespace Dms.Application.Services
                     pc.VaiTro == "GiamSat" ||
                     pc.VaiTro == "GiamSatTranDau");
 
+                var p1 = matchParticipants.FirstOrDefault(p => p.ViTri == 1) ?? (matchParticipants.All(p => p.ViTri == null) ? matchParticipants.ElementAtOrDefault(0) : null);
+                var p2 = matchParticipants.FirstOrDefault(p => p.ViTri == 2) ?? (matchParticipants.All(p => p.ViTri == null) ? matchParticipants.ElementAtOrDefault(1) : null);
+                if (p1 != null && p2 != null && p1.Id == p2.Id) p2 = null;
+
                 return new MatchAssignmentDto
                 {
                     TranDauId = m.Id,
                     SoTran = m.SoTran,
                     TenTran = m.TenTran ?? $"Trận số {m.SoTran}",
-                    TenBenThiDau1 = matchParticipants.ElementAtOrDefault(0) is { } participant1 ? GetParticipantName(participant1) : null,
-                    TenBenThiDau2 = matchParticipants.ElementAtOrDefault(1) is { } participant2 ? GetParticipantName(participant2) : null,
+                    TenBenThiDau1 = p1 != null ? GetParticipantName(p1) : null,
+                    TenBenThiDau2 = p2 != null ? GetParticipantName(p2) : null,
                     TenMon = tenMon,
                     TenVongDau = tenVong,
                     TenSanDau = tenSan,

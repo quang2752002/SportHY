@@ -1964,7 +1964,32 @@
             const placeholders = getMatchPlaceholderTeams(pair);
 
             // Slot 1 Display (Chỉ xem)
-            const doi1Obj = pair.doi1 || (pair.danhSachVdv && pair.danhSachVdv.length > 0 ? pair.danhSachVdv[0] : null);
+            let doi1Obj = pair.doi1;
+            if (!doi1Obj && pair.danhSachVdv && pair.danhSachVdv.length > 0) {
+                doi1Obj = pair.danhSachVdv.find(v => v.viTri === 1);
+                if (!doi1Obj && !pair.danhSachVdv.some(v => v.viTri != null)) {
+                    doi1Obj = pair.danhSachVdv[0];
+                }
+            }
+
+            // Slot 2 Display (Chỉ xem)
+            let doi2Obj = pair.doi2;
+            if (!doi2Obj && pair.danhSachVdv && pair.danhSachVdv.length > 0) {
+                doi2Obj = pair.danhSachVdv.find(v => v.viTri === 2);
+                if (!doi2Obj && !pair.danhSachVdv.some(v => v.viTri != null) && pair.danhSachVdv.length > 1) {
+                    doi2Obj = pair.danhSachVdv[1];
+                }
+            }
+
+            // Phòng ngừa trùng 1 đội ở cả 2 slot do fallback
+            if (doi1Obj && doi2Obj && (doi1Obj === doi2Obj || (doi1Obj.dangKyThiDauId && doi1Obj.dangKyThiDauId === doi2Obj.dangKyThiDauId))) {
+                if (doi1Obj.viTri === 2 || (!doi1Obj.viTri && doi2Obj.viTri === 2)) {
+                    doi1Obj = null;
+                } else {
+                    doi2Obj = null;
+                }
+            }
+
             let slot1Html = '';
             if (doi1Obj) {
                 const d1Name = escapeHtml(getParticipantDisplayName(doi1Obj, false, `Đội #${doi1Obj.dangKyThiDauId}`));
@@ -1999,7 +2024,6 @@
             }
 
             // Slot 2 Display (Chỉ xem)
-            const doi2Obj = pair.doi2 || (pair.danhSachVdv && pair.danhSachVdv.length > 1 ? pair.danhSachVdv[1] : null);
             let slot2Html = '';
             if (doi2Obj) {
                 const d2Name = escapeHtml(getParticipantDisplayName(doi2Obj, false, `Đội #${doi2Obj.dangKyThiDauId}`));
@@ -2451,16 +2475,16 @@
             if (pair.ghiChu && pair.ghiChu.toLowerCase().startsWith('tbd:')) {
                 const parts = pair.ghiChu.substring(4).split(' vs ');
                 if (parts.length === 2) {
-                    t1 = parts[0].trim();
-                    t2 = parts[1].trim();
+                    if (!pair.tenDoi1Placeholder) t1 = parts[0].trim();
+                    if (!pair.tenDoi2Placeholder) t2 = parts[1].trim();
                 }
             } else if (pair.tenTran && pair.tenTran.includes(':') && pair.tenTran.includes(' vs ')) {
                 const afterColon = pair.tenTran.split(':')[1];
                 if (afterColon) {
                     const parts = afterColon.split(' vs ');
-                    if (parts.length === 2 && !pair.doi1 && !pair.doi2) {
-                        t1 = parts[0].trim();
-                        t2 = parts[1].trim();
+                    if (parts.length === 2) {
+                        if (!pair.tenDoi1Placeholder) t1 = parts[0].trim();
+                        if (!pair.tenDoi2Placeholder) t2 = parts[1].trim();
                     }
                 }
             }
