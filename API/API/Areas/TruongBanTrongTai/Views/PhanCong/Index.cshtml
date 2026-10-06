@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Phân Công Trọng Tài Theo Môn & Trận";
     var sportList = ViewBag.SportList as List<Dms.Application.DTOs.MonTheThaoDto> ?? new();
+    var completedSportIds = ViewBag.CompletedSportIds as HashSet<int> ?? new HashSet<int>();
     var allReferees = ViewBag.AllReferees as List<Dms.Application.DTOs.TrongTaiDto> ?? new();
     int? selectedMonId = ViewBag.SelectedMonId is int selectedId ? selectedId : null;
     int? selectedRefereeId = ViewBag.SelectedRefereeId is int selectedReferee ? selectedReferee : null;
@@ -24,6 +25,11 @@
 
         .assignment-match-row-target > td:last-child {
             box-shadow: inset 0 3px 0 #f0ad00, inset -4px -3px 0 #f0ad00;
+        }
+
+        .sport-main-assignment-complete {
+            border: 2px solid #198754 !important;
+            box-shadow: 0 0 0 .15rem rgba(25, 135, 84, .12);
         }
     </style>
 }
@@ -93,8 +99,10 @@
                     @foreach (var sp in sportList)
                     {
                         bool isActive = selectedMonId == sp.Id;
+                        bool hasAllMainReferees = completedSportIds.Contains(sp.Id);
                         <a href="/TruongBanTrongTai/PhanCong?giaiDauId=@ViewBag.SelectedGiaiDauId&monTheThaoId=@sp.Id&date=@ViewBag.SelectedDate&status=@ViewBag.SelectedStatus&trongTaiId=@ViewBag.SelectedRefereeId"
-                           class="btn btn-sm rounded-pill @(isActive ? "btn-primary fw-bold" : "btn-light border")">
+                           class="btn btn-sm rounded-pill @(isActive ? "btn-primary fw-bold" : "btn-light border") @(hasAllMainReferees ? "sport-main-assignment-complete" : string.Empty)"
+                           title="@(hasAllMainReferees ? "Đã phân công trọng tài chính cho toàn bộ trận của môn này" : null)">
                             @sp.Ten
                         </a>
                     }
@@ -288,7 +296,7 @@
             <div class="modal-header bg-primary text-white">
                 <div>
                     <h5 class="modal-title fw-bold"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>Chọn trọng tài tự động</h5>
-                    <small class="opacity-75">Hệ thống chỉ random trong danh sách bạn chọn. Trưởng ban trọng tài đã được loại khỏi danh sách.</small>
+                    <small class="opacity-75">Hệ thống random trong danh sách bạn chọn và loại Trưởng ban trọng tài. Trọng tài chính được phân công trước; các vị trí khác chỉ chạy cho môn đã đủ trọng tài chính trong phạm vi đang chọn.</small>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -638,8 +646,15 @@
                         stageAssignmentChange(item.tranDauId, item.vaiTro, item.trongTaiId, false);
                     });
 
+                    var unassignedItems = (res.unassigned || []).slice(0, 8).map(function (item) {
+                        var matchName = item.tenTran || `Trận ${item.soTran}`;
+                        return `<li><b>#${item.soTran} ${escapeHtml(matchName)}</b> — ${escapeHtml(item.vaiTro)}: ${escapeHtml(item.lyDo)}</li>`;
+                    }).join('');
+                    var remainingUnassigned = Math.max(0, (res.unassigned || []).length - 8);
                     var warning = res.positionsUnassigned > 0
-                        ? `<br><span class="text-warning">Còn ${res.positionsUnassigned} vị trí chưa thể đưa vào nháp.</span>`
+                        ? `<br><span class="text-warning">Còn ${res.positionsUnassigned} vị trí chưa thể đưa vào nháp.</span>` +
+                          `<ul class="text-start small mt-2 mb-0">${unassignedItems}</ul>` +
+                          (remainingUnassigned > 0 ? `<div class="text-start small mt-1">Còn ${remainingUnassigned} vị trí khác.</div>` : '')
                         : '';
                     Swal.fire({
                         title: 'Đã tạo bản nháp',

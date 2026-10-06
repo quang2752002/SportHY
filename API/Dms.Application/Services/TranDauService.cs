@@ -228,8 +228,9 @@ namespace Dms.Application.Services
                     });
                 }
 
-                var doi1 = thanhPhanDtos.FirstOrDefault(x => x.ViTri == 1) ?? thanhPhanDtos.ElementAtOrDefault(0);
-                var doi2 = thanhPhanDtos.FirstOrDefault(x => x.ViTri == 2) ?? thanhPhanDtos.ElementAtOrDefault(1);
+                var doi1 = thanhPhanDtos.FirstOrDefault(x => x.ViTri == 1) ?? (thanhPhanDtos.All(x => x.ViTri == null) ? thanhPhanDtos.ElementAtOrDefault(0) : null);
+                var doi2 = thanhPhanDtos.FirstOrDefault(x => x.ViTri == 2) ?? (thanhPhanDtos.All(x => x.ViTri == null) ? thanhPhanDtos.ElementAtOrDefault(1) : null);
+                if (doi1 != null && doi2 != null && doi1.DangKyThiDauId == doi2.DangKyThiDauId) doi2 = null;
 
                 result.Add(new TranDauDto
                 {
@@ -478,9 +479,10 @@ namespace Dms.Application.Services
             var teamParticipants = (await _unitOfWork.ThanhPhanTranDaus.FindAsync(
                 participant => participant.TranDauId == match.Id && participant.IsDeleted != true)).ToList();
             var team1 = teamParticipants.FirstOrDefault(participant => participant.ViTri == 1)
-                ?? teamParticipants.ElementAtOrDefault(0);
+                ?? (teamParticipants.All(p => p.ViTri == null) ? teamParticipants.ElementAtOrDefault(0) : null);
             var team2 = teamParticipants.FirstOrDefault(participant => participant.ViTri == 2)
-                ?? teamParticipants.ElementAtOrDefault(1);
+                ?? (teamParticipants.All(p => p.ViTri == null) ? teamParticipants.ElementAtOrDefault(1) : null);
+            if (team1 != null && team2 != null && team1.Id == team2.Id) team2 = null;
             var periods = (await _unitOfWork.HiepDaus.FindAsync(
                 period => period.TranDauId == match.Id && period.LoaiHiep == "HiepChinh" && period.IsDeleted != true)).ToList();
             var requestedNumbers = setScores.Select(set => set.SetNumber).ToHashSet();
@@ -849,9 +851,10 @@ namespace Dms.Application.Services
                     participant.TranDauId == tranDauId && participant.IsDeleted != true))
                 .ToList();
             var team1 = participants.FirstOrDefault(participant => participant.ViTri == 1)
-                ?? participants.ElementAtOrDefault(0);
+                ?? (participants.All(p => p.ViTri == null) ? participants.ElementAtOrDefault(0) : null);
             var team2 = participants.FirstOrDefault(participant => participant.ViTri == 2)
-                ?? participants.ElementAtOrDefault(1);
+                ?? (participants.All(p => p.ViTri == null) ? participants.ElementAtOrDefault(1) : null);
+            if (team1 != null && team2 != null && team1.Id == team2.Id) team2 = null;
             var periodIds = periods.Select(period => period.Id).ToList();
             var results = (await _unitOfWork.KetQuaHiepDaus.FindAsync(result =>
                     periodIds.Contains(result.HiepDauId) && result.IsDeleted != true))
@@ -4061,8 +4064,9 @@ namespace Dms.Application.Services
             foreach (var t in pagedTranDau.Items)
             {
                 var activeTps = t.ThanhPhanTranDaus?.Where(tp => tp.IsDeleted != true).OrderBy(tp => tp.ViTri ?? tp.SoLane ?? 0).ToList() ?? new List<ThanhPhanTranDau>();
-                var tp1 = activeTps.FirstOrDefault(tp => tp.ViTri == 1) ?? activeTps.ElementAtOrDefault(0);
-                var tp2 = activeTps.FirstOrDefault(tp => tp.ViTri == 2) ?? (activeTps.Count > 1 ? activeTps.ElementAtOrDefault(1) : null);
+                var tp1 = activeTps.FirstOrDefault(tp => tp.ViTri == 1) ?? (activeTps.All(tp => tp.ViTri == null) ? activeTps.ElementAtOrDefault(0) : null);
+                var tp2 = activeTps.FirstOrDefault(tp => tp.ViTri == 2) ?? (activeTps.All(tp => tp.ViTri == null) ? (activeTps.Count > 1 ? activeTps.ElementAtOrDefault(1) : null) : null);
+                if (tp1 != null && tp2 != null && tp1.Id == tp2.Id) tp2 = null;
 
                 ManualPairingTeamDto? doi1 = null;
                 if (tp1 != null && teamLookup.TryGetValue(tp1.DangKyThiDauId, out var found1))
@@ -4147,6 +4151,9 @@ namespace Dms.Application.Services
                     LoserNextTranDauId = t.LoserNextTranDauId,
                     LoserNextTranDauViTri = t.LoserNextTranDauViTri,
                     IsHeat = isHeatMatch,
+                    GhiChu = t.GhiChu,
+                    TenDoi1Placeholder = GetPlaceholderTeam(t.GhiChu, t.TenTran, 1),
+                    TenDoi2Placeholder = GetPlaceholderTeam(t.GhiChu, t.TenTran, 2),
                     Doi1 = doi1,
                     Doi2 = doi2,
                     DanhSachVdv = danhSachVdv,
@@ -4522,8 +4529,9 @@ namespace Dms.Application.Services
             var tps = (await _unitOfWork.ThanhPhanTranDaus.FindAsync(tp => tp.TranDauId == match.Id && tp.IsDeleted != true))
                       .OrderBy(tp => tp.ViTri ?? 1).ToList();
 
-            var team1 = tps.FirstOrDefault(tp => tp.ViTri == 1) ?? tps.ElementAtOrDefault(0);
-            var team2 = tps.FirstOrDefault(tp => tp.ViTri == 2) ?? tps.ElementAtOrDefault(1);
+            var team1 = tps.FirstOrDefault(tp => tp.ViTri == 1) ?? (tps.All(tp => tp.ViTri == null) ? tps.ElementAtOrDefault(0) : null);
+            var team2 = tps.FirstOrDefault(tp => tp.ViTri == 2) ?? (tps.All(tp => tp.ViTri == null) ? tps.ElementAtOrDefault(1) : null);
+            if (team1 != null && team2 != null && team1.Id == team2.Id) team2 = null;
 
             int winnerDangKyId = 0;
             int loserDangKyId = 0;

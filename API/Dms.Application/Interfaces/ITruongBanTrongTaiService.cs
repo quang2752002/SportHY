@@ -120,6 +120,14 @@ namespace Dms.Application.Interfaces
         Task<List<MatchAssignmentDto>> GetMatchAssignmentsAsync(int giaiDauId, int? monTheThaoId, string? status, DateTime? date, int? trongTaiId = null);
 
         /// <summary>
+        /// Lấy ID các môn trong giải đấu đã được phân công trọng tài chính cho toàn bộ trận đấu còn hiệu lực.
+        /// Kết quả không phụ thuộc bộ lọc ngày, trạng thái hoặc trọng tài đang chọn trên giao diện.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu cần kiểm tra tiến độ phân công.</param>
+        /// <returns>Tập ID môn có ít nhất một trận và mọi trận đều đã có trọng tài chính.</returns>
+        Task<HashSet<int>> GetSportsWithAllMainRefereesAssignedAsync(int giaiDauId);
+
+        /// <summary>
         /// Kiểm tra xung đột trùng lịch thi đấu tức thời khi phân công một trọng tài vào một trận đấu
         /// </summary>
         /// <param name="trongTaiId">ID trọng tài cần kiểm tra</param>
@@ -139,7 +147,8 @@ namespace Dms.Application.Interfaces
 
         /// <summary>
         /// Lập bản nháp tự động phân công các vị trí trọng tài cho những trận đấu đã có lịch trong phạm vi yêu cầu.
-        /// Ưu tiên phân công trọng tài chính cho toàn bộ trận trước các vị trí phụ. Hàm không ghi dữ liệu;
+        /// Thực hiện hai bước: phân công trọng tài chính trước, sau đó phân công vị trí phụ riêng cho
+        /// từng môn đã có trọng tài chính ở toàn bộ trận thuộc phạm vi của môn đó. Hàm không ghi dữ liệu;
         /// chỉ trả về các vị trí được đề xuất sau khi kiểm tra trùng giờ, thời gian nghỉ tối thiểu,
         /// giới hạn số trận mỗi ngày và danh sách trọng tài được chọn.
         /// </summary>

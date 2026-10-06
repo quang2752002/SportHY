@@ -649,13 +649,17 @@ namespace Dms.Application.Services
                     pc.VaiTro == "GiamSat" ||
                     pc.VaiTro == "GiamSatTranDau");
 
+                var p1 = matchParticipants.FirstOrDefault(p => p.ViTri == 1) ?? (matchParticipants.All(p => p.ViTri == null) ? matchParticipants.ElementAtOrDefault(0) : null);
+                var p2 = matchParticipants.FirstOrDefault(p => p.ViTri == 2) ?? (matchParticipants.All(p => p.ViTri == null) ? matchParticipants.ElementAtOrDefault(1) : null);
+                if (p1 != null && p2 != null && p1.Id == p2.Id) p2 = null;
+
                 return new MatchAssignmentDto
                 {
                     TranDauId = m.Id,
                     SoTran = m.SoTran,
                     TenTran = m.TenTran ?? $"Trận số {m.SoTran}",
-                    TenBenThiDau1 = matchParticipants.ElementAtOrDefault(0) is { } participant1 ? GetParticipantName(participant1) : null,
-                    TenBenThiDau2 = matchParticipants.ElementAtOrDefault(1) is { } participant2 ? GetParticipantName(participant2) : null,
+                    TenBenThiDau1 = p1 != null ? GetParticipantName(p1) : null,
+                    TenBenThiDau2 = p2 != null ? GetParticipantName(p2) : null,
                     TenMon = tenMon,
                     TenVongDau = tenVong,
                     TenSanDau = tenSan,
@@ -680,6 +684,51 @@ namespace Dms.Application.Services
                     TotalAssigned = matchPcs.Count
                 };
             }).ToList();
+        }
+
+        /// <summary>
+        /// Lấy ID các môn trong giải đấu đã được phân công trọng tài chính cho toàn bộ trận đấu còn hiệu lực.
+        /// Kết quả được tính trên toàn bộ giải, không phụ thuộc bộ lọc ngày, trạng thái hoặc trọng tài của trang.
+        /// </summary>
+        /// <param name="giaiDauId">ID giải đấu cần kiểm tra tiến độ phân công.</param>
+        /// <returns>Tập ID môn có ít nhất một trận và mọi trận đều đã có trọng tài chính.</returns>
+        public async Task<HashSet<int>> GetSportsWithAllMainRefereesAssignedAsync(int giaiDauId)
+        {
+            if (giaiDauId <= 0)
+            {
+                return new HashSet<int>();
+            }
+
+            var tournamentSports = (await _unitOfWork.GiaiDauMonTheThaos.FindAsync(item =>
+                item.GiaiDauId == giaiDauId && item.IsDeleted != true)).ToList();
+            if (tournamentSports.Count == 0)
+            {
+                return new HashSet<int>();
+            }
+
+            var sportIdByTournamentSportId = tournamentSports.ToDictionary(item => item.Id, item => item.MonTheThaoId);
+            var tournamentSportIds = sportIdByTournamentSportId.Keys.ToHashSet();
+            var matches = (await _unitOfWork.TranDaus.FindAsync(match =>
+                tournamentSportIds.Contains(match.GiaiDauMonTheThaoId) && match.IsDeleted != true)).ToList();
+            if (matches.Count == 0)
+            {
+                return new HashSet<int>();
+            }
+
+            var matchIds = matches.Select(match => match.Id).ToHashSet();
+            var assignedMainMatchIds = (await _unitOfWork.PhanCongTrongTais.FindAsync(assignment =>
+                    matchIds.Contains(assignment.TranDauId) && assignment.IsDeleted != true))
+                .Where(assignment => NormalizeRefereeRole(assignment.VaiTro)
+                    .Equals("Trọng tài chính", StringComparison.OrdinalIgnoreCase))
+                .Select(assignment => assignment.TranDauId)
+                .ToHashSet();
+
+            return matches
+                .Where(match => sportIdByTournamentSportId.ContainsKey(match.GiaiDauMonTheThaoId))
+                .GroupBy(match => sportIdByTournamentSportId[match.GiaiDauMonTheThaoId])
+                .Where(sportMatches => sportMatches.Any() && sportMatches.All(match => assignedMainMatchIds.Contains(match.Id)))
+                .Select(sportMatches => sportMatches.Key)
+                .ToHashSet();
         }
 
         /// <summary>
@@ -963,8 +1012,9 @@ namespace Dms.Application.Services
         /// <summary>
         /// Lập bản nháp tự động phân công các vị trí trọng tài cho những trận đấu đã được xếp lịch.
         /// Chức năng độc lập với thuật toán tự động chia lịch đấu: chỉ đọc các trận hiện có,
-        /// ưu tiên phân công trọng tài chính cho toàn bộ trận trước các vị trí phụ, kiểm tra lịch
-        /// toàn giải, cân bằng số trận giữa các trọng tài và trả về đề xuất mà không ghi dữ liệu.
+        /// thực hiện hai bước: phân công trọng tài chính trước, sau đó chỉ phân công vị trí phụ
+        /// cho từng môn đã có trọng tài chính ở toàn bộ trận thuộc phạm vi của môn đó.
+        /// Hàm kiểm tra lịch toàn giải, cân bằng số trận và trả về đề xuất mà không ghi dữ liệu.
         /// </summary>
         /// <param name="request">Phạm vi, trọng tài được chọn và các thay đổi nháp hiện có.</param>
         /// <returns>Kết quả nháp kèm danh sách vị trí đề xuất và vị trí chưa thể gán.</returns>
@@ -1228,6 +1278,17 @@ namespace Dms.Application.Services
                 plannedRefsByMatch[tranDauId] = refs;
             }
 
+            bool HasMainRefereeAssigned(TranDau match)
+            {
+                return existingAssignments.Any(assignment =>
+                           assignment.TranDauId == match.Id &&
+                           !releasedAssignmentIds.Contains(assignment.Id) &&
+                           NormalizeRefereeRole(assignment.VaiTro).Equals(canonicalRoles[0], StringComparison.OrdinalIgnoreCase)) ||
+                       plans.Any(plan =>
+                           plan.Match.Id == match.Id &&
+                           plan.VaiTro.Equals(canonicalRoles[0], StringComparison.OrdinalIgnoreCase));
+            }
+
             // Bản đồ kiểm tra tính trung lập: đơn vị của đội tham gia trận đấu
             var targetMatchIds = targetMatchList.Select(m => m.Id).ToList();
             var allThanhPhans = (await _unitOfWork.ThanhPhanTranDaus.FindAsync(tp => targetMatchIds.Contains(tp.TranDauId) && tp.IsDeleted != true)).ToList();
@@ -1304,17 +1365,82 @@ namespace Dms.Application.Services
                 return null;
             }
 
-            // Phân bổ theo vai trò trên toàn bộ lịch: vị trí trọng tài chính được xử lý
-            // trước để không bị các vị trí phụ của những trận trước chiếm mất nguồn lực.
+            // Bước 1: phân công trọng tài chính cho toàn bộ trận trong phạm vi trước.
+            // Trong cùng giờ, xét trận có ít ứng viên hơn trước để tránh cách chọn tham lam
+            // lấy mất trọng tài duy nhất có thể điều hành một trận khác.
             foreach (var role in requestedRoles)
             {
-                foreach (var match in targetMatchList)
+                var matchesForRole = targetMatchList;
+                var isMainRefereeRole = role.Equals(canonicalRoles[0], StringComparison.OrdinalIgnoreCase);
+                if (isMainRefereeRole && request.ChiLapViTriTrong)
+                {
+                    matchesForRole = targetMatchList
+                        .GroupBy(match => match.ThoiGianDuKien!.Value)
+                        .OrderBy(group => group.Key)
+                        .SelectMany(group => group
+                            .Select(match => new
+                            {
+                                Match = match,
+                                HasExistingMainReferee = existingAssignments.Any(assignment =>
+                                    assignment.TranDauId == match.Id &&
+                                    !releasedAssignmentIds.Contains(assignment.Id) &&
+                                    NormalizeRefereeRole(assignment.VaiTro).Equals(role, StringComparison.OrdinalIgnoreCase)),
+                                EligibleCount = activeReferees.Count(referee => GetConflictReason(referee.Id, match) == null)
+                            })
+                            .OrderBy(candidate => candidate.HasExistingMainReferee ? int.MaxValue : candidate.EligibleCount)
+                            .ThenBy(candidate => candidate.Match.SoTran)
+                            .Select(candidate => candidate.Match))
+                    .ToList();
+                }
+
+                var sportsMissingMainReferees = new Dictionary<int, string>();
+                if (!isMainRefereeRole && requestedRoles.Contains(canonicalRoles[0], StringComparer.OrdinalIgnoreCase))
+                {
+                    foreach (var sportMatches in targetMatchList.GroupBy(GetSportId))
+                    {
+                        var matchesMissingMainReferee = sportMatches
+                            .Where(match => !HasMainRefereeAssigned(match))
+                            .ToList();
+                        if (matchesMissingMainReferee.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        var missingMatchNumbers = string.Join(", ", matchesMissingMainReferee
+                            .Take(5)
+                            .Select(match => $"#{match.SoTran}"));
+                        var remainingMissingMatches = matchesMissingMainReferee.Count - 5;
+                        var missingMatchSummary = remainingMissingMatches > 0
+                            ? $"{missingMatchNumbers} và {remainingMissingMatches} trận khác"
+                            : missingMatchNumbers;
+                        sportsMissingMainReferees[sportMatches.Key] = missingMatchSummary;
+                    }
+                }
+
+                foreach (var match in matchesForRole)
                 {
                     var currentAssignments = existingAssignments
                         .Where(assignment => assignment.TranDauId == match.Id &&
                                              !releasedAssignmentIds.Contains(assignment.Id) &&
                                              NormalizeRefereeRole(assignment.VaiTro).Equals(role, StringComparison.OrdinalIgnoreCase))
                         .ToList();
+
+                    if (!isMainRefereeRole && sportsMissingMainReferees.TryGetValue(GetSportId(match), out var missingMatchSummary))
+                    {
+                        if (currentAssignments.Count == 0)
+                        {
+                            result.Unassigned.Add(new AutoAssignRefereeUnassignedDto
+                            {
+                                TranDauId = match.Id,
+                                SoTran = match.SoTran,
+                                TenTran = match.TenTran ?? $"Trận {match.SoTran}",
+                                VaiTro = role,
+                                LyDo = $"Bước phân công vị trí phụ của môn này đang chờ vì còn thiếu trọng tài chính ở {missingMatchSummary}."
+                            });
+                        }
+
+                        continue;
+                    }
 
                     if (currentAssignments.Count > 0 && request.ChiLapViTriTrong)
                     {
