@@ -147,7 +147,8 @@ namespace Dms.Application.Interfaces
 
         /// <summary>
         /// Lập bản nháp tự động phân công các vị trí trọng tài cho những trận đấu đã có lịch trong phạm vi yêu cầu.
-        /// Ưu tiên phân công trọng tài chính cho toàn bộ trận trước các vị trí phụ. Hàm không ghi dữ liệu;
+        /// Thực hiện hai bước: phân công trọng tài chính trước, sau đó phân công vị trí phụ riêng cho
+        /// từng môn đã có trọng tài chính ở toàn bộ trận thuộc phạm vi của môn đó. Hàm không ghi dữ liệu;
         /// chỉ trả về các vị trí được đề xuất sau khi kiểm tra trùng giờ, thời gian nghỉ tối thiểu,
         /// giới hạn số trận mỗi ngày và danh sách trọng tài được chọn.
         /// </summary>
