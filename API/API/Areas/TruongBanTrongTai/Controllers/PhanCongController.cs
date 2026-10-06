@@ -48,6 +48,7 @@ namespace API.Areas.TruongBanTrongTai.Controllers
             }
 
             var assignments = await _truongBanService.GetMatchAssignmentsAsync(selectedGiaiDauId.Value, monTheThaoId, status, date, trongTaiId);
+            ViewBag.CompletedSportIds = await _truongBanService.GetSportsWithAllMainRefereesAssignedAsync(selectedGiaiDauId.Value);
             ViewBag.TargetMatchId = tranDauId.HasValue && assignments.Any(match => match.TranDauId == tranDauId.Value)
                 ? tranDauId
                 : null;
