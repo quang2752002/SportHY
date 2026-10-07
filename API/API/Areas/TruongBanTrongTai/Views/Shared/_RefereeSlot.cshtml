@@ -14,26 +14,42 @@
      data-vai-tro="@vaiTro"
      data-original-id="@(currentId?.ToString() ?? string.Empty)"
      data-original-name="@currentName"
-     data-badge-class="@badgeClass">
+     data-badge-class="@badgeClass"
+     data-locked="@Model.IsLocked.ToString().ToLowerInvariant()"
+     data-locked-reason="@Model.LockedReason">
     @if (currentId.HasValue && !string.IsNullOrEmpty(currentName))
     {
         <span class="badge @badgeClass fw-semibold px-2 py-1 text-truncate" style="max-width: 130px;" title="@currentName">
             @currentName
         </span>
-        <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-sm btn-link text-primary p-0 px-1" onclick="openAssignModal(@tranDauId, '@vaiTro')" title="Đổi trọng tài">
-                <i class="fa-solid fa-pen-to-square"></i>
-            </button>
-            <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1" onclick="removeRefereeAssignment(@tranDauId, '@vaiTro')" title="Hủy phân công">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
+        @if (Model.IsLocked)
+        {
+            <span class="text-muted ms-1" title="@Model.LockedReason"><i class="fa-solid fa-lock"></i></span>
+        }
+        else
+        {
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-sm btn-link text-primary p-0 px-1" onclick="openAssignModal(@tranDauId, '@vaiTro')" title="Đổi trọng tài">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1" onclick="removeRefereeAssignment(@tranDauId, '@vaiTro')" title="Hủy phân công">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        }
     }
     else
     {
         <span class="text-muted small fst-italic px-1">Chưa gán</span>
-        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 small" onclick="openAssignModal(@tranDauId, '@vaiTro')">
-            <i class="fa-solid fa-plus me-1"></i> Gán
-        </button>
+        @if (Model.IsLocked)
+        {
+            <span class="text-muted small" title="@Model.LockedReason"><i class="fa-solid fa-lock me-1"></i>Đã khóa</span>
+        }
+        else
+        {
+            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 small" onclick="openAssignModal(@tranDauId, '@vaiTro')">
+                <i class="fa-solid fa-plus me-1"></i> Gán
+            </button>
+        }
     }
 </div>

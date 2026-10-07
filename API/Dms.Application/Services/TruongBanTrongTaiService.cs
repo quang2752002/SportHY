@@ -904,8 +904,24 @@ namespace Dms.Application.Services
         }
 
         /// <summary>
-        /// Gán, thay đổi hoặc hủy phân công trọng tài cho trận đấu kèm cơ chế bảo vệ quá tải thể lực
-        /// và thời gian đệm nghỉ hồi sức tối thiểu theo CauHinhLichThiDau của môn.
+        /// Xác định trận đấu đã bắt đầu hoặc kết thúc, là các trạng thái không cho phép thay đổi phân công trọng tài.
+        /// </summary>
+        /// <param name="match">Trận đấu cần kiểm tra trạng thái.</param>
+        /// <returns>True nếu trận đang diễn ra hoặc đã kết thúc; ngược lại trả về false.</returns>
+        private static bool IsRefereeAssignmentLocked(TranDau match)
+        {
+            var status = match.TrangThai?.Trim();
+            return string.Equals(status, "DangDau", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(status, "DangDienRa", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(status, "KetThuc", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(status, "DaKetThuc", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(status, "DaDau", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(status, "HoanThanh", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Gán, thay đổi hoặc hủy phân công trọng tài cho trận chưa bắt đầu, kèm cơ chế bảo vệ quá tải thể lực
+        /// và thời gian đệm nghỉ hồi sức tối thiểu theo CauHinhLichThiDau của môn. Từ chối thay đổi nếu trận đang diễn ra hoặc đã kết thúc.
         /// </summary>
         /// <param name="tranDauId">Mã định danh trận đấu</param>
         /// <param name="vaiTro">Vai trò điều hành (Trọng tài chính, phụ 1, phụ 2, bàn, giám sát)</param>
@@ -918,6 +934,11 @@ namespace Dms.Application.Services
             if (match == null)
             {
                 return (false, "Không tìm thấy trận đấu.", null);
+            }
+
+            if (IsRefereeAssignmentLocked(match))
+            {
+                return (false, "Không thể thay đổi trọng tài vì trận đấu đang diễn ra hoặc đã kết thúc.", null);
             }
 
             var canonicalRole = NormalizeRefereeRole(vaiTro);
@@ -1009,7 +1030,7 @@ namespace Dms.Application.Services
         /// Lập bản nháp tự động phân công các vị trí trọng tài cho những trận đấu đã được xếp lịch.
         /// Chức năng độc lập với thuật toán tự động chia lịch đấu: chỉ đọc các trận hiện có,
         /// thực hiện hai bước: phân công trọng tài chính trước, sau đó chỉ phân công vị trí phụ
-        /// cho từng môn đã có trọng tài chính ở toàn bộ trận thuộc phạm vi của môn đó.
+        /// cho từng môn đã có trọng tài chính ở toàn bộ trận thuộc phạm vi của môn đó. Bỏ qua trận đang diễn ra hoặc đã kết thúc.
         /// Hàm kiểm tra lịch toàn giải, cân bằng số trận và trả về đề xuất mà không ghi dữ liệu.
         /// </summary>
         /// <param name="request">Phạm vi, trọng tài được chọn và các thay đổi nháp hiện có.</param>
@@ -1082,15 +1103,18 @@ namespace Dms.Application.Services
                 match.IsDeleted != true &&
                 match.ThoiGianDuKien.HasValue)).ToList();
 
-            var targetMatches = allMatches.AsEnumerable();
+            var scopedMatches = allMatches.AsEnumerable();
+            if (request.Date.HasValue)
+            {
+                scopedMatches = scopedMatches.Where(match => match.ThoiGianDuKien!.Value.Date == request.Date.Value.Date);
+            }
+
+            var matchesInRequestedScope = scopedMatches.ToList();
+            result.MatchesSkippedLocked = matchesInRequestedScope.Count(IsRefereeAssignmentLocked);
+            var targetMatches = matchesInRequestedScope.Where(match => !IsRefereeAssignmentLocked(match));
             if (request.ChiPhanCongTranChuaDau)
             {
                 targetMatches = targetMatches.Where(match => match.TrangThai == "ChuaDau");
-            }
-
-            if (request.Date.HasValue)
-            {
-                targetMatches = targetMatches.Where(match => match.ThoiGianDuKien!.Value.Date == request.Date.Value.Date);
             }
 
             var targetMatchList = targetMatches
@@ -1102,7 +1126,10 @@ namespace Dms.Application.Services
             if (targetMatchList.Count == 0)
             {
                 result.Success = true;
-                result.Message = "Không có trận đấu phù hợp để tự động phân công.";
+                result.Message = "Không có trận đấu phù hợp để tự động phân công." +
+                    (result.MatchesSkippedLocked > 0
+                        ? $" Đã bỏ qua {result.MatchesSkippedLocked} trận đang diễn ra hoặc đã kết thúc."
+                        : string.Empty);
                 return result;
             }
 
@@ -1138,6 +1165,7 @@ namespace Dms.Application.Services
                     VaiTro = NormalizeRefereeRole(change.VaiTro)
                 })
                 .Where(item => item.Change.TranDauId > 0 && !string.IsNullOrWhiteSpace(item.VaiTro) && matchMap.ContainsKey(item.Change.TranDauId))
+                .Where(item => !IsRefereeAssignmentLocked(matchMap[item.Change.TranDauId]))
                 .GroupBy(item => new { item.Change.TranDauId, item.VaiTro })
                 .Select(group => group.Last())
                 .ToList();
@@ -1547,18 +1575,22 @@ namespace Dms.Application.Services
             result.PositionsAssigned = result.Assignments.Count;
             result.PositionsUnassigned = result.Unassigned.Count;
             result.MatchesAssigned = result.Assignments.Select(assignment => assignment.TranDauId).Distinct().Count();
-            result.Message = result.PositionsAssigned == 0
+            result.Message = (result.PositionsAssigned == 0
                 ? "Không có vị trí trống nào có thể đưa vào bản nháp phân công."
                 : $"Đã tạo nháp {result.PositionsAssigned} vị trí cho {result.MatchesAssigned} trận. " +
                   (result.PositionsUnassigned > 0
                       ? $"Còn {result.PositionsUnassigned} vị trí chưa thể phân công do không đủ điều kiện."
-                      : "Tất cả vị trí yêu cầu đã được đưa vào nháp. Hãy bấm Lưu để xác nhận.");
+                      : "Tất cả vị trí yêu cầu đã được đưa vào nháp. Hãy bấm Lưu để xác nhận.")) +
+                (result.MatchesSkippedLocked > 0
+                    ? $" Đã bỏ qua {result.MatchesSkippedLocked} trận đang diễn ra hoặc đã kết thúc."
+                    : string.Empty);
 
             return result;
         }
 
         /// <summary>
-        /// Xác nhận và lưu bản nháp phân công trọng tài cho một giải đấu.
+        /// Xác nhận và lưu bản nháp phân công trọng tài cho một giải đấu; từ chối toàn bộ bản nháp nếu có thay đổi
+        /// nhắm đến trận đang diễn ra hoặc đã kết thúc.
         /// Mọi phân công bị thay đổi hoặc hủy đều được xóa mềm trước khi thêm bản ghi mới;
         /// Trưởng ban trọng tài bị loại khỏi toàn bộ kết quả lưu theo quy định nghiệp vụ.
         /// </summary>
@@ -1614,11 +1646,28 @@ namespace Dms.Application.Services
             var existingAssignments = (await _unitOfWork.PhanCongTrongTais.FindAsync(assignment =>
                 matchIds.Contains(assignment.TranDauId) && assignment.IsDeleted != true)).ToList();
 
+            var matchesById = matches.ToDictionary(match => match.Id);
+            var lockedMatchChange = draftBySlot.Values
+                .Where(change => matchesById.TryGetValue(change.TranDauId, out var match) && IsRefereeAssignmentLocked(match))
+                .Select(change => matchesById[change.TranDauId])
+                .FirstOrDefault();
+            if (lockedMatchChange != null)
+            {
+                var lockedState = string.Equals(lockedMatchChange.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase) ||
+                                  string.Equals(lockedMatchChange.TrangThai, "DangDienRa", StringComparison.OrdinalIgnoreCase)
+                    ? "đang diễn ra"
+                    : "đã kết thúc";
+                result.Message = $"Không thể thay đổi phân công trọng tài trận #{lockedMatchChange.SoTran} vì trận {lockedState}.";
+                return result;
+            }
+
             // Dọn các phân công cũ của Trưởng ban trong lần lưu kế tiếp để đảm bảo quy định được áp dụng cả với dữ liệu cũ.
             if (tournament.TruongBanTrongTaiId.HasValue)
             {
                 foreach (var assignment in existingAssignments.Where(assignment =>
-                             assignment.TrongTaiId == tournament.TruongBanTrongTaiId.Value))
+                             assignment.TrongTaiId == tournament.TruongBanTrongTaiId.Value &&
+                             matchesById.TryGetValue(assignment.TranDauId, out var match) &&
+                             !IsRefereeAssignmentLocked(match)))
                 {
                     var canonicalRole = NormalizeRefereeRole(assignment.VaiTro);
                     if (!string.IsNullOrWhiteSpace(canonicalRole))

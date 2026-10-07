@@ -11,4 +11,8 @@ public class RefereeSlotViewModel
     public string? CurrentName { get; set; }
 
     public string BadgeClass { get; set; } = "bg-primary text-white";
+
+    public bool IsLocked { get; set; }
+
+    public string? LockedReason { get; set; }
 }
