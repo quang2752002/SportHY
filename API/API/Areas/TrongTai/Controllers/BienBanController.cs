@@ -24,6 +24,7 @@ namespace API.Areas.TrongTai.Controllers
     {
         private readonly IGiaiDauService _giaiDauService;
         private readonly IDangKyThiDauService _dangKyThiDauService;
+        private readonly ICauHinhTheThucService _cauHinhTheThucService;
 
         public BienBanController(
             UserManager<ApplicationUser> userManager,
@@ -31,11 +32,13 @@ namespace API.Areas.TrongTai.Controllers
             ITranDauService tranDauService,
             IGiaiDauService giaiDauService,
             IDangKyThiDauService dangKyThiDauService,
-            ITruongBanTrongTaiService refereeAccessService)
+            ITruongBanTrongTaiService refereeAccessService,
+            ICauHinhTheThucService cauHinhTheThucService)
             : base(userManager, trongTaiService, refereeAccessService, tranDauService)
         {
             _giaiDauService = giaiDauService;
             _dangKyThiDauService = dangKyThiDauService;
+            _cauHinhTheThucService = cauHinhTheThucService;
         }
 
         [HttpGet]
@@ -202,6 +205,16 @@ namespace API.Areas.TrongTai.Controllers
             ViewBag.SetScores = setScores;
             ViewBag.Events = events;
             ViewBag.Signatures = signatures;
+
+            CauHinhTheThucDto? matchFormat = null;
+            if (currentMatch != null)
+            {
+                matchFormat = await _cauHinhTheThucService.GetConfigByTranDauIdAsync(currentMatch.Id);
+            }
+            ViewBag.MatchFormat = matchFormat;
+            ViewBag.HeatResults = currentMatch != null && (matchFormat?.IsPerformanceSport == true || (currentMatch.ThanhPhanTranDaus?.Count > 2))
+                ? await _tranDauService.GetHeatResultsByMatchIdAsync(currentMatch.Id)
+                : new List<HeatParticipantResultDto>();
 
             return PartialView("Index", currentMatch);
         }

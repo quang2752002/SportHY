@@ -43,10 +43,5 @@ namespace Dms.Infrastructure.Migrations
         {
             migrationBuilder.DropTable(name: "TaiLieuCongKhai");
         }
-
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
-        {
-            new ApplicationDbContextModelSnapshot().ConfigureCurrentModelForMigration(modelBuilder);
-        }
     }
 }

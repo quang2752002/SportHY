@@ -33,5 +33,10 @@ namespace Dms.Domain.Entities
 
         [MaxLength(1000)]
         public string? GhiChu { get; set; }
+
+        /// <summary>
+        /// Chi tiết chuỗi lần thử (Cử tạ, Nhảy xa) hoặc điểm biểu diễn (Võ thuật, Thể dục) dưới dạng JSON.
+        /// </summary>
+        public string? ChiTietKetQuaJson { get; set; }
     }
 }

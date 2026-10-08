@@ -228,9 +228,12 @@
                             <label class="form-label fw-semibold small">Hình thức / Sơ đồ thi đấu</label>
                             <select id="hinhThucThiDau" class="form-select">
                                 <option value="LoaiTrucTiep">Loại trực tiếp (Knockout)</option>
-                                <option value="VongBang">Vòng tròn tính điểm </option>
-                                <option value="KetHopVongBangVaLoaiTrucTiep">Kết hợp vòng bảng và loại trực tiếp</option>                                
-                                <option value="TinhDiemXepHang">Đo thành tích / Tính điểm xếp hạng (Điền kinh, Bơi lội)</option>
+                                <option value="VongBang">Vòng tròn tính điểm</option>
+                                <option value="KetHopVongBangVaLoaiTrucTiep">Kết hợp vòng bảng và loại trực tiếp</option>
+                                <option value="DuaThoiGian">⏱️ Đua tính thời gian (Chạy, Bơi, Xe đạp)</option>
+                                <option value="DoLuotThi">🏋️ Đo theo lần thực hiện (Cử tạ, Nhảy xa/cao, Ném tạ)</option>
+                                <option value="BieuDienChamDiem">🥋 Biểu diễn / Chấm điểm (Võ quyền, Thể dục)</option>
+                                <option value="TinhDiemXepHang" style="display:none;">Đo thành tích (Legacy)</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -509,37 +512,53 @@
                         <span class="fw-bold text-uppercase" style="font-size:11px;color:#6b7280;letter-spacing:.08em">CHỌN THỂ THỨC THI ĐẤU</span>
                         <span style="font-size:12px;color:#9ca3af">Hiển thị trọn vẹn toàn bộ thông số trên cùng màn hình</span>
                     </div>
-                    <div class="row g-3">
-                        <div class="col-3">
+                    <div class="row g-2">
+                        <div class="col-6 col-md-4 col-xl-2">
                             <div class="fmt-tab-card fmt-active" id="tabCard_LoaiTrucTiep" onclick="switchFormat('LoaiTrucTiep')">
                                 <div class="fmt-tab-dot"></div>
                                 <div class="fmt-tab-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
                                 <div class="fmt-tab-name">Loại Trực Tiếp</div>
-                                <div class="fmt-tab-sub">Hiệp đấu · Hiệp phụ · Tranh 3-4</div>
+                                <div class="fmt-tab-sub">Knockout · Tranh 3-4</div>
                             </div>
                         </div>
-                        <div class="col-3">
+                        <div class="col-6 col-md-4 col-xl-2">
                             <div class="fmt-tab-card" id="tabCard_VongBang" onclick="switchFormat('VongBang')">
                                 <div class="fmt-tab-dot"></div>
                                 <div class="fmt-tab-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
-                                <div class="fmt-tab-name">Vòng Tròn 1 Lượt</div>
-                                <div class="fmt-tab-sub">Điểm số T-H-B · Tiêu chí phụ</div>
+                                <div class="fmt-tab-name">Vòng Tròn</div>
+                                <div class="fmt-tab-sub">Điểm T-H-B · Tiêu chí phụ</div>
                             </div>
                         </div>
-                        <div class="col-3">
+                        <div class="col-6 col-md-4 col-xl-2">
                             <div class="fmt-tab-card" id="tabCard_KetHopVongBangVaLoaiTrucTiep" onclick="switchFormat('KetHopVongBangVaLoaiTrucTiep')">
                                 <div class="fmt-tab-dot"></div>
                                 <div class="fmt-tab-icon"><i class="fa-solid fa-layer-group"></i></div>
-                                <div class="fmt-tab-name">Bảng &amp; Loại Trực Tiếp</div>
-                                <div class="fmt-tab-sub">Bảng đấu · Suất đi tiếp · Bê hòa</div>
+                                <div class="fmt-tab-name">Bảng &amp; Knockout</div>
+                                <div class="fmt-tab-sub">Bảng đấu · Suất đi tiếp</div>
                             </div>
                         </div>
-                        <div class="col-3">
-                            <div class="fmt-tab-card" id="tabCard_TinhDiemXepHang" onclick="switchFormat('TinhDiemXepHang')">
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="fmt-tab-card" id="tabCard_DuaThoiGian" onclick="switchFormat('DuaThoiGian')">
                                 <div class="fmt-tab-dot"></div>
                                 <div class="fmt-tab-icon"><i class="fa-solid fa-stopwatch"></i></div>
-                                <div class="fmt-tab-name">Tính Giờ / Thành Tích</div>
-                                <div class="fmt-tab-sub">Lượt thi · Đo lường &amp; Tính điểm</div>
+                                <div class="fmt-tab-name">Đua Thời Gian</div>
+                                <div class="fmt-tab-sub">Chạy làn · Đồng loạt</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="fmt-tab-card" id="tabCard_DoLuotThi" onclick="switchFormat('DoLuotThi')">
+                                <div class="fmt-tab-dot"></div>
+                                <div class="fmt-tab-icon"><i class="fa-solid fa-weight-hanging"></i></div>
+                                <div class="fmt-tab-name">Đo Lượt Thử</div>
+                                <div class="fmt-tab-sub">Cử tạ · Nhảy xa / cao</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="fmt-tab-card" id="tabCard_BieuDienChamDiem" onclick="switchFormat('BieuDienChamDiem')">
+                                <div class="fmt-tab-dot"></div>
+                                <div class="fmt-tab-icon"><i class="fa-solid fa-star"></i></div>
+                                <div class="fmt-tab-name">Biểu Diễn</div>
+                                <div class="fmt-tab-sub">Chấm điểm · Trừ lỗi</div>
                             </div>
                         </div>
                     </div>
@@ -1193,16 +1212,141 @@
                         </div>
                     </div>
 
-                    <!-- ====== TAB 4: TÍNH GIỜ / THÀNH TÍCH (giữ lại, làm sau) ====== -->
+                    <!-- ====== THỂ THỨC ĐO THÀNH TÍCH / TÍNH GIỜ / LƯỢT THỬ / BIỂU DIỄN ====== -->
                     <div id="mechTinhDiem" class="format-mechanism-panel d-none">
-                        <div class="fmt-section">
-                            <div class="d-flex flex-column align-items-center justify-content-center py-5 text-center gap-3">
-                                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:64px;height:64px;background:#fffbeb">
-                                    <i class="fa-solid fa-stopwatch fs-3" style="color:#eab308"></i>
-                                </div>
+                        <div class="fmt-section mb-3">
+                            <div class="fmt-section-hdr">
+                                <div class="fmt-ico-circle fmt-ico-blue"><i class="fa-solid fa-person-running"></i></div>
                                 <div>
-                                    <h6 class="fw-bold" style="color:#111827">Tab Tính Giờ / Thành Tích</h6>
-                                    <p class="text-muted small mb-0">Tính năng đang được phát triển và sẽ được cập nhật sớm.</p>
+                                    <h6 class="fw-bold mb-0" style="color:#111827" id="panelTitleDoThanhTich">Quy cách Đợt thi, Lượt thi &amp; Tiến vào Chung kết</h6>
+                                    <p class="mb-0 mt-1" style="font-size:12px;color:#6b7280">Cấu hình chi tiết cách tổ chức các lượt thi, phân làn, lượt thử hoặc thang điểm biểu diễn.</p>
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <!-- Khối riêng: ĐUA TÍNH THỜI GIAN -->
+                                <div class="col-12 p-3 bg-light rounded-3 border d-none" id="boxDuaThoiGian">
+                                    <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-stopwatch me-1"></i> Thiết lập Đua thời gian (Chạy / Bơi / Xe đạp)</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold small">Hình thức xuất phát</label>
+                                            <select id="fmtHinhThucXuatPhat" class="form-select" onchange="onHinhThucXuatPhatChange()">
+                                                <option value="ChiaLan">Chia làn cố định (Lane-based) - Chạy ngắn, Bơi lội</option>
+                                                <option value="DongLoat">Xuất phát đồng loạt (Mass Start) - Chạy bền, Marathon, Xe đạp</option>
+                                                <option value="SoLe">Xuất phát so le (Time Trial) - Xe đạp tính giờ</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6" id="boxSoVdvMoiLuot">
+                                            <label class="form-label fw-semibold small">Số làn / VĐV mỗi đợt chạy</label>
+                                            <input type="number" class="form-control" id="fmtSoVdvLuot" value="8" min="1" max="16">
+                                            <small class="text-muted">Áp dụng khi thi chia làn (6-8 làn)</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Khối riêng: ĐO THEO LẦN THỰC HIỆN -->
+                                <div class="col-12 p-3 bg-light rounded-3 border d-none" id="boxDoLuotThi">
+                                    <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-weight-hanging me-1"></i> Thiết lập Lần thực hiện (Cử tạ / Nhảy xa / Nhảy cao / Ném tạ)</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold small">Số lần thử tối đa của mỗi VĐV</label>
+                                            <input type="number" class="form-control" id="fmtSoLuotThucHien" value="3" min="1" max="10">
+                                            <small class="text-muted">VD: 3 lần cử giật, 3 lần cử đẩy hoặc 3-6 lần nhảy</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold small">Cơ chế xác định kết quả</label>
+                                            <select id="fmtCachTinhKetQuaLuotThi" class="form-select">
+                                                <option value="LanTotNhat">Lần thực hiện tốt nhất (Nhảy xa, Ném tạ)</option>
+                                                <option value="TongHaiNoiDung">Tổng 2 nội dung (Cử tạ: Giật + Đẩy)</option>
+                                                <option value="MucXaCaoNhat">Mức xà cao nhất vượt qua (Nhảy cao, Nhảy sào)</option>
+                                                <option value="TongTatCaLuot">Cộng dồn tất cả các lượt (Bắn súng, Bắn cung)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Khối riêng: BIỂU DIỄN / CHẤM ĐIỂM -->
+                                <div class="col-12 p-3 bg-light rounded-3 border d-none" id="boxBieuDienChamDiem">
+                                    <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-star me-1"></i> Thiết lập Biểu diễn / Trọng tài chấm điểm</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold small">Thang điểm tối đa của bài thi</label>
+                                            <input type="number" step="0.1" class="form-control" id="fmtThangDiemToiDa" value="10.0" min="1">
+                                            <small class="text-muted">Mặc định: 10.0 điểm hoặc 100.0 điểm</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mt-4">
+                                                <input class="form-check-input" type="checkbox" id="fmtCoDiemTruBieuDien" checked>
+                                                <label class="form-check-label fw-semibold small" for="fmtCoDiemTruBieuDien">Có ô nhập điểm trừ lỗi (vượt thảm, phạm thời gian)</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Loại đo lường thành tích</label>
+                                    <select id="fmtLoaiDo" class="form-select">
+                                        <option value="ThoiGian">⏱️ Thời gian (Giây / Phút:Giây)</option>
+                                        <option value="KhoangCach">📏 Khoảng cách (Mét / cm)</option>
+                                        <option value="KhoiLuong">🏋️ Khối lượng (Kg - Cử tạ)</option>
+                                        <option value="DiemSo">🎯 Điểm số đánh giá</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Đơn vị đo lường</label>
+                                    <input type="text" class="form-control" id="fmtDonViThanhTich" value="giay" placeholder="giay, m, kg, diem">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Tiêu chí xếp hạng</label>
+                                    <select id="fmtTieuChiThanhTich" class="form-select">
+                                        <option value="CangNhoCangTot">Nhỏ hơn là tốt hơn (Thời gian ngắn nhất thắng)</option>
+                                        <option value="CangLonCangTot">Lớn hơn là tốt hơn (Xa nhất / Nặng nhất / Điểm cao nhất)</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Chiều xếp theo chỉ số phụ</label>
+                                    <select id="fmtTieuChiPhuCangNhoCangTot" class="form-select">
+                                        <option value="true">Giá trị nhỏ hơn xếp trên</option>
+                                        <option value="false">Giá trị lớn hơn xếp trên</option>
+                                    </select>
+                                    <small class="form-text text-muted">Dùng để phân định thứ hạng khi thành tích chính bằng nhau.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Tên tiêu chí phụ</label>
+                                    <input type="text" class="form-control" id="fmtTenTieuChiPhuThanhTich" maxlength="100" placeholder="VD: Lần nhảy tốt thứ hai">
+                                    <small class="form-text text-muted">Tên này hiển thị trên bảng nhập kết quả cho trọng tài.</small>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Quy cách chọn vào Chung kết</label>
+                                    <select id="fmtQuyCachVaoCk" class="form-select">
+                                        <option value="TopNToanVong">Lấy Top N thành tích tốt nhất toàn vòng</option>
+                                        <option value="TopNTheoBang">Nhất &amp; Nhì mỗi đợt + Top thành tích</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Số vòng thi đấu</label>
+                                    <select id="fmtSoVongThi" class="form-select">
+                                        <option value="1">1 vòng (Chung kết trực tiếp)</option>
+                                        <option value="2" selected>2 vòng (Vòng loại → Chung kết)</option>
+                                        <option value="3">3 vòng (Sơ loại → Bán kết → Chung kết)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Số suất vào Chung kết</label>
+                                    <input type="number" class="form-control" id="fmtSoLuongVaoCk" value="8" min="1" max="32">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Kỷ lục hiện tại của giải</label>
+                                    <input type="number" step="0.01" class="form-control" id="fmtKyLucHienTai" placeholder="Để trống nếu chưa có kỷ lục">
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" id="fmtXepLanTheoHatGiong" checked>
+                                        <label class="form-check-label fw-semibold small" for="fmtXepLanTheoHatGiong">Ưu tiên hạt giống vào làn giữa (Làn 4, 5 bơi / chạy)</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1524,7 +1668,16 @@
                         break;
                     case 'KetHopVongBangVaLoaiTrucTiep':
                         hinhThucBadge = '<span class="badge bg-primary-subtle text-primary border fw-semibold"><i class="fa-solid fa-diagram-project me-1"></i>Bảng + Knockout</span>';
-                        break;                    
+                        break;
+                    case 'DuaThoiGian':
+                        hinhThucBadge = '<span class="badge bg-warning-subtle text-warning border fw-semibold"><i class="fa-solid fa-stopwatch me-1"></i>⏱️ Đua thời gian</span>';
+                        break;
+                    case 'DoLuotThi':
+                        hinhThucBadge = '<span class="badge bg-secondary-subtle text-dark border fw-semibold"><i class="fa-solid fa-weight-hanging me-1"></i>🏋️ Lượt thực hiện</span>';
+                        break;
+                    case 'BieuDienChamDiem':
+                        hinhThucBadge = '<span class="badge bg-danger-subtle text-danger border fw-semibold"><i class="fa-solid fa-star me-1"></i>🥋 Biểu diễn</span>';
+                        break;
                     case 'TinhDiemXepHang':
                         hinhThucBadge = '<span class="badge bg-info-subtle text-info border fw-semibold"><i class="fa-solid fa-stopwatch me-1"></i>Đo thành tích</span>';
                         break;
@@ -2077,7 +2230,8 @@
         function switchFormat(format) {
             currentFormat = format;
             $('#fmtHinhThucThiDau').val(format);
-            if (format === 'TinhDiemXepHang') {
+            const isPerformance = ['TinhDiemXepHang', 'DuaThoiGian', 'DoLuotThi', 'BieuDienChamDiem'].includes(format);
+            if (isPerformance) {
                 const selectedMode = $('#fmtLoaiTheThuc').val();
                 if (selectedMode && selectedMode !== 'TinhDiemXepHang') lastHeadToHeadScoringMode = selectedMode;
                 $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
@@ -2090,21 +2244,38 @@
                 'LoaiTrucTiep': 'fmt-active',
                 'VongBang': 'fmt-active-rr',
                 'KetHopVongBangVaLoaiTrucTiep': 'fmt-active-grp',
+                'DuaThoiGian': 'fmt-active-perf',
+                'DoLuotThi': 'fmt-active-perf',
+                'BieuDienChamDiem': 'fmt-active-perf',
                 'TinhDiemXepHang': 'fmt-active-perf'
             };
             $('.fmt-tab-card').removeClass('fmt-active fmt-active-rr fmt-active-grp fmt-active-perf');
-            $(`#tabCard_${format}`).addClass(tabMap[format]);
+            $(`#tabCard_${format}`).addClass(tabMap[format] || 'fmt-active');
 
             // Panel visibility
-            const panelMap = {
-                'LoaiTrucTiep': 'mechLoaiTrucTiep',
-                'VongBang': 'mechVongBang',
-                'KetHopVongBangVaLoaiTrucTiep': 'mechKetHop',
-                'TinhDiemXepHang': 'mechTinhDiem'
-            };
             $('.format-mechanism-panel').addClass('d-none');
-            $(`#${panelMap[format]}`).removeClass('d-none');
+            if (isPerformance) {
+                $('#mechTinhDiem').removeClass('d-none');
+                $('#boxDuaThoiGian').toggleClass('d-none', format !== 'DuaThoiGian');
+                $('#boxDoLuotThi').toggleClass('d-none', format !== 'DoLuotThi');
+                $('#boxBieuDienChamDiem').toggleClass('d-none', format !== 'BieuDienChamDiem');
+            } else if (format === 'LoaiTrucTiep') {
+                $('#mechLoaiTrucTiep').removeClass('d-none');
+            } else if (format === 'VongBang') {
+                $('#mechVongBang').removeClass('d-none');
+            } else if (format === 'KetHopVongBangVaLoaiTrucTiep') {
+                $('#mechKetHop').removeClass('d-none');
+            }
             onScoringModeChange();
+        }
+
+        function onHinhThucXuatPhatChange() {
+            const val = $('#fmtHinhThucXuatPhat').val();
+            if (val === 'DongLoat') {
+                $('#boxSoVdvMoiLuot').addClass('d-none');
+            } else {
+                $('#boxSoVdvMoiLuot').removeClass('d-none');
+            }
         }
 
         function getPeriodUnit() {
@@ -2113,13 +2284,14 @@
 
         function onScoringModeChange() {
             const mode = $('#fmtLoaiTheThuc').val() || 'ThoiGianHiep';
-            if (mode === 'TinhDiemXepHang' && currentFormat !== 'TinhDiemXepHang') {
-                switchFormat('TinhDiemXepHang');
+            const isPerformance = ['TinhDiemXepHang', 'DuaThoiGian', 'DoLuotThi', 'BieuDienChamDiem'].includes(currentFormat);
+            if (mode === 'TinhDiemXepHang' && !isPerformance) {
+                switchFormat('DuaThoiGian');
                 return;
             }
             if (mode !== 'TinhDiemXepHang') lastHeadToHeadScoringMode = mode;
             const periodUnit = mode === 'SetDiem' ? 'Set' : 'Hiệp';
-            $('#fmtLoaiTheThuc').prop('disabled', currentFormat === 'TinhDiemXepHang');
+            $('#fmtLoaiTheThuc').prop('disabled', isPerformance);
             $('#setScoringOptions').toggleClass('d-none', mode !== 'SetDiem');
             $('#scoreModeSummary').toggleClass('alert-primary', mode === 'ThoiGianHiep')
                 .toggleClass('alert-success', mode === 'SetDiem')
@@ -2400,6 +2572,24 @@
                     setActiveQbtn('.combPhuHiepBtn', ph); setActiveQbtn('.combPhuTgBtn', pt);
                 }
                 $('#comb_coPenalty').prop('checked', data.coPenalty !== false);
+            } else if (['TinhDiemXepHang', 'DuaThoiGian', 'DoLuotThi', 'BieuDienChamDiem'].includes(format)) {
+                $('#fmtHinhThucXuatPhat').val(data.hinhThucXuatPhat || 'ChiaLan');
+                $('#fmtSoVdvLuot').val(data.soVdvMoiLuot || 8);
+                $('#fmtSoLuotThucHien').val(data.soLuotThucHien || 3);
+                $('#fmtCachTinhKetQuaLuotThi').val(data.cachTinhKetQuaLuotThi || 'LanTotNhat');
+                $('#fmtThangDiemToiDa').val(data.thangDiemToiDa ?? 10.0);
+                $('#fmtCoDiemTruBieuDien').prop('checked', data.coDiemTruBieuDien !== false);
+                $('#fmtLoaiDo').val(data.loaiDoThanhTich || 'ThoiGian');
+                $('#fmtDonViThanhTich').val(data.donViThanhTich || 'giay');
+                $('#fmtTieuChiThanhTich').val(data.tieuChiXepHangThanhTich || 'CangNhoCangTot');
+                $('#fmtTieuChiPhuCangNhoCangTot').val(data.tieuChiPhuCangNhoCangTot !== false ? 'true' : 'false');
+                $('#fmtTenTieuChiPhuThanhTich').val(data.tenTieuChiPhuThanhTich || '');
+                $('#fmtQuyCachVaoCk').val(data.quyCachTuyenChonVaoCk || 'TopNToanVong');
+                $('#fmtSoVongThi').val(data.soVongThi || 2);
+                $('#fmtSoLuongVaoCk').val(data.soLuongVaoChungKet || 8);
+                $('#fmtKyLucHienTai').val(data.kyLucHienTai ?? '');
+                $('#fmtXepLanTheoHatGiong').prop('checked', data.xepLanTheoHatGiong !== false);
+                onHinhThucXuatPhatChange();
             }
 
             switchFormat(format);
@@ -2487,7 +2677,14 @@
                 case 'athletics':
                 case 'swimming':
                     $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
-                    switchFormat('TinhDiemXepHang'); break;
+                    switchFormat('DuaThoiGian');
+                    $('#fmtHinhThucXuatPhat').val('ChiaLan');
+                    $('#fmtSoVdvLuot').val(8);
+                    $('#fmtLoaiDo').val('ThoiGian');
+                    $('#fmtDonViThanhTich').val('giay');
+                    $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
+                    onHinhThucXuatPhatChange();
+                    break;
             }
             onScoringModeChange();
             if (window.SportApp && SportApp.toast) SportApp.toast('info', `Đã áp dụng mẫu: ${preset.toUpperCase()}`);
@@ -2496,11 +2693,12 @@
         // ---- Thu thập và kiểm tra cấu hình để lưu cùng thông tin môn ----
         function buildFormatPayload() {
             const hinhThuc = currentFormat;
-            const scoringMode = hinhThuc === 'TinhDiemXepHang' ? 'TinhDiemXepHang' : $('#fmtLoaiTheThuc').val();
+            const isPerformance = ['TinhDiemXepHang', 'DuaThoiGian', 'DoLuotThi', 'BieuDienChamDiem'].includes(hinhThuc);
+            const scoringMode = isPerformance ? 'TinhDiemXepHang' : $('#fmtLoaiTheThuc').val();
             const periodSelector = hinhThuc === 'VongBang' ? '#rr_soHiep'
                 : hinhThuc === 'KetHopVongBangVaLoaiTrucTiep' ? '#comb_soHiep' : '#ko_soHiep';
             const periodCount = parseInt($(periodSelector).val(), 10);
-            if (scoringMode !== 'TinhDiemXepHang' && (!Number.isInteger(periodCount) || periodCount < 1 || periodCount > 15)) {
+            if (!isPerformance && (!Number.isInteger(periodCount) || periodCount < 1 || periodCount > 15)) {
                 Swal.fire('Cấu hình chưa hợp lệ', 'Số hiệp/set tối đa phải từ 1 đến 15.', 'warning');
                 return null;
             }
@@ -2575,8 +2773,25 @@
                     if ($(this).find('.fmt-criteria-cb').is(':checked')) crit.push($(this).data('criteria-id'));
                 });
                 payload.tieuChiXepHang = crit;
-            } else if (hinhThuc === 'TinhDiemXepHang') {
+            } else if (isPerformance) {
                 payload.loaiTheThuc = 'TinhDiemXepHang';
+                payload.hinhThucThiDau = hinhThuc;
+                payload.hinhThucXuatPhat = $('#fmtHinhThucXuatPhat').val() || 'ChiaLan';
+                payload.soVdvMoiLuot = parseInt($('#fmtSoVdvLuot').val(), 10) || 8;
+                payload.soLuotThucHien = parseInt($('#fmtSoLuotThucHien').val(), 10) || 3;
+                payload.cachTinhKetQuaLuotThi = $('#fmtCachTinhKetQuaLuotThi').val() || 'LanTotNhat';
+                payload.thangDiemToiDa = parseFloat($('#fmtThangDiemToiDa').val()) || 10.0;
+                payload.coDiemTruBieuDien = $('#fmtCoDiemTruBieuDien').is(':checked');
+                payload.loaiDoThanhTich = $('#fmtLoaiDo').val() || 'ThoiGian';
+                payload.donViThanhTich = $('#fmtDonViThanhTich').val() || 'giay';
+                payload.tieuChiXepHangThanhTich = $('#fmtTieuChiThanhTich').val() || 'CangNhoCangTot';
+                payload.tieuChiPhuCangNhoCangTot = $('#fmtTieuChiPhuCangNhoCangTot').val() === 'true';
+                payload.tenTieuChiPhuThanhTich = $('#fmtTenTieuChiPhuThanhTich').val() || null;
+                payload.quyCachTuyenChonVaoCk = $('#fmtQuyCachVaoCk').val() || 'TopNToanVong';
+                payload.soVongThi = parseInt($('#fmtSoVongThi').val(), 10) || 1;
+                payload.soLuongVaoChungKet = parseInt($('#fmtSoLuongVaoCk').val(), 10) || 8;
+                payload.kyLucHienTai = parseFloat($('#fmtKyLucHienTai').val()) || null;
+                payload.xepLanTheoHatGiong = $('#fmtXepLanTheoHatGiong').is(':checked');
             }
 
             payload.loaiTheThuc = scoringMode;

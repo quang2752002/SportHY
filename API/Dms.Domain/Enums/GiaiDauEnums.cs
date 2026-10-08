@@ -59,6 +59,15 @@ namespace Dms.Domain.Enums
         [Description("Tính điểm xếp hạng / Tính giờ - Thành tích (Leaderboard / Time Trial)")]
         TinhDiemXepHang = 6,
 
+        [Description("Đua tính thời gian (Chạy, Bơi, Xe đạp)")]
+        DuaThoiGian = 8,
+
+        [Description("Đo theo lần thực hiện (Cử tạ, Nhảy xa, Ném tạ)")]
+        DoLuotThi = 9,
+
+        [Description("Biểu diễn / Chấm điểm (Võ quyền, Thể dục dụng cụ)")]
+        BieuDienChamDiem = 10,
+
         [Description("Khác")]
         Khac = 7
     }

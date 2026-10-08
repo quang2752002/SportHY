@@ -19,6 +19,10 @@
     var tournamentName = ViewBag.SelectedTournamentName as string;
     if (string.IsNullOrWhiteSpace(tournamentName)) tournamentName = Model?.TenGiaiDau;
     if (string.IsNullOrWhiteSpace(tournamentName)) tournamentName = "Chưa cập nhật tên giải";
+
+    var matchFormat = ViewBag.MatchFormat as CauHinhTheThucDto;
+    var heatResults = ViewBag.HeatResults as List<HeatParticipantResultDto> ?? new();
+    bool isPerformanceMatch = (matchFormat?.IsPerformanceSport == true) || (heatResults.Count > 0);
 }
 
 <style>
@@ -400,61 +404,92 @@
                     }
                     else
                     {
-                        <div class="col-12 text-muted">Ban tổ chức phân công điều hành trận đấu theo quy định.</div>
+                        <div class="col-12 text-muted fst-italic">Chưa có thông tin phân công tổ trọng tài.</div>
                     }
                 </div>
             </div>
 
-            <!-- 3. Thành Phần Hai Đội & Đội Hình -->
+            <!-- 3. Thành Phần Thi Đấu -->
             <div class="mb-4">
                 <h6 class="report-section-title fw-bold text-uppercase" style="font-size: 13px;">
-                    III. THÀNH PHẦN HAI ĐỘI THI ĐẤU
+                    III. THÀNH PHẦN THI ĐẤU
                 </h6>
-                <div class="row g-3 mt-1">
-                    <!-- Đội 1 -->
-                    <div class="col-md-6">
-                        <div class="report-team-card p-3 border rounded-2 bg-light">
-                            <div class="fw-bold text-dark">ĐỘI 1: @(Model.TenDoi1 ?? "Đội 1")</div>
-                            <div class="small text-muted mb-2">Đơn vị: @(Model.DonViDoi1 ?? "--")</div>
-                            <div class="small fw-semibold text-secondary">Danh sách vận động viên:</div>
-                            <ul class="mb-0 ps-3 small text-dark">
-                                @if (regTeam1 != null && regTeam1.VanDongVienNames.Count > 0)
-                                {
-                                    @foreach (var v in regTeam1.VanDongVienNames)
+                @if (isPerformanceMatch && Model.ThanhPhanTranDaus != null && Model.ThanhPhanTranDaus.Count > 0)
+                {
+                    <div class="p-3 border rounded-2 bg-light">
+                        <div class="small fw-semibold text-secondary mb-2">Danh sách vận động viên tham gia lượt thi (@Model.ThanhPhanTranDaus.Count VĐV):</div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered bg-white mb-0 text-center align-middle">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th style="width: 90px;">@(matchFormat?.HinhThucXuatPhat == "DongLoat" ? "Số BIB" : "Làn/STT")</th>
+                                        <th class="text-start">Họ và Tên VĐV</th>
+                                        <th class="text-start">Đoàn / Đơn Vị</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Model.ThanhPhanTranDaus.Count; i++)
                                     {
-                                        <li>@v</li>
+                                        var tp = Model.ThanhPhanTranDaus[i];
+                                        <tr>
+                                            <td class="font-monospace fw-bold">@(tp.SoDeoBIB ?? (tp.SoLane.HasValue ? $"Làn {tp.SoLane}" : $"{i + 1}"))</td>
+                                            <td class="text-start fw-semibold">@(tp.TenDangKy ?? tp.TenDoi ?? $"VĐV {tp.DangKyThiDauId}")</td>
+                                            <td class="text-start text-muted">@(tp.TenDonVi ?? "--")</td>
+                                        </tr>
                                     }
-                                }
-                                else
-                                {
-                                    <li>Vận động viên thi đấu chính thức</li>
-                                }
-                            </ul>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+                }
+                else
+                {
+                    <div class="row g-3 mt-1">
+                        <!-- Đội 1 -->
+                        <div class="col-md-6">
+                            <div class="report-team-card p-3 border rounded-2 bg-light">
+                                <div class="fw-bold text-dark">ĐỘI 1: @(Model.TenDoi1 ?? "Đội 1")</div>
+                                <div class="small text-muted mb-2">Đơn vị: @(Model.DonViDoi1 ?? "--")</div>
+                                <div class="small fw-semibold text-secondary">Danh sách vận động viên:</div>
+                                <ul class="mb-0 ps-3 small text-dark">
+                                    @if (regTeam1 != null && regTeam1.VanDongVienNames.Count > 0)
+                                    {
+                                        @foreach (var v in regTeam1.VanDongVienNames)
+                                        {
+                                            <li>@v</li>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <li>Vận động viên thi đấu chính thức</li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
 
-                    <!-- Đội 2 -->
-                    <div class="col-md-6">
-                        <div class="report-team-card p-3 border rounded-2 bg-light">
-                            <div class="fw-bold text-dark">ĐỘI 2: @(Model.TenDoi2 ?? "Đội 2")</div>
-                            <div class="small text-muted mb-2">Đơn vị: @(Model.DonViDoi2 ?? "--")</div>
-                            <div class="small fw-semibold text-secondary">Danh sách vận động viên:</div>
-                            <ul class="mb-0 ps-3 small text-dark">
-                                @if (regTeam2 != null && regTeam2.VanDongVienNames.Count > 0)
-                                {
-                                    @foreach (var v in regTeam2.VanDongVienNames)
+                        <!-- Đội 2 -->
+                        <div class="col-md-6">
+                            <div class="report-team-card p-3 border rounded-2 bg-light">
+                                <div class="fw-bold text-dark">ĐỘI 2: @(Model.TenDoi2 ?? "Đội 2")</div>
+                                <div class="small text-muted mb-2">Đơn vị: @(Model.DonViDoi2 ?? "--")</div>
+                                <div class="small fw-semibold text-secondary">Danh sách vận động viên:</div>
+                                <ul class="mb-0 ps-3 small text-dark">
+                                    @if (regTeam2 != null && regTeam2.VanDongVienNames.Count > 0)
                                     {
-                                        <li>@v</li>
+                                        @foreach (var v in regTeam2.VanDongVienNames)
+                                        {
+                                            <li>@v</li>
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    <li>Vận động viên thi đấu chính thức</li>
-                                }
-                            </ul>
+                                    else
+                                    {
+                                        <li>Vận động viên thi đấu chính thức</li>
+                                    }
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                </div>
+                }
             </div>
 
             <!-- 4. Kết Quả Thi Đấu Chung Cuộc -->
@@ -462,60 +497,129 @@
                 <h6 class="report-section-title fw-bold text-uppercase" style="font-size: 13px;">
                     IV. KẾT QUẢ THI ĐẤU
                 </h6>
-                <div class="report-scoreboard text-center p-3 border rounded-2 bg-light my-2">
-                    <div class="report-scoreboard-grid">
-                        <div class="report-score-team">
-                            <h5 class="fw-bold text-dark mb-0">@(Model.TenDoi1 ?? "Đội 1")</h5>
-                            <small class="text-muted">@(Model.DonViDoi1 ?? "")</small>
-                        </div>
-                        <div class="report-score-summary">
-                            <div class="report-score report-score-value fw-bold font-monospace">
-                                @score1 - @score2
-                            </div>
-                            <small class="text-muted">Tỷ số chung cuộc</small>
-                        </div>
-                        <div class="report-score-team">
-                            <h5 class="fw-bold text-dark mb-0">@(Model.TenDoi2 ?? "Đội 2")</h5>
-                            <small class="text-muted">@(Model.DonViDoi2 ?? "")</small>
-                        </div>
+                @if (isPerformanceMatch && heatResults.Count > 0)
+                {
+                    <div class="table-responsive border rounded-2 p-2 bg-light my-2">
+                        <table class="table table-bordered table-hover align-middle text-center mb-0 bg-white">
+                            <thead class="table-dark small">
+                                <tr>
+                                    <th style="width: 100px;">Thứ Hạng</th>
+                                    <th style="width: 90px;">@(matchFormat?.HinhThucXuatPhat == "DongLoat" ? "Số BIB" : "Làn/STT")</th>
+                                    <th class="text-start">Vận Động Viên</th>
+                                    <th class="text-start">Đơn Vị</th>
+                                    <th style="width: 180px;">Thành Tích Công Nhận</th>
+                                    <th style="width: 140px;">@(matchFormat?.TenTieuChiPhuThanhTich ?? "Chỉ số phụ")</th>
+                                    <th style="width: 120px;">Trạng Thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var sortedResults = heatResults.OrderBy(r => r.XepHang ?? int.MaxValue).ThenBy(r => r.SoLane).ToList();
+                                }
+                                @foreach (var r in sortedResults)
+                                {
+                                    var tpItem = Model.ThanhPhanTranDaus?.FirstOrDefault(t => t.Id == r.ThanhPhanTranDauId);
+                                    <tr>
+                                        <td>
+                                            @if (r.XepHang == 1)
+                                            {
+                                                <span class="badge bg-warning text-dark font-monospace fs-6 px-2 py-1">🥇 Hạng 1</span>
+                                            }
+                                            else if (r.XepHang == 2)
+                                            {
+                                                <span class="badge bg-secondary text-white font-monospace fs-6 px-2 py-1">🥈 Hạng 2</span>
+                                            }
+                                            else if (r.XepHang == 3)
+                                            {
+                                                <span class="badge bg-danger text-white font-monospace fs-6 px-2 py-1">🥉 Hạng 3</span>
+                                            }
+                                            else if (r.XepHang.HasValue)
+                                            {
+                                                <span class="badge bg-primary text-white font-monospace">Hạng @r.XepHang</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">--</span>
+                                            }
+                                        </td>
+                                        <td class="font-monospace fw-bold">@(r.SoDeoBIB ?? (r.SoLane > 0 ? $"Làn {r.SoLane}" : "--"))</td>
+                                        <td class="text-start fw-bold text-dark">@(tpItem?.TenDangKy ?? tpItem?.TenDoi ?? $"VĐV {r.DangKyThiDauId}")</td>
+                                        <td class="text-start text-muted small">@(tpItem?.TenDonVi ?? "--")</td>
+                                        <td class="font-monospace fw-bold text-success fs-6">@(r.KetQuaText ?? (r.GiaTri.HasValue ? $"{r.GiaTri.Value:0.00} {matchFormat?.DonViThanhTich}" : r.TrangThai))</td>
+                                        <td class="font-monospace text-muted small">@(r.GiaTriPhu?.ToString("0.00") ?? "--")</td>
+                                        <td>
+                                            @if (r.TrangThai == "ThamGia")
+                                            {
+                                                <span class="badge bg-success-subtle text-success">Hợp lệ</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger">@r.TrangThai</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
+                }
+                else
+                {
+                    <div class="report-scoreboard text-center p-3 border rounded-2 bg-light my-2">
+                        <div class="report-scoreboard-grid">
+                            <div class="report-score-team">
+                                <h5 class="fw-bold text-dark mb-0">@(Model.TenDoi1 ?? "Đội 1")</h5>
+                                <small class="text-muted">@(Model.DonViDoi1 ?? "")</small>
+                            </div>
+                            <div class="report-score-summary">
+                                <div class="report-score report-score-value fw-bold font-monospace">
+                                    @score1 - @score2
+                                </div>
+                                <small class="text-muted">Tỷ số chung cuộc</small>
+                            </div>
+                            <div class="report-score-team">
+                                <h5 class="fw-bold text-dark mb-0">@(Model.TenDoi2 ?? "Đội 2")</h5>
+                                <small class="text-muted">@(Model.DonViDoi2 ?? "")</small>
+                            </div>
+                        </div>
 
-                    @if (setScores.Count > 0)
-                    {
-                        <div class="d-flex justify-content-center gap-3 mt-3 pt-2 border-top small">
-                            @foreach (var s in setScores)
-                            {
-                                <span class="badge bg-white text-dark border">
-                                    Hiệp @s.SetNumber: <strong>@s.Score1 - @s.Score2</strong>
+                        @if (setScores.Count > 0)
+                        {
+                            <div class="d-flex justify-content-center gap-3 mt-3 pt-2 border-top small">
+                                @foreach (var s in setScores)
+                                {
+                                    <span class="badge bg-white text-dark border">
+                                        Hiệp @s.SetNumber: <strong>@s.Score1 - @s.Score2</strong>
+                                    </span>
+                                }
+                            </div>
+                        }
+
+                        @if (extraTimeScore1.HasValue && extraTimeScore2.HasValue)
+                        {
+                            <div class="d-flex justify-content-center mt-2 small">
+                                <span class="badge bg-warning-subtle text-dark border">
+                                    Tổng điểm hiệp phụ: <strong>@extraTimeScore1.Value - @extraTimeScore2.Value</strong>
                                 </span>
+                            </div>
+                        }
+
+                        <div class="mt-2 text-success fw-bold small">
+                            @if (winner == "1")
+                            {
+                                <span>🏆 Kết quả: <strong>@(Model.TenDoi1 ?? "Đội 1")</strong> Thắng chung cuộc</span>
+                            }
+                            else if (winner == "2")
+                            {
+                                <span>🏆 Kết quả: <strong>@(Model.TenDoi2 ?? "Đội 2")</strong> Thắng chung cuộc</span>
+                            }
+                            else if (winner == "draw")
+                            {
+                                <span>🤝 Kết quả: Hai đội Hòa</span>
                             }
                         </div>
-                    }
-
-                    @if (extraTimeScore1.HasValue && extraTimeScore2.HasValue)
-                    {
-                        <div class="d-flex justify-content-center mt-2 small">
-                            <span class="badge bg-warning-subtle text-dark border">
-                                Tổng điểm hiệp phụ: <strong>@extraTimeScore1.Value - @extraTimeScore2.Value</strong>
-                            </span>
-                        </div>
-                    }
-
-                    <div class="mt-2 text-success fw-bold small">
-                        @if (winner == "1")
-                        {
-                            <span>🏆 Kết quả: <strong>@(Model.TenDoi1 ?? "Đội 1")</strong> Thắng chung cuộc</span>
-                        }
-                        else if (winner == "2")
-                        {
-                            <span>🏆 Kết quả: <strong>@(Model.TenDoi2 ?? "Đội 2")</strong> Thắng chung cuộc</span>
-                        }
-                        else if (winner == "draw")
-                        {
-                            <span>🤝 Kết quả: Hai đội Hòa</span>
-                        }
                     </div>
-                </div>
+                }
             </div>
 
             <!-- 5. Diễn Biến & Thẻ Phạt -->

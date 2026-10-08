@@ -38,5 +38,20 @@ namespace Dms.Application.Interfaces
             List<HeatParticipantResultDto> heatResults,
             CauHinhTheThucDto config,
             string? username = null);
+
+        /// <summary>
+        /// Lưu tạm kết quả lượt thi (Heat / Lượt thử / Biểu diễn) của các VĐV vào cơ sở dữ liệu mà không chốt kết thúc trận đấu.
+        /// Cập nhật thông tin làn chạy, số BIB, thứ tự thi đấu, chi tiết JSON và bảng điểm thành tích.
+        /// </summary>
+        /// <param name="tranDauId">Mã định danh lượt thi đang diễn ra</param>
+        /// <param name="heatResults">Danh sách kết quả hoặc lượt thi của từng VĐV</param>
+        /// <param name="config">Cấu hình thể thức thi đấu</param>
+        /// <param name="username">Tên tài khoản người thực hiện lưu tạm</param>
+        /// <returns>True nếu lưu tạm thành công</returns>
+        Task<bool> SaveDraftHeatResultsAsync(
+            int tranDauId,
+            List<HeatParticipantResultDto> heatResults,
+            CauHinhTheThucDto config,
+            string? username = null);
     }
 }

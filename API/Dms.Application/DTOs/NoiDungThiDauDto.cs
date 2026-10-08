@@ -387,6 +387,8 @@ namespace Dms.Application.DTOs
         public int? SoLane { get; set; }
         public int? ViTri { get; set; } // 1: Đội 1 (Nhà), 2: Đội 2 (Khách)
         public string TrangThai { get; set; } = "ThamGia";
+        public string? SoDeoBIB { get; set; }
+        public int? ThuTuThiDau { get; set; }
         public string? GhiChu { get; set; }
     }
 

@@ -40,6 +40,7 @@ namespace API.Areas.TrongTai.Controllers
         public int? ExtraTimeScore2 { get; set; }
         public List<SetScoreDto>? SetScores { get; set; }
         public List<MatchEventItemDto>? Events { get; set; }
+        public List<HeatParticipantResultDto>? HeatResults { get; set; }
         public string? GhiChu { get; set; }
     }
 
@@ -53,6 +54,7 @@ namespace API.Areas.TrongTai.Controllers
         private readonly IGiaiDauService _giaiDauService;
         private readonly ICauHinhTheThucService _cauHinhTheThucService;
         private readonly IDangKyThiDauService _dangKyThiDauService;
+        private readonly IAthleticsProgressionEngine _athleticsProgressionEngine;
 
         public KetQuaController(
             UserManager<ApplicationUser> userManager,
@@ -61,12 +63,14 @@ namespace API.Areas.TrongTai.Controllers
             IGiaiDauService giaiDauService,
             ICauHinhTheThucService cauHinhTheThucService,
             IDangKyThiDauService dangKyThiDauService,
-            ITruongBanTrongTaiService refereeAccessService)
+            ITruongBanTrongTaiService refereeAccessService,
+            IAthleticsProgressionEngine athleticsProgressionEngine)
             : base(userManager, trongTaiService, refereeAccessService, tranDauService)
         {
             _giaiDauService = giaiDauService;
             _cauHinhTheThucService = cauHinhTheThucService;
             _dangKyThiDauService = dangKyThiDauService;
+            _athleticsProgressionEngine = athleticsProgressionEngine;
         }
 
         [HttpGet]
@@ -173,7 +177,7 @@ namespace API.Areas.TrongTai.Controllers
                 matchFormat = await _cauHinhTheThucService.GetConfigByTranDauIdAsync(currentMatch.Id);
             }
             ViewBag.MatchFormat = matchFormat;
-            ViewBag.HeatResults = currentMatch != null && matchFormat?.LoaiTheThuc == "TinhDiemXepHang"
+            ViewBag.HeatResults = currentMatch != null && (matchFormat?.IsPerformanceSport == true || (currentMatch.ThanhPhanTranDaus?.Count > 2))
                 ? await _tranDauService.GetHeatResultsByMatchIdAsync(currentMatch.Id)
                 : new List<HeatParticipantResultDto>();
 
@@ -208,7 +212,7 @@ namespace API.Areas.TrongTai.Controllers
                 catch { }
             }
 
-            if (currentMatch != null && matchFormat != null && matchFormat.LoaiTheThuc != "TinhDiemXepHang")
+            if (currentMatch != null && matchFormat != null && !matchFormat.IsPerformanceSport)
             {
                 var persistedPeriods = await _tranDauService.GetMatchPeriodScoresAsync(currentMatch.Id);
                 if (persistedPeriods.Count > 0)
@@ -297,6 +301,16 @@ namespace API.Areas.TrongTai.Controllers
 
             var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "TrongTai";
             var nowUtc = DateTime.UtcNow;
+
+            if (matchFormat?.IsPerformanceSport == true)
+            {
+                if (dto.HeatResults != null && dto.HeatResults.Any())
+                {
+                    await _athleticsProgressionEngine.SaveDraftHeatResultsAsync(dto.TranDauId, dto.HeatResults, matchFormat, username);
+                }
+                return Json(new { success = true, message = "Đã lưu tạm kết quả và lượt thi thành công!" });
+            }
+
             try
             {
                 var scoreData = new

@@ -54,6 +54,13 @@ namespace Dms.Application.DTOs
         public decimal? KyLucHienTai { get; set; }
         public string? KyLucHienTaiText { get; set; }
 
+        // Cấu hình mở rộng cho các môn đo lường
+        public string? HinhThucXuatPhat { get; set; } = "ChiaLan";
+        public int? SoLuotThucHien { get; set; } = 3;
+        public string? CachTinhKetQuaLuotThi { get; set; } = "LanTotNhat";
+        public decimal? ThangDiemToiDa { get; set; } = 10.0m;
+        public bool CoDiemTruBieuDien { get; set; } = true;
+
         // Cấu hình thời lượng & xếp lịch
         public int ThoiLuongTranPhut { get; set; } = 60;
         public int NghiGiuaTranPhut { get; set; } = 15;
@@ -62,6 +69,35 @@ namespace Dms.Application.DTOs
         public int SoDoiMoiBangVaoVongTrong { get; set; } = 2;
         public int SoVongThi { get; set; } = 2;
         public string PhuongThucPhanNhom { get; set; } = "random";
+
+        /// <summary>
+        /// Xác định xem môn này có thuộc nhóm thể thức đo lường / thành tích hay không (Đua thời gian, Lượt thử, Biểu diễn, Legacy).
+        /// </summary>
+        public bool IsPerformanceSport =>
+            string.Equals(LoaiTheThuc, "TinhDiemXepHang", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(HinhThucThiDau, "DuaThoiGian", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(HinhThucThiDau, "DoLuotThi", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(HinhThucThiDau, "BieuDienChamDiem", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(HinhThucThiDau, "TinhDiemXepHang", StringComparison.OrdinalIgnoreCase) ||
+            HinhThucThiDau == "6" || HinhThucThiDau == "8" || HinhThucThiDau == "9" || HinhThucThiDau == "10";
+
+        /// <summary>
+        /// Xác định xem môn này có thuộc thể thức đua tính thời gian (chạy, bơi, xe đạp) hay không.
+        /// </summary>
+        public bool IsDuaThoiGian =>
+            string.Equals(HinhThucThiDau, "DuaThoiGian", StringComparison.OrdinalIgnoreCase) || HinhThucThiDau == "8";
+
+        /// <summary>
+        /// Xác định xem môn này có thuộc thể thức đo theo lần thực hiện (cử tạ, nhảy xa, ném tạ) hay không.
+        /// </summary>
+        public bool IsDoLuotThi =>
+            string.Equals(HinhThucThiDau, "DoLuotThi", StringComparison.OrdinalIgnoreCase) || HinhThucThiDau == "9";
+
+        /// <summary>
+        /// Xác định xem môn này có thuộc thể thức biểu diễn / chấm điểm (võ quyền, thể dục) hay không.
+        /// </summary>
+        public bool IsBieuDienChamDiem =>
+            string.Equals(HinhThucThiDau, "BieuDienChamDiem", StringComparison.OrdinalIgnoreCase) || HinhThucThiDau == "10";
     }
 
     /// <summary>
@@ -110,6 +146,13 @@ namespace Dms.Application.DTOs
         public decimal? KyLucHienTai { get; set; }
         public string? KyLucHienTaiText { get; set; }
 
+        // Cấu hình mở rộng cho các môn đo lường
+        public string? HinhThucXuatPhat { get; set; } = "ChiaLan";
+        public int? SoLuotThucHien { get; set; } = 3;
+        public string? CachTinhKetQuaLuotThi { get; set; } = "LanTotNhat";
+        public decimal? ThangDiemToiDa { get; set; } = 10.0m;
+        public bool CoDiemTruBieuDien { get; set; } = true;
+
         // Cấu hình thời lượng & xếp lịch
         public int ThoiLuongTranPhut { get; set; } = 60;
         public int NghiGiuaTranPhut { get; set; } = 15;
@@ -153,6 +196,9 @@ namespace Dms.Application.DTOs
         public string? KetQuaText { get; set; } // "10.45s", "01:02.34", "DNS", "DNF", "DQ"
         public string TrangThai { get; set; } = "ThamGia"; // "ThamGia", "DNS", "DNF", "DQ"
         public int? XepHang { get; set; }
+        public string? ChiTietKetQuaJson { get; set; }
+        public string? SoDeoBIB { get; set; }
+        public int? ThuTuThiDau { get; set; }
     }
 
     /// <summary>

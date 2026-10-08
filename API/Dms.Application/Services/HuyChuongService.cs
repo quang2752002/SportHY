@@ -397,7 +397,12 @@ namespace Dms.Application.Services
                 }
 
                 // --- B. THỂ THỨC KNOCKOUT & HYBRID (Loại trực tiếp & Vòng bảng + Knockout) ---
-                if (hasKnockoutMatches && hinhThuc != Dms.Domain.Enums.HinhThucThiDau.TinhDiemXepHang)
+                bool isLeaderboardSport = hinhThuc == Dms.Domain.Enums.HinhThucThiDau.TinhDiemXepHang
+                    || hinhThuc == Dms.Domain.Enums.HinhThucThiDau.DuaThoiGian
+                    || hinhThuc == Dms.Domain.Enums.HinhThucThiDau.DoLuotThi
+                    || hinhThuc == Dms.Domain.Enums.HinhThucThiDau.BieuDienChamDiem;
+
+                if (hasKnockoutMatches && !isLeaderboardSport)
                 {
                     // 1. Trận Chung kết
                     var finalMatch = gdmMatches.FirstOrDefault(m =>
@@ -485,8 +490,8 @@ namespace Dms.Application.Services
                     }
                 }
 
-                // --- C. THỂ THỨC TÍNH ĐIỂM XẾP HẠNG / ĐIỀN KINH, BƠI LỘI (Leaderboard / Time Trial) ---
-                if (hinhThuc == Dms.Domain.Enums.HinhThucThiDau.TinhDiemXepHang)
+                // --- C. THỂ THỨC ĐO THÀNH TÍCH / TÍNH GIỜ / LẦN THỬ / BIỂU DIỄN ---
+                if (isLeaderboardSport)
                 {
                     var finalMatches = gdmMatches.Where(m =>
                     {

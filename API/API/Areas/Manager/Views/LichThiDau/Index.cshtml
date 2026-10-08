@@ -2339,6 +2339,21 @@
                     badgeStyle = 'background-color: #7e22ce;';
                     badgeHtml = '<i class="fa-solid fa-chess me-1"></i> Hệ Thụy Sĩ';
                     break;
+                case 'DuaThoiGian':
+                case '8':
+                    badgeClass += 'bg-warning text-dark';
+                    badgeHtml = '<i class="fa-solid fa-stopwatch me-1"></i> Đua tính thời gian (Chạy, Bơi, Xe đạp)';
+                    break;
+                case 'DoLuotThi':
+                case '9':
+                    badgeClass += 'bg-secondary text-white';
+                    badgeHtml = '<i class="fa-solid fa-weight-hanging me-1"></i> Đo theo lượt thực hiện (Cử tạ, Nhảy xa/cao)';
+                    break;
+                case 'BieuDienChamDiem':
+                case '10':
+                    badgeClass += 'bg-danger text-white';
+                    badgeHtml = '<i class="fa-solid fa-star me-1"></i> Biểu diễn / Trọng tài chấm điểm';
+                    break;
                 case 'TinhDiemXepHang':
                 case '6':
                     badgeClass += 'bg-info text-white';

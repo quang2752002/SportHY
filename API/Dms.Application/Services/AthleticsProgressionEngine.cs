@@ -99,7 +99,9 @@ namespace Dms.Application.Services
                 if (tp != null)
                 {
                     tp.TrangThai = item.TrangThai;
-                    tp.SoLane = item.SoLane;
+                    tp.SoLane = item.SoLane > 0 ? item.SoLane : null;
+                    if (!string.IsNullOrEmpty(item.SoDeoBIB)) tp.SoDeoBIB = item.SoDeoBIB;
+                    if (item.ThuTuThiDau.HasValue) tp.ThuTuThiDau = item.ThuTuThiDau;
                     tp.LastModified = DateTime.UtcNow;
                     tp.LastModifiedBy = username;
                     _unitOfWork.ThanhPhanTranDaus.Update(tp);
@@ -134,6 +136,7 @@ namespace Dms.Application.Services
                             DonVi = config.DonViThanhTich ?? "giay",
                             XepHang = item.XepHang,
                             KyLuc = isRecord,
+                            ChiTietKetQuaJson = item.ChiTietKetQuaJson,
                             KetQuaText = item.KetQuaText ?? (item.GiaTri.HasValue ? $"{item.GiaTri.Value:0.00}{config.DonViThanhTich}" : item.TrangThai),
                             Created = DateTime.UtcNow,
                             CreatedBy = username,
@@ -148,6 +151,7 @@ namespace Dms.Application.Services
                         existingKq.DonVi = config.DonViThanhTich ?? "giay";
                         existingKq.XepHang = item.XepHang;
                         existingKq.KyLuc = isRecord;
+                        existingKq.ChiTietKetQuaJson = item.ChiTietKetQuaJson;
                         existingKq.KetQuaText = item.KetQuaText ?? (item.GiaTri.HasValue ? $"{item.GiaTri.Value:0.00}{config.DonViThanhTich}" : item.TrangThai);
                         existingKq.LastModified = DateTime.UtcNow;
                         existingKq.LastModifiedBy = username;
@@ -398,6 +402,125 @@ namespace Dms.Application.Services
                     IsDeleted = false
                 });
             }
+        }
+
+        /// <summary>
+        /// Lưu tạm kết quả lượt thi (Heat / Lượt thử / Biểu diễn) của các VĐV vào cơ sở dữ liệu mà không chốt kết thúc trận đấu.
+        /// Cập nhật thông tin làn chạy, số BIB, thứ tự thi đấu, chi tiết JSON và bảng điểm thành tích.
+        /// </summary>
+        /// <param name="tranDauId">Mã định danh lượt thi đang diễn ra</param>
+        /// <param name="heatResults">Danh sách kết quả hoặc lượt thi của từng VĐV</param>
+        /// <param name="config">Cấu hình thể thức thi đấu</param>
+        /// <param name="username">Tên tài khoản người thực hiện lưu tạm</param>
+        /// <returns>True nếu lưu tạm thành công</returns>
+        public async Task<bool> SaveDraftHeatResultsAsync(
+            int tranDauId,
+            List<HeatParticipantResultDto> heatResults,
+            CauHinhTheThucDto config,
+            string? username = null)
+        {
+            if (heatResults == null || !heatResults.Any()) return false;
+
+            var currentMatch = await _unitOfWork.TranDaus.GetByIdAsync(tranDauId);
+            if (currentMatch == null || currentMatch.IsDeleted == true) return false;
+
+            // Xếp hạng tạm thời
+            bool isAscending = config.TieuChiXepHangThanhTich != "CangLonCangTot";
+            if (config.IsDoLuotThi || config.IsBieuDienChamDiem)
+            {
+                isAscending = config.TieuChiXepHangThanhTich == "CangNhoCangTot";
+            }
+
+            var validParticipants = heatResults
+                .Where(r => r.TrangThai == "ThamGia" && r.GiaTri.HasValue && r.GiaTri > 0)
+                .ToList();
+            var invalidParticipants = heatResults
+                .Where(r => r.TrangThai != "ThamGia" || !r.GiaTri.HasValue || r.GiaTri <= 0)
+                .ToList();
+
+            if (isAscending)
+            {
+                validParticipants = config.TieuChiPhuCangNhoCangTot
+                    ? validParticipants.OrderBy(r => r.GiaTri!.Value).ThenBy(r => r.GiaTriPhu).ToList()
+                    : validParticipants.OrderBy(r => r.GiaTri!.Value).ThenByDescending(r => r.GiaTriPhu).ToList();
+            }
+            else
+            {
+                validParticipants = config.TieuChiPhuCangNhoCangTot
+                    ? validParticipants.OrderByDescending(r => r.GiaTri!.Value).ThenBy(r => r.GiaTriPhu).ToList()
+                    : validParticipants.OrderByDescending(r => r.GiaTri!.Value).ThenByDescending(r => r.GiaTriPhu).ToList();
+            }
+
+            for (var index = 0; index < validParticipants.Count; index++)
+            {
+                validParticipants[index].XepHang = index + 1;
+            }
+            foreach (var p in invalidParticipants)
+            {
+                p.XepHang = null;
+            }
+
+            foreach (var item in heatResults)
+            {
+                var tp = await _unitOfWork.ThanhPhanTranDaus.GetByIdAsync(item.ThanhPhanTranDauId);
+                if (tp != null)
+                {
+                    tp.TrangThai = item.TrangThai;
+                    tp.SoLane = item.SoLane > 0 ? item.SoLane : null;
+                    if (!string.IsNullOrEmpty(item.SoDeoBIB)) tp.SoDeoBIB = item.SoDeoBIB;
+                    if (item.ThuTuThiDau.HasValue) tp.ThuTuThiDau = item.ThuTuThiDau;
+                    tp.LastModified = DateTime.UtcNow;
+                    tp.LastModifiedBy = username;
+                    _unitOfWork.ThanhPhanTranDaus.Update(tp);
+
+                    var existingKq = (await _unitOfWork.KetQuaTranDaus.FindAsync(
+                        k => k.ThanhPhanTranDauId == tp.Id && k.IsDeleted != true
+                    )).FirstOrDefault();
+
+                    bool isRecord = false;
+                    if (item.GiaTri.HasValue && config.KyLucHienTai.HasValue)
+                    {
+                        if (isAscending && item.GiaTri.Value < config.KyLucHienTai.Value) isRecord = true;
+                        else if (!isAscending && item.GiaTri.Value > config.KyLucHienTai.Value) isRecord = true;
+                    }
+
+                    if (existingKq == null)
+                    {
+                        await _unitOfWork.KetQuaTranDaus.AddAsync(new KetQuaTranDau
+                        {
+                            ThanhPhanTranDauId = tp.Id,
+                            LoaiKetQua = config.LoaiDoThanhTich ?? "ThoiGian",
+                            GiaTri = item.GiaTri,
+                            Diem = item.GiaTriPhu,
+                            DonVi = config.DonViThanhTich ?? "giay",
+                            XepHang = item.XepHang,
+                            KyLuc = isRecord,
+                            ChiTietKetQuaJson = item.ChiTietKetQuaJson,
+                            KetQuaText = item.KetQuaText ?? (item.GiaTri.HasValue ? $"{item.GiaTri.Value:0.00}{config.DonViThanhTich}" : item.TrangThai),
+                            Created = DateTime.UtcNow,
+                            CreatedBy = username,
+                            IsDeleted = false
+                        });
+                    }
+                    else
+                    {
+                        existingKq.LoaiKetQua = config.LoaiDoThanhTich ?? "ThoiGian";
+                        existingKq.GiaTri = item.GiaTri;
+                        existingKq.Diem = item.GiaTriPhu;
+                        existingKq.DonVi = config.DonViThanhTich ?? "giay";
+                        existingKq.XepHang = item.XepHang;
+                        existingKq.KyLuc = isRecord;
+                        existingKq.ChiTietKetQuaJson = item.ChiTietKetQuaJson;
+                        existingKq.KetQuaText = item.KetQuaText ?? (item.GiaTri.HasValue ? $"{item.GiaTri.Value:0.00}{config.DonViThanhTich}" : item.TrangThai);
+                        existingKq.LastModified = DateTime.UtcNow;
+                        existingKq.LastModifiedBy = username;
+                        _unitOfWork.KetQuaTranDaus.Update(existingKq);
+                    }
+                }
+            }
+
+            await _unitOfWork.CompleteAsync();
+            return true;
         }
     }
 }

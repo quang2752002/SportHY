@@ -69,7 +69,7 @@ namespace Dms.Application.Services
 
             // 3. Fallback: Nếu chưa có trong DB, trả về cấu hình chuẩn tạo sẵn
             var mon = await _unitOfWork.MonTheThaos.GetByIdAsync(monTheThaoId);
-            var fallback = CreateFallbackDto(monTheThaoId, mon?.Ten, mon?.Ma);
+            var fallback = CreateFallbackDto(monTheThaoId, mon?.Ten, mon?.Ma, mon?.HinhThucThiDau);
             if (mon != null)
             {
                 fallback.HinhThucThiDau = mon.HinhThucThiDau.ToString();
@@ -240,6 +240,12 @@ namespace Dms.Application.Services
             target.KyLucHienTai = source.KyLucHienTai;
             target.KyLucHienTaiText = source.KyLucHienTaiText;
 
+            target.HinhThucXuatPhat = string.IsNullOrWhiteSpace(source.HinhThucXuatPhat) ? "ChiaLan" : source.HinhThucXuatPhat;
+            target.SoLuotThucHien = source.SoLuotThucHien > 0 ? source.SoLuotThucHien : 3;
+            target.CachTinhKetQuaLuotThi = string.IsNullOrWhiteSpace(source.CachTinhKetQuaLuotThi) ? "LanTotNhat" : source.CachTinhKetQuaLuotThi;
+            target.ThangDiemToiDa = source.ThangDiemToiDa > 0 ? source.ThangDiemToiDa : 10.0m;
+            target.CoDiemTruBieuDien = source.CoDiemTruBieuDien;
+
             target.ThoiLuongTranPhut = source.ThoiLuongTranPhut > 0 ? source.ThoiLuongTranPhut : 60;
             target.NghiGiuaTranPhut = source.NghiGiuaTranPhut >= 0 ? source.NghiGiuaTranPhut : 15;
             target.SoBang = source.SoBang >= 0 ? source.SoBang : 0;
@@ -297,6 +303,11 @@ namespace Dms.Application.Services
                 SoVdvVaoChungKet = entity.SoVdvVaoChungKet,
                 KyLucHienTai = entity.KyLucHienTai,
                 KyLucHienTaiText = entity.KyLucHienTaiText,
+                HinhThucXuatPhat = entity.HinhThucXuatPhat ?? "ChiaLan",
+                SoLuotThucHien = entity.SoLuotThucHien ?? 3,
+                CachTinhKetQuaLuotThi = entity.CachTinhKetQuaLuotThi ?? "LanTotNhat",
+                ThangDiemToiDa = entity.ThangDiemToiDa ?? 10.0m,
+                CoDiemTruBieuDien = entity.CoDiemTruBieuDien,
                 ThoiLuongTranPhut = entity.ThoiLuongTranPhut,
                 NghiGiuaTranPhut = entity.NghiGiuaTranPhut,
                 SoBang = entity.SoBang,
@@ -307,8 +318,70 @@ namespace Dms.Application.Services
             };
         }
 
-        private static CauHinhTheThucDto CreateFallbackDto(int monId, string? tenMon, string? maMon)
+        /// <summary>
+        /// Tạo cấu hình thể thức mặc định dự phòng cho môn thể thao theo mã hoặc hình thức thi đấu.
+        /// </summary>
+        /// <param name="monId">Mã môn thể thao</param>
+        /// <param name="tenMon">Tên môn thể thao</param>
+        /// <param name="maMon">Mã định danh môn thể thao</param>
+        /// <param name="hinhThuc">Hình thức thi đấu của môn</param>
+        /// <returns>Đối tượng CauHinhTheThucDto chứa cấu hình mặc định tương ứng</returns>
+        private static CauHinhTheThucDto CreateFallbackDto(int monId, string? tenMon, string? maMon, Dms.Domain.Enums.HinhThucThiDau? hinhThuc = null)
         {
+            if (hinhThuc == Dms.Domain.Enums.HinhThucThiDau.DuaThoiGian)
+            {
+                return new CauHinhTheThucDto
+                {
+                    MonTheThaoId = monId,
+                    TenMonTheThao = tenMon,
+                    LoaiTheThuc = "TinhDiemXepHang",
+                    HinhThucThiDau = "DuaThoiGian",
+                    LoaiDoThanhTich = "ThoiGian",
+                    DonViThanhTich = "giay",
+                    TieuChiXepHangThanhTich = "CangNhoCangTot",
+                    HinhThucXuatPhat = "ChiaLan",
+                    SoVdvMoiLuotThi = 8,
+                    QuyCachTienVaoChungKet = "TopNToanVong",
+                    SoVdvVaoChungKet = 8
+                };
+            }
+
+            if (hinhThuc == Dms.Domain.Enums.HinhThucThiDau.DoLuotThi)
+            {
+                return new CauHinhTheThucDto
+                {
+                    MonTheThaoId = monId,
+                    TenMonTheThao = tenMon,
+                    LoaiTheThuc = "TinhDiemXepHang",
+                    HinhThucThiDau = "DoLuotThi",
+                    LoaiDoThanhTich = "KhoangCach",
+                    DonViThanhTich = "met",
+                    TieuChiXepHangThanhTich = "CangLonCangTot",
+                    SoLuotThucHien = 3,
+                    CachTinhKetQuaLuotThi = "LanTotNhat",
+                    QuyCachTienVaoChungKet = "TopNToanVong",
+                    SoVdvVaoChungKet = 8
+                };
+            }
+
+            if (hinhThuc == Dms.Domain.Enums.HinhThucThiDau.BieuDienChamDiem)
+            {
+                return new CauHinhTheThucDto
+                {
+                    MonTheThaoId = monId,
+                    TenMonTheThao = tenMon,
+                    LoaiTheThuc = "TinhDiemXepHang",
+                    HinhThucThiDau = "BieuDienChamDiem",
+                    LoaiDoThanhTich = "DiemSo",
+                    DonViThanhTich = "diem",
+                    TieuChiXepHangThanhTich = "CangLonCangTot",
+                    ThangDiemToiDa = 10.0m,
+                    CoDiemTruBieuDien = true,
+                    QuyCachTienVaoChungKet = "TopNToanVong",
+                    SoVdvVaoChungKet = 8
+                };
+            }
+
             var isBongDa = (maMon ?? "").Contains("BONG_DA", StringComparison.OrdinalIgnoreCase);
             var isChuyen = (maMon ?? "").Contains("BONG_CHUYEN", StringComparison.OrdinalIgnoreCase);
             var isBoiChay = (maMon ?? "").Contains("BOI", StringComparison.OrdinalIgnoreCase) || (maMon ?? "").Contains("CHAY", StringComparison.OrdinalIgnoreCase);

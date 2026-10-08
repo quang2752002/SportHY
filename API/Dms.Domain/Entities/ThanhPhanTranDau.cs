@@ -20,6 +20,9 @@ namespace Dms.Domain.Entities
 
         public int? ThuTuThiDau { get; set; }
 
+        [MaxLength(20)]
+        public string? SoDeoBIB { get; set; }
+
         public int? ViTri { get; set; }
 
         [Required]

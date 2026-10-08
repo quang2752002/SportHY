@@ -21,9 +21,15 @@
     var savedHeatResults = ViewBag.HeatResults as List<HeatParticipantResultDto> ?? new();
     var heatResultByParticipantId = savedHeatResults.ToDictionary(result => result.ThanhPhanTranDauId);
 
-    bool isHeatMatch = matchFormat?.LoaiTheThuc == "TinhDiemXepHang" || (Model?.ThanhPhanTranDaus?.Count > 2);
-    bool isSetSport = matchFormat?.LoaiTheThuc == "SetDiem";
-    bool isTimeSport = matchFormat?.LoaiTheThuc == "ThoiGianHiep" || (!isHeatMatch && !isSetSport);
+    string hinhThucCode = matchFormat?.HinhThucThiDau ?? "";
+    bool isDuaThoiGian = hinhThucCode == "DuaThoiGian" || hinhThucCode == "8";
+    bool isDoLuotThi = hinhThucCode == "DoLuotThi" || hinhThucCode == "9";
+    bool isBieuDien = hinhThucCode == "BieuDienChamDiem" || hinhThucCode == "10";
+    bool isMassStart = isDuaThoiGian && string.Equals(matchFormat?.HinhThucXuatPhat, "DongLoat", StringComparison.OrdinalIgnoreCase);
+
+    bool isHeatMatch = matchFormat?.LoaiTheThuc == "TinhDiemXepHang" || isDuaThoiGian || isDoLuotThi || isBieuDien || (Model?.ThanhPhanTranDaus?.Count > 2);
+    bool isSetSport = matchFormat?.LoaiTheThuc == "SetDiem" && !isHeatMatch;
+    bool isTimeSport = (matchFormat?.LoaiTheThuc == "ThoiGianHiep" || (!isHeatMatch && !isSetSport)) && !isHeatMatch;
     bool isKnockout = Model != null && (Model.BangDauId == null || !string.IsNullOrEmpty(Model.MaTranBracket));
     bool hasPenaltyCards = matchFormat?.CoThePhat == true;
     bool hasExtraTime = matchFormat?.CoHiepPhu == true;
@@ -199,10 +205,37 @@
                                         @matchFormat.DiemMoiHiep điểm/hiệp (Cách biệt @matchFormat.CachBietDiemToiThieu, Trần @(matchFormat.DiemToiDaMoiHiep ?? 30))
                                     </span>
                                 }
+                                else if (isBieuDien)
+                                {
+                                    <span class="badge bg-dark text-warning font-monospace">
+                                        <i class="fa-solid fa-star me-1"></i>Biểu diễn chấm điểm (Thang @(matchFormat.ThangDiemToiDa ?? 10.0m)đ)
+                                    </span>
+                                    <span class="badge bg-secondary-subtle text-secondary font-monospace">
+                                        @(matchFormat.CoDiemTruBieuDien ? "Có ô trừ điểm lỗi" : "Không trừ điểm") - Điểm chính thức cao nhất xếp trên
+                                    </span>
+                                }
+                                else if (isDoLuotThi)
+                                {
+                                    <span class="badge bg-primary text-white font-monospace">
+                                        <i class="fa-solid fa-weight-hanging me-1"></i>Đo lần thực hiện: @(matchFormat.SoLuotThucHien ?? 3) lần
+                                    </span>
+                                    <span class="badge bg-secondary-subtle text-secondary font-monospace">
+                                        Cơ chế: @(matchFormat.CachTinhKetQuaLuotThi == "TongHaiNoiDung" ? "Tổng cử" : matchFormat.CachTinhKetQuaLuotThi == "TongTatCaLuot" ? "Cộng dồn tất cả lượt" : "Lần tốt nhất") - Cao nhất xếp trên
+                                    </span>
+                                }
+                                else if (isMassStart)
+                                {
+                                    <span class="badge bg-success text-white font-monospace">
+                                        <i class="fa-solid fa-person-running me-1"></i>Xuất phát đồng loạt (Mass Start)
+                                    </span>
+                                    <span class="badge bg-secondary-subtle text-secondary font-monospace">
+                                        Đua thời gian theo số BIB - Về đích trước xếp trên
+                                    </span>
+                                }
                                 else if (isHeatMatch)
                                 {
                                     <span class="badge bg-info text-white font-monospace">
-                                        Lượt thi @matchFormat.SoVdvMoiLuotThi VĐV
+                                        Lượt thi @matchFormat.SoVdvMoiLuotThi làn
                                     </span>
                                     <span class="badge bg-secondary-subtle text-secondary font-monospace">
                                         Đo: @matchFormat.LoaiDoThanhTich (@matchFormat.DonViThanhTich) - @(matchFormat.TieuChiXepHangThanhTich == "CangNhoCangTot" ? "Thời gian nhanh nhất xếp trên" : "Thành tích cao nhất xếp trên")
@@ -283,92 +316,433 @@
 
         @if (isHeatMatch)
         {
-            <!-- ===================== GIAO DIỆN BƠI LỘI / ĐIỀN KINH (LEADERBOARD HEATS) ===================== -->
             <div class="card-custom p-4">
-                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
                     <div>
-                        <h5 class="fw-bold text-dark mb-1">
-                            <i class="fa-solid fa-stopwatch text-danger me-2"></i> Bảng Kết Quả Lượt Thi (Heat) Theo Làn
-                        </h5>
-                        <p class="text-muted small mb-0">Nhập thời gian (giây hoặc mm:ss.xx) cho từng làn thi đấu. Hệ thống sẽ tự động xếp hạng và chọn top VĐV đi tiếp.</p>
+                        @if (isBieuDien)
+                        {
+                            <h5 class="fw-bold text-dark mb-1">
+                                <i class="fa-solid fa-star text-warning me-2"></i> Bảng Chấm Điểm Biểu Diễn (1 Trọng Tài Chấm)
+                            </h5>
+                            <p class="text-muted small mb-0">Nhập điểm bài thi (tối đa @(matchFormat?.ThangDiemToiDa ?? 10.0m) điểm) và điểm trừ lỗi. Điểm chính thức và xếp hạng sẽ được tính tự động.</p>
+                        }
+                        else if (isDoLuotThi)
+                        {
+                            int numAttempts = Math.Clamp(matchFormat?.SoLuotThucHien ?? 3, 1, 10);
+                            <h5 class="fw-bold text-dark mb-1">
+                                <i class="fa-solid fa-weight-hanging text-primary me-2"></i> Bảng Ghi Nhận Thành Tích Theo Lượt Thực Hiện
+                            </h5>
+                            <p class="text-muted small mb-0">Nhập kết quả từng lần thử của VĐV (@numAttempts lần). Hệ thống tự động tính thành tích công nhận (@(matchFormat?.CachTinhKetQuaLuotThi == "TongHaiNoiDung" ? "Tổng cử" : matchFormat?.CachTinhKetQuaLuotThi == "TongTatCaLuot" ? "Cộng dồn tất cả lượt" : "Lần tốt nhất")) và xếp hạng.</p>
+                        }
+                        else if (isMassStart)
+                        {
+                            <h5 class="fw-bold text-dark mb-1">
+                                <i class="fa-solid fa-person-running text-success me-2"></i> Bảng Thành Tích Xuất Phát Đồng Loạt (Mass Start)
+                            </h5>
+                            <p class="text-muted small mb-0">Danh sách VĐV theo Số BIB. Nhập thời gian cán đích (hh:mm:ss hoặc giây) để hệ thống tự động xếp thứ hạng chung cuộc.</p>
+                        }
+                        else
+                        {
+                            <h5 class="fw-bold text-dark mb-1">
+                                <i class="fa-solid fa-stopwatch text-danger me-2"></i> Bảng Kết Quả Lượt Thi (Heat) Theo Làn
+                            </h5>
+                            <p class="text-muted small mb-0">Nhập thời gian (giây hoặc mm:ss.xx) cho từng làn thi đấu. Hệ thống sẽ tự động xếp hạng và chọn top VĐV đi tiếp.</p>
+                        }
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="recalculateHeatRanks()">
-                        <i class="fa-solid fa-arrow-down-short-wide me-1"></i> Tự Động Xếp Hạng Làn
+                        <i class="fa-solid fa-arrow-down-short-wide me-1"></i> Tự Động Xếp Hạng
                     </button>
                 </div>
 
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle text-center" id="tableHeatLanes">
-                        <thead class="table-dark small">
-                            <tr>
-                                <th style="width: 70px;">Làn</th>
-                                <th class="text-start">Vận Động Viên & Đơn Vị</th>
-                                <th style="width: 200px;">Thành Tích (@(matchFormat?.DonViThanhTich ?? "giây"))</th>
-                                <th style="width: 180px;">@(matchFormat?.TenTieuChiPhuThanhTich ?? "Chỉ số phụ") (@(secondaryMetricSmallerIsBetter ? "nhỏ hơn tốt hơn" : "lớn hơn tốt hơn"))</th>
-                                <th style="width: 220px;">Trạng Thái Xuất Phát</th>
-                                <th style="width: 110px;">Xếp Hạng</th>
-                                <th>Kỷ Lục / Ghi Chú</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bodyHeatLanes">
-                            @if (Model.ThanhPhanTranDaus != null && Model.ThanhPhanTranDaus.Count > 0)
-                            {
-                                @for (int i = 0; i < Model.ThanhPhanTranDaus.Count; i++)
+                        @if (isBieuDien)
+                        {
+                            <thead class="table-dark small">
+                                <tr>
+                                    <th style="width: 70px;">STT</th>
+                                    <th class="text-start">Vận Động Viên & Đơn Vị</th>
+                                    <th style="width: 150px;">Điểm Bài Thi (Tối đa @(matchFormat?.ThangDiemToiDa ?? 10.0m))</th>
+                                    @if (matchFormat?.CoDiemTruBieuDien != false)
+                                    {
+                                        <th style="width: 130px;">Điểm Trừ Lỗi</th>
+                                    }
+                                    <th style="width: 140px;">Điểm Chính Thức</th>
+                                    <th style="width: 180px;">Ghi Chú Lỗi</th>
+                                    <th style="width: 140px;">@(matchFormat?.TenTieuChiPhuThanhTich ?? "Chỉ số phụ")</th>
+                                    <th style="width: 220px;">Trạng Thái</th>
+                                    <th style="width: 110px;">Xếp Hạng</th>
+                                    <th>Kỷ Lục / Ghi Chú</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bodyHeatLanes">
+                                @if (Model.ThanhPhanTranDaus != null && Model.ThanhPhanTranDaus.Count > 0)
                                 {
-                                    var tp = Model.ThanhPhanTranDaus[i];
-                                    heatResultByParticipantId.TryGetValue(tp.Id, out var savedHeatResult);
-                                    <tr data-tp-id="@tp.Id" data-dk-id="@tp.DangKyThiDauId" data-lane="@(tp.SoLane ?? (i + 1))">
-                                        <td class="fw-bold fs-5 font-monospace text-primary">
-                                            Làn @(tp.SoLane ?? (i + 1))
-                                        </td>
-                                        <td class="text-start">
-                                            <div class="fw-bold text-dark">@(tp.TenDangKy ?? tp.TenDoi ?? $"VĐV {tp.DangKyThiDauId}")</div>
-                                            <small class="text-muted">@(tp.TenDonVi ?? "Đơn vị tự do")</small>
-                                        </td>
-                                        <td>
-                                            <input type="text" class="form-control form-control-sm text-center font-monospace fs-6 heat-time-input"
-                                                   placeholder="VD: 10.45"
-                                                   value="@(savedHeatResult?.GiaTri?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
-                                                   @(isMatchInProgress ? "" : "disabled")
-                                                   onchange="onLaneTimeChanged(this)" />
-                                        </td>
-                                        <td>
-                                            <input type="number" step="0.01" class="form-control form-control-sm text-center font-monospace heat-tiebreak-input"
-                                                   placeholder="@(matchFormat?.TenTieuChiPhuThanhTich ?? "Nhập chỉ số phụ")"
-                                                   value="@(savedHeatResult?.GiaTriPhu?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
-                                                   @(isMatchInProgress ? "" : "disabled") onchange="recalculateHeatRanks()" />
-                                        </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm w-100" role="group">
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_ok_@tp.Id" value="ThamGia" @(savedHeatResult?.TrangThai == null || savedHeatResult.TrangThai == "ThamGia" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
-                                                <label class="btn btn-outline-success" for="laneSt_ok_@tp.Id">Hợp lệ</label>
+                                    @for (int i = 0; i < Model.ThanhPhanTranDaus.Count; i++)
+                                    {
+                                        var tp = Model.ThanhPhanTranDaus[i];
+                                        heatResultByParticipantId.TryGetValue(tp.Id, out var savedHeatResult);
+                                        decimal? initDiemThucHien = savedHeatResult?.GiaTri;
+                                        decimal? initDiemTru = null;
+                                        decimal? initDiemChinhThuc = savedHeatResult?.GiaTri;
+                                        string? initGhiChuLoi = null;
+                                        if (!string.IsNullOrEmpty(savedHeatResult?.ChiTietKetQuaJson))
+                                        {
+                                            try
+                                            {
+                                                using var jsonDoc = System.Text.Json.JsonDocument.Parse(savedHeatResult.ChiTietKetQuaJson);
+                                                var rEl = jsonDoc.RootElement;
+                                                if (rEl.TryGetProperty("diemThucHien", out var dth)) initDiemThucHien = dth.GetDecimal();
+                                                if (rEl.TryGetProperty("diemTru", out var dt)) initDiemTru = dt.GetDecimal();
+                                                if (rEl.TryGetProperty("diemChinhThuc", out var dct)) initDiemChinhThuc = dct.GetDecimal();
+                                                if (rEl.TryGetProperty("ghiChuLoi", out var gcl)) initGhiChuLoi = gcl.GetString();
+                                            }
+                                            catch { }
+                                        }
+                                        <tr data-tp-id="@tp.Id" data-dk-id="@tp.DangKyThiDauId" data-lane="@(tp.SoLane ?? (i + 1))" data-order="@(tp.ThuTuThiDau ?? (i + 1))" data-bib="@(tp.SoDeoBIB ?? (i + 1).ToString("D3"))">
+                                            <td class="fw-bold fs-6 font-monospace text-primary">
+                                                @(tp.ThuTuThiDau ?? (i + 1))
+                                            </td>
+                                            <td class="text-start">
+                                                <div class="fw-bold text-dark">@(tp.TenDangKy ?? tp.TenDoi ?? $"VĐV {tp.DangKyThiDauId}")</div>
+                                                <small class="text-muted">@(tp.TenDonVi ?? "Đơn vị tự do")</small>
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" min="0" max="@(matchFormat?.ThangDiemToiDa ?? 10.0m)"
+                                                       class="form-control form-control-sm text-center font-monospace fs-6 bieu-dien-score-input"
+                                                       placeholder="0.0 - @(matchFormat?.ThangDiemToiDa ?? 10.0m)"
+                                                       value="@(initDiemThucHien?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                       @(isMatchInProgress ? "" : "disabled")
+                                                       oninput="onBieuDienScoreChanged(this)" />
+                                            </td>
+                                            @if (matchFormat?.CoDiemTruBieuDien != false)
+                                            {
+                                                <td>
+                                                    <input type="number" step="0.01" min="0"
+                                                           class="form-control form-control-sm text-center font-monospace fs-6 text-danger bieu-dien-penalty-input"
+                                                           placeholder="0.0"
+                                                           value="@(initDiemTru?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                           @(isMatchInProgress ? "" : "disabled")
+                                                           oninput="onBieuDienScoreChanged(this)" />
+                                                </td>
+                                            }
+                                            <td>
+                                                <span class="font-monospace fs-6 fw-bold text-success bieu-dien-official-score">
+                                                    @(initDiemChinhThuc?.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) ?? "0.00")
+                                                </span>
+                                                <input type="hidden" class="heat-time-input" value="@(initDiemChinhThuc?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm bieu-dien-note-input"
+                                                       placeholder="VD: Trừ lỗi vượt thảm"
+                                                       value="@(initGhiChuLoi ?? "")"
+                                                       @(isMatchInProgress ? "" : "disabled") />
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" class="form-control form-control-sm text-center font-monospace heat-tiebreak-input"
+                                                       placeholder="Chỉ số phụ"
+                                                       value="@(savedHeatResult?.GiaTriPhu?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                       @(isMatchInProgress ? "" : "disabled") onchange="recalculateHeatRanks()" />
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm w-100" role="group">
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_ok_@tp.Id" value="ThamGia" @(savedHeatResult?.TrangThai == null || savedHeatResult.TrangThai == "ThamGia" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-success" for="laneSt_ok_@tp.Id">Hợp lệ</label>
 
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dns_@tp.Id" value="DNS" @(savedHeatResult?.TrangThai == "DNS" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
-                                                <label class="btn btn-outline-secondary" for="laneSt_dns_@tp.Id" title="Did Not Start">DNS</label>
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dns_@tp.Id" value="DNS" @(savedHeatResult?.TrangThai == "DNS" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-secondary" for="laneSt_dns_@tp.Id" title="Did Not Start">DNS</label>
 
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dnf_@tp.Id" value="DNF" @(savedHeatResult?.TrangThai == "DNF" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
-                                                <label class="btn btn-outline-warning" for="laneSt_dnf_@tp.Id" title="Did Not Finish">DNF</label>
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dnf_@tp.Id" value="DNF" @(savedHeatResult?.TrangThai == "DNF" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-warning" for="laneSt_dnf_@tp.Id" title="Did Not Finish">DNF</label>
 
-                                                <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dq_@tp.Id" value="DQ" @(savedHeatResult?.TrangThai == "DQ" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
-                                                <label class="btn btn-outline-danger" for="laneSt_dq_@tp.Id" title="Disqualified">DQ</label>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-secondary font-monospace fs-6 lane-rank-badge">--</span>
-                                        </td>
-                                        <td class="lane-record-notice">
-                                            <small class="text-muted">--</small>
-                                        </td>
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dq_@tp.Id" value="DQ" @(savedHeatResult?.TrangThai == "DQ" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-danger" for="laneSt_dq_@tp.Id" title="Disqualified">DQ</label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary font-monospace fs-6 lane-rank-badge">--</span>
+                                            </td>
+                                            <td class="lane-record-notice">
+                                                <small class="text-muted">--</small>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="10" class="text-muted py-4">Chưa có danh sách VĐV trong lượt thi này.</td>
                                     </tr>
                                 }
-                            }
-                            else
-                            {
+                            </tbody>
+                        }
+                        else if (isDoLuotThi)
+                        {
+                            int soLuotThucHien = Math.Clamp(matchFormat?.SoLuotThucHien ?? 3, 1, 10);
+                            <thead class="table-dark small">
                                 <tr>
-                                    <td colspan="7" class="text-muted py-4">Chưa có danh sách VĐV trong lượt thi này.</td>
+                                    <th style="width: 70px;">STT</th>
+                                    <th class="text-start">Vận Động Viên & Đơn Vị</th>
+                                    @for (int k = 1; k <= soLuotThucHien; k++)
+                                    {
+                                        <th style="width: 120px;">Lần @k</th>
+                                    }
+                                    <th style="width: 160px;">Thành Tích Công Nhận (@(matchFormat?.DonViThanhTich ?? ""))</th>
+                                    <th style="width: 130px;">@(matchFormat?.TenTieuChiPhuThanhTich ?? "Chỉ số phụ")</th>
+                                    <th style="width: 220px;">Trạng Thái</th>
+                                    <th style="width: 110px;">Xếp Hạng</th>
+                                    <th>Kỷ Lục / Ghi Chú</th>
                                 </tr>
-                            }
-                        </tbody>
+                            </thead>
+                            <tbody id="bodyHeatLanes">
+                                @if (Model.ThanhPhanTranDaus != null && Model.ThanhPhanTranDaus.Count > 0)
+                                {
+                                    @for (int i = 0; i < Model.ThanhPhanTranDaus.Count; i++)
+                                    {
+                                        var tp = Model.ThanhPhanTranDaus[i];
+                                        heatResultByParticipantId.TryGetValue(tp.Id, out var savedHeatResult);
+                                        var initAttempts = new Dictionary<int, (decimal? value, bool isPass, string? note)>();
+                                        if (!string.IsNullOrEmpty(savedHeatResult?.ChiTietKetQuaJson))
+                                        {
+                                            try
+                                            {
+                                                using var jsonDoc = System.Text.Json.JsonDocument.Parse(savedHeatResult.ChiTietKetQuaJson);
+                                                if (jsonDoc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                                                {
+                                                    foreach (var el in jsonDoc.RootElement.EnumerateArray())
+                                                    {
+                                                        int att = el.TryGetProperty("attempt", out var pAtt) ? pAtt.GetInt32() : 0;
+                                                        decimal? val = el.TryGetProperty("value", out var pVal) && pVal.ValueKind == System.Text.Json.JsonValueKind.Number ? pVal.GetDecimal() : null;
+                                                        bool isPass = !el.TryGetProperty("isPass", out var pPass) || pPass.GetBoolean();
+                                                        string? note = el.TryGetProperty("note", out var pNote) ? pNote.GetString() : null;
+                                                        if (att > 0) initAttempts[att] = (val, isPass, note);
+                                                    }
+                                                }
+                                            }
+                                            catch { }
+                                        }
+                                        <tr data-tp-id="@tp.Id" data-dk-id="@tp.DangKyThiDauId" data-lane="@(tp.SoLane ?? (i + 1))" data-order="@(tp.ThuTuThiDau ?? (i + 1))" data-bib="@(tp.SoDeoBIB ?? (i + 1).ToString("D3"))">
+                                            <td class="fw-bold fs-6 font-monospace text-primary">
+                                                @(tp.ThuTuThiDau ?? (i + 1))
+                                            </td>
+                                            <td class="text-start">
+                                                <div class="fw-bold text-dark">@(tp.TenDangKy ?? tp.TenDoi ?? $"VĐV {tp.DangKyThiDauId}")</div>
+                                                <small class="text-muted">@(tp.TenDonVi ?? "Đơn vị tự do")</small>
+                                            </td>
+                                            @for (int k = 1; k <= soLuotThucHien; k++)
+                                            {
+                                                initAttempts.TryGetValue(k, out var attItem);
+                                                decimal? attVal = attItem.value;
+                                                bool isPass = attItem.isPass || !attItem.value.HasValue;
+                                                <td>
+                                                    <input type="number" step="0.01" min="0"
+                                                           class="form-control form-control-sm text-center font-monospace fs-6 attempt-val-input @(!isPass ? "text-decoration-line-through text-danger" : "")"
+                                                           data-attempt="@k"
+                                                           placeholder="Lần @k"
+                                                           value="@(attVal?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                           @(isMatchInProgress ? "" : "disabled")
+                                                           oninput="onAttemptChanged(this)" />
+                                                    <button type="button" class="btn btn-xs mt-1 w-100 attempt-status-btn @(isPass ? "btn-outline-success" : "btn-outline-danger")"
+                                                            data-attempt="@k"
+                                                            data-pass="@(isPass ? "true" : "false")"
+                                                            @(isMatchInProgress ? "" : "disabled")
+                                                            onclick="toggleAttemptPass(this)">
+                                                        @(isPass ? "✓ Đạt" : "✗ Hỏng (X)")
+                                                    </button>
+                                                </td>
+                                            }
+                                            <td>
+                                                <span class="font-monospace fs-6 fw-bold text-primary recognized-score-badge">
+                                                    @(savedHeatResult?.GiaTri?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "--") @(matchFormat?.DonViThanhTich ?? "")
+                                                </span>
+                                                <input type="hidden" class="heat-time-input" value="@(savedHeatResult?.GiaTri?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" class="form-control form-control-sm text-center font-monospace heat-tiebreak-input"
+                                                       placeholder="Chỉ số phụ"
+                                                       value="@(savedHeatResult?.GiaTriPhu?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                       @(isMatchInProgress ? "" : "disabled") onchange="recalculateHeatRanks()" />
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm w-100" role="group">
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_ok_@tp.Id" value="ThamGia" @(savedHeatResult?.TrangThai == null || savedHeatResult.TrangThai == "ThamGia" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-success" for="laneSt_ok_@tp.Id">Hợp lệ</label>
+
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dns_@tp.Id" value="DNS" @(savedHeatResult?.TrangThai == "DNS" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-secondary" for="laneSt_dns_@tp.Id" title="Did Not Start">DNS</label>
+
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dnf_@tp.Id" value="DNF" @(savedHeatResult?.TrangThai == "DNF" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-warning" for="laneSt_dnf_@tp.Id" title="Did Not Finish">DNF</label>
+
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dq_@tp.Id" value="DQ" @(savedHeatResult?.TrangThai == "DQ" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-danger" for="laneSt_dq_@tp.Id" title="Disqualified">DQ</label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary font-monospace fs-6 lane-rank-badge">--</span>
+                                            </td>
+                                            <td class="lane-record-notice">
+                                                <small class="text-muted">--</small>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="@(6 + soLuotThucHien)" class="text-muted py-4">Chưa có danh sách VĐV trong lượt thi này.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        }
+                        else if (isMassStart)
+                        {
+                            <thead class="table-dark small">
+                                <tr>
+                                    <th style="width: 90px;">Số BIB</th>
+                                    <th class="text-start">Vận Động Viên & Đơn Vị</th>
+                                    <th style="width: 220px;">Thời Gian Cán Đích (hh:mm:ss hoặc giây)</th>
+                                    <th style="width: 160px;">@(matchFormat?.TenTieuChiPhuThanhTich ?? "Chỉ số phụ")</th>
+                                    <th style="width: 220px;">Trạng Thái</th>
+                                    <th style="width: 110px;">Xếp Hạng</th>
+                                    <th>Kỷ Lục / Ghi Chú</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bodyHeatLanes">
+                                @if (Model.ThanhPhanTranDaus != null && Model.ThanhPhanTranDaus.Count > 0)
+                                {
+                                    @for (int i = 0; i < Model.ThanhPhanTranDaus.Count; i++)
+                                    {
+                                        var tp = Model.ThanhPhanTranDaus[i];
+                                        heatResultByParticipantId.TryGetValue(tp.Id, out var savedHeatResult);
+                                        <tr data-tp-id="@tp.Id" data-dk-id="@tp.DangKyThiDauId" data-lane="@(tp.SoLane ?? (i + 1))" data-order="@(tp.ThuTuThiDau ?? (i + 1))" data-bib="@(tp.SoDeoBIB ?? (i + 1).ToString("D3"))">
+                                            <td>
+                                                <span class="badge bg-dark font-monospace fs-6 px-3 py-1 text-warning">
+                                                    @(tp.SoDeoBIB ?? (i + 1).ToString("D3"))
+                                                </span>
+                                            </td>
+                                            <td class="text-start">
+                                                <div class="fw-bold text-dark">@(tp.TenDangKy ?? tp.TenDoi ?? $"VĐV {tp.DangKyThiDauId}")</div>
+                                                <small class="text-muted">@(tp.TenDonVi ?? "Đơn vị tự do")</small>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm text-center font-monospace fs-6 heat-time-input"
+                                                       placeholder="VD: 01:25:30.5 hoặc 10.45"
+                                                       value="@(savedHeatResult?.KetQuaText ?? savedHeatResult?.GiaTri?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                       @(isMatchInProgress ? "" : "disabled")
+                                                       onchange="onLaneTimeChanged(this)" />
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" class="form-control form-control-sm text-center font-monospace heat-tiebreak-input"
+                                                       placeholder="@(matchFormat?.TenTieuChiPhuThanhTich ?? "Nhập chỉ số phụ")"
+                                                       value="@(savedHeatResult?.GiaTriPhu?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                       @(isMatchInProgress ? "" : "disabled") onchange="recalculateHeatRanks()" />
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm w-100" role="group">
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_ok_@tp.Id" value="ThamGia" @(savedHeatResult?.TrangThai == null || savedHeatResult.TrangThai == "ThamGia" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-success" for="laneSt_ok_@tp.Id">Hợp lệ</label>
+
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dns_@tp.Id" value="DNS" @(savedHeatResult?.TrangThai == "DNS" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-secondary" for="laneSt_dns_@tp.Id" title="Did Not Start">DNS</label>
+
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dnf_@tp.Id" value="DNF" @(savedHeatResult?.TrangThai == "DNF" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-warning" for="laneSt_dnf_@tp.Id" title="Did Not Finish">DNF</label>
+
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dq_@tp.Id" value="DQ" @(savedHeatResult?.TrangThai == "DQ" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-danger" for="laneSt_dq_@tp.Id" title="Disqualified">DQ</label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary font-monospace fs-6 lane-rank-badge">--</span>
+                                            </td>
+                                            <td class="lane-record-notice">
+                                                <small class="text-muted">--</small>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-muted py-4">Chưa có danh sách VĐV trong lượt thi này.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        }
+                        else
+                        {
+                            <thead class="table-dark small">
+                                <tr>
+                                    <th style="width: 70px;">Làn</th>
+                                    <th class="text-start">Vận Động Viên & Đơn Vị</th>
+                                    <th style="width: 200px;">Thành Tích (@(matchFormat?.DonViThanhTich ?? "giây"))</th>
+                                    <th style="width: 180px;">@(matchFormat?.TenTieuChiPhuThanhTich ?? "Chỉ số phụ") (@(secondaryMetricSmallerIsBetter ? "nhỏ hơn tốt hơn" : "lớn hơn tốt hơn"))</th>
+                                    <th style="width: 220px;">Trạng Thái Xuất Phát</th>
+                                    <th style="width: 110px;">Xếp Hạng</th>
+                                    <th>Kỷ Lục / Ghi Chú</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bodyHeatLanes">
+                                @if (Model.ThanhPhanTranDaus != null && Model.ThanhPhanTranDaus.Count > 0)
+                                {
+                                    @for (int i = 0; i < Model.ThanhPhanTranDaus.Count; i++)
+                                    {
+                                        var tp = Model.ThanhPhanTranDaus[i];
+                                        heatResultByParticipantId.TryGetValue(tp.Id, out var savedHeatResult);
+                                        <tr data-tp-id="@tp.Id" data-dk-id="@tp.DangKyThiDauId" data-lane="@(tp.SoLane ?? (i + 1))" data-order="@(tp.ThuTuThiDau ?? (i + 1))" data-bib="@(tp.SoDeoBIB ?? (i + 1).ToString("D3"))">
+                                            <td class="fw-bold fs-5 font-monospace text-primary">
+                                                Làn @(tp.SoLane ?? (i + 1))
+                                            </td>
+                                            <td class="text-start">
+                                                <div class="fw-bold text-dark">@(tp.TenDangKy ?? tp.TenDoi ?? $"VĐV {tp.DangKyThiDauId}")</div>
+                                                <small class="text-muted">@(tp.TenDonVi ?? "Đơn vị tự do")</small>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm text-center font-monospace fs-6 heat-time-input"
+                                                       placeholder="VD: 10.45"
+                                                       value="@(savedHeatResult?.GiaTri?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                       @(isMatchInProgress ? "" : "disabled")
+                                                       onchange="onLaneTimeChanged(this)" />
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" class="form-control form-control-sm text-center font-monospace heat-tiebreak-input"
+                                                       placeholder="@(matchFormat?.TenTieuChiPhuThanhTich ?? "Nhập chỉ số phụ")"
+                                                       value="@(savedHeatResult?.GiaTriPhu?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                                                       @(isMatchInProgress ? "" : "disabled") onchange="recalculateHeatRanks()" />
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm w-100" role="group">
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_ok_@tp.Id" value="ThamGia" @(savedHeatResult?.TrangThai == null || savedHeatResult.TrangThai == "ThamGia" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-success" for="laneSt_ok_@tp.Id">Hợp lệ</label>
+
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dns_@tp.Id" value="DNS" @(savedHeatResult?.TrangThai == "DNS" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-secondary" for="laneSt_dns_@tp.Id" title="Did Not Start">DNS</label>
+
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dnf_@tp.Id" value="DNF" @(savedHeatResult?.TrangThai == "DNF" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-warning" for="laneSt_dnf_@tp.Id" title="Did Not Finish">DNF</label>
+
+                                                    <input type="radio" class="btn-check" name="laneStatus_@tp.Id" id="laneSt_dq_@tp.Id" value="DQ" @(savedHeatResult?.TrangThai == "DQ" ? "checked" : "") @(isMatchInProgress ? "" : "disabled") onchange="onLaneStatusChanged(@tp.Id)" />
+                                                    <label class="btn btn-outline-danger" for="laneSt_dq_@tp.Id" title="Disqualified">DQ</label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary font-monospace fs-6 lane-rank-badge">--</span>
+                                            </td>
+                                            <td class="lane-record-notice">
+                                                <small class="text-muted">--</small>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-muted py-4">Chưa có danh sách VĐV trong lượt thi này.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        }
                     </table>
                 </div>
             </div>
@@ -766,14 +1140,23 @@
                 }
             </span>
             <div class="d-flex gap-2 w-100 w-md-auto justify-content-end">
-                @if (isMatchInProgress && !isHeatMatch)
+                @if (isMatchInProgress)
                 {
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold" id="btnSaveDraft" onclick="saveDraftResult()">
-                    <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Tạm Diễn Biến
-                </button>
-                <button type="button" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm" id="btnCompleteMatch" onclick="completeMatchFinal()">
-                    <i class="fa-solid fa-trophy me-1"></i> Hoàn Tất & Xác Nhận Kết Quả
-                </button>
+                    @if (isHeatMatch)
+                    {
+                        <button type="button" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm" id="btnCompleteMatch" onclick="completeMatchFinal()">
+                            <i class="fa-solid fa-flag-checkered me-1"></i> Hoàn Tất Lượt Thi & Chốt Kết Quả
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold" id="btnSaveDraft" onclick="saveDraftResult()">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Tạm Diễn Biến
+                        </button>
+                        <button type="button" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm" id="btnCompleteMatch" onclick="completeMatchFinal()">
+                            <i class="fa-solid fa-trophy me-1"></i> Hoàn Tất & Xác Nhận Kết Quả
+                        </button>
+                    }
                 }
             </div>
         </div>
@@ -972,6 +1355,10 @@
         const hasExtraTime = @(hasExtraTime ? "true" : "false");
         const hasPenalty = @(hasPenalty ? "true" : "false");
         const hasPenaltyCards = @(hasPenaltyCards ? "true" : "false");
+        const isDuaThoiGian = @(isDuaThoiGian ? "true" : "false");
+        const isDoLuotThi = @(isDoLuotThi ? "true" : "false");
+        const isBieuDien = @(isBieuDien ? "true" : "false");
+        const isMassStart = @(isMassStart ? "true" : "false");
         const matchWasInProgress = @(matchStatus == "DangDau" ? "true" : "false");
         let scoreSaveTimer = null;
         let scoreSaveInProgress = false;
@@ -1018,6 +1405,11 @@
                     recalculateSetsWon();
                 }
             } else {
+                if (isDoLuotThi) {
+                    $('#bodyHeatLanes tr').each(function () {
+                        updateRowAttemptRecognized($(this));
+                    });
+                }
                 recalculateHeatRanks();
             }
             updateScoreSubtractButtons();
@@ -1547,14 +1939,131 @@
         }
 
         // ====================================================================
-        // 2. TÍNH ĐIỂM XẾP HẠNG / LƯỢT THI (HEAT LEADERBOARD)
+        // 2. TÍNH ĐIỂM XẾP HẠNG / LƯỢT THI (HEAT & PERFORMANCE LEADERBOARD)
         // ====================================================================
+        function parseTimeToSeconds(valStr) {
+            if (!valStr) return null;
+            valStr = String(valStr).trim().replace(',', '.');
+            if (!valStr) return null;
+            if (valStr.includes(':')) {
+                const parts = valStr.split(':');
+                if (parts.length === 3) {
+                    const h = parseFloat(parts[0]) || 0;
+                    const m = parseFloat(parts[1]) || 0;
+                    const s = parseFloat(parts[2]) || 0;
+                    return Math.round((h * 3600 + m * 60 + s) * 1000) / 1000;
+                } else if (parts.length === 2) {
+                    const m = parseFloat(parts[0]) || 0;
+                    const s = parseFloat(parts[1]) || 0;
+                    return Math.round((m * 60 + s) * 1000) / 1000;
+                }
+            }
+            const num = parseFloat(valStr);
+            return !isNaN(num) && num > 0 ? num : null;
+        }
+
+        function computeRecognizedAttempt(attempts, calcMode, soLuotThucHien) {
+            const passed = attempts.filter(a => a.isPass && a.value > 0);
+            if (passed.length === 0) return null;
+
+            if (calcMode === 'TongTatCaLuot') {
+                const sum = passed.reduce((acc, a) => acc + a.value, 0);
+                return Math.round(sum * 100) / 100;
+            }
+
+            if (calcMode === 'TongHaiNoiDung') {
+                const maxLuot = soLuotThucHien || 6;
+                const half = Math.floor(maxLuot / 2);
+                if (half >= 1 && maxLuot > 2) {
+                    const p1 = passed.filter(a => a.attempt <= half);
+                    const p2 = passed.filter(a => a.attempt > half);
+                    const max1 = p1.length > 0 ? Math.max(...p1.map(a => a.value)) : 0;
+                    const max2 = p2.length > 0 ? Math.max(...p2.map(a => a.value)) : 0;
+                    if (max1 > 0 && max2 > 0) return Math.round((max1 + max2) * 100) / 100;
+                    if (max1 > 0) return max1;
+                    if (max2 > 0) return max2;
+                    return null;
+                } else {
+                    const sum = passed.reduce((acc, a) => acc + a.value, 0);
+                    return Math.round(sum * 100) / 100;
+                }
+            }
+
+            // Mặc định: Lần tốt nhất hoặc Mức xà cao nhất
+            return Math.max(...passed.map(a => a.value));
+        }
+
+        function updateRowAttemptRecognized($row) {
+            const attempts = [];
+            $row.find('.attempt-val-input').each(function () {
+                const attNum = parseInt($(this).attr('data-attempt')) || 1;
+                const v = parseFloat($(this).val());
+                const isPass = $row.find(`.attempt-status-btn[data-attempt="${attNum}"]`).attr('data-pass') === 'true';
+                if (!isNaN(v) && v > 0) {
+                    attempts.push({ attempt: attNum, value: v, isPass: isPass });
+                }
+            });
+
+            const recognized = computeRecognizedAttempt(
+                attempts,
+                sportConfig?.CachTinhKetQuaLuotThi || 'LanTotNhat',
+                sportConfig?.SoLuotThucHien || 3
+            );
+            const unit = sportConfig?.DonViThanhTich || '';
+            if (recognized !== null && recognized > 0) {
+                $row.find('.recognized-score-badge').text(recognized + (unit ? ' ' + unit : ''));
+                $row.find('.heat-time-input').val(recognized);
+            } else {
+                $row.find('.recognized-score-badge').text('-- ' + unit);
+                $row.find('.heat-time-input').val('');
+            }
+        }
+
+        function toggleAttemptPass(btn) {
+            const $btn = $(btn);
+            const currentPass = $btn.attr('data-pass') === 'true';
+            const newPass = !currentPass;
+            $btn.attr('data-pass', newPass ? 'true' : 'false');
+            $btn.toggleClass('btn-outline-success', newPass);
+            $btn.toggleClass('btn-outline-danger', !newPass);
+            $btn.html(newPass ? '✓ Đạt' : '✗ Hỏng (X)');
+
+            const $row = $btn.closest('tr');
+            const attempt = $btn.attr('data-attempt');
+            const $input = $row.find(`.attempt-val-input[data-attempt="${attempt}"]`);
+            $input.toggleClass('text-decoration-line-through text-danger', !newPass);
+
+            updateRowAttemptRecognized($row);
+            recalculateHeatRanks();
+            queueScoreAutoSave();
+        }
+
+        function onAttemptChanged(input) {
+            const $row = $(input).closest('tr');
+            updateRowAttemptRecognized($row);
+            recalculateHeatRanks();
+            queueScoreAutoSave();
+        }
+
+        function onBieuDienScoreChanged(input) {
+            const $row = $(input).closest('tr');
+            const baseScore = parseFloat($row.find('.bieu-dien-base-score').val()) || 0;
+            const deduction = parseFloat($row.find('.bieu-dien-deduction-score').val()) || 0;
+            const officialScore = Math.max(0, Math.round((baseScore - deduction) * 100) / 100);
+            $row.find('.bieu-dien-official-score').text(officialScore.toFixed(2));
+            $row.find('.heat-time-input').val(officialScore > 0 ? officialScore.toFixed(2) : '');
+            recalculateHeatRanks();
+            queueScoreAutoSave();
+        }
+
         function onLaneTimeChanged(input) {
             recalculateHeatRanks();
+            queueScoreAutoSave();
         }
 
         function onLaneStatusChanged(tpId) {
             recalculateHeatRanks();
+            queueScoreAutoSave();
         }
 
         function recalculateHeatRanks() {
@@ -1562,20 +2071,38 @@
             if (rows.length === 0) return;
 
             const kyLuc = sportConfig?.KyLucHienTai || null;
-            const cangNhoCangTot = (sportConfig?.TieuChiXepHangThanhTich !== 'CangLonCangTot');
+            let cangNhoCangTot = (sportConfig?.TieuChiXepHangThanhTich !== 'CangLonCangTot');
+            if (isDoLuotThi || isBieuDien) {
+                cangNhoCangTot = (sportConfig?.TieuChiXepHangThanhTich === 'CangNhoCangTot');
+            }
             const secondarySmallerIsBetter = sportConfig?.TieuChiPhuCangNhoCangTot !== false;
 
             const validItems = [];
             rows.forEach(r => {
                 const $r = $(r);
                 const tpId = $r.data('tp-id');
+                if (!tpId) return;
                 const st = $r.find(`input[name="laneStatus_${tpId}"]:checked`).val() || 'ThamGia';
-                const timeStr = $r.find('.heat-time-input').val().trim();
-                const val = parseFloat(timeStr);
+
+                let val = null;
+                if (isBieuDien) {
+                    const baseScore = parseFloat($r.find('.bieu-dien-base-score').val()) || 0;
+                    const deduction = parseFloat($r.find('.bieu-dien-deduction-score').val()) || 0;
+                    val = Math.max(0, Math.round((baseScore - deduction) * 100) / 100);
+                    $r.find('.bieu-dien-official-score').text(val.toFixed(2));
+                    $r.find('.heat-time-input').val(val > 0 ? val.toFixed(2) : '');
+                } else if (isDoLuotThi) {
+                    const timeStr = $r.find('.heat-time-input').val().trim();
+                    val = parseFloat(timeStr);
+                } else {
+                    const timeStr = $r.find('.heat-time-input').val().trim();
+                    val = parseTimeToSeconds(timeStr);
+                }
+
                 const secondaryRaw = $r.find('.heat-tiebreak-input').val();
                 const secondary = secondaryRaw !== undefined && String(secondaryRaw).trim() !== '' ? Number(secondaryRaw) : null;
 
-                if (st === 'ThamGia' && !isNaN(val) && val > 0) {
+                if (st === 'ThamGia' && val !== null && !isNaN(val) && val > 0) {
                     validItems.push({ row: $r, val: val, secondary: Number.isFinite(secondary) ? secondary : null });
                 } else {
                     $r.find('.lane-rank-badge').text(st !== 'ThamGia' ? st : '--').removeClass('bg-success bg-warning bg-primary bg-danger text-dark text-white').addClass('bg-secondary').removeData('rank');
@@ -1615,10 +2142,11 @@
                     $badge.text('#' + rank).removeClass('bg-secondary bg-danger bg-success bg-warning bg-primary text-dark text-white').data('rank', rank);
                 }
                 if (unresolvedSecondaryTie) {
-                    // Không hiển thị huy chương/thứ hạng giả khi tiêu chí phụ chưa phân định được.
+                    // Không hiển thị thứ hạng giả khi tiêu chí phụ chưa phân định được.
                 } else if (rank === 1) $badge.addClass('bg-warning text-dark');
                 else if (rank <= 3) $badge.addClass('bg-success text-white');
-                else $badge.addClass('bg-primary text-white');
+                else if (rank <= 8) $badge.addClass('bg-primary text-white');
+                else $badge.addClass('bg-secondary text-white');
 
                 // Check kỷ lục
                 const $notice = item.row.find('.lane-record-notice');
@@ -1717,23 +2245,72 @@
             $('#bodyHeatLanes tr').each(function () {
                 const $r = $(this);
                 const tpId = $r.data('tp-id');
+                if (!tpId) return;
                 const dkId = $r.data('dk-id');
                 const lane = $r.data('lane');
+                const bib = $r.data('bib') || $r.attr('data-bib') || null;
+                const order = parseInt($r.data('order') || $r.attr('data-order')) || null;
                 const st = $r.find(`input[name="laneStatus_${tpId}"]:checked`).val() || 'ThamGia';
-                const timeStr = $r.find('.heat-time-input').val().trim();
                 const secondaryRaw = $r.find('.heat-tiebreak-input').val();
-                const rankText = $r.find('.lane-rank-badge').text().replace('#', '');
+                const secondaryVal = secondaryRaw !== undefined && String(secondaryRaw).trim() !== '' ? Number(secondaryRaw) : null;
+                const rankText = $r.find('.lane-rank-badge').text().replace('#', '').trim();
                 const rank = parseInt(rankText) || null;
+
+                let numericVal = null;
+                let ketQuaText = null;
+                let chiTietJson = null;
+
+                if (isBieuDien) {
+                    const baseScore = parseFloat($r.find('.bieu-dien-base-score').val()) || 0;
+                    const deduction = parseFloat($r.find('.bieu-dien-deduction-score').val()) || 0;
+                    const officialScore = Math.max(0, Math.round((baseScore - deduction) * 100) / 100);
+                    const notes = $r.find('.bieu-dien-note-input').val()?.trim() || '';
+
+                    numericVal = officialScore > 0 ? officialScore : null;
+                    ketQuaText = officialScore > 0 ? (officialScore.toFixed(2) + ' điểm') : st;
+                    chiTietJson = JSON.stringify({
+                        diemCoSo: baseScore,
+                        diemTru: deduction,
+                        diemChinhThuc: officialScore,
+                        ghiChuLoi: notes
+                    });
+                } else if (isDoLuotThi) {
+                    const attempts = [];
+                    $r.find('.attempt-val-input').each(function () {
+                        const attNum = parseInt($(this).attr('data-attempt')) || 1;
+                        const v = parseFloat($(this).val());
+                        const isPass = $r.find(`.attempt-status-btn[data-attempt="${attNum}"]`).attr('data-pass') === 'true';
+                        if (!isNaN(v) && v > 0) {
+                            attempts.push({ attempt: attNum, value: v, isPass: isPass, note: isPass ? 'Đạt' : 'Hỏng' });
+                        }
+                    });
+                    const recognized = computeRecognizedAttempt(
+                        attempts,
+                        sportConfig?.CachTinhKetQuaLuotThi || 'LanTotNhat',
+                        sportConfig?.SoLuotThucHien || 3
+                    );
+                    numericVal = recognized;
+                    const unit = sportConfig?.DonViThanhTich || '';
+                    ketQuaText = recognized !== null ? (recognized + (unit ? ' ' + unit : '')) : st;
+                    chiTietJson = attempts.length > 0 ? JSON.stringify(attempts) : null;
+                } else {
+                    const timeRaw = $r.find('.heat-time-input').val().trim();
+                    numericVal = parseTimeToSeconds(timeRaw);
+                    ketQuaText = timeRaw || (numericVal ? numericVal.toString() : st);
+                }
 
                 heatPayload.push({
                     thanhPhanTranDauId: tpId,
                     dangKyThiDauId: dkId,
                     soLane: lane,
-                    giaTri: parseFloat(timeStr) || null,
-                    giaTriPhu: secondaryRaw !== undefined && String(secondaryRaw).trim() !== '' ? Number(secondaryRaw) : null,
-                    ketQuaText: timeStr || st,
+                    soDeoBIB: bib ? String(bib) : null,
+                    thuTuThiDau: order,
+                    giaTri: numericVal,
+                    giaTriPhu: secondaryVal,
+                    ketQuaText: ketQuaText,
                     trangThai: st,
-                    xepHang: rank
+                    xepHang: rank,
+                    chiTietKetQuaJson: chiTietJson
                 });
             });
             return heatPayload;
@@ -1744,8 +2321,21 @@
             $('#bodyHeatLanes tr').each(function () {
                 const $row = $(this);
                 const tpId = $row.data('tp-id');
+                if (!tpId) return;
                 const status = $row.find(`input[name="laneStatus_${tpId}"]:checked`).val() || 'ThamGia';
-                const primary = parseFloat($row.find('.heat-time-input').val().trim());
+
+                let primary = null;
+                if (isBieuDien) {
+                    const baseScore = parseFloat($row.find('.bieu-dien-base-score').val()) || 0;
+                    const deduction = parseFloat($row.find('.bieu-dien-deduction-score').val()) || 0;
+                    primary = Math.max(0, Math.round((baseScore - deduction) * 100) / 100);
+                } else if (isDoLuotThi) {
+                    primary = parseFloat($row.find('.heat-time-input').val().trim());
+                } else {
+                    const timeStr = $row.find('.heat-time-input').val().trim();
+                    primary = parseTimeToSeconds(timeStr);
+                }
+
                 if (status !== 'ThamGia' || !Number.isFinite(primary) || primary <= 0) return;
 
                 const rawSecondary = $row.find('.heat-tiebreak-input').val();
@@ -1785,6 +2375,7 @@
                 trangThai: matchStatus,
                 setScores: setScoresList.map(set => ({ ...set })),
                 events: eventsList.map(event => ({ ...event })),
+                heatResults: isHeatMatch ? getHeatResultsPayload() : null,
                 ghiChu: $('#matchNotes').val().trim()
             };
         }

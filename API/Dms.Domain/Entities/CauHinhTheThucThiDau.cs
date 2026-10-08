@@ -105,6 +105,35 @@ namespace Dms.Domain.Entities
         [MaxLength(100)]
         public string? KyLucHienTaiText { get; set; }
 
+        /// <summary>
+        /// Hình thức xuất phát cho môn đua tính giờ: "ChiaLan" (Lanes), "DongLoat" (Mass Start - chạy bền, xe đạp), "SoLe" (Time Trial).
+        /// </summary>
+        [MaxLength(30)]
+        public string? HinhThucXuatPhat { get; set; } = "ChiaLan";
+
+        /// <summary>
+        /// Số lượt/lần thử tối đa của mỗi VĐV trong môn đo theo lần thực hiện (Cử tạ: 3, Nhảy xa: 3 hoặc 6).
+        /// </summary>
+        public int? SoLuotThucHien { get; set; } = 3;
+
+        /// <summary>
+        /// Cơ chế xác định kết quả chung cuộc từ các lần thử:
+        /// "LanTotNhat" (Nhảy xa, ném tạ), "TongHaiNoiDung" (Cử tạ: Giật + Đẩy), "MucXaCaoNhat" (Nhảy cao), "TongTatCaLuot" (Bắn súng).
+        /// </summary>
+        [MaxLength(50)]
+        public string? CachTinhKetQuaLuotThi { get; set; } = "LanTotNhat";
+
+        /// <summary>
+        /// Thang điểm tối đa cho môn biểu diễn chấm điểm (VD: 10.0 hoặc 100.0).
+        /// </summary>
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? ThangDiemToiDa { get; set; } = 10.0m;
+
+        /// <summary>
+        /// Có tính ô nhập điểm trừ phạm quy (lỗi trang phục, vượt thảm, phạm thời gian) cho môn biểu diễn không.
+        /// </summary>
+        public bool CoDiemTruBieuDien { get; set; } = true;
+
         // ==========================================
         // NHÓM 3: CẤU HÌNH THỜI LƯỢNG & XẾP LỊCH THI ĐẤU (TỰ ĐỘNG XẾP LỊCH)
         // ==========================================

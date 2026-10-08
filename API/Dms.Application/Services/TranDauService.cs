@@ -205,6 +205,8 @@ namespace Dms.Application.Services
                         TenDoi = displayName,
                         TenDonVi = dk?.Doi?.DonVi?.Ten,
                         SoLane = tp.SoLane,
+                        SoDeoBIB = tp.SoDeoBIB,
+                        ThuTuThiDau = tp.ThuTuThiDau,
                         ViTri = tp.ViTri,
                         TrangThai = tp.TrangThai,
                         GhiChu = tp.GhiChu
@@ -388,7 +390,7 @@ namespace Dms.Application.Services
             {
                 throw new InvalidOperationException("Chưa tìm thấy cấu hình tính điểm của môn thi đấu.");
             }
-            if (string.Equals(config.LoaiTheThuc, "TinhDiemXepHang", StringComparison.OrdinalIgnoreCase))
+            if (config.IsPerformanceSport)
             {
                 throw new InvalidOperationException("Môn đo thành tích phải lưu kết quả theo từng vận động viên, không dùng tỷ số trận.");
             }
@@ -829,7 +831,10 @@ namespace Dms.Application.Services
                     GiaTriPhu = result?.Diem,
                     KetQuaText = result?.KetQuaText,
                     TrangThai = participant.TrangThai,
-                    XepHang = result?.XepHang
+                    XepHang = result?.XepHang,
+                    ChiTietKetQuaJson = result?.ChiTietKetQuaJson,
+                    SoDeoBIB = participant.SoDeoBIB,
+                    ThuTuThiDau = participant.ThuTuThiDau
                 };
             }).ToList();
         }
@@ -2251,20 +2256,22 @@ namespace Dms.Application.Services
                     fixtures.Add(bronzeFixture);
                 }
             }
-            else if (effectiveHinhThuc == HinhThucThiDau.TinhDiemXepHang)
+            else if (effectiveHinhThuc == HinhThucThiDau.TinhDiemXepHang ||
+                     effectiveHinhThuc == HinhThucThiDau.DuaThoiGian ||
+                     effectiveHinhThuc == HinhThucThiDau.DoLuotThi ||
+                     effectiveHinhThuc == HinhThucThiDau.BieuDienChamDiem)
             {
                 // ====================================================================
-                // THỂ THỨC TÍNH ĐIỂM XẾP HẠNG / TÍNH GIỜ (LEADERBOARD)
-                // Phân VĐV thành các Lượt thi (Heat) theo số làn / vị trí khả dụng.
-                // Phù hợp: Bơi lội, Điền kinh, Cử tạ, Bắn súng...
+                // THỂ THỨC ĐO THÀNH TÍCH / TÍNH GIỜ / LẦN THỬ / BIỂU DIỄN
+                // Phân VĐV thành các Lượt thi (Heat/Session/Flight) tương ứng.
                 // ====================================================================
-                int heatSize = request.SoVdvMoiLuotThi > 0 ? request.SoVdvMoiLuotThi : 8;
-                int soVong = request.SoVongThi > 0 ? request.SoVongThi : 1;
-                string phuongThuc = request.PhuongThucPhanNhom ?? "random";
+                int heatSize = request.SoVdvMoiLuotThi > 0 ? request.SoVdvMoiLuotThi : (theThuc?.SoVdvMoiLuotThi > 0 ? theThuc.SoVdvMoiLuotThi : 8);
+                int soVong = request.SoVongThi > 0 ? request.SoVongThi : (theThuc?.SoVongThi > 0 ? theThuc.SoVongThi : 1);
+                string phuongThuc = request.PhuongThucPhanNhom ?? theThuc?.PhuongThucPhanNhom ?? "random";
 
                 var allVdvIds = dangKyList.Select(d => d.Id).ToList();
 
-                // Phân nhóm VDV theo phương thức
+                // Phân nhóm / bốc thăm VDV theo phương thức
                 switch (phuongThuc)
                 {
                     case "performance_seed":
@@ -2282,42 +2289,122 @@ namespace Dms.Application.Services
                         break;
                 }
 
-                // Tạo các Heat cho từng vòng thi
-                HeatFixture? finalHeat = null;
-                if (soVong > 1)
+                bool isMassStart = (effectiveHinhThuc == HinhThucThiDau.DuaThoiGian && theThuc?.HinhThucXuatPhat == "DongLoat");
+                bool isTimeTrialInterval = (effectiveHinhThuc == HinhThucThiDau.DuaThoiGian && theThuc?.HinhThucXuatPhat == "SoLe");
+                bool isTrialSport = (effectiveHinhThuc == HinhThucThiDau.DoLuotThi);
+                bool isArtisticSport = (effectiveHinhThuc == HinhThucThiDau.BieuDienChamDiem);
+
+                if (isMassStart)
                 {
-                    finalHeat = new HeatFixture
+                    // Chạy bền / Marathon / Xe đạp đường trường: Tất cả VĐV vào ĐÚNG 1 lượt Chung kết duy nhất
+                    heatFixtures.Add(new HeatFixture
                     {
                         FixtureId = fixtureSeq++,
                         VongTen = "Chung kết",
-                        VongThuTu = soVong,
-                        TenTran = "Chung kết - Lượt thi quyết định (Top hạt giống)",
-                        DanhSachVdvIds = new List<int>() // Chờ các VĐV đạt chuẩn từ các lượt vòng loại
-                    };
+                        VongThuTu = 1,
+                        TenTran = "Chung kết - Xuất phát đồng loạt (Mass Start)",
+                        DanhSachVdvIds = allVdvIds
+                    });
                 }
-
-                for (int vong = 1; vong <= (soVong > 1 ? soVong - 1 : 1); vong++)
+                else if (isTimeTrialInterval)
                 {
-                    string vongTen = soVong == 1 ? "Chung kết" : (soVong == 2 ? "Vòng loại" : $"Vòng Sơ loại {vong}");
-                    int luot = 1;
-                    for (int i = 0; i < allVdvIds.Count; i += heatSize)
+                    // Xe đạp / trượt tính giờ cá nhân xuất phát so le: 1 lượt thi chung kết
+                    heatFixtures.Add(new HeatFixture
                     {
-                        var batch = allVdvIds.Skip(i).Take(heatSize).ToList();
+                        FixtureId = fixtureSeq++,
+                        VongTen = "Chung kết",
+                        VongThuTu = 1,
+                        TenTran = "Chung kết - Tính giờ cá nhân (Time Trial)",
+                        DanhSachVdvIds = allVdvIds
+                    });
+                }
+                else if (isTrialSport)
+                {
+                    // Môn lần thực hiện (Cử tạ, Nhảy xa, Ném tạ):
+                    // Nếu đông hơn 16 VĐV thì chia 2 nhóm (Nhóm B & Nhóm A), nếu <= 16 xếp vào 1 buổi thi chung kết
+                    if (allVdvIds.Count > 16)
+                    {
+                        int half = (int)Math.Ceiling(allVdvIds.Count / 2.0);
                         heatFixtures.Add(new HeatFixture
                         {
                             FixtureId = fixtureSeq++,
-                            VongTen = vongTen,
-                            VongThuTu = vong,
-                            TenTran = $"{vongTen} - Lượt {luot++}",
-                            DanhSachVdvIds = batch,
-                            NextFixtureId = finalHeat?.FixtureId
+                            VongTen = "Chung kết",
+                            VongThuTu = 1,
+                            TenTran = "Chung kết - Nhóm B",
+                            DanhSachVdvIds = allVdvIds.Skip(half).ToList()
+                        });
+                        heatFixtures.Add(new HeatFixture
+                        {
+                            FixtureId = fixtureSeq++,
+                            VongTen = "Chung kết",
+                            VongThuTu = 1,
+                            TenTran = "Chung kết - Nhóm A",
+                            DanhSachVdvIds = allVdvIds.Take(half).ToList()
+                        });
+                    }
+                    else
+                    {
+                        heatFixtures.Add(new HeatFixture
+                        {
+                            FixtureId = fixtureSeq++,
+                            VongTen = "Chung kết",
+                            VongThuTu = 1,
+                            TenTran = "Chung kết - Lượt thi đấu",
+                            DanhSachVdvIds = allVdvIds
                         });
                     }
                 }
-
-                if (finalHeat != null)
+                else if (isArtisticSport)
                 {
-                    heatFixtures.Add(finalHeat);
+                    // Môn biểu diễn chấm điểm (Võ quyền, Thể dục dụng cụ): 1 buổi thi chung kết theo thứ tự bốc thăm
+                    heatFixtures.Add(new HeatFixture
+                    {
+                        FixtureId = fixtureSeq++,
+                        VongTen = "Chung kết",
+                        VongThuTu = 1,
+                        TenTran = "Chung kết - Lượt thi biểu diễn xếp hạng",
+                        DanhSachVdvIds = allVdvIds
+                    });
+                }
+                else
+                {
+                    // Đua chia làn (Bơi lội, Điền kinh chạy ngắn): Chia theo làn và có thể có nhiều vòng
+                    HeatFixture? finalHeat = null;
+                    if (soVong > 1)
+                    {
+                        finalHeat = new HeatFixture
+                        {
+                            FixtureId = fixtureSeq++,
+                            VongTen = "Chung kết",
+                            VongThuTu = soVong,
+                            TenTran = "Chung kết - Lượt thi quyết định (Top hạt giống)",
+                            DanhSachVdvIds = new List<int>() // Chờ các VĐV đạt chuẩn từ các lượt vòng loại
+                        };
+                    }
+
+                    for (int vong = 1; vong <= (soVong > 1 ? soVong - 1 : 1); vong++)
+                    {
+                        string vongTen = soVong == 1 ? "Chung kết" : (soVong == 2 ? "Vòng loại" : $"Vòng Sơ loại {vong}");
+                        int luot = 1;
+                        for (int i = 0; i < allVdvIds.Count; i += heatSize)
+                        {
+                            var batch = allVdvIds.Skip(i).Take(heatSize).ToList();
+                            heatFixtures.Add(new HeatFixture
+                            {
+                                FixtureId = fixtureSeq++,
+                                VongTen = vongTen,
+                                VongThuTu = vong,
+                                TenTran = $"{vongTen} - Lượt {luot++}",
+                                DanhSachVdvIds = batch,
+                                NextFixtureId = finalHeat?.FixtureId
+                            });
+                        }
+                    }
+
+                    if (finalHeat != null)
+                    {
+                        heatFixtures.Add(finalHeat);
+                    }
                 }
             }
             else
@@ -2978,14 +3065,16 @@ namespace Dms.Application.Services
                     // Gán các đội / VĐV vào trận (ThanhPhanTranDau)
                     if (f.IsHeat && f.HeatVdvIds != null && f.HeatVdvIds.Count > 0)
                     {
-                        // ==== HEAT: Gán tất cả VĐV trong lượt thi với số làn tương ứng ====
+                        bool isMassStartHeat = (theThuc?.HinhThucXuatPhat == "DongLoat");
                         for (int lane = 0; lane < f.HeatVdvIds.Count; lane++)
                         {
                             await _unitOfWork.ThanhPhanTranDaus.AddAsync(new ThanhPhanTranDau
                             {
                                 TranDauId = tran.Id,
                                 DangKyThiDauId = f.HeatVdvIds[lane],
-                                SoLane = lane + 1, // Số làn / vị trí (1-based)
+                                SoLane = isMassStartHeat ? null : (lane + 1), // Nếu xuất phát đồng loạt thì không gán làn
+                                ThuTuThiDau = lane + 1,
+                                SoDeoBIB = (lane + 1).ToString("D3"),
                                 ViTri = lane + 1,
                                 TrangThai = "ThamGia",
                                 Created = DateTime.UtcNow,
@@ -4082,7 +4171,10 @@ namespace Dms.Application.Services
                     assignedTeamIds.Add(found2.DangKyThiDauId);
                 }
 
-                bool isHeatSport = result.HinhThucThiDau == "TinhDiemXepHang" || result.HinhThucThiDau == "6";
+                bool isHeatSport = result.HinhThucThiDau == "TinhDiemXepHang" || result.HinhThucThiDau == "6"
+                    || result.HinhThucThiDau == "DuaThoiGian" || result.HinhThucThiDau == "8"
+                    || result.HinhThucThiDau == "DoLuotThi" || result.HinhThucThiDau == "9"
+                    || result.HinhThucThiDau == "BieuDienChamDiem" || result.HinhThucThiDau == "10";
                 bool isMultiParticipant = activeTps.Count > 2;
                 bool isHeatMatch = isHeatSport || isMultiParticipant;
 
@@ -4464,8 +4556,8 @@ namespace Dms.Application.Services
                 return response;
             }
 
-            // 1. Nếu là môn đo thành tích (Điền kinh, Bơi lội), chỉ chốt qua bảng kết quả từng VĐV.
-            if (config.LoaiTheThuc == "TinhDiemXepHang")
+            // 1. Nếu là môn đo thành tích (Điền kinh, Bơi lội, Lượt thử, Biểu diễn...), chỉ chốt qua bảng kết quả từng VĐV.
+            if (config.IsPerformanceSport)
             {
                 if (request.HeatResults == null || !request.HeatResults.Any())
                 {

@@ -227,9 +227,12 @@
                             </label>
                             <select id="fmtHinhThucThiDau" class="form-select fw-semibold border-primary-subtle" onchange="onBracketFormatChange()">
                                 <option value="LoaiTrucTiep">Loại trực tiếp (Knockout)</option>
-                                <option value="VongBang">Vòng tròn tính điểm </option>
+                                <option value="VongBang">Vòng tròn tính điểm</option>
                                 <option value="KetHopVongBangVaLoaiTrucTiep">Bảng + Knockout</option>                            
-                                <option value="TinhDiemXepHang">Đo thành tích / Chạy làn</option>
+                                <option value="DuaThoiGian">⏱️ Đua tính thời gian (Chạy, Bơi, Xe đạp)</option>
+                                <option value="DoLuotThi">🏋️ Đo theo lần thực hiện (Cử tạ, Nhảy xa/cao, Ném tạ)</option>
+                                <option value="BieuDienChamDiem">🥋 Biểu diễn / Chấm điểm (Võ quyền, Thể dục)</option>
+                                <option value="TinhDiemXepHang" style="display:none;">Đo thành tích (Legacy)</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -376,34 +379,95 @@
                         </div>
                     </div>
 
-                    <!-- Panel: Đo thành tích / Chạy làn -->
+                    <!-- Panel: Đo thành tích / Đua tính giờ / Lần thử / Biểu diễn -->
                     <div class="card border-0 shadow-sm rounded-3 mt-3 bg-white d-none" id="panelTinhDiemXepHang">
                         <div class="card-header bg-white border-bottom py-3">
-                            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                                <i class="fa-solid fa-person-running text-primary"></i> Quy cách Đợt chạy/Lượt bơi, Làn thi đấu & Tiến vào Chung kết
+                            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2" id="panelTitleDoThanhTich">
+                                <i class="fa-solid fa-person-running text-primary"></i> Quy cách Đợt thi, Lượt thi & Tiến vào Chung kết
                             </h6>
                         </div>
                         <div class="card-body p-4">
                             <div class="row g-3">
+                                <!-- Khối riêng: ĐUA TÍNH THỜI GIAN -->
+                                <div class="col-12 p-3 bg-light rounded-3 border d-none" id="boxDuaThoiGian">
+                                    <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-stopwatch me-1"></i> Thiết lập Đua thời gian (Chạy / Bơi / Xe đạp)</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold small">Hình thức xuất phát</label>
+                                            <select id="fmtHinhThucXuatPhat" class="form-select" onchange="onHinhThucXuatPhatChange()">
+                                                <option value="ChiaLan">Chia làn cố định (Lane-based) - Chạy ngắn, Bơi lội</option>
+                                                <option value="DongLoat">Xuất phát đồng loạt (Mass Start) - Chạy bền, Marathon, Xe đạp</option>
+                                                <option value="SoLe">Xuất phát so le (Time Trial) - Xe đạp tính giờ</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6" id="boxSoVdvMoiLuot">
+                                            <label class="form-label fw-semibold small">Số làn / VĐV mỗi đợt chạy</label>
+                                            <input type="number" class="form-control" id="fmtSoVdvLuot" value="8" min="1" max="16">
+                                            <small class="text-muted">Áp dụng khi thi chia làn (6-8 làn)</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Khối riêng: ĐO THEO LẦN THỰC HIỆN -->
+                                <div class="col-12 p-3 bg-light rounded-3 border d-none" id="boxDoLuotThi">
+                                    <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-weight-hanging me-1"></i> Thiết lập Lần thực hiện (Cử tạ / Nhảy xa / Nhảy cao / Ném tạ)</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold small">Số lần thử tối đa của mỗi VĐV</label>
+                                            <input type="number" class="form-control" id="fmtSoLuotThucHien" value="3" min="1" max="10">
+                                            <small class="text-muted">VD: 3 lần cử giật, 3 lần cử đẩy hoặc 3-6 lần nhảy</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold small">Cơ chế xác định kết quả</label>
+                                            <select id="fmtCachTinhKetQuaLuotThi" class="form-select">
+                                                <option value="LanTotNhat">Lần thực hiện tốt nhất (Nhảy xa, Ném tạ)</option>
+                                                <option value="TongHaiNoiDung">Tổng 2 nội dung (Cử tạ: Giật + Đẩy)</option>
+                                                <option value="MucXaCaoNhat">Mức xà cao nhất vượt qua (Nhảy cao, Nhảy sào)</option>
+                                                <option value="TongTatCaLuot">Cộng dồn tất cả các lượt (Bắn súng, Bắn cung)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Khối riêng: BIỂU DIỄN / CHẤM ĐIỂM -->
+                                <div class="col-12 p-3 bg-light rounded-3 border d-none" id="boxBieuDienChamDiem">
+                                    <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-star me-1"></i> Thiết lập Biểu diễn / Trọng tài chấm điểm</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold small">Thang điểm tối đa của bài thi</label>
+                                            <input type="number" step="0.1" class="form-control" id="fmtThangDiemToiDa" value="10.0" min="1">
+                                            <small class="text-muted">Mặc định: 10.0 điểm hoặc 100.0 điểm</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mt-4">
+                                                <input class="form-check-input" type="checkbox" id="fmtCoDiemTruBieuDien" checked>
+                                                <label class="form-check-label fw-semibold small" for="fmtCoDiemTruBieuDien">Có ô nhập điểm trừ lỗi (vượt thảm, phạm thời gian)</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Loại đo lường thành tích</label>
                                     <select id="fmtLoaiDo" class="form-select">
-                                        <option value="ThoiGian">⏱️ Thời gian (Giây / mili-giây)</option>
+                                        <option value="ThoiGian">⏱️ Thời gian (Giây / Phút:Giây)</option>
                                         <option value="KhoangCach">📏 Khoảng cách (Mét / cm)</option>
-                                        <option value="DiemSo">🎯 Điểm số ban giám khảo</option>
+                                        <option value="KhoiLuong">🏋️ Khối lượng (Kg - Cử tạ)</option>
+                                        <option value="DiemSo">🎯 Điểm số đánh giá</option>
                                     </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Đơn vị đo lường</label>
+                                    <input type="text" class="form-control" id="fmtDonViThanhTich" value="giay" placeholder="giay, m, kg, diem">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Tiêu chí xếp hạng</label>
                                     <select id="fmtTieuChiThanhTich" class="form-select">
                                         <option value="CangNhoCangTot">Nhỏ hơn là tốt hơn (Thời gian ngắn nhất thắng)</option>
-                                        <option value="CangLonCangTot">Lớn hơn là tốt hơn (Xa nhất / Cao nhất thắng)</option>
+                                        <option value="CangLonCangTot">Lớn hơn là tốt hơn (Xa nhất / Nặng nhất / Điểm cao nhất)</option>
                                     </select>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Số làn / VĐV mỗi lượt thi</label>
-                                    <input type="number" class="form-control" id="fmtSoVdvLuot" value="8" min="1" max="12">
-                                </div>
+
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold small">Chiều xếp theo chỉ số phụ</label>
                                     <select id="fmtTieuChiPhuCangNhoCangTot" class="form-select">
@@ -417,6 +481,7 @@
                                     <input type="text" class="form-control" id="fmtTenTieuChiPhuThanhTich" maxlength="100" placeholder="VD: Lần nhảy tốt thứ hai">
                                     <small class="form-text">Tên này hiển thị trên bảng nhập kết quả cho trọng tài.</small>
                                 </div>
+
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Quy cách chọn vào Chung kết</label>
                                     <select id="fmtQuyCachVaoCk" class="form-select">
@@ -427,13 +492,13 @@
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Số vòng thi đấu</label>
                                     <select id="fmtSoVongThi" class="form-select">
-                                        <option value="1">1 vòng (Chung kết tính giờ trực tiếp)</option>
-                                        <option value="2" selected>2 vòng (Vòng loại → Chung kết Top 8)</option>
+                                        <option value="1">1 vòng (Chung kết trực tiếp)</option>
+                                        <option value="2" selected>2 vòng (Vòng loại → Chung kết)</option>
                                         <option value="3">3 vòng (Sơ loại → Bán kết → Chung kết)</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">Phương thức xếp lượt</label>
+                                    <label class="form-label fw-semibold small">Phương thức xếp lượt / phân nhóm</label>
                                     <select id="fmtPhuongThucPhanNhom" class="form-select">
                                         <option value="random" selected>Bốc thăm ngẫu nhiên</option>
                                         <option value="performance_seed">Xếp theo hạt giống / thành tích</option>
@@ -819,11 +884,49 @@
             onBracketFormatChange();
         }
 
+        function onHinhThucXuatPhatChange() {
+            const xp = $('#fmtHinhThucXuatPhat').val();
+            $('#boxSoVdvMoiLuot').toggleClass('d-none', xp === 'DongLoat');
+        }
+
         function onBracketFormatChange() {
             const hinhThuc = $('#fmtHinhThucThiDau').val();
-            const loaiTheThuc = $('#fmtLoaiTheThuc').val();
-            let tipHtml = '';
+            const isPerformanceMode = (hinhThuc === 'DuaThoiGian' || hinhThuc === 'DoLuotThi' || hinhThuc === 'BieuDienChamDiem' || hinhThuc === 'TinhDiemXepHang');
+            
+            if (isPerformanceMode) {
+                $('#fmtLoaiTheThuc').val('TinhDiemXepHang');
+                $('#panelSetDiem').addClass('d-none');
+                $('#panelThoiGianHiep').addClass('d-none');
+                $('#panelTinhDiemXepHang').removeClass('d-none');
+                $('#boxFormatGroupConfig').addClass('d-none');
 
+                $('#boxDuaThoiGian').toggleClass('d-none', hinhThuc !== 'DuaThoiGian' && hinhThuc !== 'TinhDiemXepHang');
+                $('#boxDoLuotThi').toggleClass('d-none', hinhThuc !== 'DoLuotThi');
+                $('#boxBieuDienChamDiem').toggleClass('d-none', hinhThuc !== 'BieuDienChamDiem');
+
+                if (hinhThuc === 'DuaThoiGian') {
+                    $('#panelTitleDoThanhTich').html('<i class="fa-solid fa-stopwatch text-danger"></i> Cấu hình Đua tính thời gian (Chạy / Bơi / Xe đạp)');
+                    $('#fmtLoaiDo').val('ThoiGian');
+                    $('#fmtDonViThanhTich').val('giay');
+                    $('#fmtTieuChiThanhTich').val('CangNhoCangTot');
+                    onHinhThucXuatPhatChange();
+                } else if (hinhThuc === 'DoLuotThi') {
+                    $('#panelTitleDoThanhTich').html('<i class="fa-solid fa-weight-hanging text-primary"></i> Cấu hình Đo theo lần thực hiện (Cử tạ / Nhảy / Ném)');
+                    if ($('#fmtLoaiDo').val() === 'ThoiGian') $('#fmtLoaiDo').val('KhoangCach');
+                    $('#fmtTieuChiThanhTich').val('CangLonCangTot');
+                } else if (hinhThuc === 'BieuDienChamDiem') {
+                    $('#panelTitleDoThanhTich').html('<i class="fa-solid fa-star text-warning"></i> Cấu hình Biểu diễn / Trọng tài chấm điểm');
+                    $('#fmtLoaiDo').val('DiemSo');
+                    $('#fmtDonViThanhTich').val('diem');
+                    $('#fmtTieuChiThanhTich').val('CangLonCangTot');
+                }
+            } else {
+                $('#boxDuaThoiGian').addClass('d-none');
+                $('#boxDoLuotThi').addClass('d-none');
+                $('#boxBieuDienChamDiem').addClass('d-none');
+            }
+
+            let tipHtml = '';
             if (hinhThuc === 'LoaiTrucTiep') {
                 tipHtml = `
                     <div class="alert alert-light border border-info-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
@@ -831,13 +934,6 @@
                         <span>Sơ đồ <strong>Loại trực tiếp (Knockout)</strong>: Các mục cấu hình chia bảng vẫn được lưu làm mẫu dự phòng nếu môn chuyển sang đấu bảng.</span>
                     </div>`;
                 $('#badgeGroupFormatStatus').text('Dự phòng (Khi chuyển sang vòng bảng)');
-            } else if (hinhThuc === 'TinhDiemXepHang' && loaiTheThuc !== 'TinhDiemXepHang') {
-                tipHtml = `
-                    <div class="alert alert-warning border border-warning-subtle text-warning-emphasis rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation text-warning fs-6"></i>
-                        <span>Sơ đồ <strong>Đo thành tích</strong>: Khuyên dùng cơ chế tính điểm <strong>🏅 Đo thành tích / Chạy làn</strong> để hệ thống bấm giờ và chia làn thi đấu chuẩn xác.</span>
-                    </div>`;
-                $('#badgeGroupFormatStatus').text('Không áp dụng cho đo thành tích');
             } else if (hinhThuc === 'VongBang' || hinhThuc === 'KetHopVongBangVaLoaiTrucTiep') {
                 tipHtml = `
                     <div class="alert alert-light border border-success-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
@@ -845,6 +941,27 @@
                         <span>Môn có <strong>Vòng bảng</strong>: Thông số Số bảng, Số đội/bảng và Số đội vào Knockout bên dưới sẽ được tự động nạp sang Lịch Thi Đấu.</span>
                     </div>`;
                 $('#badgeGroupFormatStatus').text('Đang áp dụng trực tiếp cho giải');
+            } else if (hinhThuc === 'DuaThoiGian') {
+                tipHtml = `
+                    <div class="alert alert-light border border-danger-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-stopwatch text-danger fs-6"></i>
+                        <span>Thể thức <strong>Đua tính thời gian</strong>: Hỗ trợ cả thi chia làn bơi/chạy và xuất phát đồng loạt (chạy bền, marathon, xe đạp).</span>
+                    </div>`;
+                $('#badgeGroupFormatStatus').text('Không áp dụng cho đua thời gian');
+            } else if (hinhThuc === 'DoLuotThi') {
+                tipHtml = `
+                    <div class="alert alert-light border border-primary-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-weight-hanging text-primary fs-6"></i>
+                        <span>Thể thức <strong>Đo theo lần thực hiện</strong>: Trọng tài nhập chuỗi lần thử (Lần 1, 2, 3), hệ thống tự động xác định Best attempt hoặc tổng cử.</span>
+                    </div>`;
+                $('#badgeGroupFormatStatus').text('Không áp dụng cho đo lần thử');
+            } else if (hinhThuc === 'BieuDienChamDiem') {
+                tipHtml = `
+                    <div class="alert alert-light border border-warning-subtle text-muted rounded-3 py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-star text-warning fs-6"></i>
+                        <span>Thể thức <strong>Biểu diễn chấm điểm</strong>: Trọng tài nhập điểm bài thi và điểm trừ lỗi phạm quy, hệ thống tự động xếp hạng.</span>
+                    </div>`;
+                $('#badgeGroupFormatStatus').text('Không áp dụng cho biểu diễn');
             } else {
                 $('#badgeGroupFormatStatus').text('Cấu hình mặc định');
             }
@@ -948,6 +1065,7 @@
             $('#fmtCoThePhat').prop('checked', data.coThePhat === true);
 
             $('#fmtLoaiDo').val(data.loaiDoThanhTich || 'ThoiGian');
+            $('#fmtDonViThanhTich').val(data.donViThanhTich || (data.loaiDoThanhTich === 'DiemSo' ? 'diem' : 'giay'));
             $('#fmtTieuChiThanhTich').val(data.tieuChiXepHangThanhTich || 'CangNhoCangTot');
             $('#fmtTieuChiPhuCangNhoCangTot').val(data.tieuChiPhuCangNhoCangTot === false ? 'false' : 'true');
             $('#fmtTenTieuChiPhuThanhTich').val(data.tenTieuChiPhuThanhTich || 'Chỉ số phụ');
@@ -955,6 +1073,14 @@
             $('#fmtQuyCachVaoCk').val(data.quyCachTienVaoChungKet || 'TopNToanVong');
             $('#fmtSoVdvVaoCk').val(data.soVdvVaoChungKet || 8);
             $('#fmtKyLuc').val(data.kyLucHienTai || '');
+
+            // Nạp các trường mở rộng
+            $('#fmtHinhThucXuatPhat').val(data.hinhThucXuatPhat || 'ChiaLan');
+            $('#fmtSoLuotThucHien').val(data.soLuotThucHien || 3);
+            $('#fmtCachTinhKetQuaLuotThi').val(data.cachTinhKetQuaLuotThi || 'LanTotNhat');
+            $('#fmtThangDiemToiDa').val(data.thangDiemToiDa || 10.0);
+            $('#fmtCoDiemTruBieuDien').prop('checked', data.coDiemTruBieuDien !== false);
+            onHinhThucXuatPhatChange();
 
             $('#fmtThoiLuongTranPhut').val(data.thoiLuongTranPhut || 60);
             $('#fmtNghiGiuaTranPhut').val(data.nghiGiuaTranPhut ?? 15);
@@ -1119,6 +1245,7 @@
                 coThePhat: $('#fmtCoThePhat').is(':checked'),
 
                 loaiDoThanhTich: $('#fmtLoaiDo').val(),
+                donViThanhTich: ($('#fmtDonViThanhTich').val() || '').trim() || 'giay',
                 tieuChiXepHangThanhTich: $('#fmtTieuChiThanhTich').val(),
                 tenTieuChiPhuThanhTich: ($('#fmtTenTieuChiPhuThanhTich').val() || '').trim(),
                 tieuChiPhuCangNhoCangTot: $('#fmtTieuChiPhuCangNhoCangTot').val() === 'true',
@@ -1126,6 +1253,12 @@
                 quyCachTienVaoChungKet: $('#fmtQuyCachVaoCk').val(),
                 soVdvVaoChungKet: parseInt($('#fmtSoVdvVaoCk').val()) || 8,
                 kyLucHienTai: $('#fmtKyLuc').val() ? parseFloat($('#fmtKyLuc').val()) : null,
+
+                hinhThucXuatPhat: $('#fmtHinhThucXuatPhat').val() || 'ChiaLan',
+                soLuotThucHien: parseInt($('#fmtSoLuotThucHien').val()) || 3,
+                cachTinhKetQuaLuotThi: $('#fmtCachTinhKetQuaLuotThi').val() || 'LanTotNhat',
+                thangDiemToiDa: parseFloat($('#fmtThangDiemToiDa').val()) || 10.0,
+                coDiemTruBieuDien: $('#fmtCoDiemTruBieuDien').is(':checked'),
 
                 thoiLuongTranPhut: parseInt($('#fmtThoiLuongTranPhut').val()) || 60,
                 nghiGiuaTranPhut: parseInt($('#fmtNghiGiuaTranPhut').val()) ?? 15,
