@@ -183,12 +183,22 @@
                 {
                     foreach (var item in Model)
                     {
+                        var isAssignmentLocked = new[] { "DangDau", "DangDienRa", "KetThuc", "DaKetThuc", "DaDau", "HoanThanh" }
+                            .Contains(item.TrangThai, StringComparer.OrdinalIgnoreCase);
+                        var assignmentLockedReason = string.Equals(item.TrangThai, "DangDau", StringComparison.OrdinalIgnoreCase) ||
+                                                     string.Equals(item.TrangThai, "DangDienRa", StringComparison.OrdinalIgnoreCase)
+                            ? "Trận đang diễn ra, không thể thay đổi trọng tài."
+                            : "Trận đã kết thúc, không thể thay đổi trọng tài.";
                         <tr id="match-row-@item.TranDauId"
                             class="assignment-match-row @(targetMatchId == item.TranDauId ? "assignment-match-row-target" : string.Empty)"
                             data-match-id="@item.TranDauId">
                             <td>
                                 <div class="fw-bold text-dark">#@item.SoTran - @item.TenTran</div>
                                 <div class="badge bg-light text-secondary border small mt-1">@item.TenVongDau</div>
+                                @if (isAssignmentLocked)
+                                {
+                                    <div class="small text-secondary mt-1"><i class="fa-solid fa-lock me-1"></i>@assignmentLockedReason</div>
+                                }
                                 @if (!string.IsNullOrWhiteSpace(item.TenBenThiDau1) || !string.IsNullOrWhiteSpace(item.TenBenThiDau2))
                                 {
                                     <div class="small text-primary mt-2" title="@item.TenBenThiDau1 vs @item.TenBenThiDau2">
@@ -221,7 +231,9 @@
                                     VaiTro = "Trọng tài chính",
                                     CurrentId = item.TrongTaiChinhId,
                                     CurrentName = item.TenTrongTaiChinh,
-                                    BadgeClass = "bg-primary text-white"
+                                    BadgeClass = "bg-primary text-white",
+                                    IsLocked = isAssignmentLocked,
+                                    LockedReason = assignmentLockedReason
                                 })
                             </td>
 
@@ -233,7 +245,9 @@
                                     VaiTro = "Trọng tài phụ 1",
                                     CurrentId = item.TrongTaiPhu1Id,
                                     CurrentName = item.TenTrongTaiPhu1,
-                                    BadgeClass = "bg-info text-dark"
+                                    BadgeClass = "bg-info text-dark",
+                                    IsLocked = isAssignmentLocked,
+                                    LockedReason = assignmentLockedReason
                                 })
                             </td>
 
@@ -245,7 +259,9 @@
                                     VaiTro = "Trọng tài phụ 2",
                                     CurrentId = item.TrongTaiPhu2Id,
                                     CurrentName = item.TenTrongTaiPhu2,
-                                    BadgeClass = "bg-info text-dark"
+                                    BadgeClass = "bg-info text-dark",
+                                    IsLocked = isAssignmentLocked,
+                                    LockedReason = assignmentLockedReason
                                 })
                             </td>
 
@@ -257,7 +273,9 @@
                                     VaiTro = "Trọng tài bàn",
                                     CurrentId = item.TrongTaiBanId,
                                     CurrentName = item.TenTrongTaiBan,
-                                    BadgeClass = "bg-secondary text-white"
+                                    BadgeClass = "bg-secondary text-white",
+                                    IsLocked = isAssignmentLocked,
+                                    LockedReason = assignmentLockedReason
                                 })
                             </td>
 
@@ -269,7 +287,9 @@
                                     VaiTro = "Giám sát trận đấu",
                                     CurrentId = item.GiamSatId,
                                     CurrentName = item.TenGiamSat,
-                                    BadgeClass = "bg-dark text-white"
+                                    BadgeClass = "bg-dark text-white",
+                                    IsLocked = isAssignmentLocked,
+                                    LockedReason = assignmentLockedReason
                                 })
                             </td>
                         </tr>
@@ -515,6 +535,8 @@
             var slot = getSlotElement(tranDauId, vaiTro);
             if (!slot.length) return;
 
+            if (slot.attr('data-locked') === 'true') return;
+
             var effective = getEffectiveSlot(tranDauId, vaiTro);
             var badgeClass = slot.attr('data-badge-class') || 'bg-primary text-white';
             if (effective.id) {
@@ -535,6 +557,12 @@
         }
 
         function stageAssignmentChange(tranDauId, vaiTro, trongTaiId, force) {
+            var slot = getSlotElement(tranDauId, vaiTro);
+            if (slot.attr('data-locked') === 'true') {
+                Swal.fire('Không thể thay đổi', slot.attr('data-locked-reason') || 'Trận đang diễn ra hoặc đã kết thúc.', 'warning');
+                return false;
+            }
+
             var key = draftKey(tranDauId, vaiTro);
             draftChanges[key] = {
                 tranDauId: parseInt(tranDauId),
@@ -544,9 +572,16 @@
             };
             renderSlot(tranDauId, vaiTro);
             updateDraftIndicator();
+            return true;
         }
 
         function removeRefereeAssignment(tranDauId, vaiTro) {
+            var slot = getSlotElement(tranDauId, vaiTro);
+            if (slot.attr('data-locked') === 'true') {
+                Swal.fire('Không thể thay đổi', slot.attr('data-locked-reason') || 'Trận đang diễn ra hoặc đã kết thúc.', 'warning');
+                return;
+            }
+
             var current = getEffectiveSlot(tranDauId, vaiTro);
             if (!current.id) return;
 
@@ -752,6 +787,12 @@
         }
 
         function openAssignModal(tranDauId, vaiTro) {
+            var slot = getSlotElement(tranDauId, vaiTro);
+            if (slot.attr('data-locked') === 'true') {
+                Swal.fire('Không thể thay đổi', slot.attr('data-locked-reason') || 'Trận đang diễn ra hoặc đã kết thúc.', 'warning');
+                return;
+            }
+
             $('#assignTranDauId').val(tranDauId);
             $('#assignVaiTro').val(vaiTro);
             $('#modalAssignTitle').text('Phân công ' + vaiTro);

@@ -233,6 +233,8 @@ namespace Dms.Application.DTOs
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
         public int MatchesConsidered { get; set; }
+        /// <summary>Số trận đang diễn ra hoặc đã kết thúc được bỏ qua khỏi lần tự động phân công.</summary>
+        public int MatchesSkippedLocked { get; set; }
         public int MatchesAssigned { get; set; }
         public int PositionsAssigned { get; set; }
         public int PositionsUnassigned { get; set; }
